@@ -1,0 +1,20 @@
+{
+  "balanceTitle": "{user}'s balance",
+  "dailyCooldown": "You've already claimed today. Try again in about {hours}h.",
+  "dailyClaimed": "You claimed {amount}! Current streak: {streak} day(s).",
+  "gave": "You gave {amount} to {user}.",
+  "leaderboardTitle": "Leaderboard",
+  "configTitle": "Economy settings",
+  "give": {
+    "self": "You can't give to yourself.",
+    "bot": "You can't give to a bot.",
+    "below_min": "The minimum amount you can give is {min}.",
+    "above_max": "The maximum amount you can give is {max}.",
+    "insufficient_balance": "You don't have enough balance for that."
+  },
+  "admin": {
+    "wouldGoNegative": "That would take the member's balance below zero.",
+    "added": "Added {amount} to {user}.",
+    "removed": "Removed {amount} from {user}."
+  }
+}

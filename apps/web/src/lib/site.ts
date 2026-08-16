@@ -1,0 +1,38 @@
+// Small, dependency-free helpers for the public site's environment-driven links (ARCHITECTURE.md §17). The web
+// app does not depend on `@entrophy/core`, so these read `process.env.NEXT_PUBLIC_*` directly — Next.js inlines
+// every `NEXT_PUBLIC_*` reference into both the server and client bundles at build time.
+import inviteDefaults from '../data/invite.json';
+
+/** Base URL of the Entrophy API (`@entrophy/api`). No trailing slash. */
+export function apiUrl(): string {
+  return (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').replace(/\/+$/, '');
+}
+
+/** Base URL of the Entrophy admin dashboard (`@entrophy/dashboard`). No trailing slash. */
+export function dashboardUrl(): string {
+  return (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
+}
+
+/** Optional public support/community server invite link. `null` when not configured — callers hide the link. */
+export function supportServerUrl(): string | null {
+  const url = process.env.NEXT_PUBLIC_SUPPORT_SERVER_URL;
+  return url && url.trim().length > 0 ? url : null;
+}
+
+/**
+ * Discord "Add to Discord" OAuth invite URL, built from `NEXT_PUBLIC_DISCORD_CLIENT_ID` and
+ * `NEXT_PUBLIC_INVITE_PERMISSIONS` (falling back to the least-privilege bitfield generated from
+ * `INVITE_PERMISSIONS` by `pnpm commands:export`, checked in at `src/data/invite.json`). Returns `null` when no
+ * client id is configured at all (nothing to invite yet) so callers can disable/hide the CTA instead of linking
+ * to a broken authorize URL.
+ */
+export function inviteUrl(): string | null {
+  const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
+  if (!clientId || clientId === '0' || clientId.trim().length === 0) return null;
+  const permissions = process.env.NEXT_PUBLIC_INVITE_PERMISSIONS ?? inviteDefaults.permissions;
+  const scope = inviteDefaults.scopes.join(' ');
+  const params = new URLSearchParams({ client_id: clientId, permissions, scope });
+  return `https://discord.com/oauth2/authorize?${params.toString()}`;
+}
+
+export const SITE_URL = 'https://entrophybot.com';

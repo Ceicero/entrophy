@@ -3,11 +3,14 @@ import { z } from 'zod';
 import { AuditAction, NotFoundError, buildPaginated, paginate } from '@entrophy/core';
 import type { ModerationCaseType } from '@entrophy/database';
 import type { ModerationCaseDto, ModerationWarningDto, Paginated } from '@entrophy/types';
+import type { ModerationAppealDto, ModerationNoteDto, ModerationSettingsDto } from '@entrophy/types/moderation';
 import { writeDashboardAudit } from '../lib/audit';
 import { toCsv } from '../lib/csv';
 import { toModerationCaseDto, toModerationWarningDto } from '../lib/dto';
 import { requireGuildAccess } from '../lib/guild-access';
 import { guildIdParamSchema, paginationQuerySchema, reasonSchema } from '../lib/schemas';
+
+const MODERATION_PLUGIN_ID = 'moderation' as const;
 
 const CASE_TYPES = [
   'WARN', 'TIMEOUT', 'UNTIMEOUT', 'KICK', 'BAN', 'UNBAN', 'SOFTBAN', 'PURGE',
@@ -28,6 +31,11 @@ const noteParamSchema = guildIdParamSchema.extend({ noteId: z.string().min(1) })
 
 const appealDecideSchema = z.object({ accept: z.boolean(), decisionNote: z.string().trim().max(2000).optional() });
 const appealParamSchema = guildIdParamSchema.extend({ appealId: z.string().min(1) });
+
+// Loose passthrough — the real shape (and defaults) come from the plugin's own zod `configSchema`, enforced by
+// `app.configStore.setConfig` (ARCHITECTURE.md §7.4), same pattern as routes/logging.ts and routes/roles.ts's
+// welcome-config endpoint.
+const settingsBodySchema = z.record(z.string(), z.unknown());
 
 /** `/guilds/:guildId/{cases,warnings,notes,appeals}` — the moderation case viewer (ARCHITECTURE.md §10). */
 export default async function moderationRoutes(app: ZodFastifyInstance): Promise<void> {
@@ -143,7 +151,7 @@ export default async function moderationRoutes(app: ZodFastifyInstance): Promise
       schema: { params: guildIdParamSchema, querystring: paginationQuerySchema.extend({ userId: z.string().optional() }) },
       preHandler: requireGuildAccess(),
     },
-    async (request) => {
+    async (request): Promise<Paginated<ModerationNoteDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit, userId } = request.query;
       const { limit, offset } = paginate({ cursor, limit: rawLimit });
@@ -154,14 +162,17 @@ export default async function moderationRoutes(app: ZodFastifyInstance): Promise
         take: limit + 1,
       });
       return buildPaginated(
-        rows.map((row) => ({
-          id: row.id,
-          guildId: row.guildId,
-          userId: row.userId,
-          authorId: row.authorId,
-          content: row.content,
-          createdAt: row.createdAt.toISOString(),
-        })),
+        rows.map(
+          (row): ModerationNoteDto => ({
+            id: row.id,
+            guildId: row.guildId,
+            userId: row.userId,
+            authorId: row.authorId,
+            content: row.content,
+            createdAt: row.createdAt.toISOString(),
+            deletedAt: row.deletedAt ? row.deletedAt.toISOString() : null,
+          }),
+        ),
         limit,
         offset,
       );
@@ -171,7 +182,7 @@ export default async function moderationRoutes(app: ZodFastifyInstance): Promise
   app.post(
     '/:guildId/moderation/notes',
     { schema: { params: guildIdParamSchema, body: noteCreateSchema }, preHandler: requireGuildAccess() },
-    async (request, reply) => {
+    async (request, reply): Promise<ModerationNoteDto> => {
       const guildId = request.guildId!;
       const session = request.session!;
       const row = await app.prisma.moderationNote.create({
@@ -186,7 +197,7 @@ export default async function moderationRoutes(app: ZodFastifyInstance): Promise
         after: { userId: row.userId, content: row.content },
       });
       reply.status(201);
-      return { id: row.id, guildId, userId: row.userId, authorId: row.authorId, content: row.content, createdAt: row.createdAt.toISOString() };
+      return { id: row.id, guildId, userId: row.userId, authorId: row.authorId, content: row.content, createdAt: row.createdAt.toISOString(), deletedAt: null };
     },
   );
 
@@ -219,7 +230,7 @@ export default async function moderationRoutes(app: ZodFastifyInstance): Promise
       schema: { params: guildIdParamSchema, querystring: paginationQuerySchema.extend({ status: z.enum(['PENDING', 'ACCEPTED', 'DENIED']).optional() }) },
       preHandler: requireGuildAccess(),
     },
-    async (request) => {
+    async (request): Promise<Paginated<ModerationAppealDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit, status } = request.query;
       const { limit, offset } = paginate({ cursor, limit: rawLimit });
@@ -228,20 +239,24 @@ export default async function moderationRoutes(app: ZodFastifyInstance): Promise
         orderBy: { createdAt: 'desc' },
         skip: offset,
         take: limit + 1,
+        include: { case: { select: { caseNumber: true } } },
       });
       return buildPaginated(
-        rows.map((row) => ({
-          id: row.id,
-          guildId: row.guildId,
-          caseId: row.caseId,
-          userId: row.userId,
-          content: row.content,
-          status: row.status,
-          reviewedBy: row.reviewedBy,
-          reviewedAt: row.reviewedAt ? row.reviewedAt.toISOString() : null,
-          decisionNote: row.decisionNote,
-          createdAt: row.createdAt.toISOString(),
-        })),
+        rows.map(
+          (row): ModerationAppealDto => ({
+            id: row.id,
+            guildId: row.guildId,
+            caseId: row.caseId,
+            caseNumber: row.case?.caseNumber ?? null,
+            userId: row.userId,
+            content: row.content,
+            status: row.status,
+            reviewedBy: row.reviewedBy,
+            reviewedAt: row.reviewedAt ? row.reviewedAt.toISOString() : null,
+            decisionNote: row.decisionNote,
+            createdAt: row.createdAt.toISOString(),
+          }),
+        ),
         limit,
         offset,
       );
@@ -257,7 +272,11 @@ export default async function moderationRoutes(app: ZodFastifyInstance): Promise
       const { appealId } = request.params as { appealId: string };
       const existing = await app.prisma.moderationAppeal.findFirst({ where: { id: appealId, guildId } });
       if (!existing) throw new NotFoundError('Appeal not found.');
+      if (existing.status !== 'PENDING') throw new NotFoundError('This appeal has already been decided.');
 
+      // Discord-side effects (DM, auto-remove an active timeout, offer an "Unban now" button) are applied by the
+      // bot's `moderation:appeal-sync` job (every minute) — this process has no Discord client. See the
+      // moderation plugin's README ("Appeals") for the full flow and the idempotency-tracking tradeoff.
       const updated = await app.prisma.moderationAppeal.update({
         where: { id: appealId },
         data: {
@@ -266,6 +285,7 @@ export default async function moderationRoutes(app: ZodFastifyInstance): Promise
           reviewedAt: new Date(),
           decisionNote: request.body.decisionNote,
         },
+        include: { case: { select: { caseNumber: true } } },
       });
 
       await writeDashboardAudit(app.prisma, {
@@ -277,7 +297,51 @@ export default async function moderationRoutes(app: ZodFastifyInstance): Promise
         after: { status: updated.status, decisionNote: updated.decisionNote },
       });
 
-      return { id: updated.id, status: updated.status, reviewedBy: updated.reviewedBy, decisionNote: updated.decisionNote };
+      const dto: ModerationAppealDto = {
+        id: updated.id,
+        guildId: updated.guildId,
+        caseId: updated.caseId,
+        caseNumber: updated.case?.caseNumber ?? null,
+        userId: updated.userId,
+        content: updated.content,
+        status: updated.status,
+        reviewedBy: updated.reviewedBy,
+        reviewedAt: updated.reviewedAt ? updated.reviewedAt.toISOString() : null,
+        decisionNote: updated.decisionNote,
+        createdAt: updated.createdAt.toISOString(),
+      };
+      return dto;
+    },
+  );
+
+  app.get(
+    '/:guildId/moderation/settings',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<ModerationSettingsDto> => {
+      return app.configStore.getConfig<ModerationSettingsDto>(request.guildId!, MODERATION_PLUGIN_ID);
+    },
+  );
+
+  app.put(
+    '/:guildId/moderation/settings',
+    { schema: { params: guildIdParamSchema, body: settingsBodySchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<ModerationSettingsDto> => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const updated = await app.configStore.setConfig<ModerationSettingsDto>(guildId, MODERATION_PLUGIN_ID, request.body, {
+        id: session.userId,
+        source: 'dashboard',
+      });
+
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'moderation.settings.update',
+        targetType: 'plugin_config',
+        targetId: MODERATION_PLUGIN_ID,
+      });
+
+      return updated;
     },
   );
 }

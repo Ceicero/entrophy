@@ -1,0 +1,46 @@
+{
+  "setup": {
+    "moderationRequired": "Enforcer needs the **moderation** plugin enabled first (`/plugin enable moderation`) — decisions are executed through it.",
+    "done": "Enforcer setup complete.",
+    "statusTitle": "Enforcer status"
+  },
+  "policy": {
+    "notFound": "No policy found with that id.",
+    "created": "Policy **{name}** created.",
+    "updated": "Policy **{name}** updated.",
+    "deleted": "Policy **{name}** deleted.",
+    "toggled": "Policy **{name}** is now {state}.",
+    "listTitle": "Enforcer policies",
+    "imported": "Imported the **{name}** policy pack as a new policy.",
+    "unknownPack": "Unknown policy pack \"{key}\"."
+  },
+  "flag": {
+    "created": "Flag **#E-{number}** opened.",
+    "flagChannelMissing": "No flag-queue channel is configured yet — run `/enforcer setup` first."
+  },
+  "record": {
+    "notFound": "No record found with that number.",
+    "detailTitle": "Record #E-{number}"
+  },
+  "history": {
+    "title": "History for <@{userId}>"
+  },
+  "export": {
+    "empty": "No records to export for the given filters."
+  },
+  "appeal": {
+    "noCase": "This record has no linked moderation case, so it can't be appealed here — contact staff directly.",
+    "opened": "Your appeal has been submitted for staff review."
+  },
+  "mute": {
+    "noRole": "No mute role is configured — run `/enforcer setup` first.",
+    "muted": "<@{userId}> has been muted.",
+    "unmuted": "<@{userId}> has been unmuted."
+  },
+  "decide": {
+    "locked": "Someone else is already deciding this flag.",
+    "alreadyDecided": "This flag has already been decided.",
+    "reasonRequired": "A reason is required for this decision.",
+    "disallowed": "That decision is disabled on this server."
+  }
+}

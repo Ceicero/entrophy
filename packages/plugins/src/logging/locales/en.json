@@ -1,0 +1,53 @@
+{
+  "status": {
+    "title": "Logging status",
+    "channelsField": "Kind → channel",
+    "notSet": "_not set_",
+    "kindOff": " (off)",
+    "storeEventsField": "Store events",
+    "captureContentField": "Capture message content",
+    "retentionField": "Retention",
+    "retentionValue": "{days} day(s)",
+    "redactionField": "Custom redaction patterns",
+    "redactionValue": "{count} configured (plus built-in email/phone/token/card/IPv4 patterns)",
+    "intentsField": "Privileged intents",
+    "intentsGuildMembers": "Guild members (join/leave/nick/role/timeout)",
+    "intentsMessageContent": "Message content (edit/delete text)",
+    "on": "on",
+    "off": "off"
+  },
+  "set": {
+    "success": "Routing **{kind}** logs to {channel}.",
+    "missingPermission": "I can't send messages in {channel}. Grant View Channel + Send Messages there and try again.",
+    "invalidChannel": "That doesn't look like a channel I can post embeds in."
+  },
+  "disable": {
+    "success": "Disabled **{kind}** logging. Its channel mapping is kept, so `/logs set {kind} ...` re-enables it without re-picking a channel."
+  },
+  "retention": {
+    "success": "Retention set to **{days}** day(s). The server-wide data retention policy may shorten this further."
+  },
+  "redact": {
+    "invalidPattern": "That pattern isn't valid: {reason}",
+    "added": "Added custom redaction pattern #{index}: `{pattern}`",
+    "removed": "Removed custom redaction pattern #{index}.",
+    "notFound": "No custom redaction pattern matches `{pattern}`. Use `/logs redact list` to see the current list.",
+    "limitReached": "You already have the maximum of {max} custom redaction patterns. Remove one first.",
+    "listTitle": "Redaction patterns",
+    "builtIn": "Built-in (always on): email, phone, Discord token, credit-card-like numbers, IPv4 address",
+    "listEmpty": "_No custom patterns configured._",
+    "customEntry": "{index}. `{pattern}`"
+  },
+  "test": {
+    "success": "Sent a sample **{kind}** log — check its configured channel (and `/logs search` if storage is on)."
+  },
+  "search": {
+    "title": "Log search: {kind}",
+    "titleAllKinds": "Log search",
+    "noResults": "No matching log events found for that user/filters.",
+    "entryLine": "**{kind}** — {timestamp}{title}"
+  },
+  "errors": {
+    "storeEventsOff": "Log storage is off for this server (`storeEvents=false`), so `/logs search` has nothing to search. Turn it back on with the dashboard or `/logs` settings."
+  }
+}

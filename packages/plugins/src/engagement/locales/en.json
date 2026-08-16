@@ -1,0 +1,91 @@
+{
+  "errors": {
+    "levelingDisabled": "Leveling is turned off for this server.",
+    "repDisabled": "Reputation is turned off for this server.",
+    "selfRep": "You can't give reputation to yourself.",
+    "repCooldown": "You can give reputation again <t:{resetAt}:R>.",
+    "starboardNotConfigured": "The starboard has no channel configured yet. Set one with `/starboard set channel`.",
+    "tempVoiceNotOwner": "Only the owner of this temp voice channel can do that.",
+    "tempVoiceNotInChannel": "You need to be in your temp voice channel to use this.",
+    "tempVoiceHubNotVoice": "That channel isn't a voice channel.",
+    "userNotFound": "Could not find that member in this server.",
+    "needExactlyOneOption": "Provide exactly one of channel or role."
+  },
+  "level": {
+    "rank": {
+      "title": "{name}'s rank",
+      "notRanked": "{name} hasn't earned any XP yet."
+    },
+    "leaderboard": {
+      "title": "Leaderboard — page {page}/{totalPages}",
+      "empty": "Nobody has earned XP yet."
+    },
+    "config": {
+      "title": "Leveling configuration"
+    },
+    "xp": {
+      "given": "Gave **{amount} XP** to {user} (now level {level}, {xp} XP total).",
+      "removed": "Removed **{amount} XP** from {user} (now level {level}, {xp} XP total).",
+      "set": "Set {user}'s XP to **{xp}** (now level {level})."
+    },
+    "rewards": {
+      "added": "Added a level {level} reward: {role}.",
+      "removed": "Removed that level reward.",
+      "notFound": "No level reward found with that id.",
+      "empty": "No level rewards configured yet.",
+      "syncDone": "Synced level rewards for {count} member(s)."
+    },
+    "ignore": {
+      "addedChannel": "{channel} is now ignored for XP.",
+      "removedChannel": "{channel} is no longer ignored for XP.",
+      "addedRole": "Members with {role} no longer earn XP.",
+      "removedRole": "Members with {role} earn XP again."
+    },
+    "reset": {
+      "confirmTitle": "Reset XP?",
+      "confirmDescriptionUser": "This clears {user}'s XP, level, message count, and voice minutes in this server. This can't be undone.",
+      "confirmDescriptionAll": "This clears **every member's** XP, level, message count, and voice minutes in this server. This can't be undone.",
+      "doneUser": "Reset {user}'s leveling profile.",
+      "doneAll": "Reset {count} member(s)' leveling profiles."
+    }
+  },
+  "rep": {
+    "give": {
+      "success": "Gave reputation to {user}."
+    },
+    "check": {
+      "title": "{name}'s reputation"
+    },
+    "leaderboard": {
+      "title": "Reputation leaderboard",
+      "empty": "Nobody has received reputation yet."
+    },
+    "revoke": {
+      "success": "Revoked {amount} reputation from {user}."
+    }
+  },
+  "starboard": {
+    "set": {
+      "channel": "Starboard channel set to {channel}.",
+      "channelCleared": "Starboard disabled (no channel set).",
+      "threshold": "Starboard threshold set to {threshold} stars.",
+      "emoji": "Starboard emoji set to {emoji}.",
+      "selfstar": "Self-stars are now {state}."
+    },
+    "status": {
+      "title": "Starboard status"
+    }
+  },
+  "tempvoice": {
+    "setup": {
+      "success": "Temp voice hub set up on {channel}. Members who join it get their own voice channel."
+    },
+    "locked": "Channel locked — only permitted members can join.",
+    "unlocked": "Channel unlocked — anyone who can see it can join.",
+    "limitSet": "User limit set to {limit}.",
+    "renamed": "Channel renamed to **{name}**.",
+    "claimed": "{user} is now the owner of this channel.",
+    "kicked": "Kicked {user} from the channel.",
+    "permitted": "{user} can now join this channel."
+  }
+}

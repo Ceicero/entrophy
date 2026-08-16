@@ -1,0 +1,63 @@
+{
+  "poll": {
+    "needTwoOptions": "Provide at least two options.",
+    "tooManyOptions": "This server allows at most {max} poll options.",
+    "badDuration": "That doesn't look like a valid duration (try \"1h\", \"30m\", \"2h30m\").",
+    "notFound": "That poll could not be found.",
+    "notOwner": "Only the poll's creator or a moderator can do that.",
+    "alreadyClosed": "That poll is already closed.",
+    "ended": "Poll ended."
+  },
+  "giveaway": {
+    "badDuration": "That doesn't look like a valid duration (try \"1h\", \"1d\").",
+    "badChannel": "I can't post in that channel — check my permissions.",
+    "started": "Giveaway started in {channel}.",
+    "notFound": "That giveaway could not be found.",
+    "alreadyEnded": "That giveaway has already ended.",
+    "ended": "Giveaway ended and winners drawn.",
+    "notEndedYet": "That giveaway hasn't ended yet — end it first, then reroll.",
+    "noEntries": "There were no eligible entries to draw from.",
+    "rerolled": "New winner(s): {winners}",
+    "listTitle": "Giveaways",
+    "cancelled": "Giveaway cancelled."
+  },
+  "suggest": {
+    "notConfigured": "The suggestion box hasn't been set up yet. Ask a staff member to run /suggestions setup.",
+    "channelUnavailable": "The suggestions channel isn't available right now — ask a staff member to check it.",
+    "submitted": "Suggestion #{number} submitted to {channel}. Thanks!"
+  },
+  "suggestions": {
+    "setupDone": "Suggestions will now be posted to {channel}.",
+    "notFound": "Suggestion #{number} could not be found.",
+    "alreadyThatStatus": "That suggestion already has that status.",
+    "statusChanged": "Suggestion #{number} is now **{status}**.",
+    "dmStatusChanged": "Your suggestion #{number} in {guild} is now **{status}**.",
+    "listTitle": "Suggestions"
+  },
+  "announce": {
+    "badChannel": "I can't post in that channel — check my permissions.",
+    "scheduled": "Announcement scheduled for {channel}.",
+    "scheduledCron": "It will repeat on schedule \"{cron}\".",
+    "scheduledAt": "It will send at {time}.",
+    "listTitle": "Scheduled announcements",
+    "notFound": "That scheduled announcement could not be found.",
+    "cancelled": "Announcement cancelled.",
+    "previewTitle": "Announcement preview"
+  },
+  "remind": {
+    "badCron": "That recurring schedule isn't valid: {reason}",
+    "badChannel": "I can't post in that channel — check my permissions.",
+    "set": "Reminder set for {time}.",
+    "listTitle": "Your reminders",
+    "notFound": "That reminder could not be found.",
+    "notOwner": "Only the reminder's owner or a moderator can do that.",
+    "cancelled": "Reminder cancelled."
+  },
+  "event": {
+    "badChannel": "I can't post in that channel — check my permissions.",
+    "created": "Event created and announced in {channel}.",
+    "listTitle": "Upcoming events",
+    "notFound": "That event could not be found.",
+    "cancelled": "Event cancelled."
+  }
+}

@@ -6,7 +6,7 @@ const CSRF_HEADER = 'x-csrf-token';
 
 // Routes that legitimately have no session/csrf token yet when the mutating request arrives
 // (starting a login flow) or that aren't session-authenticated at all (external webhooks).
-const EXEMPT_PREFIXES = ['/webhooks/'];
+const EXEMPT_PREFIXES = ['/webhooks/', '/verify/'];
 const EXEMPT_EXACT_PATHS = new Set(['/auth/test-login']);
 
 function isExempt(url: string): boolean {

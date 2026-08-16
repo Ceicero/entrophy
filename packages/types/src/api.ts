@@ -135,6 +135,12 @@ export interface AutomodRuleDto {
   exemptRoleIds: string[];
   exemptChannelIds: string[];
   exemptUserIds: string[];
+  /** Link-based rules (scam links, etc.) never flag these domains. Added by the automod build stage — optional so older consumers reading only the fields above keep working. */
+  trustedDomains?: string[];
+  /** Per-user, per-rule cooldown in seconds (0 = none). Added by the automod build stage. */
+  cooldownSeconds?: number;
+  /** Lower runs first. Added by the automod build stage. */
+  priority?: number;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

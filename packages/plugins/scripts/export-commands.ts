@@ -18,6 +18,9 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..'
 const WEB_OUTPUT = join(REPO_ROOT, 'apps', 'web', 'src', 'data', 'commands.json');
 const DOCS_COMMANDS_OUTPUT = join(REPO_ROOT, 'docs', 'commands.json');
 const DOCS_INVITE_OUTPUT = join(REPO_ROOT, 'docs', 'invite.json');
+// The website reads its default invite permission bitfield from this local copy (falls back to it when
+// NEXT_PUBLIC_INVITE_PERMISSIONS is unset) so it never drifts from `INVITE_PERMISSIONS` in `@entrophy/core`.
+const WEB_INVITE_OUTPUT = join(REPO_ROOT, 'apps', 'web', 'src', 'data', 'invite.json');
 
 const SUBCOMMAND_TYPES = new Set<number>([ApplicationCommandOptionType.Subcommand, ApplicationCommandOptionType.SubcommandGroup]);
 
@@ -159,11 +162,13 @@ async function main(): Promise<void> {
   const exported = buildExport();
   await writeJson(WEB_OUTPUT, exported);
   await writeJson(DOCS_COMMANDS_OUTPUT, exported);
-  await writeJson(DOCS_INVITE_OUTPUT, {
+  const inviteDefaults = {
     clientIdEnv: 'DISCORD_CLIENT_ID',
     permissions: INVITE_PERMISSIONS_BITFIELD.toString(),
     scopes: ['bot', 'applications.commands'],
-  });
+  };
+  await writeJson(DOCS_INVITE_OUTPUT, inviteDefaults);
+  await writeJson(WEB_INVITE_OUTPUT, inviteDefaults);
 
   const commandCount = exported.plugins.reduce((sum, p) => sum + p.commands.length, 0);
   // eslint-disable-next-line no-console -- CLI summary output

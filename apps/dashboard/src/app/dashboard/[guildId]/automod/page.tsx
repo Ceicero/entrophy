@@ -1,5 +1,27 @@
-import { ComingSoonPage } from '../../../../components/coming-soon-page';
+'use client';
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@entrophy/ui';
+import { ReviewQueueTab } from '../../../../components/automod/review-queue-tab';
+import { RuleListTab } from '../../../../components/automod/rule-list';
+import { SettingsTab } from '../../../../components/automod/settings-tab';
 
 export default function AutomodPage() {
-  return <ComingSoonPage title="Automod" description="Rule builder, dry-run mode, and the false-positive review queue." />;
+  return (
+    <Tabs defaultValue="rules" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="rules">Rules</TabsTrigger>
+        <TabsTrigger value="review">Review queue</TabsTrigger>
+        <TabsTrigger value="settings">Settings</TabsTrigger>
+      </TabsList>
+      <TabsContent value="rules">
+        <RuleListTab />
+      </TabsContent>
+      <TabsContent value="review">
+        <ReviewQueueTab />
+      </TabsContent>
+      <TabsContent value="settings">
+        <SettingsTab />
+      </TabsContent>
+    </Tabs>
+  );
 }

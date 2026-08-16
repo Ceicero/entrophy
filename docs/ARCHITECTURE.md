@@ -201,20 +201,20 @@ PUBLIC_WEBHOOK_BASE_URL=      # public https base for inbound webhooks (EventSub
 
 | id | Folder | Command groups / top-level commands | Default |
 |---|---|---|---|
-| `admin` | `src/admin` | `/setup wizard`, `/config view\|set\|reset`, `/plugin enable\|disable\|status\|list`, `/permissions audit`, `/health` | always enabled (cannot be disabled) |
-| `moderation` | `src/moderation` | `/mod warn\|warnings\|clearwarns\|timeout\|untimeout\|kick\|ban\|unban\|softban\|purge\|lock\|unlock\|slowmode\|nick\|note\|case\|cases\|appeal-setup`, `/mod role add\|remove` (subcommand group), context menus: "Warn user", "View cases" | enabled |
-| `automod` | `src/automod` | `/automod rule create\|list\|edit\|delete\|test`, `/automod dryrun`, `/automod review`, `/automod exempt` | enabled, **dry-run on** by default |
+| `admin` | `src/admin` | `/setup wizard\|status`, `/config view\|set\|reset`, `/plugin enable\|disable\|status\|list`, `/permissions audit`, `/health` | always enabled (cannot be disabled) |
+| `moderation` | `src/moderation` | `/mod warn\|warnings\|clearwarns\|timeout\|untimeout\|kick\|ban\|unban\|softban\|purge\|lock\|unlock\|slowmode\|nick\|note\|case\|cases\|appeal-setup`, `/mod role add\|remove` (subcommand group), `/appeal` (member-facing appeal flow), context menus: "Warn user", "View cases" | enabled |
+| `automod` | `src/automod` | `/automod rule create\|list\|view\|edit\|delete\|toggle\|test`, `/automod exempt add\|remove\|list`, `/automod dryrun`, `/automod review`, `/automod status` | enabled, **dry-run on** by default |
 | `enforcer` | `src/enforcer` | `/enforcer setup\|status\|policy create\|list\|view\|edit\|delete\|toggle\|test\|import\|flag\|search\|record\|history\|export\|appeal\|mute\|unmute`, context menu "Flag for review" | disabled |
-| `logging` | `src/logging` | `/logs set\|disable\|status\|retention` | enabled (no channels configured → does nothing) |
-| `tickets` | `src/tickets` | `/ticket open\|close\|add\|remove\|transcript\|assign\|tag\|reopen`, `/ticket panel create`, `/ticket config` | disabled |
-| `roles` | `src/roles` | `/roles panel create\|edit\|delete\|post`, `/roles group ...`, `/welcome set\|test\|disable`, `/goodbye ...`, `/verify` (member-facing), `/verification setup\|queue\|approve\|deny`, `/onboarding checklist\|rules`, `/roles persist` | disabled |
-| `engagement` | `src/engagement` | `/level rank\|leaderboard\|config\|rewards\|xp` , `/rep give\|check\|leaderboard`, `/starboard set\|config`, `/tempvoice setup\|config` | enabled (leveling on, rep on, starboard needs channel) |
-| `community` | `src/community` | `/poll create\|end\|results`, `/giveaway start\|end\|reroll\|list`, `/suggest`, `/suggestions setup\|status`, `/announce schedule\|list\|cancel`, `/remind set\|list\|cancel`, `/event create\|rsvp\|list\|cancel` | enabled |
-| `economy` | `src/economy` | `/economy balance\|daily\|give\|leaderboard\|config` — virtual currency only, **no real money** | disabled |
-| `utility` | `src/utility` | `/help`, `/utility userinfo\|serverinfo\|avatar\|banner\|roleinfo\|channelinfo\|timestamp\|timezone\|calculator\|afk\|translate\|weather\|status`, `/embed builder`, context menu "User info" | enabled |
-| `media` | `src/media` | `/music play\|queue\|skip\|pause\|resume\|volume\|loop\|stop\|playlist ...` — adapter interface only; unavailable unless `MEDIA_PROVIDER` configured with a compliant provider | disabled |
-| `integrations` | `src/integrations` | `/integration connect\|disconnect\|status\|list`, `/integration webhook create\|list\|delete`, `/integration alerts ...` | disabled |
-| `ai` | `src/ai` | `/ask`, `/summarize`, `/draft`, `/mod-assist`, `/ai config` | disabled |
+| `logging` | `src/logging` | `/logs set\|disable\|status\|retention\|test\|search`, `/logs redact add\|remove\|list` | enabled (no channels configured → does nothing) |
+| `tickets` | `src/tickets` | `/ticket open\|close\|add\|remove\|transcript\|assign\|reopen\|config`, `/ticket tag add\|remove`, `/ticket panel create` | disabled |
+| `roles` | `src/roles` | `/roles panel create\|edit\|delete\|list\|post\|option-add\|option-remove`, `/roles group create\|edit\|delete\|list`, `/roles persist on\|off\|status`, `/welcome set\|embed\|test\|disable`, `/goodbye set\|embed\|test\|disable`, `/verify` (member-facing), `/verification setup\|queue\|approve\|deny`, `/onboarding checklist\|config\|rules-post\|step-add\|step-remove` | disabled |
+| `engagement` | `src/engagement` | `/level rank\|leaderboard\|config\|reset\|xp give\|remove\|set\|rewards add\|remove\|list\|sync\|ignore add\|remove`, `/rep give\|check\|leaderboard\|revoke`, `/starboard set channel\|threshold\|emoji\|selfstar\|status`, `/tempvoice setup\|lock\|unlock\|limit\|rename\|claim\|kick\|permit` | enabled (leveling on, rep on, starboard needs channel) |
+| `community` | `src/community` | `/poll create\|end\|results`, `/giveaway start\|end\|reroll\|list\|cancel`, `/suggest`, `/suggestions setup\|status\|list`, `/announce schedule\|list\|cancel\|preview`, `/remind set\|list\|cancel`, `/event create\|list\|cancel\|rsvps` | enabled |
+| `economy` | `src/economy` | `/economy balance\|daily\|give\|leaderboard\|config`, `/economy admin add\|remove` — virtual currency only, **no real money** | disabled |
+| `utility` | `src/utility` | `/help`, `/utility userinfo\|serverinfo\|avatar\|banner\|roleinfo\|channelinfo\|timestamp\|timezone set\|get\|list\|calculator\|afk\|translate\|weather\|status`, `/embed builder`, context menu "User info" | enabled |
+| `media` | `src/media` | `/music play\|queue\|skip\|pause\|resume\|volume\|loop\|stop\|shuffle\|nowplaying\|playlist save\|load\|list\|delete` — adapter interface only; unavailable unless `MEDIA_PROVIDER` configured with a compliant provider | disabled |
+| `integrations` | `src/integrations` | `/integration connect\|disconnect\|status\|list`, `/integration alerts add\|remove\|list`, `/integration webhook create\|list\|delete`, `/integration outbound create\|list\|delete\|test` | disabled |
+| `ai` | `src/ai` | `/ask`, `/summarize`, `/draft`, `/mod-assist`, `/ai config view\|set-key\|clear-key\|provider\|model\|channels\|budget` | disabled |
 
 `PluginId` union in `@entrophy/types` = exactly these ids. `packages/plugins/src/index.ts` exports `allPlugins: Plugin[]` in this order and `packages/plugins/src/manifests.ts` exports `allManifests: PluginManifest[]` (import each plugin's `manifest.ts` only — **manifest files must not import discord.js runtime code beyond types/enums** so the API can load them cheaply).
 

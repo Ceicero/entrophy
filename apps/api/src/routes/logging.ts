@@ -1,13 +1,23 @@
 import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
 import { Prisma } from '@entrophy/database';
+// Pure logic import (no discord.js runtime touched) via the plugins package's `./*` subpath export — see
+// ARCHITECTURE.md §3/§10: the API already depends on `@entrophy/plugins` for manifests/sdk, so reusing its
+// redaction module here avoids maintaining a second copy of the default patterns in the API layer.
+import { testRedactionPatterns } from '@entrophy/plugins/logging/redaction';
 import type { LogEventDto, Paginated } from '@entrophy/types';
+// `@entrophy/types`'s barrel (`src/index.ts`) doesn't export these — this task's ownership rules put new DTOs in
+// `src/logging.ts` and require importing them via the subpath export instead of editing the barrel (the wiring
+// stage adds that later).
+import type { RedactionTestRequestDto, RedactionTestResponseDto } from '@entrophy/types/logging';
 import { toCsv } from '../lib/csv';
 import { toLogEventDto } from '../lib/dto';
 import { requireGuildAccess } from '../lib/guild-access';
 import { guildIdParamSchema, paginationQuerySchema } from '../lib/schemas';
 
 const LOGGING_PLUGIN_ID = 'logging' as const;
+
+const redactionTestBodySchema = z.object({ text: z.string().min(1).max(4000) });
 
 const logsQuerySchema = paginationQuerySchema.extend({
   kind: z.string().optional(),
@@ -96,6 +106,17 @@ export default async function loggingRoutes(app: ZodFastifyInstance): Promise<vo
       reply.header('Content-Type', 'text/csv; charset=utf-8');
       reply.header('Content-Disposition', `attachment; filename="logs-${guildId}.csv"`);
       return reply.send(csv);
+    },
+  );
+
+  app.post(
+    '/:guildId/logging/redaction/test',
+    { schema: { params: guildIdParamSchema, body: redactionTestBodySchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<RedactionTestResponseDto> => {
+      const guildId = request.guildId!;
+      const body: RedactionTestRequestDto = request.body;
+      const config = await app.configStore.getConfig<{ redactionPatterns: string[] }>(guildId, LOGGING_PLUGIN_ID);
+      return testRedactionPatterns(body.text, config.redactionPatterns);
     },
   );
 }

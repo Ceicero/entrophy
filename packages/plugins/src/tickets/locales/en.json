@@ -1,0 +1,33 @@
+{
+  "errors": {
+    "notATicketChannel": "This is not a ticket channel.",
+    "ticketNotFound": "Ticket not found.",
+    "panelNotFound": "This ticket panel no longer exists.",
+    "alreadyClosed": "This ticket is already closed.",
+    "closePermission": "Only the ticket opener or support staff can close this ticket.",
+    "transcriptPermission": "Only the ticket opener or support staff can view this transcript.",
+    "reopenPermission": "Only the ticket opener or support staff can reopen this ticket.",
+    "maxOpenOne": "You already have an open ticket. Close it before opening another one.",
+    "maxOpenMany": "You already have {count} open tickets (limit {limit}). Close one before opening another.",
+    "formExpired": "This form expired. Click the ticket button again.",
+    "panelFormExpired": "This form expired. Run `/ticket panel create` again.",
+    "noUserIdFound": "Could not find a user id in that input. Paste a user ID or @mention."
+  },
+  "open": {
+    "success": "Opened ticket #{number} in {location}."
+  },
+  "close": {
+    "confirmTitle": "Close this ticket?",
+    "confirming": "Closing this ticket…"
+  },
+  "reopen": {
+    "success": "Reopened ticket #{number} in {location}."
+  },
+  "assign": {
+    "assigned": "Assigned to {user}.",
+    "unassigned": "Unassigned this ticket."
+  },
+  "config": {
+    "title": "Ticket settings"
+  }
+}

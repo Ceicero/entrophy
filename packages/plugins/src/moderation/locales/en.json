@@ -1,0 +1,41 @@
+{
+  "errors": {
+    "reasonRequired": "A reason is required for {action} in this server.",
+    "notAMember": "That user isn't a member of this server.",
+    "tempBanDisabled": "Temporary bans are turned off in this server's settings — use a permanent ban or enable temp bans.",
+    "invalidUserId": "That doesn't look like a valid Discord user id.",
+    "messageContentDisabled": "Filtering by message text isn't available — this server hasn't enabled message content access. Purge without the \"contains\" filter, or filter by user instead.",
+    "noChannel": "I couldn't determine which channel to use.",
+    "invalidSlowmode": "Slowmode must be \"off\" or a number of seconds between 0 and 21600 (6 hours).",
+    "roleTooHigh": "I can't manage that role — it's above (or equal to) my highest role.",
+    "caseNotFound": "Case #{number} was not found."
+  },
+  "confirm": {
+    "title": "Confirm this action",
+    "kick": "Kick {user}?",
+    "ban": "Ban {user}? This removes them from the server.",
+    "softban": "Softban {user}? They'll be banned and immediately unbanned to clear recent messages.",
+    "purge": "Delete {count} message(s)? This can't be undone.",
+    "roleAdd": "Add {role} to {user}? This role grants elevated permissions.",
+    "roleRemove": "Remove {role} from {user}? This role grants elevated permissions."
+  },
+  "clearwarns": {
+    "success": "Cleared {count} warning(s)."
+  },
+  "purge": {
+    "success": "Deleted {count} message(s)."
+  },
+  "slowmode": {
+    "success": "Slowmode set to {seconds}s."
+  },
+  "note": {
+    "success": "Note saved."
+  },
+  "appealSetup": {
+    "success": "Appeals will now be posted to {channel}."
+  },
+  "appeal": {
+    "notYours": "You can only appeal your own cases.",
+    "submitted": "Your appeal has been submitted. Staff will review it soon."
+  }
+}

@@ -1,6 +1,7 @@
 import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
 import { AuditAction, NotFoundError, buildPaginated, paginate } from '@entrophy/core';
+import { testRuleWithText } from '@entrophy/plugins/automod/test-rule';
 import type { AutomodEventDto, AutomodRuleDto, Paginated } from '@entrophy/types';
 import { automodActionsSchema, automodRuleConfigSchema } from '../lib/automod-schemas';
 import { writeDashboardAudit } from '../lib/audit';
@@ -9,6 +10,12 @@ import { requireGuildAccess } from '../lib/guild-access';
 import { guildIdParamSchema, paginationQuerySchema } from '../lib/schemas';
 
 const ruleParamSchema = guildIdParamSchema.extend({ ruleId: z.string().min(1) });
+const ruleTestBodySchema = z.object({ text: z.string().min(1).max(2000) });
+const ruleTestResponseSchema = z.object({
+  matched: z.boolean(),
+  reason: z.string().optional(),
+  evidence: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+});
 
 const ruleBodySchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -228,6 +235,26 @@ export default async function automodRoutes(app: ZodFastifyInstance): Promise<vo
       });
 
       return toAutomodEventDto(updated);
+    },
+  );
+
+  app.post(
+    '/:guildId/automod/rules/:ruleId/test',
+    { schema: { params: ruleParamSchema, body: ruleTestBodySchema, response: { 200: ruleTestResponseSchema } }, preHandler: requireGuildAccess() },
+    async (request) => {
+      const guildId = request.guildId!;
+      const { ruleId } = request.params as { ruleId: string };
+      const existing = await app.prisma.automodRule.findFirst({ where: { id: ruleId, guildId, deletedAt: null } });
+      if (!existing) throw new NotFoundError('Automod rule not found.');
+
+      const config = automodRuleConfigSchema.parse(existing.config);
+      const result = await testRuleWithText(config, request.body.text, { guildId });
+
+      return {
+        matched: result.matched,
+        reason: result.reason,
+        evidence: result.evidence as Record<string, string | number | boolean | null> | undefined,
+      };
     },
   );
 }

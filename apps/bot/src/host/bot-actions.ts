@@ -14,7 +14,6 @@ export type BotActionType =
   | 'roles.verificationDecision'
   | 'tickets.postPanel'
   | 'tickets.close'
-  | 'moderation.exportCases'
   | 'integrations.testWebhook'
   | 'ai.test'
   | 'enforcer.decide'
@@ -35,7 +34,6 @@ const DISPATCH_TABLE: Partial<Record<BotActionType, { service: keyof ServiceMap;
   'roles.verificationDecision': { service: 'roles', method: 'verificationDecision' },
   'tickets.postPanel': { service: 'tickets', method: 'postPanel' },
   'tickets.close': { service: 'tickets', method: 'closeTicketFromDashboard' },
-  'moderation.exportCases': { service: 'moderation', method: 'exportCases' },
   'integrations.testWebhook': { service: 'integrations', method: 'testWebhook' },
   'ai.test': { service: 'ai', method: 'test' },
   'enforcer.decide': { service: 'enforcer', method: 'decide' },
@@ -71,11 +69,13 @@ async function handleGuildRefresh(deps: BotActionsWorkerDeps, guildId: string): 
 
 /**
  * Dispatches one `bot-actions` job to the owning plugin's cross-plugin service (ARCHITECTURE.md §9). Every
- * non-`guild.refresh` type is looked up dynamically against `ServiceMap`, because none of the plugins that will
- * eventually implement these methods (`roles`, `tickets`, `moderation`, `integrations`, `ai`, `enforcer`) are built yet — they
- * are still SDK stubs with no `onLoad`/no registered service. Once a plugin registers its service with the
- * relevant method (module-augmenting `ServiceMap` per ARCHITECTURE.md §7.5), this dispatch starts working for it
- * with no change needed here; until then it fails the job with a clear, non-crashing message.
+ * non-`guild.refresh` type is looked up dynamically against `ServiceMap` and invoked with a single merged
+ * `{ guildId, payload, requestedBy }` object; the target plugin's service implementation is responsible for
+ * accepting that shape (all current targets — `roles`, `tickets`, `integrations`, `ai`, `enforcer` — do, via a
+ * small dual-calling-convention wrapper documented in each plugin's `service.ts`, since those same methods are
+ * also called positionally in-process by other plugins per the `ServiceMap` interface in `sdk/services.ts`).
+ * If a service or method is unavailable (owning plugin disabled/not loaded), the job fails with a clear,
+ * non-crashing message rather than throwing an unhandled error.
  */
 async function dispatchBotAction(deps: BotActionsWorkerDeps, job: Job<BotActionJobData>): Promise<void> {
   const { type, guildId, payload, requestedBy } = job.data;

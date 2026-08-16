@@ -951,6 +951,55 @@
         }
       }
     },
+    "/guilds/{guildId}/moderation/settings": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/guilds/{guildId}/automod/rules": {
       "get": {
         "parameters": [
@@ -2153,6 +2202,97 @@
         }
       }
     },
+    "/guilds/{guildId}/automod/rules/{ruleId}/test": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "ruleId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "matched": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "evidence": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "boolean"
+                          },
+                          {
+                            "enum": [
+                              "null"
+                            ],
+                            "nullable": true
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "matched"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/guilds/{guildId}/logging/settings": {
       "get": {
         "parameters": [
@@ -2382,6 +2522,47 @@
         }
       }
     },
+    "/guilds/{guildId}/logging/redaction/test": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/guilds/{guildId}/tickets/settings": {
       "get": {
         "parameters": [
@@ -2487,6 +2668,7 @@
                     "items": {
                       "type": "string"
                     },
+                    "maxItems": 3,
                     "default": []
                   },
                   "mode": {
@@ -2498,8 +2680,34 @@
                     "default": "CHANNEL"
                   },
                   "intakeForm": {
-                    "type": "object",
-                    "additionalProperties": {},
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "style": {
+                          "type": "string",
+                          "enum": [
+                            "short",
+                            "paragraph"
+                          ],
+                          "default": "short"
+                        },
+                        "required": {
+                          "type": "boolean",
+                          "default": true
+                        }
+                      },
+                      "required": [
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 5,
                     "nullable": true
                   },
                   "slaMinutes": {
@@ -2575,6 +2783,7 @@
                     "items": {
                       "type": "string"
                     },
+                    "maxItems": 3,
                     "default": []
                   },
                   "mode": {
@@ -2586,8 +2795,34 @@
                     "default": "CHANNEL"
                   },
                   "intakeForm": {
-                    "type": "object",
-                    "additionalProperties": {},
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "style": {
+                          "type": "string",
+                          "enum": [
+                            "short",
+                            "paragraph"
+                          ],
+                          "default": "short"
+                        },
+                        "required": {
+                          "type": "boolean",
+                          "default": true
+                        }
+                      },
+                      "required": [
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 5,
                     "nullable": true
                   },
                   "slaMinutes": {
@@ -2656,6 +2891,35 @@
         }
       }
     },
+    "/guilds/{guildId}/tickets/panels/{panelId}/post": {
+      "post": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "panelId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/guilds/{guildId}/tickets/queue": {
       "get": {
         "parameters": [
@@ -2688,6 +2952,22 @@
             },
             "in": "query",
             "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "assigneeId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "tag",
             "required": false
           },
           {
@@ -3171,6 +3451,181 @@
         }
       }
     },
+    "/guilds/{guildId}/roles/groups": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "roleIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 25,
+                    "default": []
+                  },
+                  "exclusive": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "maxSelections": {
+                    "type": "integer",
+                    "exclusiveMinimum": true,
+                    "minimum": 0,
+                    "maximum": 25,
+                    "nullable": true,
+                    "default": null
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/roles/groups/{groupId}": {
+      "put": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "roleIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 25,
+                    "default": []
+                  },
+                  "exclusive": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "maxSelections": {
+                    "type": "integer",
+                    "exclusiveMinimum": true,
+                    "minimum": 0,
+                    "maximum": 25,
+                    "nullable": true,
+                    "default": null
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "groupId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "groupId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/guilds/{guildId}/roles/welcome": {
       "get": {
         "parameters": [
@@ -3197,12 +3652,310 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "additionalProperties": {}
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "channelId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "nullable": true
+                  },
+                  "embed": {
+                    "type": "object",
+                    "additionalProperties": {},
+                    "nullable": true
+                  },
+                  "dm": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
               }
             }
           }
         },
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/roles/welcome/test": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "channelId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/roles/goodbye": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "channelId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "nullable": true
+                  },
+                  "embed": {
+                    "type": "object",
+                    "additionalProperties": {},
+                    "nullable": true
+                  },
+                  "dm": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/roles/goodbye/test": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "channelId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/roles/verification/settings": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "button",
+                      "modal",
+                      "captcha"
+                    ]
+                  },
+                  "questions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    },
+                    "maxItems": 5
+                  },
+                  "verifiedRoleId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "staffChannelId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "minAccountAgeDays": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3650
+                  },
+                  "underageAction": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "quarantine",
+                      "kick"
+                    ]
+                  },
+                  "quarantineRoleId": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/roles/verification/queue": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
           {
             "schema": {
               "type": "string",
@@ -3248,6 +4001,58 @@
             },
             "in": "path",
             "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/roles/verification/{requestId}/decide": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "approve": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "approve"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "requestId",
             "required": true
           }
         ],
@@ -3340,6 +4145,155 @@
             },
             "in": "path",
             "name": "requestId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/roles/onboarding": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rulesText": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "nullable": true
+                  },
+                  "rulesRoleId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "steps": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 20
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/roles/persistence": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "maxDays": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 365
+                  },
+                  "acknowledge": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "enabled"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
             "required": true
           }
         ],
@@ -3471,7 +4425,7 @@
                   },
                   "roleId": {
                     "type": "string",
-                    "minLength": 1
+                    "pattern": "^\\d{17,20}$"
                   }
                 },
                 "required": [
@@ -3520,6 +4474,103 @@
             },
             "in": "path",
             "name": "rewardId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/engagement/xp-adjust": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "pattern": "^\\d{17,20}$"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "give",
+                      "remove",
+                      "set"
+                    ]
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000000
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "userId",
+                  "mode",
+                  "amount"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/engagement/rep/leaderboard": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
             "required": true
           }
         ],
@@ -3596,6 +4647,35 @@
             },
             "in": "path",
             "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/community/polls/{pollId}/results": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "pollId",
             "required": true
           }
         ],
@@ -3708,6 +4788,202 @@
             },
             "in": "path",
             "name": "suggestionId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/community/announcements": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/community/announcements/{announcementId}/cancel": {
+      "post": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "announcementId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/community/events": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/economy/config": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "currencyName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "currencySymbol": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8
+                  },
+                  "dailyMinAmount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "dailyMaxAmount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "streakBonusPerDay": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  },
+                  "streakBonusMax": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "giveMinAmount": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000000
+                  },
+                  "giveMaxAmount": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000000
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
             "required": true
           }
         ],
@@ -3938,6 +5214,339 @@
         }
       }
     },
+    "/guilds/{guildId}/integrations/providers": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/integrations/alerts": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "twitch",
+                "youtube",
+                "reddit",
+                "steam"
+              ]
+            },
+            "in": "query",
+            "name": "provider",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "twitch",
+                      "youtube",
+                      "reddit",
+                      "steam"
+                    ]
+                  },
+                  "target": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "channelId": {
+                    "type": "string",
+                    "pattern": "^\\d{17,20}$"
+                  },
+                  "roleId": {
+                    "type": "string",
+                    "pattern": "^\\d{17,20}$",
+                    "nullable": true
+                  },
+                  "template": {
+                    "type": "string",
+                    "maxLength": 300,
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "provider",
+                  "target",
+                  "channelId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/integrations/alerts/{connectionId}": {
+      "delete": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "connectionId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/integrations/outbound": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "events": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "moderation.caseCreated",
+                        "ticket.opened",
+                        "ticket.closed",
+                        "member.verified",
+                        "level.up",
+                        "automod.triggered",
+                        "enforcer.decided"
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "name",
+                  "url",
+                  "events"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/integrations/outbound/{endpointId}": {
+      "delete": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "endpointId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/integrations/outbound/{endpointId}/test": {
+      "post": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "endpointId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/integrations/outbound/{endpointId}/deliveries": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "endpointId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/guilds/{guildId}/ai/settings": {
       "get": {
         "parameters": [
@@ -3967,7 +5576,21 @@
                 "properties": {
                   "provider": {
                     "type": "string",
-                    "maxLength": 50
+                    "enum": [
+                      "openai",
+                      "anthropic",
+                      "compatible"
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "baseUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "nullable": true
                   },
                   "apiKey": {
                     "type": "string",
@@ -3976,9 +5599,35 @@
                   },
                   "clearKey": {
                     "type": "boolean"
+                  },
+                  "allowEnvKeys": {
+                    "type": "boolean"
+                  },
+                  "allowedChannelIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{17,20}$"
+                    },
+                    "maxItems": 50
+                  },
+                  "userCooldownSeconds": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3600
+                  },
+                  "dailyTokenBudget": {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "maximum": 10000000
+                  },
+                  "perUserDailyTokenBudget": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 1000000
                   }
                 },
-                "additionalProperties": {}
+                "additionalProperties": false
               }
             }
           }
@@ -4003,6 +5652,36 @@
     },
     "/guilds/{guildId}/ai/usage": {
       "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90
+            },
+            "in": "query",
+            "name": "days",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/ai/test": {
+      "post": {
         "parameters": [
           {
             "schema": {
@@ -4299,6 +5978,908 @@
             "description": "Default Response"
           }
         }
+      },
+      "put": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ledgerChannelId": {
+                    "type": "string",
+                    "pattern": "^\\d{17,20}$",
+                    "nullable": true
+                  },
+                  "ledgerVisibility": {
+                    "type": "string",
+                    "enum": [
+                      "staff",
+                      "everyone"
+                    ]
+                  },
+                  "flagChannelId": {
+                    "type": "string",
+                    "pattern": "^\\d{17,20}$",
+                    "nullable": true
+                  },
+                  "muteRoleId": {
+                    "type": "string",
+                    "pattern": "^\\d{17,20}$",
+                    "nullable": true
+                  },
+                  "captureContext": {
+                    "type": "boolean"
+                  },
+                  "contextBefore": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 15
+                  },
+                  "contextAfter": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10
+                  },
+                  "excerptMaxChars": {
+                    "type": "integer",
+                    "minimum": 50,
+                    "maximum": 1000
+                  },
+                  "autoFlagEnabled": {
+                    "type": "boolean"
+                  },
+                  "exemptStaff": {
+                    "type": "boolean"
+                  },
+                  "aiAssist": {
+                    "type": "boolean"
+                  },
+                  "dmOnAction": {
+                    "type": "boolean"
+                  },
+                  "defaultTimeoutMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 40320
+                  },
+                  "defaultMuteMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 40320,
+                    "nullable": true
+                  },
+                  "requireReasonOn": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "warn",
+                        "timeout",
+                        "mute",
+                        "kick",
+                        "ban"
+                      ]
+                    }
+                  },
+                  "allowedDecisions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "warn",
+                        "timeout",
+                        "mute",
+                        "kick",
+                        "ban",
+                        "dismiss"
+                      ]
+                    }
+                  },
+                  "banDeleteMessageSeconds": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 604800
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/enforcer/policies": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": [
+                      "LOW",
+                      "MEDIUM",
+                      "HIGH",
+                      "CRITICAL"
+                    ],
+                    "default": "MEDIUM"
+                  },
+                  "matchers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "keyword",
+                            "phrase",
+                            "regex",
+                            "link_domain",
+                            "invite",
+                            "mention_count",
+                            "attachment_ext",
+                            "ai_category"
+                          ]
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 256
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "maxLength": 256
+                              },
+                              "maxItems": 50
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        },
+                        "caseSensitive": {
+                          "type": "boolean"
+                        },
+                        "wholeWord": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "value"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "maxItems": 25
+                  },
+                  "channelIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{17,20}$"
+                    },
+                    "maxItems": 50,
+                    "default": []
+                  },
+                  "exemptRoleIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{17,20}$"
+                    },
+                    "maxItems": 50,
+                    "default": []
+                  },
+                  "exemptChannelIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{17,20}$"
+                    },
+                    "maxItems": 50,
+                    "default": []
+                  },
+                  "suggestedAction": {
+                    "type": "string",
+                    "enum": [
+                      "WARN",
+                      "TIMEOUT",
+                      "MUTE",
+                      "UNMUTE",
+                      "KICK",
+                      "BAN",
+                      "DISMISS"
+                    ],
+                    "nullable": true,
+                    "default": null
+                  }
+                },
+                "required": [
+                  "name",
+                  "description",
+                  "matchers"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/enforcer/policies/{policyId}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "policyId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": [
+                      "LOW",
+                      "MEDIUM",
+                      "HIGH",
+                      "CRITICAL"
+                    ],
+                    "default": "MEDIUM"
+                  },
+                  "matchers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "keyword",
+                            "phrase",
+                            "regex",
+                            "link_domain",
+                            "invite",
+                            "mention_count",
+                            "attachment_ext",
+                            "ai_category"
+                          ]
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 256
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "maxLength": 256
+                              },
+                              "maxItems": 50
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        },
+                        "caseSensitive": {
+                          "type": "boolean"
+                        },
+                        "wholeWord": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "value"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "maxItems": 25
+                  },
+                  "channelIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{17,20}$"
+                    },
+                    "maxItems": 50,
+                    "default": []
+                  },
+                  "exemptRoleIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{17,20}$"
+                    },
+                    "maxItems": 50,
+                    "default": []
+                  },
+                  "exemptChannelIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{17,20}$"
+                    },
+                    "maxItems": 50,
+                    "default": []
+                  },
+                  "suggestedAction": {
+                    "type": "string",
+                    "enum": [
+                      "WARN",
+                      "TIMEOUT",
+                      "MUTE",
+                      "UNMUTE",
+                      "KICK",
+                      "BAN",
+                      "DISMISS"
+                    ],
+                    "nullable": true,
+                    "default": null
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "policyId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "policyId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/enforcer/policies/{policyId}/test": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "policyId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/enforcer/records": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "query",
+            "name": "userId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "FLAG",
+                "DECISION",
+                "APPEAL_OPENED",
+                "APPEAL_DECIDED",
+                "NOTE"
+              ]
+            },
+            "in": "query",
+            "name": "kind",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WARN",
+                "TIMEOUT",
+                "MUTE",
+                "UNMUTE",
+                "KICK",
+                "BAN",
+                "DISMISS"
+              ]
+            },
+            "in": "query",
+            "name": "decision",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "ACTIONED",
+                "DISMISSED",
+                "EXPIRED"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "policyId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "since",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/enforcer/records/export.csv": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "query",
+            "name": "userId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "FLAG",
+                "DECISION",
+                "APPEAL_OPENED",
+                "APPEAL_DECIDED",
+                "NOTE"
+              ]
+            },
+            "in": "query",
+            "name": "kind",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WARN",
+                "TIMEOUT",
+                "MUTE",
+                "UNMUTE",
+                "KICK",
+                "BAN",
+                "DISMISS"
+              ]
+            },
+            "in": "query",
+            "name": "decision",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "ACTIONED",
+                "DISMISSED",
+                "EXPIRED"
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "policyId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "since",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/enforcer/queue": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/enforcer/records/{recordNumber}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "recordNumber",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/enforcer/records/{recordNumber}/decide": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "WARN",
+                      "TIMEOUT",
+                      "MUTE",
+                      "UNMUTE",
+                      "KICK",
+                      "BAN",
+                      "DISMISS"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "durationMs": {
+                    "type": "integer",
+                    "exclusiveMinimum": true,
+                    "minimum": 0
+                  },
+                  "banDeleteMessageSeconds": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 604800
+                  }
+                },
+                "required": [
+                  "decision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "in": "path",
+            "name": "recordNumber",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
       }
     },
     "/integrations/{provider}/callback": {
@@ -4354,6 +6935,43 @@
         }
       }
     },
+    "/donations/checkout": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amountCents": {
+                    "type": "integer",
+                    "exclusiveMinimum": true,
+                    "minimum": 0
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "usd"
+                    ]
+                  }
+                },
+                "required": [
+                  "amountCents",
+                  "currency"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/webhooks/github/{endpointId}": {
       "post": {
         "parameters": [
@@ -4402,6 +7020,64 @@
             },
             "in": "path",
             "name": "endpointId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/verify/{token}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "token",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "response": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "response"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "token",
             "required": true
           }
         ],

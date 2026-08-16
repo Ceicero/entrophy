@@ -1,0 +1,39 @@
+{
+  "errors": {
+    "ruleNotFound": "No automod rule found for \"{rule}\".",
+    "eventNotFound": "That automod event no longer exists.",
+    "createExpired": "This rule-creation form expired (5 minutes). Run `/automod rule create` again.",
+    "invalidName": "Rule name must be between 1 and 100 characters.",
+    "timeoutMinutesRequired": "Provide `timeout_minutes` when the action is \"timeout\".",
+    "invalidStoredConfig": "This rule's stored configuration is invalid — edit it with `/automod rule edit` to fix it."
+  },
+  "rule": {
+    "created": "Created rule **{name}**. It's enabled with dry-run on — matches are logged but no action is taken until you turn dry-run off with `/automod dryrun off` or edit the rule.",
+    "updated": "Updated **{name}**.",
+    "enabled": "Enabled **{name}**.",
+    "disabled": "Disabled **{name}**.",
+    "deleted": "Deleted **{name}**.",
+    "listTitle": "Automod rules",
+    "listEmpty": "No automod rules yet. Create one with `/automod rule create`.",
+    "deleteConfirmTitle": "Delete this rule?",
+    "deleteConfirmBody": "This permanently deletes **{name}**. Its past events stay in the log, but the rule stops evaluating immediately."
+  },
+  "exempt": {
+    "added": "Added a {kind} exemption: `{value}`.",
+    "removed": "Removed the {kind} exemption: `{value}`.",
+    "alreadyPresent": "That exemption is already set for this rule.",
+    "notPresent": "That exemption isn't set for this rule.",
+    "listTitle": "Exemptions — {name}"
+  },
+  "review": {
+    "title": "Automod review queue",
+    "empty": "Nothing pending review right now."
+  },
+  "status": {
+    "title": "Automod status"
+  },
+  "dryrun": {
+    "enabled": "Guild-wide dry-run is now **on**. Rules log matches but take no real action.",
+    "disabled": "Guild-wide dry-run is now **off**. Rules take real action when they match (per-rule dry-run still overrides if set)."
+  }
+}

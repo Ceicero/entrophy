@@ -1,10 +1,16 @@
-// STUB: replaced by the economy build stage
-import { definePlugin } from '../sdk';
+import { definePlugin, registerPluginLocales } from '../sdk';
 import { manifest } from './manifest';
+import { command as economyCommand } from './commands/economy';
+import en from './locales/en.json';
+
+registerPluginLocales('economy', { en });
 
 export const plugin = definePlugin({
   manifest,
-  commands: [],
+  commands: [economyCommand],
+  async health() {
+    return { status: 'ok' };
+  },
 });
 
 export default plugin;

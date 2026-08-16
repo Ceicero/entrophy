@@ -151,11 +151,35 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
     const valid = verifyTwitchEventSubSignature({ messageId, timestamp, body: raw, secret: env.TWITCH_EVENTSUB_SECRET, signatureHeader });
     if (!valid) throw invalidSignature();
 
-    const payload = safeJsonParse(raw) as { challenge?: string; subscription?: { type?: string } };
+    const payload = safeJsonParse(raw) as {
+      challenge?: string;
+      subscription?: { id?: string; type?: string; status?: string; condition?: { broadcaster_user_id?: string } };
+    };
 
     if (messageType === 'webhook_callback_verification') {
       reply.header('Content-Type', 'text/plain');
       return reply.status(200).send(payload.challenge ?? '');
+    }
+
+    if (messageType === 'revocation') {
+      // Twitch revoked the subscription (broadcaster deauthorized, or Twitch gave up after too many delivery
+      // failures) — mark every TWITCH connection that was using it as errored and drop the stale subscription id,
+      // so the next `poll-twitch` job run (packages/plugins/src/integrations/jobs/poll.ts) recreates it.
+      const subscriptionId = payload.subscription?.id;
+      const reason = payload.subscription?.status ?? 'revoked';
+      if (subscriptionId) {
+        const candidates = await app.prisma.integrationConnection.findMany({ where: { provider: 'TWITCH', deletedAt: null } });
+        const matches = candidates.filter((c) => (c.config as Record<string, unknown> | null)?.eventSubId === subscriptionId);
+        for (const connection of matches) {
+          const { eventSubId: _drop, ...rest } = (connection.config as Record<string, unknown>) ?? {};
+          await app.prisma.integrationConnection.update({
+            where: { id: connection.id },
+            data: { status: 'ERROR', lastError: `Twitch EventSub subscription revoked (${reason}).`, config: rest as Prisma.InputJsonValue },
+          });
+        }
+      }
+      reply.status(202);
+      return { ok: true };
     }
 
     const isNew = await claimEventOnce(app, 'twitch', messageId);

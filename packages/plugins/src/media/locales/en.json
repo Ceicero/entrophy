@@ -1,0 +1,31 @@
+{
+  "errors": {
+    "unavailable": "Music isn't available on this server — no compliant media provider is configured (MEDIA_PROVIDER). This bot never scrapes or rips audio from unauthorized sources, so this stays off until an admin configures a real, licensed provider. See /plugin status or this plugin's README for details.",
+    "notDj": "You need the DJ role (or to be staff, or alone in your voice channel) to do that.",
+    "noResults": "No results found for that search.",
+    "emptyQueue": "The queue is empty — nothing to save.",
+    "playlistNotFound": "No playlist named \"{name}\" was found."
+  },
+  "play": {
+    "queued": "Queued: {track}"
+  },
+  "queue": {
+    "title": "Queue"
+  },
+  "skip": { "done": "Skipped." },
+  "pause": { "done": "Paused." },
+  "resume": { "done": "Resumed." },
+  "volume": { "done": "Volume set to {level}." },
+  "loop": { "done": "Loop mode set to {mode}." },
+  "stop": { "done": "Stopped and cleared the queue." },
+  "shuffle": { "done": "Shuffled the upcoming {count}-track queue." },
+  "nowplaying": {
+    "nothing": "Nothing is currently playing."
+  },
+  "playlist": {
+    "listTitle": "Saved playlists",
+    "saved": "Saved the current queue as \"{name}\".",
+    "loaded": "Queued {count} track(s) from \"{name}\".",
+    "deleted": "Deleted the playlist \"{name}\"."
+  }
+}

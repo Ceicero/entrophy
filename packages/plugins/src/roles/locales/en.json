@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "panelNotFound": "Role panel not found.",
+    "groupNotFound": "Role group not found.",
+    "roleUnsafe": "That role can't be used here right now — it may be elevated, managed, or above my own top role."
+  },
+  "success": {
+    "panelPosted": "Panel posted.",
+    "roleAdded": "Added {role}.",
+    "roleRemoved": "Removed {role}."
+  }
+}

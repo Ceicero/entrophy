@@ -1,0 +1,50 @@
+{
+  "connect": {
+    "oauthLink": "Connect **{provider}** from the dashboard — OAuth has to start from your signed-in dashboard session: {url}",
+    "unknownProvider": "Unknown provider \"{provider}\".",
+    "needsTarget": "Give both `target` and `channel` to connect **{provider}** here, or run `/integration alerts add` afterwards to add watch targets.",
+    "created": "Connected **{provider}** — watching `{target}`, alerting in <#{channelId}>.",
+    "webhookGuidance": "**{provider}** connects via a webhook. Use `/integration webhook create` (GitHub / generic) — Stripe just needs `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` set and role rewards configured from the dashboard.",
+    "unavailable": "**{provider}** isn't fully configured on this server yet: missing {missingEnv}. The connection was still created and will start working once that's set."
+  },
+  "disconnect": {
+    "confirmTitle": "Disconnect this integration?",
+    "confirmBody": "This stops alerts/polling for **{provider}** (`{label}`) and removes any stored OAuth token. You can reconnect any time.",
+    "done": "Disconnected."
+  },
+  "status": {
+    "title": "Integration status — {provider}",
+    "notFound": "That connection wasn't found.",
+    "line": "**Status:** {status}\n**Target:** {target}\n**Last sync:** {lastSync}\n**Last error:** {lastError}"
+  },
+  "list": {
+    "title": "Connections",
+    "webhooksTitle": "Webhook endpoints",
+    "empty": "No integrations connected yet. Try `/integration connect` or `/integration alerts add`."
+  },
+  "alerts": {
+    "added": "Watching **{target}** on {provider} — alerts post to <#{channelId}>.",
+    "removed": "Removed that alert watch.",
+    "notFound": "That alert connection wasn't found.",
+    "empty": "No alert watches configured for {provider}."
+  },
+  "webhook": {
+    "created": "Webhook endpoint created. Save this now — the secret is shown only once.\n**URL:** {url}\n**Secret:** ||{secret}||",
+    "deleted": "Webhook endpoint deleted.",
+    "notFound": "That webhook endpoint wasn't found.",
+    "empty": "No inbound webhook endpoints yet."
+  },
+  "outbound": {
+    "created": "Outbound webhook created. Save this now — the secret is shown only once.\n**Signs deliveries with:** ||{secret}||\n**Events:** {events}",
+    "deleted": "Outbound webhook deleted.",
+    "notFound": "That outbound webhook wasn't found.",
+    "empty": "No outbound webhooks yet.",
+    "invalidEvents": "Unknown event(s): {events}. Valid events: {validEvents}.",
+    "testSent": "Test delivery sent successfully.",
+    "testFailed": "Test delivery failed: {error}",
+    "list": "**{name}** — {status}\nEvents: {events}\nFailures: {failureCount}"
+  },
+  "errors": {
+    "invalidUrl": "That URL was rejected: {reason}"
+  }
+}

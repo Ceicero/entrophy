@@ -1,0 +1,42 @@
+{
+  "ask": {
+    "replyTitle": "AI Assistant"
+  },
+  "summarize": {
+    "replyTitle": "Summary of #{channel}"
+  },
+  "draft": {
+    "replyTitle": "Draft"
+  },
+  "modAssist": {
+    "replyTitle": "Moderation suggestion",
+    "disclaimer": "**Suggestion only — you decide.** This is never automatically acted on."
+  },
+  "config": {
+    "viewTitle": "AI Assistant — configuration",
+    "keyCleared": "API key removed.",
+    "keySet": "API key saved (encrypted). Try `/ai config view` or the dashboard's \"Test connection\" button to verify it.",
+    "providerSet": "Provider set to **{provider}**.",
+    "modelSet": "Model set to **{model}**.",
+    "channelAdded": "Added **#{channel}** to the allowed channels for /ask and /summarize.",
+    "channelRemoved": "Removed **#{channel}** from the allowed channels.",
+    "budgetSet": "Daily token budget set to **{daily}** (server) / **{perUser}** (per user)."
+  },
+  "errors": {
+    "channelNotAllowed": "This channel isn't on the AI assistant's allowed-channel list. An admin can add it with `/ai config channels add`.",
+    "channelNotSummarizable": "That's not a channel I can summarize (pick a text channel, announcement channel, or thread).",
+    "messageContentIntentMissing": "Summarizing needs the Message Content privileged intent, which isn't enabled for this bot. Ask the bot owner to enable it.",
+    "summarizeNoAccess": "You need View Channel and Read Message History in that channel to summarize it.",
+    "nothingToSummarize": "There's nothing recent to summarize in that channel.",
+    "unavailable": "The AI assistant isn't available right now — it may be disabled, or has no API key configured. An admin can check `/ai config view`.",
+    "moderationUnavailable": "The moderation plugin needs to be enabled for /mod-assist to look up case history.",
+    "modAssistNeedsTarget": "Provide either a case number or a user.",
+    "caseNotFound": "No case #{number} was found in this server.",
+    "cooldown": "Slow down — try again in {seconds}s.",
+    "guildBudgetExhausted": "This server's daily AI token budget has been used up. It resets at midnight UTC.",
+    "userBudgetExhausted": "You've used up your daily AI token allowance. It resets at midnight UTC.",
+    "compatibleNeedsBaseUrl": "The OpenAI-compatible provider needs a base URL.",
+    "perUserBudgetExceedsDaily": "The per-user budget can't be larger than the server-wide daily budget.",
+    "emptyKey": "The API key can't be empty."
+  }
+}

@@ -106,6 +106,17 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.web
+      # NEXT_PUBLIC_* vars are inlined into the JS bundle by `next build` itself (both server and client code),
+      # so they have to be supplied as build args here, not just container-runtime `environment:` below — by
+      # the time the container starts, the values are already baked into the compiled output. `docker compose
+      # build` reads these from the shell/`.env` at the repo root (compose auto-loads `./.env` for variable
+      # substitution here, same file `env_file:` loads into the running container below).
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+        NEXT_PUBLIC_DASHBOARD_URL: ${NEXT_PUBLIC_DASHBOARD_URL:-http://localhost:3000}
+        NEXT_PUBLIC_DISCORD_CLIENT_ID: ${NEXT_PUBLIC_DISCORD_CLIENT_ID:-}
+        NEXT_PUBLIC_INVITE_PERMISSIONS: ${NEXT_PUBLIC_INVITE_PERMISSIONS:-}
+        NEXT_PUBLIC_SUPPORT_SERVER_URL: ${NEXT_PUBLIC_SUPPORT_SERVER_URL:-}
     env_file: .env
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:3001

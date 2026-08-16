@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint --config ../../eslint.config.js src",
     "test": "vitest run --passWithNoTests",
-    "export:commands": "tsx scripts/export-commands.ts"
+    "export:commands": "tsx scripts/export-commands.ts",
+    "registry:sanity": "tsx scripts/registry-sanity.ts"
   },
   "dependencies": {
     "discord.js": "^14.17.3",

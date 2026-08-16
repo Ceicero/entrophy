@@ -167,36 +167,1315 @@
       "category": "moderation",
       "defaultEnabled": true,
       "privilegedIntents": [],
-      "commands": []
+      "commands": [
+        {
+          "name": "mod",
+          "fullName": "/mod",
+          "type": "slash",
+          "description": "Moderation actions: warnings, timeouts, kicks, bans, cases, and more.",
+          "staffLevel": "helper",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "warn",
+              "fullName": "/mod warn",
+              "description": "Warn a member. Repeated warnings can trigger automatic escalation.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member to warn",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "evidence",
+                  "description": "Evidence links, comma-separated (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "warnings",
+              "fullName": "/mod warnings",
+              "description": "List a member's warnings, or every active warning if no member is given.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Filter to this member",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "clearwarns",
+              "fullName": "/mod clearwarns",
+              "description": "Clear a member's active warnings.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "id",
+                  "description": "Clear only this warning id (optional — clears all if omitted)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "timeout",
+              "fullName": "/mod timeout",
+              "description": "Time out a member (up to 28 days).",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member to time out",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "duration",
+                  "description": "e.g. 10m, 2h, 1d, 1h30m",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "untimeout",
+              "fullName": "/mod untimeout",
+              "description": "Remove a member's timeout.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "kick",
+              "fullName": "/mod kick",
+              "description": "Kick a member from the server.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member to kick",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional unless required by settings)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "evidence",
+                  "description": "Evidence links, comma-separated (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "ban",
+              "fullName": "/mod ban",
+              "description": "Ban a user from the server.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The user to ban",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional unless required by settings)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "delete-days",
+                  "description": "Delete this many days of their recent messages (0-7)",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "duration",
+                  "description": "Temporary ban duration, e.g. 7d, 30d (optional — omit for permanent)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "evidence",
+                  "description": "Evidence links, comma-separated (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "unban",
+              "fullName": "/mod unban",
+              "description": "Unban a user by id.",
+              "options": [
+                {
+                  "name": "user-id",
+                  "description": "The user's Discord id",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "softban",
+              "fullName": "/mod softban",
+              "description": "Ban and immediately unban a user — clears their recent messages without a lasting ban.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The user to softban",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional unless required by settings)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "delete-days",
+                  "description": "Delete this many days of their recent messages (0-7, default 1)",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "evidence",
+                  "description": "Evidence links, comma-separated (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "purge",
+              "fullName": "/mod purge",
+              "description": "Bulk-delete recent messages in this channel.",
+              "options": [
+                {
+                  "name": "count",
+                  "description": "How many messages (1-100)",
+                  "required": true,
+                  "type": "Integer"
+                },
+                {
+                  "name": "user",
+                  "description": "Only delete messages from this user (optional)",
+                  "required": false,
+                  "type": "User"
+                },
+                {
+                  "name": "contains",
+                  "description": "Only delete messages containing this text (requires message content access)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "lock",
+              "fullName": "/mod lock",
+              "description": "Lock a channel (prevent @everyone from sending messages).",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to lock (defaults to this channel)",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "unlock",
+              "fullName": "/mod unlock",
+              "description": "Unlock a previously locked channel.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to unlock (defaults to this channel)",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "slowmode",
+              "fullName": "/mod slowmode",
+              "description": "Set (or turn off) a channel slowmode.",
+              "options": [
+                {
+                  "name": "seconds",
+                  "description": "Seconds between messages, or \"off\"",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel (defaults to this channel)",
+                  "required": false,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "nick",
+              "fullName": "/mod nick",
+              "description": "Change a member's nickname.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "nickname",
+                  "description": "New nickname, or \"reset\" to clear it",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "note",
+              "fullName": "/mod note",
+              "description": "Add a staff note about a member (visible to staff only).",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "text",
+                  "description": "Note text",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "case",
+              "fullName": "/mod case",
+              "description": "Show a moderation case by number.",
+              "options": [
+                {
+                  "name": "number",
+                  "description": "Case number",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "cases",
+              "fullName": "/mod cases",
+              "description": "List moderation cases, optionally filtered.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Filter by target user (optional)",
+                  "required": false,
+                  "type": "User"
+                },
+                {
+                  "name": "type",
+                  "description": "Filter by case type (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "appeal-setup",
+              "fullName": "/mod appeal-setup",
+              "description": "Set the staff channel where appeals are posted (admin).",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Appeals channel",
+                  "required": true,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "add",
+              "fullName": "/mod role add",
+              "description": "Add a role to a member.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "role",
+                  "description": "The role to add",
+                  "required": true,
+                  "type": "Role"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/mod role remove",
+              "description": "Remove a role from a member.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "role",
+                  "description": "The role to remove",
+                  "required": true,
+                  "type": "Role"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (optional)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "appeal",
+          "fullName": "/appeal",
+          "type": "slash",
+          "description": "Appeal a moderation case taken against you.",
+          "staffLevel": "member",
+          "options": [
+            {
+              "name": "case-number",
+              "description": "The case number to appeal",
+              "required": true,
+              "type": "Integer"
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "Warn user",
+          "fullName": "/Warn user",
+          "type": "user",
+          "description": "",
+          "staffLevel": "moderator",
+          "options": [],
+          "subcommands": []
+        },
+        {
+          "name": "View cases",
+          "fullName": "/View cases",
+          "type": "user",
+          "description": "",
+          "staffLevel": "helper",
+          "options": [],
+          "subcommands": []
+        }
+      ]
     },
     {
       "id": "automod",
       "name": "Automod",
-      "description": "Configurable automated moderation rules — spam, mentions, invites, word filters — with dry-run mode and a false-positive review queue.",
+      "description": "Configurable automated moderation rules — spam, mentions, invites, scam links, word/regex filters, caps, raid detection — with per-rule dry-run, exemptions, and a false-positive review queue.",
       "category": "moderation",
       "defaultEnabled": true,
-      "privilegedIntents": [],
-      "commands": []
+      "privilegedIntents": [
+        "MessageContent",
+        "GuildMembers"
+      ],
+      "commands": [
+        {
+          "name": "automod",
+          "fullName": "/automod",
+          "type": "slash",
+          "description": "Automated moderation rules: spam, filters, raid detection, and the review queue.",
+          "staffLevel": "helper",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "create",
+              "fullName": "/automod rule create",
+              "description": "Create a new automod rule (opens a form for the type-specific settings).",
+              "options": [
+                {
+                  "name": "type",
+                  "description": "What this rule checks for.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "name",
+                  "description": "A short name for this rule.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "action",
+                  "description": "What to do when the rule matches.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "timeout_minutes",
+                  "description": "Timeout length in minutes (only used when action is timeout).",
+                  "required": false,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/automod rule list",
+              "description": "List every automod rule.",
+              "options": []
+            },
+            {
+              "name": "view",
+              "fullName": "/automod rule view",
+              "description": "View a rule's full configuration.",
+              "options": [
+                {
+                  "name": "rule",
+                  "description": "The rule (start typing its name).",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "edit",
+              "fullName": "/automod rule edit",
+              "description": "Edit a rule's type-specific settings (opens a form).",
+              "options": [
+                {
+                  "name": "rule",
+                  "description": "The rule (start typing its name).",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "delete",
+              "fullName": "/automod rule delete",
+              "description": "Delete a rule (asks for confirmation).",
+              "options": [
+                {
+                  "name": "rule",
+                  "description": "The rule (start typing its name).",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "toggle",
+              "fullName": "/automod rule toggle",
+              "description": "Enable/disable a rule.",
+              "options": [
+                {
+                  "name": "rule",
+                  "description": "The rule (start typing its name).",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "fullName": "/automod rule test",
+              "description": "Test a rule against sample text — no action is taken.",
+              "options": [
+                {
+                  "name": "rule",
+                  "description": "The rule (start typing its name).",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "text",
+                  "description": "Sample message text to test.",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "add",
+              "fullName": "/automod exempt add",
+              "description": "Exempt a role/channel/user, or trust a domain, for a rule.",
+              "options": [
+                {
+                  "name": "rule",
+                  "description": "The rule (start typing its name).",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "kind",
+                  "description": "What kind of exemption to add.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "role",
+                  "description": "Role to exempt (kind: role).",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel to exempt (kind: channel).",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "user",
+                  "description": "User to exempt (kind: user).",
+                  "required": false,
+                  "type": "User"
+                },
+                {
+                  "name": "domain",
+                  "description": "Domain to trust (kind: domain).",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/automod exempt remove",
+              "description": "Remove an exemption from a rule.",
+              "options": [
+                {
+                  "name": "rule",
+                  "description": "The rule (start typing its name).",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "kind",
+                  "description": "What kind of exemption to remove.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "role",
+                  "description": "Role to un-exempt (kind: role).",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel to un-exempt (kind: channel).",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "user",
+                  "description": "User to un-exempt (kind: user).",
+                  "required": false,
+                  "type": "User"
+                },
+                {
+                  "name": "domain",
+                  "description": "Domain to un-trust (kind: domain).",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/automod exempt list",
+              "description": "List a rule's exemptions.",
+              "options": [
+                {
+                  "name": "rule",
+                  "description": "The rule (start typing its name).",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "dryrun",
+              "fullName": "/automod dryrun",
+              "description": "Turn guild-wide dry-run mode on or off (admin only).",
+              "options": [
+                {
+                  "name": "state",
+                  "description": "On = log matches without acting. Off = rules take real action.",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "review",
+              "fullName": "/automod review",
+              "description": "Review pending automod matches (confirm or mark as false positive).",
+              "options": []
+            },
+            {
+              "name": "status",
+              "fullName": "/automod status",
+              "description": "Show automod's current status: dry-run state, rule health, recent activity.",
+              "options": []
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "enforcer",
       "name": "Enforcer",
-      "description": "Policy-driven, hands-off moderation: the bot flags possible violations from a server policy and a moderator decides — everything is bookkept in a read-only ledger and the database.",
+      "description": "Policy-driven, hands-off moderation: the bot flags possible violations from a server policy and a moderator decides — everything is bookkept in a read-only ledger and the database. Moderators never DM or confront the suspect directly; the bot mediates every action.",
       "category": "moderation",
       "defaultEnabled": false,
       "privilegedIntents": [
         "MessageContent"
       ],
-      "commands": []
+      "commands": [
+        {
+          "name": "enforcer",
+          "fullName": "/enforcer",
+          "type": "slash",
+          "description": "Policy-driven, hands-off moderation: flag, decide, and keep an immutable ledger.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "setup",
+              "fullName": "/enforcer setup",
+              "description": "Set up (or repair) the ledger channel, flag-queue channel, and mute role.",
+              "options": [
+                {
+                  "name": "ledger_channel",
+                  "description": "Existing channel to use as the ledger (created as #mod-ledger if omitted).",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "ledger_visibility",
+                  "description": "Who can read the ledger channel (default: staff only).",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "flag_channel",
+                  "description": "Existing channel to use as the flag queue (created as #enforcer-queue if omitted).",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "mute_role",
+                  "description": "Existing role to use for Mute decisions (a \"Muted\" role is created if omitted).",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "capture_context",
+                  "description": "Store a short context snapshot with every flag (default: on).",
+                  "required": false,
+                  "type": "Boolean"
+                },
+                {
+                  "name": "repair",
+                  "description": "Only re-apply channel permission overwrites from the current config — no other changes.",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "fullName": "/enforcer status",
+              "description": "Show Enforcer setup status, health, and configuration.",
+              "options": []
+            },
+            {
+              "name": "create",
+              "fullName": "/enforcer policy create",
+              "description": "Create a policy with one matcher (add more from the dashboard).",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Short policy name shown to mods and, on action, to the user.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "description",
+                  "description": "Plain-language description.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "severity",
+                  "description": "Severity.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "matcher_type",
+                  "description": "What this policy matches.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "matcher_value",
+                  "description": "Value(s) for the matcher — comma-separated for lists, or a number for mention_count.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "case_sensitive",
+                  "description": "Case-sensitive match (default: off).",
+                  "required": false,
+                  "type": "Boolean"
+                },
+                {
+                  "name": "whole_word",
+                  "description": "Whole-word match, keyword type only (default: on).",
+                  "required": false,
+                  "type": "Boolean"
+                },
+                {
+                  "name": "suggested_action",
+                  "description": "Suggested action shown in the flag queue.",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "scope_channel",
+                  "description": "Limit this policy to one channel (repeat edit to add more, or use the dashboard for multiple).",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "exempt_role",
+                  "description": "A role exempt from this policy.",
+                  "required": false,
+                  "type": "Role"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/enforcer policy list",
+              "description": "List every policy.",
+              "options": []
+            },
+            {
+              "name": "view",
+              "fullName": "/enforcer policy view",
+              "description": "View a policy in detail.",
+              "options": [
+                {
+                  "name": "policy",
+                  "description": "Policy",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "edit",
+              "fullName": "/enforcer policy edit",
+              "description": "Edit a policy.",
+              "options": [
+                {
+                  "name": "policy",
+                  "description": "Policy",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "name",
+                  "description": "New name.",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "description",
+                  "description": "New description.",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "severity",
+                  "description": "New severity.",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "suggested_action",
+                  "description": "New suggested action.",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "matcher_type",
+                  "description": "Replace the matcher: type.",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "matcher_value",
+                  "description": "Replace the matcher: value(s).",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "delete",
+              "fullName": "/enforcer policy delete",
+              "description": "Delete a policy.",
+              "options": [
+                {
+                  "name": "policy",
+                  "description": "Policy",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "toggle",
+              "fullName": "/enforcer policy toggle",
+              "description": "Enable/disable a policy.",
+              "options": [
+                {
+                  "name": "policy",
+                  "description": "Policy",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "fullName": "/enforcer policy test",
+              "description": "Test sample text against policies without flagging anyone.",
+              "options": [
+                {
+                  "name": "text",
+                  "description": "Sample message text.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "policy",
+                  "description": "Limit the test to one policy (default: all enabled policies).",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "import",
+              "fullName": "/enforcer policy import",
+              "description": "Import a starter policy pack.",
+              "options": [
+                {
+                  "name": "pack",
+                  "description": "Pack to import.",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "flag",
+              "fullName": "/enforcer flag",
+              "description": "Manually flag a user for non-message behaviour (no message to point at).",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The user to flag.",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "reason",
+                  "description": "What happened.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "policy",
+                  "description": "Related policy, if any.",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "search",
+              "fullName": "/enforcer search",
+              "description": "Search the ledger.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Filter by user.",
+                  "required": false,
+                  "type": "User"
+                },
+                {
+                  "name": "kind",
+                  "description": "Filter by record kind.",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "decision",
+                  "description": "Filter by decision.",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "policy",
+                  "description": "Filter by policy.",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "since",
+                  "description": "How far back, e.g. 7d, 24h.",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "record",
+              "fullName": "/enforcer record",
+              "description": "View a ledger record in detail.",
+              "options": [
+                {
+                  "name": "number",
+                  "description": "Record number, e.g. 12 for #E-12.",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "history",
+              "fullName": "/enforcer history",
+              "description": "Summarize a user's Enforcer history.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "User",
+                  "required": true,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "export",
+              "fullName": "/enforcer export",
+              "description": "Export ledger records as CSV.",
+              "options": [
+                {
+                  "name": "since",
+                  "description": "How far back, e.g. 30d.",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "appeal",
+              "fullName": "/enforcer appeal",
+              "description": "Appeal an Enforcer record (member-facing).",
+              "options": [
+                {
+                  "name": "record",
+                  "description": "Record number, e.g. 12 for #E-12.",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "mute",
+              "fullName": "/enforcer mute",
+              "description": "Mute a user with the configured mute role, through the standard decision pipeline.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "User",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "duration",
+                  "description": "e.g. 30m, 2h (default: server default, or indefinite).",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason.",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "unmute",
+              "fullName": "/enforcer unmute",
+              "description": "Remove the mute role from a user.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "User",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason.",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Flag for review",
+          "fullName": "/Flag for review",
+          "type": "message",
+          "description": "",
+          "staffLevel": "helper",
+          "options": [],
+          "subcommands": []
+        }
+      ]
     },
     {
       "id": "logging",
       "name": "Logging",
-      "description": "Routes member, message, role, and moderation events to configured log channels, with retention and CSV export.",
+      "description": "Routes member, message, role, channel, moderation, voice, and platform events to configured log channels, with redaction, retention, and a searchable dashboard audit log.",
       "category": "moderation",
       "defaultEnabled": true,
-      "privilegedIntents": [],
-      "commands": []
+      "privilegedIntents": [
+        "GuildMembers",
+        "MessageContent"
+      ],
+      "commands": [
+        {
+          "name": "logs",
+          "fullName": "/logs",
+          "type": "slash",
+          "description": "Configure and search Entrophy's event logging.",
+          "staffLevel": "moderator",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "set",
+              "fullName": "/logs set",
+              "description": "Route a kind of event to a log channel.",
+              "options": [
+                {
+                  "name": "kind",
+                  "description": "Which events to route",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Destination channel",
+                  "required": true,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "disable",
+              "fullName": "/logs disable",
+              "description": "Stop logging a kind of event (keeps its channel mapping for later).",
+              "options": [
+                {
+                  "name": "kind",
+                  "description": "Which events to stop logging",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "fullName": "/logs status",
+              "description": "Show current log channel mapping, retention, and intent status.",
+              "options": []
+            },
+            {
+              "name": "retention",
+              "fullName": "/logs retention",
+              "description": "Set how many days of log events to keep.",
+              "options": [
+                {
+                  "name": "days",
+                  "description": "Days to keep log events",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "fullName": "/logs test",
+              "description": "Send a sample log entry through the real pipeline.",
+              "options": [
+                {
+                  "name": "kind",
+                  "description": "Which kind to test",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "search",
+              "fullName": "/logs search",
+              "description": "Search stored log events for a user.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "User to search for",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "kind",
+                  "description": "Limit to one kind",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "since",
+                  "description": "Only events after this long ago, e.g. 7d, 12h",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "add",
+              "fullName": "/logs redact add",
+              "description": "Add a custom redaction regex pattern.",
+              "options": [
+                {
+                  "name": "pattern",
+                  "description": "Regex pattern (case-insensitive)",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/logs redact remove",
+              "description": "Remove a custom redaction pattern.",
+              "options": [
+                {
+                  "name": "pattern",
+                  "description": "Exact pattern to remove",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/logs redact list",
+              "description": "List built-in and custom redaction patterns.",
+              "options": []
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "tickets",
@@ -204,26 +1483,1312 @@
       "description": "Button-driven support tickets with categories, staff assignment, tags, and HTML/JSON transcripts.",
       "category": "community",
       "defaultEnabled": false,
-      "privilegedIntents": [],
-      "commands": []
+      "privilegedIntents": [
+        "MessageContent"
+      ],
+      "commands": [
+        {
+          "name": "ticket",
+          "fullName": "/ticket",
+          "type": "slash",
+          "description": "Open, manage, and configure support tickets.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "open",
+              "fullName": "/ticket open",
+              "description": "Open a new support ticket.",
+              "options": [
+                {
+                  "name": "subject",
+                  "description": "A short summary of what you need help with",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "close",
+              "fullName": "/ticket close",
+              "description": "Close this ticket.",
+              "options": [
+                {
+                  "name": "reason",
+                  "description": "Why this ticket is being closed",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "add",
+              "fullName": "/ticket add",
+              "description": "Add a user to this ticket.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "User to add",
+                  "required": true,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/ticket remove",
+              "description": "Remove a user from this ticket.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "User to remove",
+                  "required": true,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "transcript",
+              "fullName": "/ticket transcript",
+              "description": "Get a ticket transcript (sent to you privately).",
+              "options": [
+                {
+                  "name": "number",
+                  "description": "Ticket number (defaults to this channel's ticket)",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "format",
+                  "description": "Transcript format (default HTML)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "assign",
+              "fullName": "/ticket assign",
+              "description": "Assign this ticket to a staff member.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Staff member to assign (omit to unassign)",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "add",
+              "fullName": "/ticket tag add",
+              "description": "Add a tag.",
+              "options": [
+                {
+                  "name": "tag",
+                  "description": "Tag text",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/ticket tag remove",
+              "description": "Remove a tag.",
+              "options": [
+                {
+                  "name": "tag",
+                  "description": "Tag text",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "reopen",
+              "fullName": "/ticket reopen",
+              "description": "Reopen a recently-closed ticket.",
+              "options": [
+                {
+                  "name": "number",
+                  "description": "Ticket number",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "config",
+              "fullName": "/ticket config",
+              "description": "View the tickets configuration.",
+              "options": []
+            },
+            {
+              "name": "create",
+              "fullName": "/ticket panel create",
+              "description": "Create a ticket panel (a form for the title/description/button text opens next).",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to post the panel in",
+                  "required": true,
+                  "type": "Channel"
+                },
+                {
+                  "name": "mode",
+                  "description": "How tickets from this panel are opened",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "category",
+                  "description": "Category new ticket channels are created under (channel mode)",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "support_role_1",
+                  "description": "Support role with access to tickets from this panel",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "support_role_2",
+                  "description": "Second support role",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "support_role_3",
+                  "description": "Third support role",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "sla_minutes",
+                  "description": "Minutes before an unanswered ticket is flagged overdue (overrides the default)",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "intake",
+                  "description": "Ask the server's configured intake-form questions when opening from this panel",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "roles",
       "name": "Roles & Onboarding",
-      "description": "Role panels, welcome/goodbye messages, onboarding checklists, and member verification.",
+      "description": "Self-assignable role panels, welcome/goodbye messages, onboarding checklists, rules acknowledgement, and member verification (button, staff-approved modal, or CAPTCHA).",
       "category": "community",
       "defaultEnabled": false,
-      "privilegedIntents": [],
-      "commands": []
+      "privilegedIntents": [
+        "GuildMembers"
+      ],
+      "commands": [
+        {
+          "name": "roles",
+          "fullName": "/roles",
+          "type": "slash",
+          "description": "Self-assignable role panels, groups, and role persistence.",
+          "staffLevel": "moderator",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "create",
+              "fullName": "/roles panel create",
+              "description": "Create a new role panel (opens a form for the title/description).",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to post it in",
+                  "required": true,
+                  "type": "Channel"
+                },
+                {
+                  "name": "style",
+                  "description": "How members pick roles",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "group",
+                  "description": "Optional role group id (exclusive/max-selection rules)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "max-selections",
+                  "description": "Max roles a member may pick from this panel",
+                  "required": false,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "edit",
+              "fullName": "/roles panel edit",
+              "description": "Edit a role panel.",
+              "options": [
+                {
+                  "name": "panel",
+                  "description": "Panel to edit",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "title",
+                  "description": "New title",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "description",
+                  "description": "New description",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "New channel",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "style",
+                  "description": "New style",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "max-selections",
+                  "description": "New max selections (0 clears it)",
+                  "required": false,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "delete",
+              "fullName": "/roles panel delete",
+              "description": "Delete a role panel.",
+              "options": [
+                {
+                  "name": "panel",
+                  "description": "Panel to delete",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/roles panel list",
+              "description": "List this server's role panels.",
+              "options": []
+            },
+            {
+              "name": "post",
+              "fullName": "/roles panel post",
+              "description": "Post (or repost) a panel to its channel.",
+              "options": [
+                {
+                  "name": "panel",
+                  "description": "Panel to post",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "option-add",
+              "fullName": "/roles panel option-add",
+              "description": "Add a role option to a panel.",
+              "options": [
+                {
+                  "name": "panel",
+                  "description": "Panel",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "role",
+                  "description": "Role to grant",
+                  "required": true,
+                  "type": "Role"
+                },
+                {
+                  "name": "label",
+                  "description": "Button/select label (defaults to the role name)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "emoji",
+                  "description": "Emoji (required for reaction-style panels)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "description",
+                  "description": "Short description",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "option-remove",
+              "fullName": "/roles panel option-remove",
+              "description": "Remove a role option from a panel.",
+              "options": [
+                {
+                  "name": "panel",
+                  "description": "Panel",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "role",
+                  "description": "Role to remove",
+                  "required": true,
+                  "type": "Role"
+                }
+              ]
+            },
+            {
+              "name": "create",
+              "fullName": "/roles group create",
+              "description": "Create a role group.",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Group name",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "exclusive",
+                  "description": "Selecting one role removes the others (default: off)",
+                  "required": false,
+                  "type": "Boolean"
+                },
+                {
+                  "name": "max-selections",
+                  "description": "Max roles from this group a member may hold",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "role1",
+                  "description": "Role to include",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "role2",
+                  "description": "Role to include",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "role3",
+                  "description": "Role to include",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "role4",
+                  "description": "Role to include",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "role5",
+                  "description": "Role to include",
+                  "required": false,
+                  "type": "Role"
+                }
+              ]
+            },
+            {
+              "name": "edit",
+              "fullName": "/roles group edit",
+              "description": "Edit a role group.",
+              "options": [
+                {
+                  "name": "group",
+                  "description": "Group to edit",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "name",
+                  "description": "New name",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "exclusive",
+                  "description": "Selecting one role removes the others",
+                  "required": false,
+                  "type": "Boolean"
+                },
+                {
+                  "name": "max-selections",
+                  "description": "Max roles from this group (0 clears it)",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "add-role",
+                  "description": "Role to add to the group",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "remove-role",
+                  "description": "Role to remove from the group",
+                  "required": false,
+                  "type": "Role"
+                }
+              ]
+            },
+            {
+              "name": "delete",
+              "fullName": "/roles group delete",
+              "description": "Delete a role group.",
+              "options": [
+                {
+                  "name": "group",
+                  "description": "Group to delete",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/roles group list",
+              "description": "List this server's role groups.",
+              "options": []
+            },
+            {
+              "name": "on",
+              "fullName": "/roles persist on",
+              "description": "Turn on role persistence (disclosed to admins).",
+              "options": []
+            },
+            {
+              "name": "off",
+              "fullName": "/roles persist off",
+              "description": "Turn off role persistence.",
+              "options": []
+            },
+            {
+              "name": "status",
+              "fullName": "/roles persist status",
+              "description": "Show whether role persistence is on.",
+              "options": []
+            }
+          ]
+        },
+        {
+          "name": "welcome",
+          "fullName": "/welcome",
+          "type": "slash",
+          "description": "Configure the message sent when a member joins.",
+          "staffLevel": "moderator",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "set",
+              "fullName": "/welcome set",
+              "description": "Set the welcome channel/message.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to post welcome messages in",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "message",
+                  "description": "Plain-text message. Vars: {user} {user.tag} {user.id} {server} {memberCount} {mention}",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "dm",
+                  "description": "Also DM the member the welcome message",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "embed",
+              "fullName": "/welcome embed",
+              "description": "Build the welcome embed (opens a form).",
+              "options": []
+            },
+            {
+              "name": "test",
+              "fullName": "/welcome test",
+              "description": "Send a preview of the welcome message.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to preview in (defaults to the configured one)",
+                  "required": false,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "disable",
+              "fullName": "/welcome disable",
+              "description": "Turn off welcome messages.",
+              "options": []
+            }
+          ]
+        },
+        {
+          "name": "goodbye",
+          "fullName": "/goodbye",
+          "type": "slash",
+          "description": "Configure the message sent when a member leaves.",
+          "staffLevel": "moderator",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "set",
+              "fullName": "/goodbye set",
+              "description": "Set the goodbye channel/message.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to post goodbye messages in",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "message",
+                  "description": "Plain-text message. Vars: {user} {user.tag} {user.id} {server} {memberCount} {mention}",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "dm",
+                  "description": "Also DM the member the goodbye message",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "embed",
+              "fullName": "/goodbye embed",
+              "description": "Build the goodbye embed (opens a form).",
+              "options": []
+            },
+            {
+              "name": "test",
+              "fullName": "/goodbye test",
+              "description": "Send a preview of the goodbye message.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to preview in (defaults to the configured one)",
+                  "required": false,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "disable",
+              "fullName": "/goodbye disable",
+              "description": "Turn off goodbye messages.",
+              "options": []
+            }
+          ]
+        },
+        {
+          "name": "verify",
+          "fullName": "/verify",
+          "type": "slash",
+          "description": "Verify yourself to get access to the rest of the server.",
+          "options": [],
+          "subcommands": []
+        },
+        {
+          "name": "verification",
+          "fullName": "/verification",
+          "type": "slash",
+          "description": "Configure and manage member verification.",
+          "staffLevel": "moderator",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "setup",
+              "fullName": "/verification setup",
+              "description": "Configure verification.",
+              "options": [
+                {
+                  "name": "mode",
+                  "description": "Verification method",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "verified-role",
+                  "description": "Role granted on successful verification",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "staff-channel",
+                  "description": "Channel for the modal-mode approval queue",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "min-account-age-days",
+                  "description": "Minimum Discord account age required (0 = off)",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "underage-action",
+                  "description": "Action when the account-age gate fails",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "quarantine-role",
+                  "description": "Role applied by the quarantine action",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "question1",
+                  "description": "Modal-mode question 1",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "question2",
+                  "description": "Modal-mode question 2",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "question3",
+                  "description": "Modal-mode question 3",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "question4",
+                  "description": "Modal-mode question 4",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "question5",
+                  "description": "Modal-mode question 5",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "clear-questions",
+                  "description": "Clear all configured questions",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "queue",
+              "fullName": "/verification queue",
+              "description": "List pending (modal-mode) verification requests.",
+              "options": []
+            },
+            {
+              "name": "approve",
+              "fullName": "/verification approve",
+              "description": "Approve a pending verification request.",
+              "options": [
+                {
+                  "name": "request",
+                  "description": "Request id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "deny",
+              "fullName": "/verification deny",
+              "description": "Deny a pending verification request.",
+              "options": [
+                {
+                  "name": "request",
+                  "description": "Request id",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "note",
+                  "description": "Optional note sent to the member",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "onboarding",
+          "fullName": "/onboarding",
+          "type": "slash",
+          "description": "Rules acknowledgement and the member onboarding checklist.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "checklist",
+              "fullName": "/onboarding checklist",
+              "description": "See your onboarding progress.",
+              "options": []
+            },
+            {
+              "name": "config",
+              "fullName": "/onboarding config",
+              "description": "Configure onboarding (staff only).",
+              "options": [
+                {
+                  "name": "rules-text",
+                  "description": "The rules text shown by /onboarding rules-post",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "rules-role",
+                  "description": "Role granted when a member agrees to the rules",
+                  "required": false,
+                  "type": "Role"
+                }
+              ]
+            },
+            {
+              "name": "rules-post",
+              "fullName": "/onboarding rules-post",
+              "description": "Post the rules with an \"I agree\" button (staff only).",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to post in",
+                  "required": true,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "step-add",
+              "fullName": "/onboarding step-add",
+              "description": "Add a custom onboarding checklist step (staff only).",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Short unique id",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "label",
+                  "description": "What the member sees",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "step-remove",
+              "fullName": "/onboarding step-remove",
+              "description": "Remove a custom onboarding step (staff only).",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Step id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "engagement",
       "name": "Engagement",
-      "description": "Leveling/XP with anti-farming controls, leaderboards, reputation, and the starboard.",
+      "description": "Leveling/XP with anti-farming controls, leaderboards, a reputation system, a starboard, and temporary voice channels.",
       "category": "community",
       "defaultEnabled": true,
-      "privilegedIntents": [],
-      "commands": []
+      "privilegedIntents": [
+        "MessageContent"
+      ],
+      "commands": [
+        {
+          "name": "level",
+          "fullName": "/level",
+          "type": "slash",
+          "description": "Leveling: rank, leaderboard, XP, and level-role rewards.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "rank",
+              "fullName": "/level rank",
+              "description": "Show a member's level, XP, and progress.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Defaults to you.",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "leaderboard",
+              "fullName": "/level leaderboard",
+              "description": "Show the XP leaderboard.",
+              "options": [
+                {
+                  "name": "page",
+                  "description": "Page number (default 1).",
+                  "required": false,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "config",
+              "fullName": "/level config",
+              "description": "View the leveling configuration.",
+              "options": []
+            },
+            {
+              "name": "reset",
+              "fullName": "/level reset",
+              "description": "Reset leveling data for one member, or everyone.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Leave empty to reset every member in this server.",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "give",
+              "fullName": "/level xp give",
+              "description": "Add XP to a member's total.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Member to adjust.",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "amount",
+                  "description": "XP to add.",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/level xp remove",
+              "description": "Subtract XP from a member's total.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Member to adjust.",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "amount",
+                  "description": "XP to remove.",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "set",
+              "fullName": "/level xp set",
+              "description": "Set a member's XP total exactly.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Member to adjust.",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "amount",
+                  "description": "New XP total.",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "add",
+              "fullName": "/level rewards add",
+              "description": "Grant a role when members reach a level.",
+              "options": [
+                {
+                  "name": "level",
+                  "description": "Level required.",
+                  "required": true,
+                  "type": "Integer"
+                },
+                {
+                  "name": "role",
+                  "description": "Role to grant.",
+                  "required": true,
+                  "type": "Role"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/level rewards remove",
+              "description": "Remove a level-role reward.",
+              "options": [
+                {
+                  "name": "level",
+                  "description": "Level of the reward to remove.",
+                  "required": true,
+                  "type": "Integer"
+                },
+                {
+                  "name": "role",
+                  "description": "Role of the reward to remove.",
+                  "required": true,
+                  "type": "Role"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/level rewards list",
+              "description": "List all level-role rewards.",
+              "options": []
+            },
+            {
+              "name": "sync",
+              "fullName": "/level rewards sync",
+              "description": "Recompute level-role rewards for every ranked member.",
+              "options": []
+            },
+            {
+              "name": "add",
+              "fullName": "/level ignore add",
+              "description": "Ignore a channel or role.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to ignore.",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "role",
+                  "description": "Role to ignore.",
+                  "required": false,
+                  "type": "Role"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/level ignore remove",
+              "description": "Stop ignoring a channel or role.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to un-ignore.",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "role",
+                  "description": "Role to un-ignore.",
+                  "required": false,
+                  "type": "Role"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "rep",
+          "fullName": "/rep",
+          "type": "slash",
+          "description": "Reputation: thank members whose help you appreciated.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "give",
+              "fullName": "/rep give",
+              "description": "Give a member reputation.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Who to thank.",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "reason",
+                  "description": "Optional short reason.",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "check",
+              "fullName": "/rep check",
+              "description": "Check a member's reputation total.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Defaults to you.",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "leaderboard",
+              "fullName": "/rep leaderboard",
+              "description": "Show the reputation leaderboard.",
+              "options": []
+            },
+            {
+              "name": "revoke",
+              "fullName": "/rep revoke",
+              "description": "Remove reputation from a member (admin).",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Member to adjust.",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "amount",
+                  "description": "Amount to remove.",
+                  "required": true,
+                  "type": "Integer"
+                },
+                {
+                  "name": "reason",
+                  "description": "Why.",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "starboard",
+          "fullName": "/starboard",
+          "type": "slash",
+          "description": "Starboard settings.",
+          "staffLevel": "admin",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "channel",
+              "fullName": "/starboard set channel",
+              "description": "Channel starred messages get posted to.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Leave empty to disable the starboard.",
+                  "required": false,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "threshold",
+              "fullName": "/starboard set threshold",
+              "description": "How many stars a message needs to be posted.",
+              "options": [
+                {
+                  "name": "count",
+                  "description": "Star count required.",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "emoji",
+              "fullName": "/starboard set emoji",
+              "description": "Which emoji counts as a star.",
+              "options": [
+                {
+                  "name": "emoji",
+                  "description": "A unicode emoji or a custom emoji from this server.",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "selfstar",
+              "fullName": "/starboard set selfstar",
+              "description": "Whether authors can star their own message.",
+              "options": [
+                {
+                  "name": "ignore",
+                  "description": "True = self-stars do not count (default).",
+                  "required": true,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "fullName": "/starboard status",
+              "description": "Show the current starboard configuration.",
+              "options": []
+            }
+          ]
+        },
+        {
+          "name": "tempvoice",
+          "fullName": "/tempvoice",
+          "type": "slash",
+          "description": "Temporary voice channels.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "setup",
+              "fullName": "/tempvoice setup",
+              "description": "Register a hub channel: joining it creates a personal voice channel.",
+              "options": [
+                {
+                  "name": "hub",
+                  "description": "The \"Join to create\" voice channel.",
+                  "required": true,
+                  "type": "Channel"
+                },
+                {
+                  "name": "category",
+                  "description": "Category new channels are created under (defaults to the hub's category).",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "name-template",
+                  "description": "Channel name template. {user} is replaced with the owner's name.",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "lock",
+              "fullName": "/tempvoice lock",
+              "description": "Lock your temp channel so only permitted members can join.",
+              "options": []
+            },
+            {
+              "name": "unlock",
+              "fullName": "/tempvoice unlock",
+              "description": "Unlock your temp channel.",
+              "options": []
+            },
+            {
+              "name": "limit",
+              "fullName": "/tempvoice limit",
+              "description": "Set your temp channel's user limit.",
+              "options": [
+                {
+                  "name": "count",
+                  "description": "0 = no limit.",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "rename",
+              "fullName": "/tempvoice rename",
+              "description": "Rename your temp channel.",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "New channel name.",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "claim",
+              "fullName": "/tempvoice claim",
+              "description": "Claim ownership of this temp channel (its owner has left).",
+              "options": []
+            },
+            {
+              "name": "kick",
+              "fullName": "/tempvoice kick",
+              "description": "Disconnect a member from your temp channel.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Member to kick.",
+                  "required": true,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "permit",
+              "fullName": "/tempvoice permit",
+              "description": "Allow a member to join your locked temp channel.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Member to permit.",
+                  "required": true,
+                  "type": "User"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "community",
@@ -232,25 +2797,945 @@
       "category": "community",
       "defaultEnabled": true,
       "privilegedIntents": [],
-      "commands": []
+      "commands": [
+        {
+          "name": "poll",
+          "fullName": "/poll",
+          "type": "slash",
+          "description": "Run a poll.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "create",
+              "fullName": "/poll create",
+              "description": "Start a new poll.",
+              "options": [
+                {
+                  "name": "question",
+                  "description": "The poll question",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "option1",
+                  "description": "Option 1",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "option2",
+                  "description": "Option 2",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "option3",
+                  "description": "Option 3",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "option4",
+                  "description": "Option 4",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "option5",
+                  "description": "Option 5",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "option6",
+                  "description": "Option 6",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "option7",
+                  "description": "Option 7",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "option8",
+                  "description": "Option 8",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "option9",
+                  "description": "Option 9",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "option10",
+                  "description": "Option 10",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "duration",
+                  "description": "How long the poll stays open, e.g. 1h, 30m (default: open until manually ended)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "anonymous",
+                  "description": "Hide who voted for what (default: off)",
+                  "required": false,
+                  "type": "Boolean"
+                },
+                {
+                  "name": "multi",
+                  "description": "Allow selecting more than one option (default: off)",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "fullName": "/poll end",
+              "description": "End a poll early and show final results.",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Poll id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "results",
+              "fullName": "/poll results",
+              "description": "Show a poll's current results.",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Poll id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "giveaway",
+          "fullName": "/giveaway",
+          "type": "slash",
+          "description": "Run giveaways.",
+          "staffLevel": "moderator",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "start",
+              "fullName": "/giveaway start",
+              "description": "Start a giveaway.",
+              "options": [
+                {
+                  "name": "prize",
+                  "description": "What is being given away",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "duration",
+                  "description": "How long the giveaway runs, e.g. 1h, 1d",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "winners",
+                  "description": "Number of winners",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel to post in (default: this channel)",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "required-role",
+                  "description": "Role required to enter",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "min-account-age-days",
+                  "description": "Minimum Discord account age, in days",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "min-level",
+                  "description": "Minimum engagement level (if the engagement plugin is enabled)",
+                  "required": false,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "end",
+              "fullName": "/giveaway end",
+              "description": "End a giveaway now and draw winners.",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Giveaway id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "reroll",
+              "fullName": "/giveaway reroll",
+              "description": "Redraw winners for an ended giveaway.",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Giveaway id",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "count",
+                  "description": "How many winners to draw (default: original winner count)",
+                  "required": false,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/giveaway list",
+              "description": "List active and recently-ended giveaways.",
+              "options": []
+            },
+            {
+              "name": "cancel",
+              "fullName": "/giveaway cancel",
+              "description": "Cancel a giveaway before it ends.",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Giveaway id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "suggest",
+          "fullName": "/suggest",
+          "type": "slash",
+          "description": "Submit a suggestion for staff to review.",
+          "options": [
+            {
+              "name": "text",
+              "description": "Your suggestion",
+              "required": true,
+              "type": "String"
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "suggestions",
+          "fullName": "/suggestions",
+          "type": "slash",
+          "description": "Manage the suggestion box.",
+          "staffLevel": "moderator",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "setup",
+              "fullName": "/suggestions setup",
+              "description": "Choose the channel suggestions are posted to.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Suggestions channel",
+                  "required": true,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "fullName": "/suggestions status",
+              "description": "Change a suggestion's status.",
+              "options": [
+                {
+                  "name": "number",
+                  "description": "Suggestion number",
+                  "required": true,
+                  "type": "Integer"
+                },
+                {
+                  "name": "status",
+                  "description": "New status",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "note",
+                  "description": "Optional note shown on the suggestion",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/suggestions list",
+              "description": "List suggestions.",
+              "options": [
+                {
+                  "name": "status",
+                  "description": "Filter by status",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "announce",
+          "fullName": "/announce",
+          "type": "slash",
+          "description": "Schedule announcements.",
+          "staffLevel": "moderator",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "schedule",
+              "fullName": "/announce schedule",
+              "description": "Schedule an announcement.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to post in",
+                  "required": true,
+                  "type": "Channel"
+                },
+                {
+                  "name": "when",
+                  "description": "A cron expression, an ISO date/time, or a duration like \"10m\"/\"2h\"",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "message",
+                  "description": "The message to send",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/announce list",
+              "description": "List scheduled announcements.",
+              "options": []
+            },
+            {
+              "name": "cancel",
+              "fullName": "/announce cancel",
+              "description": "Cancel a scheduled announcement.",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Announcement id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "preview",
+              "fullName": "/announce preview",
+              "description": "Preview a scheduled announcement.",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Announcement id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "remind",
+          "fullName": "/remind",
+          "type": "slash",
+          "description": "Set reminders.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "set",
+              "fullName": "/remind set",
+              "description": "Set a reminder.",
+              "options": [
+                {
+                  "name": "when",
+                  "description": "When: an ISO date/time or a duration like \"10m\"/\"2h\"",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "message",
+                  "description": "What to remind you about",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Post in this channel instead of DMing you",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "recurring",
+                  "description": "Repeat on this cron schedule instead of a one-off reminder",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/remind list",
+              "description": "List your upcoming reminders.",
+              "options": []
+            },
+            {
+              "name": "cancel",
+              "fullName": "/remind cancel",
+              "description": "Cancel a reminder.",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Reminder id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "event",
+          "fullName": "/event",
+          "type": "slash",
+          "description": "Community events with RSVP.",
+          "staffLevel": "helper",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "create",
+              "fullName": "/event create",
+              "description": "Create an event.",
+              "options": [
+                {
+                  "name": "title",
+                  "description": "Event title",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "starts-at",
+                  "description": "When it starts: an ISO date/time or a duration like \"2h\"",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "ends-at",
+                  "description": "When it ends: an ISO date/time or a duration",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel to announce and RSVP in (default: this channel)",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "description",
+                  "description": "Event description",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "create-discord-event",
+                  "description": "Also create a native Discord scheduled event (default: off)",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/event list",
+              "description": "List upcoming events.",
+              "options": []
+            },
+            {
+              "name": "cancel",
+              "fullName": "/event cancel",
+              "description": "Cancel an event.",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Event id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "rsvps",
+              "fullName": "/event rsvps",
+              "description": "Show RSVP counts for an event.",
+              "options": [
+                {
+                  "name": "id",
+                  "description": "Event id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "economy",
       "name": "Economy",
-      "description": "Virtual currency economy (balance, daily, give, leaderboard) — no real-money functionality. Disabled by default.",
+      "description": "Optional virtual currency: balance, daily rewards with a streak bonus, giving between members, and a leaderboard. Virtual points only — no purchase, no cash-out, no gambling. Disabled by default.",
       "category": "community",
       "defaultEnabled": false,
       "privilegedIntents": [],
-      "commands": []
+      "commands": [
+        {
+          "name": "economy",
+          "fullName": "/economy",
+          "type": "slash",
+          "description": "Virtual currency — no real-money value, no purchases, no cash-out.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "balance",
+              "fullName": "/economy balance",
+              "description": "Check a balance.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Whose balance to check (default: you)",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "daily",
+              "fullName": "/economy daily",
+              "description": "Claim your daily reward.",
+              "options": []
+            },
+            {
+              "name": "give",
+              "fullName": "/economy give",
+              "description": "Give some of your balance to another member.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Who to give to",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "amount",
+                  "description": "How much to give",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "leaderboard",
+              "fullName": "/economy leaderboard",
+              "description": "Show the top balances.",
+              "options": []
+            },
+            {
+              "name": "config",
+              "fullName": "/economy config",
+              "description": "View or change the currency name/symbol and reward amounts.",
+              "options": [
+                {
+                  "name": "currency-name",
+                  "description": "Currency name, e.g. \"Coins\"",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "currency-symbol",
+                  "description": "Currency symbol/emoji, e.g. \"🪙\"",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "daily-min",
+                  "description": "Minimum daily reward",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "daily-max",
+                  "description": "Maximum daily reward",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "give-min",
+                  "description": "Minimum /economy give amount",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "give-max",
+                  "description": "Maximum /economy give amount",
+                  "required": false,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "add",
+              "fullName": "/economy admin add",
+              "description": "Add to a member's balance.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Who to credit",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "amount",
+                  "description": "Amount to add",
+                  "required": true,
+                  "type": "Integer"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (recorded on the transaction)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/economy admin remove",
+              "description": "Remove from a member's balance.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Who to debit",
+                  "required": true,
+                  "type": "User"
+                },
+                {
+                  "name": "amount",
+                  "description": "Amount to remove",
+                  "required": true,
+                  "type": "Integer"
+                },
+                {
+                  "name": "reason",
+                  "description": "Reason (recorded on the transaction)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "utility",
       "name": "Utility",
-      "description": "General-purpose utility commands: user/server info, timestamps, reminders, translation, weather, and more.",
+      "description": "General-purpose utility commands: user/server info, timestamps, an embed builder, AFK, translation, weather, and bot health.",
       "category": "utility",
       "defaultEnabled": true,
       "privilegedIntents": [],
-      "commands": []
+      "commands": [
+        {
+          "name": "help",
+          "fullName": "/help",
+          "type": "slash",
+          "description": "List every plugin and its commands.",
+          "options": [],
+          "subcommands": []
+        },
+        {
+          "name": "utility",
+          "fullName": "/utility",
+          "type": "slash",
+          "description": "General-purpose utility commands.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "userinfo",
+              "fullName": "/utility userinfo",
+              "description": "Show information about a member.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member to look up (defaults to you)",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "serverinfo",
+              "fullName": "/utility serverinfo",
+              "description": "Show information about this server.",
+              "options": []
+            },
+            {
+              "name": "avatar",
+              "fullName": "/utility avatar",
+              "description": "Show a member's avatar.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member to look up (defaults to you)",
+                  "required": false,
+                  "type": "User"
+                },
+                {
+                  "name": "server-avatar",
+                  "description": "Show the server-specific avatar instead of the global one",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "banner",
+              "fullName": "/utility banner",
+              "description": "Show a member's profile banner.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "The member to look up (defaults to you)",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "roleinfo",
+              "fullName": "/utility roleinfo",
+              "description": "Show information about a role.",
+              "options": [
+                {
+                  "name": "role",
+                  "description": "The role to look up",
+                  "required": true,
+                  "type": "Role"
+                }
+              ]
+            },
+            {
+              "name": "channelinfo",
+              "fullName": "/utility channelinfo",
+              "description": "Show information about a channel.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "The channel to look up (defaults to this channel)",
+                  "required": false,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "timestamp",
+              "fullName": "/utility timestamp",
+              "description": "Parse a date/time and get Discord <t:...> tags for it.",
+              "options": [
+                {
+                  "name": "text",
+                  "description": "Date/time, e.g. \"2027-03-05 15:00\" or \"March 5 2027 3pm\"",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "timezone",
+                  "description": "IANA timezone, e.g. America/New_York (defaults to your saved timezone, else UTC)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "set",
+              "fullName": "/utility timezone set",
+              "description": "Save your timezone (used by /utility timestamp).",
+              "options": [
+                {
+                  "name": "timezone",
+                  "description": "IANA timezone, e.g. Europe/London",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "get",
+              "fullName": "/utility timezone get",
+              "description": "Show a saved timezone.",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Whose timezone to show (defaults to you)",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/utility timezone list",
+              "description": "Search IANA timezone names.",
+              "options": [
+                {
+                  "name": "query",
+                  "description": "Filter, e.g. \"America\" or \"London\"",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "calculator",
+              "fullName": "/utility calculator",
+              "description": "Evaluate a math expression.",
+              "options": [
+                {
+                  "name": "expression",
+                  "description": "e.g. \"2 * (3 + 4) ^ 2\" or \"sqrt(2)\"",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "afk",
+              "fullName": "/utility afk",
+              "description": "Toggle AFK status. While AFK, the bot replies to your mentions with your message.",
+              "options": [
+                {
+                  "name": "message",
+                  "description": "Optional AFK message",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "translate",
+              "fullName": "/utility translate",
+              "description": "Translate text (requires a configured translation provider).",
+              "options": [
+                {
+                  "name": "text",
+                  "description": "Text to translate",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "to",
+                  "description": "Target language code, e.g. \"en\", \"es\", \"fr\"",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "from",
+                  "description": "Source language code (auto-detected if omitted)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "weather",
+              "fullName": "/utility weather",
+              "description": "Show current weather (requires a configured weather provider).",
+              "options": [
+                {
+                  "name": "location",
+                  "description": "City or place name",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "fullName": "/utility status",
+              "description": "Show the bot's health and per-plugin status.",
+              "options": []
+            }
+          ]
+        },
+        {
+          "name": "embed",
+          "fullName": "/embed",
+          "type": "slash",
+          "description": "Build a rich embed and preview it before sending.",
+          "discordPermissions": [
+            "ManageMessages"
+          ],
+          "options": [],
+          "subcommands": [
+            {
+              "name": "builder",
+              "fullName": "/embed builder",
+              "description": "Open the embed builder.",
+              "options": []
+            }
+          ]
+        },
+        {
+          "name": "User info",
+          "fullName": "/User info",
+          "type": "user",
+          "description": "",
+          "options": [],
+          "subcommands": []
+        }
+      ]
     },
     {
       "id": "media",
@@ -259,7 +3744,143 @@
       "category": "media",
       "defaultEnabled": false,
       "privilegedIntents": [],
-      "commands": []
+      "commands": [
+        {
+          "name": "music",
+          "fullName": "/music",
+          "type": "slash",
+          "description": "Manage the music queue.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "play",
+              "fullName": "/music play",
+              "description": "Search and queue a track.",
+              "options": [
+                {
+                  "name": "query",
+                  "description": "Search text or a track URL",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "queue",
+              "fullName": "/music queue",
+              "description": "Show the current queue.",
+              "options": []
+            },
+            {
+              "name": "skip",
+              "fullName": "/music skip",
+              "description": "Skip to the next track.",
+              "options": []
+            },
+            {
+              "name": "pause",
+              "fullName": "/music pause",
+              "description": "Pause playback.",
+              "options": []
+            },
+            {
+              "name": "resume",
+              "fullName": "/music resume",
+              "description": "Resume playback.",
+              "options": []
+            },
+            {
+              "name": "volume",
+              "fullName": "/music volume",
+              "description": "Set the volume (0-150).",
+              "options": [
+                {
+                  "name": "level",
+                  "description": "0-150",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "loop",
+              "fullName": "/music loop",
+              "description": "Set the loop mode.",
+              "options": [
+                {
+                  "name": "mode",
+                  "description": "Loop mode",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "stop",
+              "fullName": "/music stop",
+              "description": "Stop playback and clear the queue.",
+              "options": []
+            },
+            {
+              "name": "shuffle",
+              "fullName": "/music shuffle",
+              "description": "Shuffle the upcoming tracks.",
+              "options": []
+            },
+            {
+              "name": "nowplaying",
+              "fullName": "/music nowplaying",
+              "description": "Show the currently playing track.",
+              "options": []
+            },
+            {
+              "name": "save",
+              "fullName": "/music playlist save",
+              "description": "Save the current queue as a playlist.",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Playlist name",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "load",
+              "fullName": "/music playlist load",
+              "description": "Queue a saved playlist.",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Playlist name",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/music playlist list",
+              "description": "List saved playlists.",
+              "options": []
+            },
+            {
+              "name": "delete",
+              "fullName": "/music playlist delete",
+              "description": "Delete a saved playlist.",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Playlist name",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "integrations",
@@ -268,16 +3889,460 @@
       "category": "integrations",
       "defaultEnabled": false,
       "privilegedIntents": [],
-      "commands": []
+      "commands": [
+        {
+          "name": "integration",
+          "fullName": "/integration",
+          "type": "slash",
+          "description": "Connect external services: stream alerts, GitHub, webhooks, and more.",
+          "staffLevel": "admin",
+          "discordPermissions": [
+            "ManageGuild"
+          ],
+          "options": [],
+          "subcommands": [
+            {
+              "name": "connect",
+              "fullName": "/integration connect",
+              "description": "Connect an integration provider.",
+              "options": [
+                {
+                  "name": "provider",
+                  "description": "Provider",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "target",
+                  "description": "What to watch (login, channel id, subreddit, app id — provider-specific)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel to post alerts to",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "role",
+                  "description": "Role to mention on alert",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "template",
+                  "description": "Custom alert message template",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "disconnect",
+              "fullName": "/integration disconnect",
+              "description": "Disconnect an integration.",
+              "options": [
+                {
+                  "name": "connection",
+                  "description": "Connection",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "fullName": "/integration status",
+              "description": "Show connection status.",
+              "options": [
+                {
+                  "name": "connection",
+                  "description": "Connection",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/integration list",
+              "description": "List every connection and webhook endpoint.",
+              "options": []
+            },
+            {
+              "name": "add",
+              "fullName": "/integration alerts add",
+              "description": "Watch a target and alert when it posts.",
+              "options": [
+                {
+                  "name": "provider",
+                  "description": "Provider",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "target",
+                  "description": "Login / channel id / subreddit / app id",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel to post alerts to",
+                  "required": true,
+                  "type": "Channel"
+                },
+                {
+                  "name": "role",
+                  "description": "Role to mention",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "template",
+                  "description": "Custom alert message template",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/integration alerts remove",
+              "description": "Remove an alert watch.",
+              "options": [
+                {
+                  "name": "connection",
+                  "description": "Alert watch",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/integration alerts list",
+              "description": "List alert watches.",
+              "options": [
+                {
+                  "name": "provider",
+                  "description": "Filter by provider",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "create",
+              "fullName": "/integration webhook create",
+              "description": "Create an inbound webhook endpoint.",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Name",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "provider",
+                  "description": "Provider",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel to post events to",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "template",
+                  "description": "Message template for generic payloads ({dot.path} placeholders)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/integration webhook list",
+              "description": "List inbound webhook endpoints.",
+              "options": []
+            },
+            {
+              "name": "delete",
+              "fullName": "/integration webhook delete",
+              "description": "Delete an inbound webhook endpoint.",
+              "options": [
+                {
+                  "name": "endpoint",
+                  "description": "Endpoint",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "create",
+              "fullName": "/integration outbound create",
+              "description": "Create an outbound webhook.",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Name",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "url",
+                  "description": "Destination URL (https, public)",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "events",
+                  "description": "Comma-separated event types to send (see /integration outbound create docs)",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/integration outbound list",
+              "description": "List outbound webhooks.",
+              "options": []
+            },
+            {
+              "name": "delete",
+              "fullName": "/integration outbound delete",
+              "description": "Delete an outbound webhook.",
+              "options": [
+                {
+                  "name": "endpoint",
+                  "description": "Endpoint",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "test",
+              "fullName": "/integration outbound test",
+              "description": "Send a test delivery.",
+              "options": [
+                {
+                  "name": "endpoint",
+                  "description": "Endpoint",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "ai",
       "name": "AI Assistant",
-      "description": "Optional, disabled-by-default AI helper (/ask, /summarize, /draft, /mod-assist) with per-server opt-in and per-channel allowlisting.",
+      "description": "Optional, disabled-by-default AI helper (/ask, /summarize, /draft, /mod-assist) with per-server opt-in, per-channel allowlisting, cooldowns, and token budgets.",
       "category": "ai",
       "defaultEnabled": false,
       "privilegedIntents": [],
-      "commands": []
+      "commands": [
+        {
+          "name": "ask",
+          "fullName": "/ask",
+          "type": "slash",
+          "description": "Ask the AI assistant a question.",
+          "options": [
+            {
+              "name": "question",
+              "description": "Your question",
+              "required": true,
+              "type": "String"
+            },
+            {
+              "name": "private",
+              "description": "Reply so only you can see it (default: off)",
+              "required": false,
+              "type": "Boolean"
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "summarize",
+          "fullName": "/summarize",
+          "type": "slash",
+          "description": "Summarize recent messages in a channel using the AI assistant.",
+          "options": [
+            {
+              "name": "count",
+              "description": "How many recent messages to summarize (10-100, default 30)",
+              "required": false,
+              "type": "Integer"
+            },
+            {
+              "name": "channel",
+              "description": "Channel to summarize (default: this channel)",
+              "required": false,
+              "type": "Channel"
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "draft",
+          "fullName": "/draft",
+          "type": "slash",
+          "description": "Draft a piece of server text with the AI assistant (staff only).",
+          "staffLevel": "helper",
+          "options": [
+            {
+              "name": "type",
+              "description": "What to draft",
+              "required": true,
+              "type": "String"
+            },
+            {
+              "name": "notes",
+              "description": "Notes / key points to include",
+              "required": true,
+              "type": "String"
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "mod-assist",
+          "fullName": "/mod-assist",
+          "type": "slash",
+          "description": "Ask the AI assistant to suggest options for a moderation case (staff only — never acts on its own).",
+          "staffLevel": "moderator",
+          "options": [
+            {
+              "name": "case-number",
+              "description": "A case number to look up",
+              "required": false,
+              "type": "Integer"
+            },
+            {
+              "name": "user",
+              "description": "A user to look up case history for",
+              "required": false,
+              "type": "User"
+            },
+            {
+              "name": "context",
+              "description": "Extra context for the suggestion (not stored, not message content)",
+              "required": false,
+              "type": "String"
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "ai",
+          "fullName": "/ai",
+          "type": "slash",
+          "description": "Configure the AI assistant for this server.",
+          "staffLevel": "admin",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "view",
+              "fullName": "/ai config view",
+              "description": "View the current AI assistant configuration.",
+              "options": []
+            },
+            {
+              "name": "set-key",
+              "fullName": "/ai config set-key",
+              "description": "Set the API key for the configured provider.",
+              "options": []
+            },
+            {
+              "name": "clear-key",
+              "fullName": "/ai config clear-key",
+              "description": "Remove the configured API key.",
+              "options": []
+            },
+            {
+              "name": "provider",
+              "fullName": "/ai config provider",
+              "description": "Set the AI provider.",
+              "options": [
+                {
+                  "name": "provider",
+                  "description": "Provider",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "base-url",
+                  "description": "Base URL (only used for OpenAI-compatible)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "model",
+              "fullName": "/ai config model",
+              "description": "Set the model name.",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Model name, e.g. gpt-4o-mini",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "channels",
+              "fullName": "/ai config channels",
+              "description": "Add or remove an allowed channel for /ask and /summarize.",
+              "options": [
+                {
+                  "name": "action",
+                  "description": "add or remove",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel",
+                  "required": true,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "budget",
+              "fullName": "/ai config budget",
+              "description": "Set daily token budgets.",
+              "options": [
+                {
+                  "name": "daily",
+                  "description": "Server-wide daily token budget",
+                  "required": true,
+                  "type": "Integer"
+                },
+                {
+                  "name": "per-user",
+                  "description": "Per-user daily token budget",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

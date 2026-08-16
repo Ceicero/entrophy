@@ -28,3 +28,6 @@ test-results
 
 # brand assets synced at build/dev time by scripts/sync-brand.mjs (ARCHITECTURE.md §22)
 apps/*/public/brand/
+apps/web/src/app/apple-icon.png
+apps/web/src/app/apple-icon.jpg
+apps/web/src/app/apple-icon.jpeg

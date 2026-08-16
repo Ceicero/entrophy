@@ -38,6 +38,7 @@ import discordRoutes from './routes/discord';
 import webhooksRoutes from './routes/webhooks';
 import enforcerRoutes from './routes/enforcer';
 import donationsRoutes from './routes/donations';
+import verifyRoutes from './routes/verify';
 
 export interface BuildAppDeps {
   prisma?: PrismaClient;
@@ -220,6 +221,7 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   await app.register(oauthIntegrationsRoutes, { prefix: '/integrations' });
   await app.register(donationsRoutes, { prefix: '/donations' });
   await app.register(webhooksRoutes, { prefix: '/webhooks', bodyLimit: 5 * 1024 * 1024 });
+  await app.register(verifyRoutes, { prefix: '/verify' });
 
   app.addHook('onClose', async () => {
     if (!deps.queues) {
