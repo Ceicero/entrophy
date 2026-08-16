@@ -1,6 +1,11 @@
 import { PermissionFlagsBits, type GuildMember, type PartialGuildMember } from 'discord.js';
 import type { PluginEventHandler, PluginContext } from '../../sdk';
-import { diffInviteUses, readInviteSnapshot, writeInviteSnapshot, type InviteUseSnapshot } from '../invite-cache';
+import {
+  diffInviteUses,
+  readInviteSnapshot,
+  writeInviteSnapshot,
+  type InviteUseSnapshot,
+} from '../invite-cache';
 
 async function logService(ctx: PluginContext) {
   return ctx.services.get('logging');
@@ -13,13 +18,19 @@ async function attributeInvite(ctx: PluginContext, member: GuildMember): Promise
 
   try {
     const invites = await member.guild.invites.fetch();
-    const current: InviteUseSnapshot[] = invites.map((invite) => ({ code: invite.code, uses: invite.uses ?? 0 }));
+    const current: InviteUseSnapshot[] = invites.map((invite) => ({
+      code: invite.code,
+      uses: invite.uses ?? 0,
+    }));
     const previous = await readInviteSnapshot(ctx.redis, member.guild.id);
     const diff = diffInviteUses(previous, current);
     await writeInviteSnapshot(ctx.redis, member.guild.id, current);
     return diff ? `Used invite \`${diff.code}\` (${diff.usesBefore} → ${diff.usesAfter} uses).` : null;
   } catch (err) {
-    ctx.logger.warn({ guildId: member.guild.id, err: err instanceof Error ? err.message : String(err) }, 'logging: invite-use attribution failed');
+    ctx.logger.warn(
+      { guildId: member.guild.id, err: err instanceof Error ? err.message : String(err) },
+      'logging: invite-use attribution failed',
+    );
     return null;
   }
 }

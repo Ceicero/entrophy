@@ -15,6 +15,9 @@ export const evaluateAccountAge: JoinEvaluator<Config> = async ({ join }, config
   return {
     matched: true,
     reason: `Account is ${Math.max(0, Math.round(ageHours * 10) / 10)}h old (minimum ${config.minAccountAgeHours}h).`,
-    evidence: { accountAgeHours: Math.round(ageHours * 100) / 100, minAccountAgeHours: config.minAccountAgeHours },
+    evidence: {
+      accountAgeHours: Math.round(ageHours * 100) / 100,
+      minAccountAgeHours: config.minAccountAgeHours,
+    },
   };
 };

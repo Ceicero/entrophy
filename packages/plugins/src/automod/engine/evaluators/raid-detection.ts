@@ -15,6 +15,10 @@ export const evaluateRaidDetection: JoinEvaluator<Config> = async ({ join, windo
   return {
     matched: true,
     reason: `${count} members joined within ${config.joinBurstWindowSeconds}s (threshold ${config.joinBurstCount}).`,
-    evidence: { joinCount: count, joinBurstCount: config.joinBurstCount, windowSeconds: config.joinBurstWindowSeconds },
+    evidence: {
+      joinCount: count,
+      joinBurstCount: config.joinBurstCount,
+      windowSeconds: config.joinBurstWindowSeconds,
+    },
   };
 };

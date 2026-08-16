@@ -7,7 +7,8 @@ import { apiFetch, toQueryString } from './api';
 
 export const automodQueryKeys = {
   rules: (guildId: string) => ['guilds', guildId, 'automod', 'rules'] as const,
-  events: (guildId: string, filters: AutomodEventFilters) => ['guilds', guildId, 'automod', 'events', filters] as const,
+  events: (guildId: string, filters: AutomodEventFilters) =>
+    ['guilds', guildId, 'automod', 'events', filters] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -25,7 +26,8 @@ export function useAutomodRules(guildId: string | undefined) {
 export function useCreateAutomodRule(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: AutomodRuleInput) => apiFetch<AutomodRuleDto>(`/guilds/${guildId}/automod/rules`, { method: 'POST', body: input }),
+    mutationFn: (input: AutomodRuleInput) =>
+      apiFetch<AutomodRuleDto>(`/guilds/${guildId}/automod/rules`, { method: 'POST', body: input }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: automodQueryKeys.rules(guildId) });
     },
@@ -46,7 +48,8 @@ export function useUpdateAutomodRule(guildId: string) {
 export function useDeleteAutomodRule(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (ruleId: string) => apiFetch<void>(`/guilds/${guildId}/automod/rules/${ruleId}`, { method: 'DELETE' }),
+    mutationFn: (ruleId: string) =>
+      apiFetch<void>(`/guilds/${guildId}/automod/rules/${ruleId}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: automodQueryKeys.rules(guildId) });
     },
@@ -57,7 +60,10 @@ export function useSetRuleDryRun(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ ruleId, dryRun }: { ruleId: string; dryRun: boolean }) =>
-      apiFetch<AutomodRuleDto>(`/guilds/${guildId}/automod/rules/${ruleId}/dry-run`, { method: 'POST', body: { dryRun } }),
+      apiFetch<AutomodRuleDto>(`/guilds/${guildId}/automod/rules/${ruleId}/dry-run`, {
+        method: 'POST',
+        body: { dryRun },
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: automodQueryKeys.rules(guildId) });
     },
@@ -68,7 +74,11 @@ export function useSetRuleDryRun(guildId: string) {
 export function useSetGuildWideDryRun(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (dryRun: boolean) => apiFetch<{ ok: boolean; rulesAffected: number }>(`/guilds/${guildId}/automod/dry-run`, { method: 'POST', body: { dryRun } }),
+    mutationFn: (dryRun: boolean) =>
+      apiFetch<{ ok: boolean; rulesAffected: number }>(`/guilds/${guildId}/automod/dry-run`, {
+        method: 'POST',
+        body: { dryRun },
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: automodQueryKeys.rules(guildId) });
     },
@@ -78,7 +88,10 @@ export function useSetGuildWideDryRun(guildId: string) {
 export function useTestAutomodRule(guildId: string) {
   return useMutation({
     mutationFn: ({ ruleId, text }: { ruleId: string; text: string }) =>
-      apiFetch<AutomodRuleTestResult>(`/guilds/${guildId}/automod/rules/${ruleId}/test`, { method: 'POST', body: { text } }),
+      apiFetch<AutomodRuleTestResult>(`/guilds/${guildId}/automod/rules/${ruleId}/test`, {
+        method: 'POST',
+        body: { text },
+      }),
   });
 }
 
@@ -95,7 +108,10 @@ export interface AutomodEventFilters {
 export function useAutomodEvents(guildId: string | undefined, filters: AutomodEventFilters = {}) {
   return useQuery({
     queryKey: automodQueryKeys.events(guildId ?? '', filters),
-    queryFn: () => apiFetch<Paginated<AutomodEventDto>>(`/guilds/${guildId}/automod/events${toQueryString({ ...filters })}`),
+    queryFn: () =>
+      apiFetch<Paginated<AutomodEventDto>>(
+        `/guilds/${guildId}/automod/events${toQueryString({ ...filters })}`,
+      ),
     enabled: Boolean(guildId),
   });
 }
@@ -103,8 +119,17 @@ export function useAutomodEvents(guildId: string | undefined, filters: AutomodEv
 export function useReviewAutomodEvent(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ eventId, reviewStatus }: { eventId: string; reviewStatus: 'CONFIRMED' | 'FALSE_POSITIVE' }) =>
-      apiFetch<AutomodEventDto>(`/guilds/${guildId}/automod/events/${eventId}/review`, { method: 'PATCH', body: { reviewStatus } }),
+    mutationFn: ({
+      eventId,
+      reviewStatus,
+    }: {
+      eventId: string;
+      reviewStatus: 'CONFIRMED' | 'FALSE_POSITIVE';
+    }) =>
+      apiFetch<AutomodEventDto>(`/guilds/${guildId}/automod/events/${eventId}/review`, {
+        method: 'PATCH',
+        body: { reviewStatus },
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['guilds', guildId, 'automod', 'events'] });
     },

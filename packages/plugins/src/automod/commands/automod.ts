@@ -24,7 +24,13 @@ const EXEMPT_KIND_CHOICES = [
 ];
 
 function ruleOption(builder: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder {
-  return builder.addStringOption((opt) => opt.setName('rule').setDescription('The rule (start typing its name).').setRequired(true).setAutocomplete(true));
+  return builder.addStringOption((opt) =>
+    opt
+      .setName('rule')
+      .setDescription('The rule (start typing its name).')
+      .setRequired(true)
+      .setAutocomplete(true),
+  );
 }
 
 const data = new SlashCommandBuilder()
@@ -40,43 +46,103 @@ const data = new SlashCommandBuilder()
         sub
           .setName('create')
           .setDescription('Create a new automod rule (opens a form for the type-specific settings).')
-          .addStringOption((opt) => opt.setName('type').setDescription('What this rule checks for.').setRequired(true).addChoices(...RULE_TYPE_CHOICES))
-          .addStringOption((opt) => opt.setName('name').setDescription('A short name for this rule.').setRequired(true).setMaxLength(100))
-          .addStringOption((opt) => opt.setName('action').setDescription('What to do when the rule matches.').setRequired(true).addChoices(...RULE_ACTION_CHOICES))
-          .addIntegerOption((opt) => opt.setName('timeout_minutes').setDescription('Timeout length in minutes (only used when action is timeout).').setMinValue(1).setMaxValue(40320)),
+          .addStringOption((opt) =>
+            opt
+              .setName('type')
+              .setDescription('What this rule checks for.')
+              .setRequired(true)
+              .addChoices(...RULE_TYPE_CHOICES),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('name')
+              .setDescription('A short name for this rule.')
+              .setRequired(true)
+              .setMaxLength(100),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('action')
+              .setDescription('What to do when the rule matches.')
+              .setRequired(true)
+              .addChoices(...RULE_ACTION_CHOICES),
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName('timeout_minutes')
+              .setDescription('Timeout length in minutes (only used when action is timeout).')
+              .setMinValue(1)
+              .setMaxValue(40320),
+          ),
       )
       .addSubcommand((sub) => sub.setName('list').setDescription('List every automod rule.'))
-      .addSubcommand((sub) => ruleOption(sub.setName('view').setDescription('View a rule\'s full configuration.')))
-      .addSubcommand((sub) => ruleOption(sub.setName('edit').setDescription('Edit a rule\'s type-specific settings (opens a form).')))
-      .addSubcommand((sub) => ruleOption(sub.setName('delete').setDescription('Delete a rule (asks for confirmation).')))
+      .addSubcommand((sub) =>
+        ruleOption(sub.setName('view').setDescription("View a rule's full configuration.")),
+      )
+      .addSubcommand((sub) =>
+        ruleOption(
+          sub.setName('edit').setDescription("Edit a rule's type-specific settings (opens a form)."),
+        ),
+      )
+      .addSubcommand((sub) =>
+        ruleOption(sub.setName('delete').setDescription('Delete a rule (asks for confirmation).')),
+      )
       .addSubcommand((sub) => ruleOption(sub.setName('toggle').setDescription('Enable/disable a rule.')))
       .addSubcommand((sub) =>
-        ruleOption(sub.setName('test').setDescription('Test a rule against sample text — no action is taken.')).addStringOption((opt) =>
-          opt.setName('text').setDescription('Sample message text to test.').setRequired(true).setMaxLength(1000),
+        ruleOption(
+          sub.setName('test').setDescription('Test a rule against sample text — no action is taken.'),
+        ).addStringOption((opt) =>
+          opt
+            .setName('text')
+            .setDescription('Sample message text to test.')
+            .setRequired(true)
+            .setMaxLength(1000),
         ),
       ),
   )
   .addSubcommandGroup((group) =>
     group
       .setName('exempt')
-      .setDescription('Manage a rule\'s exemptions (roles, channels, users, trusted domains).')
+      .setDescription("Manage a rule's exemptions (roles, channels, users, trusted domains).")
       .addSubcommand((sub) =>
-        ruleOption(sub.setName('add').setDescription('Exempt a role/channel/user, or trust a domain, for a rule.'))
-          .addStringOption((opt) => opt.setName('kind').setDescription('What kind of exemption to add.').setRequired(true).addChoices(...EXEMPT_KIND_CHOICES))
+        ruleOption(
+          sub.setName('add').setDescription('Exempt a role/channel/user, or trust a domain, for a rule.'),
+        )
+          .addStringOption((opt) =>
+            opt
+              .setName('kind')
+              .setDescription('What kind of exemption to add.')
+              .setRequired(true)
+              .addChoices(...EXEMPT_KIND_CHOICES),
+          )
           .addRoleOption((opt) => opt.setName('role').setDescription('Role to exempt (kind: role).'))
-          .addChannelOption((opt) => opt.setName('channel').setDescription('Channel to exempt (kind: channel).'))
+          .addChannelOption((opt) =>
+            opt.setName('channel').setDescription('Channel to exempt (kind: channel).'),
+          )
           .addUserOption((opt) => opt.setName('user').setDescription('User to exempt (kind: user).'))
-          .addStringOption((opt) => opt.setName('domain').setDescription('Domain to trust (kind: domain).').setMaxLength(253)),
+          .addStringOption((opt) =>
+            opt.setName('domain').setDescription('Domain to trust (kind: domain).').setMaxLength(253),
+          ),
       )
       .addSubcommand((sub) =>
         ruleOption(sub.setName('remove').setDescription('Remove an exemption from a rule.'))
-          .addStringOption((opt) => opt.setName('kind').setDescription('What kind of exemption to remove.').setRequired(true).addChoices(...EXEMPT_KIND_CHOICES))
+          .addStringOption((opt) =>
+            opt
+              .setName('kind')
+              .setDescription('What kind of exemption to remove.')
+              .setRequired(true)
+              .addChoices(...EXEMPT_KIND_CHOICES),
+          )
           .addRoleOption((opt) => opt.setName('role').setDescription('Role to un-exempt (kind: role).'))
-          .addChannelOption((opt) => opt.setName('channel').setDescription('Channel to un-exempt (kind: channel).'))
+          .addChannelOption((opt) =>
+            opt.setName('channel').setDescription('Channel to un-exempt (kind: channel).'),
+          )
           .addUserOption((opt) => opt.setName('user').setDescription('User to un-exempt (kind: user).'))
-          .addStringOption((opt) => opt.setName('domain').setDescription('Domain to un-trust (kind: domain).').setMaxLength(253)),
+          .addStringOption((opt) =>
+            opt.setName('domain').setDescription('Domain to un-trust (kind: domain).').setMaxLength(253),
+          ),
       )
-      .addSubcommand((sub) => ruleOption(sub.setName('list').setDescription('List a rule\'s exemptions.'))),
+      .addSubcommand((sub) => ruleOption(sub.setName('list').setDescription("List a rule's exemptions."))),
   )
   .addSubcommand((sub) =>
     sub
@@ -90,8 +156,16 @@ const data = new SlashCommandBuilder()
           .addChoices({ name: 'On (dry run)', value: 'on' }, { name: 'Off (live)', value: 'off' }),
       ),
   )
-  .addSubcommand((sub) => sub.setName('review').setDescription('Review pending automod matches (confirm or mark as false positive).'))
-  .addSubcommand((sub) => sub.setName('status').setDescription('Show automod\'s current status: dry-run state, rule health, recent activity.'));
+  .addSubcommand((sub) =>
+    sub
+      .setName('review')
+      .setDescription('Review pending automod matches (confirm or mark as false positive).'),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName('status')
+      .setDescription("Show automod's current status: dry-run state, rule health, recent activity."),
+  );
 
 export const command: PluginCommand = {
   data,
@@ -141,7 +215,10 @@ export const command: PluginCommand = {
       }
     }
 
-    await c.interaction.reply({ embeds: [errorEmbed(c.t('errors.not_found', { thing: 'Subcommand' }))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('errors.not_found', { thing: 'Subcommand' }))],
+      ephemeral: true,
+    });
   },
   async autocomplete(c) {
     await ruleAutocomplete(c);

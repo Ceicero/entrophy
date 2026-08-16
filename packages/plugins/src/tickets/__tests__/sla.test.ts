@@ -21,7 +21,13 @@ describe('isSlaBreached', () => {
   });
 
   it('is false once a first response has been recorded, even if the due date has passed', () => {
-    expect(isSlaBreached({ slaDueAt: '2026-01-01T11:00:00.000Z', firstResponseAt: '2026-01-01T11:30:00.000Z', now })).toBe(false);
+    expect(
+      isSlaBreached({
+        slaDueAt: '2026-01-01T11:00:00.000Z',
+        firstResponseAt: '2026-01-01T11:30:00.000Z',
+        now,
+      }),
+    ).toBe(false);
   });
 
   it('is true when the due date is in the past and there has been no response', () => {
@@ -37,6 +43,8 @@ describe('isSlaBreached', () => {
   });
 
   it('accepts Date objects as well as ISO strings', () => {
-    expect(isSlaBreached({ slaDueAt: new Date('2026-01-01T11:00:00.000Z'), firstResponseAt: null, now })).toBe(true);
+    expect(
+      isSlaBreached({ slaDueAt: new Date('2026-01-01T11:00:00.000Z'), firstResponseAt: null, now }),
+    ).toBe(true);
   });
 });

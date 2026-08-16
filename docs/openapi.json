@@ -26,6 +26,26 @@
         }
       }
     },
+    "/auth/invite": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "query",
+            "name": "guild_id",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/auth/discord/callback": {
       "get": {
         "responses": {
@@ -627,9 +647,7 @@
                     "maxLength": 1000
                   }
                 },
-                "required": [
-                  "reason"
-                ],
+                "required": ["reason"],
                 "additionalProperties": false
               }
             }
@@ -792,10 +810,7 @@
                     "maxLength": 2000
                   }
                 },
-                "required": [
-                  "userId",
-                  "content"
-                ],
+                "required": ["userId", "content"],
                 "additionalProperties": false
               }
             }
@@ -872,11 +887,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "PENDING",
-                "ACCEPTED",
-                "DENIED"
-              ]
+              "enum": ["PENDING", "ACCEPTED", "DENIED"]
             },
             "in": "query",
             "name": "status",
@@ -916,9 +927,7 @@
                     "maxLength": 2000
                   }
                 },
-                "required": [
-                  "accept"
-                ],
+                "required": ["accept"],
                 "additionalProperties": false
               }
             }
@@ -1047,9 +1056,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "MESSAGE_FREQUENCY"
-                            ]
+                            "enum": ["MESSAGE_FREQUENCY"]
                           },
                           "maxMessages": {
                             "type": "integer",
@@ -1064,9 +1071,7 @@
                             "default": 10
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1074,9 +1079,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "DUPLICATE_MESSAGES"
-                            ]
+                            "enum": ["DUPLICATE_MESSAGES"]
                           },
                           "maxDuplicates": {
                             "type": "integer",
@@ -1091,9 +1094,7 @@
                             "default": 60
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1101,9 +1102,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "MENTION_SPAM"
-                            ]
+                            "enum": ["MENTION_SPAM"]
                           },
                           "maxMentions": {
                             "type": "integer",
@@ -1116,9 +1115,7 @@
                             "default": true
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1126,9 +1123,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "INVITE_LINKS"
-                            ]
+                            "enum": ["INVITE_LINKS"]
                           },
                           "allowOwnServerInvites": {
                             "type": "boolean",
@@ -1145,9 +1140,7 @@
                             "default": []
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1155,9 +1148,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "SCAM_LINKS"
-                            ]
+                            "enum": ["SCAM_LINKS"]
                           },
                           "useBuiltInList": {
                             "type": "boolean",
@@ -1174,9 +1165,7 @@
                             "default": []
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1184,9 +1173,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "REGEX_FILTER"
-                            ]
+                            "enum": ["REGEX_FILTER"]
                           },
                           "pattern": {
                             "type": "string",
@@ -1199,10 +1186,7 @@
                             "default": "i"
                           }
                         },
-                        "required": [
-                          "type",
-                          "pattern"
-                        ],
+                        "required": ["type", "pattern"],
                         "additionalProperties": false
                       },
                       {
@@ -1210,9 +1194,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "WORD_FILTER"
-                            ]
+                            "enum": ["WORD_FILTER"]
                           },
                           "words": {
                             "type": "array",
@@ -1233,10 +1215,7 @@
                             "default": false
                           }
                         },
-                        "required": [
-                          "type",
-                          "words"
-                        ],
+                        "required": ["type", "words"],
                         "additionalProperties": false
                       },
                       {
@@ -1244,9 +1223,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "CAPS"
-                            ]
+                            "enum": ["CAPS"]
                           },
                           "minLength": {
                             "type": "integer",
@@ -1261,9 +1238,7 @@
                             "default": 70
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1271,9 +1246,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "REPEATED_CHARS"
-                            ]
+                            "enum": ["REPEATED_CHARS"]
                           },
                           "maxRepeats": {
                             "type": "integer",
@@ -1282,9 +1255,7 @@
                             "default": 6
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1292,9 +1263,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "ATTACHMENTS"
-                            ]
+                            "enum": ["ATTACHMENTS"]
                           },
                           "blockedExtensions": {
                             "type": "array",
@@ -1304,14 +1273,7 @@
                               "maxLength": 10
                             },
                             "maxItems": 100,
-                            "default": [
-                              "exe",
-                              "bat",
-                              "scr",
-                              "msi",
-                              "jar",
-                              "cmd"
-                            ]
+                            "default": ["exe", "bat", "scr", "msi", "jar", "cmd"]
                           },
                           "maxAttachments": {
                             "type": "integer",
@@ -1319,9 +1281,7 @@
                             "maximum": 20
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1329,9 +1289,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "NSFW_ENFORCEMENT"
-                            ]
+                            "enum": ["NSFW_ENFORCEMENT"]
                           },
                           "requireNsfwChannelForKeywords": {
                             "type": "array",
@@ -1344,9 +1302,7 @@
                             "default": []
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1354,9 +1310,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "ACCOUNT_AGE"
-                            ]
+                            "enum": ["ACCOUNT_AGE"]
                           },
                           "minAccountAgeHours": {
                             "type": "integer",
@@ -1365,9 +1319,7 @@
                             "default": 24
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1375,9 +1327,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "RAID_DETECTION"
-                            ]
+                            "enum": ["RAID_DETECTION"]
                           },
                           "joinBurstCount": {
                             "type": "integer",
@@ -1392,9 +1342,7 @@
                             "default": 30
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     ]
@@ -1406,14 +1354,7 @@
                       "properties": {
                         "type": {
                           "type": "string",
-                          "enum": [
-                            "warn",
-                            "delete",
-                            "timeout",
-                            "quarantine",
-                            "alert_staff",
-                            "ignore"
-                          ]
+                          "enum": ["warn", "delete", "timeout", "quarantine", "alert_staff", "ignore"]
                         },
                         "timeoutMs": {
                           "type": "integer",
@@ -1422,9 +1363,7 @@
                           "maximum": 2419200000
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "minItems": 1,
@@ -1471,11 +1410,7 @@
                     "default": 0
                   }
                 },
-                "required": [
-                  "name",
-                  "config",
-                  "actions"
-                ],
+                "required": ["name", "config", "actions"],
                 "additionalProperties": false
               }
             }
@@ -1528,9 +1463,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "MESSAGE_FREQUENCY"
-                            ]
+                            "enum": ["MESSAGE_FREQUENCY"]
                           },
                           "maxMessages": {
                             "type": "integer",
@@ -1545,9 +1478,7 @@
                             "default": 10
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1555,9 +1486,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "DUPLICATE_MESSAGES"
-                            ]
+                            "enum": ["DUPLICATE_MESSAGES"]
                           },
                           "maxDuplicates": {
                             "type": "integer",
@@ -1572,9 +1501,7 @@
                             "default": 60
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1582,9 +1509,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "MENTION_SPAM"
-                            ]
+                            "enum": ["MENTION_SPAM"]
                           },
                           "maxMentions": {
                             "type": "integer",
@@ -1597,9 +1522,7 @@
                             "default": true
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1607,9 +1530,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "INVITE_LINKS"
-                            ]
+                            "enum": ["INVITE_LINKS"]
                           },
                           "allowOwnServerInvites": {
                             "type": "boolean",
@@ -1626,9 +1547,7 @@
                             "default": []
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1636,9 +1555,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "SCAM_LINKS"
-                            ]
+                            "enum": ["SCAM_LINKS"]
                           },
                           "useBuiltInList": {
                             "type": "boolean",
@@ -1655,9 +1572,7 @@
                             "default": []
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1665,9 +1580,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "REGEX_FILTER"
-                            ]
+                            "enum": ["REGEX_FILTER"]
                           },
                           "pattern": {
                             "type": "string",
@@ -1680,10 +1593,7 @@
                             "default": "i"
                           }
                         },
-                        "required": [
-                          "type",
-                          "pattern"
-                        ],
+                        "required": ["type", "pattern"],
                         "additionalProperties": false
                       },
                       {
@@ -1691,9 +1601,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "WORD_FILTER"
-                            ]
+                            "enum": ["WORD_FILTER"]
                           },
                           "words": {
                             "type": "array",
@@ -1714,10 +1622,7 @@
                             "default": false
                           }
                         },
-                        "required": [
-                          "type",
-                          "words"
-                        ],
+                        "required": ["type", "words"],
                         "additionalProperties": false
                       },
                       {
@@ -1725,9 +1630,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "CAPS"
-                            ]
+                            "enum": ["CAPS"]
                           },
                           "minLength": {
                             "type": "integer",
@@ -1742,9 +1645,7 @@
                             "default": 70
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1752,9 +1653,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "REPEATED_CHARS"
-                            ]
+                            "enum": ["REPEATED_CHARS"]
                           },
                           "maxRepeats": {
                             "type": "integer",
@@ -1763,9 +1662,7 @@
                             "default": 6
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1773,9 +1670,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "ATTACHMENTS"
-                            ]
+                            "enum": ["ATTACHMENTS"]
                           },
                           "blockedExtensions": {
                             "type": "array",
@@ -1785,14 +1680,7 @@
                               "maxLength": 10
                             },
                             "maxItems": 100,
-                            "default": [
-                              "exe",
-                              "bat",
-                              "scr",
-                              "msi",
-                              "jar",
-                              "cmd"
-                            ]
+                            "default": ["exe", "bat", "scr", "msi", "jar", "cmd"]
                           },
                           "maxAttachments": {
                             "type": "integer",
@@ -1800,9 +1688,7 @@
                             "maximum": 20
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1810,9 +1696,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "NSFW_ENFORCEMENT"
-                            ]
+                            "enum": ["NSFW_ENFORCEMENT"]
                           },
                           "requireNsfwChannelForKeywords": {
                             "type": "array",
@@ -1825,9 +1709,7 @@
                             "default": []
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1835,9 +1717,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "ACCOUNT_AGE"
-                            ]
+                            "enum": ["ACCOUNT_AGE"]
                           },
                           "minAccountAgeHours": {
                             "type": "integer",
@@ -1846,9 +1726,7 @@
                             "default": 24
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       },
                       {
@@ -1856,9 +1734,7 @@
                         "properties": {
                           "type": {
                             "type": "string",
-                            "enum": [
-                              "RAID_DETECTION"
-                            ]
+                            "enum": ["RAID_DETECTION"]
                           },
                           "joinBurstCount": {
                             "type": "integer",
@@ -1873,9 +1749,7 @@
                             "default": 30
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     ]
@@ -1887,14 +1761,7 @@
                       "properties": {
                         "type": {
                           "type": "string",
-                          "enum": [
-                            "warn",
-                            "delete",
-                            "timeout",
-                            "quarantine",
-                            "alert_staff",
-                            "ignore"
-                          ]
+                          "enum": ["warn", "delete", "timeout", "quarantine", "alert_staff", "ignore"]
                         },
                         "timeoutMs": {
                           "type": "integer",
@@ -1903,9 +1770,7 @@
                           "maximum": 2419200000
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "minItems": 1,
@@ -2024,9 +1889,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "dryRun"
-                ],
+                "required": ["dryRun"],
                 "additionalProperties": false
               }
             }
@@ -2072,9 +1935,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "dryRun"
-                ],
+                "required": ["dryRun"],
                 "additionalProperties": false
               }
             }
@@ -2122,12 +1983,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "NONE",
-                "PENDING",
-                "CONFIRMED",
-                "FALSE_POSITIVE"
-              ]
+              "enum": ["NONE", "PENDING", "CONFIRMED", "FALSE_POSITIVE"]
             },
             "in": "query",
             "name": "reviewStatus",
@@ -2161,15 +2017,10 @@
                 "properties": {
                   "reviewStatus": {
                     "type": "string",
-                    "enum": [
-                      "CONFIRMED",
-                      "FALSE_POSITIVE"
-                    ]
+                    "enum": ["CONFIRMED", "FALSE_POSITIVE"]
                   }
                 },
-                "required": [
-                  "reviewStatus"
-                ],
+                "required": ["reviewStatus"],
                 "additionalProperties": false
               }
             }
@@ -2217,9 +2068,7 @@
                     "maxLength": 2000
                   }
                 },
-                "required": [
-                  "text"
-                ],
+                "required": ["text"],
                 "additionalProperties": false
               }
             }
@@ -2273,18 +2122,14 @@
                             "type": "boolean"
                           },
                           {
-                            "enum": [
-                              "null"
-                            ],
+                            "enum": ["null"],
                             "nullable": true
                           }
                         ]
                       }
                     }
                   },
-                  "required": [
-                    "matched"
-                  ],
+                  "required": ["matched"],
                   "additionalProperties": false
                 }
               }
@@ -2537,9 +2382,7 @@
                     "maxLength": 4000
                   }
                 },
-                "required": [
-                  "text"
-                ],
+                "required": ["text"],
                 "additionalProperties": false
               }
             }
@@ -2673,10 +2516,7 @@
                   },
                   "mode": {
                     "type": "string",
-                    "enum": [
-                      "CHANNEL",
-                      "THREAD"
-                    ],
+                    "enum": ["CHANNEL", "THREAD"],
                     "default": "CHANNEL"
                   },
                   "intakeForm": {
@@ -2691,10 +2531,7 @@
                         },
                         "style": {
                           "type": "string",
-                          "enum": [
-                            "short",
-                            "paragraph"
-                          ],
+                          "enum": ["short", "paragraph"],
                           "default": "short"
                         },
                         "required": {
@@ -2702,9 +2539,7 @@
                           "default": true
                         }
                       },
-                      "required": [
-                        "label"
-                      ],
+                      "required": ["label"],
                       "additionalProperties": false
                     },
                     "maxItems": 5,
@@ -2717,11 +2552,7 @@
                     "nullable": true
                   }
                 },
-                "required": [
-                  "channelId",
-                  "title",
-                  "description"
-                ],
+                "required": ["channelId", "title", "description"],
                 "additionalProperties": false
               }
             }
@@ -2788,10 +2619,7 @@
                   },
                   "mode": {
                     "type": "string",
-                    "enum": [
-                      "CHANNEL",
-                      "THREAD"
-                    ],
+                    "enum": ["CHANNEL", "THREAD"],
                     "default": "CHANNEL"
                   },
                   "intakeForm": {
@@ -2806,10 +2634,7 @@
                         },
                         "style": {
                           "type": "string",
-                          "enum": [
-                            "short",
-                            "paragraph"
-                          ],
+                          "enum": ["short", "paragraph"],
                           "default": "short"
                         },
                         "required": {
@@ -2817,9 +2642,7 @@
                           "default": true
                         }
                       },
-                      "required": [
-                        "label"
-                      ],
+                      "required": ["label"],
                       "additionalProperties": false
                     },
                     "maxItems": 5,
@@ -2944,11 +2767,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "OPEN",
-                "CLOSED",
-                "ARCHIVED"
-              ]
+              "enum": ["OPEN", "CLOSED", "ARCHIVED"]
             },
             "in": "query",
             "name": "status",
@@ -3077,9 +2896,7 @@
                     "nullable": true
                   }
                 },
-                "required": [
-                  "assigneeId"
-                ],
+                "required": ["assigneeId"],
                 "additionalProperties": false
               }
             }
@@ -3118,10 +2935,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "html",
-                "json"
-              ],
+              "enum": ["html", "json"],
               "default": "html"
             },
             "in": "query",
@@ -3197,11 +3011,7 @@
                   },
                   "style": {
                     "type": "string",
-                    "enum": [
-                      "BUTTONS",
-                      "SELECT",
-                      "REACTIONS"
-                    ]
+                    "enum": ["BUTTONS", "SELECT", "REACTIONS"]
                   },
                   "groupId": {
                     "type": "string",
@@ -3243,22 +3053,14 @@
                           "default": 0
                         }
                       },
-                      "required": [
-                        "roleId",
-                        "label"
-                      ],
+                      "required": ["roleId", "label"],
                       "additionalProperties": false
                     },
                     "minItems": 1,
                     "maxItems": 25
                   }
                 },
-                "required": [
-                  "channelId",
-                  "title",
-                  "style",
-                  "options"
-                ],
+                "required": ["channelId", "title", "style", "options"],
                 "additionalProperties": false
               }
             }
@@ -3307,11 +3109,7 @@
                   },
                   "style": {
                     "type": "string",
-                    "enum": [
-                      "BUTTONS",
-                      "SELECT",
-                      "REACTIONS"
-                    ]
+                    "enum": ["BUTTONS", "SELECT", "REACTIONS"]
                   },
                   "groupId": {
                     "type": "string",
@@ -3353,10 +3151,7 @@
                           "default": 0
                         }
                       },
-                      "required": [
-                        "roleId",
-                        "label"
-                      ],
+                      "required": ["roleId", "label"],
                       "additionalProperties": false
                     },
                     "minItems": 1,
@@ -3505,9 +3300,7 @@
                     "default": null
                   }
                 },
-                "required": [
-                  "name"
-                ],
+                "required": ["name"],
                 "additionalProperties": false
               }
             }
@@ -3871,11 +3664,7 @@
                 "properties": {
                   "mode": {
                     "type": "string",
-                    "enum": [
-                      "button",
-                      "modal",
-                      "captcha"
-                    ]
+                    "enum": ["button", "modal", "captcha"]
                   },
                   "questions": {
                     "type": "array",
@@ -3901,11 +3690,7 @@
                   },
                   "underageAction": {
                     "type": "string",
-                    "enum": [
-                      "none",
-                      "quarantine",
-                      "kick"
-                    ]
+                    "enum": ["none", "quarantine", "kick"]
                   },
                   "quarantineRoleId": {
                     "type": "string",
@@ -4028,9 +3813,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "approve"
-                ],
+                "required": ["approve"],
                 "additionalProperties": false
               }
             }
@@ -4207,10 +3990,7 @@
                           "maxLength": 200
                         }
                       },
-                      "required": [
-                        "id",
-                        "label"
-                      ],
+                      "required": ["id", "label"],
                       "additionalProperties": false
                     },
                     "maxItems": 20
@@ -4278,9 +4058,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "enabled"
-                ],
+                "required": ["enabled"],
                 "additionalProperties": false
               }
             }
@@ -4428,10 +4206,7 @@
                     "pattern": "^\\d{17,20}$"
                   }
                 },
-                "required": [
-                  "level",
-                  "roleId"
-                ],
+                "required": ["level", "roleId"],
                 "additionalProperties": false
               }
             }
@@ -4499,11 +4274,7 @@
                   },
                   "mode": {
                     "type": "string",
-                    "enum": [
-                      "give",
-                      "remove",
-                      "set"
-                    ]
+                    "enum": ["give", "remove", "set"]
                   },
                   "amount": {
                     "type": "integer",
@@ -4515,11 +4286,7 @@
                     "maxLength": 500
                   }
                 },
-                "required": [
-                  "userId",
-                  "mode",
-                  "amount"
-                ],
+                "required": ["userId", "mode", "amount"],
                 "additionalProperties": false
               }
             }
@@ -4710,13 +4477,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "PENDING",
-                "APPROVED",
-                "DENIED",
-                "IMPLEMENTED",
-                "CONSIDERING"
-              ]
+              "enum": ["PENDING", "APPROVED", "DENIED", "IMPLEMENTED", "CONSIDERING"]
             },
             "in": "query",
             "name": "status",
@@ -4750,22 +4511,14 @@
                 "properties": {
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "PENDING",
-                      "APPROVED",
-                      "DENIED",
-                      "IMPLEMENTED",
-                      "CONSIDERING"
-                    ]
+                    "enum": ["PENDING", "APPROVED", "DENIED", "IMPLEMENTED", "CONSIDERING"]
                   },
                   "staffNote": {
                     "type": "string",
                     "maxLength": 1000
                   }
                 },
-                "required": [
-                  "status"
-                ],
+                "required": ["status"],
                 "additionalProperties": false
               }
             }
@@ -5159,9 +4912,7 @@
                     "nullable": true
                   }
                 },
-                "required": [
-                  "name"
-                ],
+                "required": ["name"],
                 "additionalProperties": false
               }
             }
@@ -5240,12 +4991,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "twitch",
-                "youtube",
-                "reddit",
-                "steam"
-              ]
+              "enum": ["twitch", "youtube", "reddit", "steam"]
             },
             "in": "query",
             "name": "provider",
@@ -5277,12 +5023,7 @@
                 "properties": {
                   "provider": {
                     "type": "string",
-                    "enum": [
-                      "twitch",
-                      "youtube",
-                      "reddit",
-                      "steam"
-                    ]
+                    "enum": ["twitch", "youtube", "reddit", "steam"]
                   },
                   "target": {
                     "type": "string",
@@ -5304,11 +5045,7 @@
                     "nullable": true
                   }
                 },
-                "required": [
-                  "provider",
-                  "target",
-                  "channelId"
-                ],
+                "required": ["provider", "target", "channelId"],
                 "additionalProperties": false
               }
             }
@@ -5414,11 +5151,7 @@
                     "minItems": 1
                   }
                 },
-                "required": [
-                  "name",
-                  "url",
-                  "events"
-                ],
+                "required": ["name", "url", "events"],
                 "additionalProperties": false
               }
             }
@@ -5576,11 +5309,7 @@
                 "properties": {
                   "provider": {
                     "type": "string",
-                    "enum": [
-                      "openai",
-                      "anthropic",
-                      "compatible"
-                    ]
+                    "enum": ["openai", "anthropic", "compatible"]
                   },
                   "model": {
                     "type": "string",
@@ -5706,11 +5435,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "7d",
-                "30d",
-                "90d"
-              ],
+              "enum": ["7d", "30d", "90d"],
               "default": "7d"
             },
             "in": "query",
@@ -5856,9 +5581,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "confirm"
-                ],
+                "required": ["confirm"],
                 "additionalProperties": false
               }
             }
@@ -5910,6 +5633,35 @@
             },
             "in": "path",
             "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/data/requests/{requestId}/download": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "requestId",
             "required": true
           }
         ],
@@ -5994,10 +5746,7 @@
                   },
                   "ledgerVisibility": {
                     "type": "string",
-                    "enum": [
-                      "staff",
-                      "everyone"
-                    ]
+                    "enum": ["staff", "everyone"]
                   },
                   "flagChannelId": {
                     "type": "string",
@@ -6054,27 +5803,14 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "enum": [
-                        "warn",
-                        "timeout",
-                        "mute",
-                        "kick",
-                        "ban"
-                      ]
+                      "enum": ["warn", "timeout", "mute", "kick", "ban"]
                     }
                   },
                   "allowedDecisions": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "enum": [
-                        "warn",
-                        "timeout",
-                        "mute",
-                        "kick",
-                        "ban",
-                        "dismiss"
-                      ]
+                      "enum": ["warn", "timeout", "mute", "kick", "ban", "dismiss"]
                     }
                   },
                   "banDeleteMessageSeconds": {
@@ -6149,12 +5885,7 @@
                   },
                   "severity": {
                     "type": "string",
-                    "enum": [
-                      "LOW",
-                      "MEDIUM",
-                      "HIGH",
-                      "CRITICAL"
-                    ],
+                    "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
                     "default": "MEDIUM"
                   },
                   "matchers": {
@@ -6201,10 +5932,7 @@
                           "type": "boolean"
                         }
                       },
-                      "required": [
-                        "type",
-                        "value"
-                      ],
+                      "required": ["type", "value"],
                       "additionalProperties": false
                     },
                     "minItems": 1,
@@ -6239,24 +5967,12 @@
                   },
                   "suggestedAction": {
                     "type": "string",
-                    "enum": [
-                      "WARN",
-                      "TIMEOUT",
-                      "MUTE",
-                      "UNMUTE",
-                      "KICK",
-                      "BAN",
-                      "DISMISS"
-                    ],
+                    "enum": ["WARN", "TIMEOUT", "MUTE", "UNMUTE", "KICK", "BAN", "DISMISS"],
                     "nullable": true,
                     "default": null
                   }
                 },
-                "required": [
-                  "name",
-                  "description",
-                  "matchers"
-                ],
+                "required": ["name", "description", "matchers"],
                 "additionalProperties": false
               }
             }
@@ -6332,12 +6048,7 @@
                   },
                   "severity": {
                     "type": "string",
-                    "enum": [
-                      "LOW",
-                      "MEDIUM",
-                      "HIGH",
-                      "CRITICAL"
-                    ],
+                    "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
                     "default": "MEDIUM"
                   },
                   "matchers": {
@@ -6384,10 +6095,7 @@
                           "type": "boolean"
                         }
                       },
-                      "required": [
-                        "type",
-                        "value"
-                      ],
+                      "required": ["type", "value"],
                       "additionalProperties": false
                     },
                     "minItems": 1,
@@ -6422,15 +6130,7 @@
                   },
                   "suggestedAction": {
                     "type": "string",
-                    "enum": [
-                      "WARN",
-                      "TIMEOUT",
-                      "MUTE",
-                      "UNMUTE",
-                      "KICK",
-                      "BAN",
-                      "DISMISS"
-                    ],
+                    "enum": ["WARN", "TIMEOUT", "MUTE", "UNMUTE", "KICK", "BAN", "DISMISS"],
                     "nullable": true,
                     "default": null
                   }
@@ -6509,9 +6209,7 @@
                     "maxLength": 4000
                   }
                 },
-                "required": [
-                  "text"
-                ],
+                "required": ["text"],
                 "additionalProperties": false
               }
             }
@@ -6577,13 +6275,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "FLAG",
-                "DECISION",
-                "APPEAL_OPENED",
-                "APPEAL_DECIDED",
-                "NOTE"
-              ]
+              "enum": ["FLAG", "DECISION", "APPEAL_OPENED", "APPEAL_DECIDED", "NOTE"]
             },
             "in": "query",
             "name": "kind",
@@ -6592,15 +6284,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "WARN",
-                "TIMEOUT",
-                "MUTE",
-                "UNMUTE",
-                "KICK",
-                "BAN",
-                "DISMISS"
-              ]
+              "enum": ["WARN", "TIMEOUT", "MUTE", "UNMUTE", "KICK", "BAN", "DISMISS"]
             },
             "in": "query",
             "name": "decision",
@@ -6609,12 +6293,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "PENDING",
-                "ACTIONED",
-                "DISMISSED",
-                "EXPIRED"
-              ]
+              "enum": ["PENDING", "ACTIONED", "DISMISSED", "EXPIRED"]
             },
             "in": "query",
             "name": "status",
@@ -6686,13 +6365,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "FLAG",
-                "DECISION",
-                "APPEAL_OPENED",
-                "APPEAL_DECIDED",
-                "NOTE"
-              ]
+              "enum": ["FLAG", "DECISION", "APPEAL_OPENED", "APPEAL_DECIDED", "NOTE"]
             },
             "in": "query",
             "name": "kind",
@@ -6701,15 +6374,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "WARN",
-                "TIMEOUT",
-                "MUTE",
-                "UNMUTE",
-                "KICK",
-                "BAN",
-                "DISMISS"
-              ]
+              "enum": ["WARN", "TIMEOUT", "MUTE", "UNMUTE", "KICK", "BAN", "DISMISS"]
             },
             "in": "query",
             "name": "decision",
@@ -6718,12 +6383,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "PENDING",
-                "ACTIONED",
-                "DISMISSED",
-                "EXPIRED"
-              ]
+              "enum": ["PENDING", "ACTIONED", "DISMISSED", "EXPIRED"]
             },
             "in": "query",
             "name": "status",
@@ -6822,15 +6482,7 @@
                 "properties": {
                   "decision": {
                     "type": "string",
-                    "enum": [
-                      "WARN",
-                      "TIMEOUT",
-                      "MUTE",
-                      "UNMUTE",
-                      "KICK",
-                      "BAN",
-                      "DISMISS"
-                    ]
+                    "enum": ["WARN", "TIMEOUT", "MUTE", "UNMUTE", "KICK", "BAN", "DISMISS"]
                   },
                   "reason": {
                     "type": "string",
@@ -6847,9 +6499,7 @@
                     "maximum": 604800
                   }
                 },
-                "required": [
-                  "decision"
-                ],
+                "required": ["decision"],
                 "additionalProperties": false
               }
             }
@@ -6906,13 +6556,7 @@
           {
             "schema": {
               "type": "string",
-              "enum": [
-                "twitch",
-                "google",
-                "microsoft",
-                "notion",
-                "reddit"
-              ]
+              "enum": ["twitch", "google", "microsoft", "notion", "reddit"]
             },
             "in": "path",
             "name": "provider",
@@ -6951,15 +6595,10 @@
                   },
                   "currency": {
                     "type": "string",
-                    "enum": [
-                      "usd"
-                    ]
+                    "enum": ["usd"]
                   }
                 },
-                "required": [
-                  "amountCents",
-                  "currency"
-                ],
+                "required": ["amountCents", "currency"],
                 "additionalProperties": false
               }
             }
@@ -7062,9 +6701,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "response"
-                ],
+                "required": ["response"],
                 "additionalProperties": false
               }
             }

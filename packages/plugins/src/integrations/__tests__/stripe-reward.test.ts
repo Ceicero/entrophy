@@ -7,10 +7,21 @@ describe('resolveStripeRoleReward', () => {
   it('maps checkout.session.completed to an add action via client_reference_id', () => {
     const event: StripeEventLike = {
       type: 'checkout.session.completed',
-      data: { object: { client_reference_id: '222222222222222222', metadata: { priceId: 'price_123', guildId: 'g1' } } },
+      data: {
+        object: {
+          client_reference_id: '222222222222222222',
+          metadata: { priceId: 'price_123', guildId: 'g1' },
+        },
+      },
     };
     const result = resolveStripeRoleReward(event, rewards);
-    expect(result).toEqual({ guildId: 'g1', discordUserId: '222222222222222222', priceId: 'price_123', roleId: '111111111111111111', action: 'add' });
+    expect(result).toEqual({
+      guildId: 'g1',
+      discordUserId: '222222222222222222',
+      priceId: 'price_123',
+      roleId: '111111111111111111',
+      action: 'add',
+    });
   });
 
   it('falls back to metadata.discord_user_id when client_reference_id is absent', () => {
@@ -26,23 +37,40 @@ describe('resolveStripeRoleReward', () => {
   it('maps invoice.paid using the first line item price id', () => {
     const event: StripeEventLike = {
       type: 'invoice.paid',
-      data: { object: { metadata: { discord_user_id: '444444444444444444' }, lines: { data: [{ price: { id: 'price_123' } }] } } },
+      data: {
+        object: {
+          metadata: { discord_user_id: '444444444444444444' },
+          lines: { data: [{ price: { id: 'price_123' } }] },
+        },
+      },
     };
     const result = resolveStripeRoleReward(event, rewards);
-    expect(result).toMatchObject({ discordUserId: '444444444444444444', roleId: '111111111111111111', action: 'add' });
+    expect(result).toMatchObject({
+      discordUserId: '444444444444444444',
+      roleId: '111111111111111111',
+      action: 'add',
+    });
   });
 
   it('maps customer.subscription.deleted to a remove action', () => {
     const event: StripeEventLike = {
       type: 'customer.subscription.deleted',
-      data: { object: { metadata: { discord_user_id: '555555555555555555' }, items: { data: [{ price: { id: 'price_123' } }] } } },
+      data: {
+        object: {
+          metadata: { discord_user_id: '555555555555555555' },
+          items: { data: [{ price: { id: 'price_123' } }] },
+        },
+      },
     };
     const result = resolveStripeRoleReward(event, rewards);
     expect(result?.action).toBe('remove');
   });
 
   it('returns null when the discord user id is missing', () => {
-    const event: StripeEventLike = { type: 'checkout.session.completed', data: { object: { metadata: { priceId: 'price_123' } } } };
+    const event: StripeEventLike = {
+      type: 'checkout.session.completed',
+      data: { object: { metadata: { priceId: 'price_123' } } },
+    };
     expect(resolveStripeRoleReward(event, rewards)).toBeNull();
   });
 

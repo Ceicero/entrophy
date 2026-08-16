@@ -22,8 +22,7 @@ export interface RollDailyInput {
 }
 
 export type RollDailyResult =
-  | { ok: true; amount: number; streak: number }
-  | { ok: false; retryAfterMs: number };
+  { ok: true; amount: number; streak: number } | { ok: false; retryAfterMs: number };
 
 /**
  * Rolls a `/economy daily` claim: enforces the 20h cooldown, extends the streak when claimed within 48h of the
@@ -40,7 +39,8 @@ export function rollDaily(input: RollDailyInput): RollDailyResult {
     }
   }
 
-  const streakContinues = lastDailyAt !== null && now.getTime() - lastDailyAt.getTime() <= STREAK_CONTINUES_WITHIN_MS;
+  const streakContinues =
+    lastDailyAt !== null && now.getTime() - lastDailyAt.getTime() <= STREAK_CONTINUES_WITHIN_MS;
   const streak = streakContinues ? priorStreak + 1 : 1;
 
   const range = Math.max(0, config.dailyMaxAmount - config.dailyMinAmount);
@@ -76,8 +76,7 @@ export interface GiveConfig {
 }
 
 export type GiveValidationResult =
-  | { ok: true }
-  | { ok: false; reason: 'self' | 'bot' | 'below_min' | 'above_max' | 'insufficient_balance' };
+  { ok: true } | { ok: false; reason: 'self' | 'bot' | 'below_min' | 'above_max' | 'insufficient_balance' };
 
 export interface ValidateGiveInput {
   amount: number;

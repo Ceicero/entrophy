@@ -40,7 +40,11 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | undefined>
 }
 
 /** Cancels a scheduled announcement's BullMQ job: a repeatable scheduler for cron announcements, or a plain delayed job for one-off ones. Never throws. */
-export async function cancelAnnouncementJob(redis: Redis, announcementId: string, cron: string | null): Promise<void> {
+export async function cancelAnnouncementJob(
+  redis: Redis,
+  announcementId: string,
+  cron: string | null,
+): Promise<void> {
   try {
     const queue = communityQueue(redis, 'announcement-run');
     if (cron) {

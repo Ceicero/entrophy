@@ -12,7 +12,11 @@ async function authedApp() {
   });
   const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
   await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-  const mutHeaders = { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken };
+  const mutHeaders = {
+    cookie: cookieHeader,
+    origin: 'http://localhost:3000',
+    'x-csrf-token': session.csrfToken,
+  };
   return { app, prisma, prismaCalls, redis, cookieHeader, mutHeaders };
 }
 
@@ -43,9 +47,17 @@ describe('engagement config', () => {
     });
     const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
     await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-    const mutHeaders = { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken };
+    const mutHeaders = {
+      cookie: cookieHeader,
+      origin: 'http://localhost:3000',
+      'x-csrf-token': session.csrfToken,
+    };
 
-    const before = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/engagement/config`, headers: { cookie: cookieHeader } });
+    const before = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/engagement/config`,
+      headers: { cookie: cookieHeader },
+    });
     expect(before.statusCode).toBe(200);
     expect(before.json().leveling.enabled).toBe(true);
     expect(before.json().leveling.xpPerMessageMin).toBe(15);
@@ -55,12 +67,30 @@ describe('engagement config', () => {
       method: 'PUT',
       url: `/guilds/${GUILD_ID}/engagement/config`,
       headers: mutHeaders,
-      payload: { leveling: { enabled: true, xpPerMessageMin: 10, xpPerMessageMax: 30, xpCooldownSeconds: 45, maxXpPerHour: 500, voiceXpPerMinute: 5, ignoredChannelIds: [], ignoredRoleIds: [], levelUpChannel: 'current', levelUpMessage: 'gg {user} level {level}', rewardMode: 'stack' } },
+      payload: {
+        leveling: {
+          enabled: true,
+          xpPerMessageMin: 10,
+          xpPerMessageMax: 30,
+          xpCooldownSeconds: 45,
+          maxXpPerHour: 500,
+          voiceXpPerMinute: 5,
+          ignoredChannelIds: [],
+          ignoredRoleIds: [],
+          levelUpChannel: 'current',
+          levelUpMessage: 'gg {user} level {level}',
+          rewardMode: 'stack',
+        },
+      },
     });
     expect(put.statusCode).toBe(200);
     expect(put.json().leveling.xpPerMessageMin).toBe(10);
 
-    const after = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/engagement/config`, headers: { cookie: cookieHeader } });
+    const after = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/engagement/config`,
+      headers: { cookie: cookieHeader },
+    });
     expect(after.json().leveling.xpPerMessageMin).toBe(10);
     // untouched sub-configs keep their defaults
     expect(after.json().rep.enabled).toBe(true);
@@ -89,7 +119,11 @@ describe('engagement leaderboard', () => {
     const { cookieHeader } = await loginAs(app, redis, { userId: USER_ID });
     await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/engagement/leaderboard`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/engagement/leaderboard`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.items).toHaveLength(2);
@@ -114,7 +148,11 @@ describe('engagement level rewards', () => {
             if (where.id !== undefined) {
               return store.find((r) => r.id === where.id && r.guildId === where.guildId) ?? null;
             }
-            return store.find((r) => r.guildId === where.guildId && r.level === where.level && r.roleId === where.roleId) ?? null;
+            return (
+              store.find(
+                (r) => r.guildId === where.guildId && r.level === where.level && r.roleId === where.roleId,
+              ) ?? null
+            );
           },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake
           create: async (args: any) => {
@@ -133,23 +171,49 @@ describe('engagement level rewards', () => {
       });
       const { cookieHeader: cookie, session } = await loginAs(built.app, built.redis, { userId: USER_ID });
       await seedUserGuilds(built.redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-      return { app: built.app, cookieHeader: cookie, mutHeaders: { cookie, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken } };
+      return {
+        app: built.app,
+        cookieHeader: cookie,
+        mutHeaders: { cookie, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken },
+      };
     })();
 
-    const create = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/engagement/rewards`, headers: mutHeaders, payload: { level: 5, roleId: ROLE_ID } });
+    const create = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/engagement/rewards`,
+      headers: mutHeaders,
+      payload: { level: 5, roleId: ROLE_ID },
+    });
     expect(create.statusCode).toBe(201);
     const rewardId = create.json().id;
 
-    const dup = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/engagement/rewards`, headers: mutHeaders, payload: { level: 5, roleId: ROLE_ID } });
+    const dup = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/engagement/rewards`,
+      headers: mutHeaders,
+      payload: { level: 5, roleId: ROLE_ID },
+    });
     expect(dup.statusCode).toBe(400);
 
-    const list = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/engagement/rewards`, headers: { cookie: cookieHeader } });
+    const list = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/engagement/rewards`,
+      headers: { cookie: cookieHeader },
+    });
     expect(list.json()).toHaveLength(1);
 
-    const del = await app.inject({ method: 'DELETE', url: `/guilds/${GUILD_ID}/engagement/rewards/${rewardId}`, headers: mutHeaders });
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/engagement/rewards/${rewardId}`,
+      headers: mutHeaders,
+    });
     expect(del.statusCode).toBe(204);
 
-    const listAfter = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/engagement/rewards`, headers: { cookie: cookieHeader } });
+    const listAfter = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/engagement/rewards`,
+      headers: { cookie: cookieHeader },
+    });
     expect(listAfter.json()).toHaveLength(0);
 
     await app.close();
@@ -157,7 +221,11 @@ describe('engagement level rewards', () => {
 
   it('404s deleting a reward that does not belong to the guild', async () => {
     const { app, mutHeaders } = await authedApp();
-    const res = await app.inject({ method: 'DELETE', url: `/guilds/${GUILD_ID}/engagement/rewards/does-not-exist`, headers: mutHeaders });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/engagement/rewards/does-not-exist`,
+      headers: mutHeaders,
+    });
     expect(res.statusCode).toBe(404);
     await app.close();
   });
@@ -186,23 +254,46 @@ describe('engagement xp-adjust', () => {
       });
       const { cookieHeader: cookie, session } = await loginAs(built.app, built.redis, { userId: USER_ID });
       await seedUserGuilds(built.redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-      return { app: built.app, mutHeaders: { cookie, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken } };
+      return {
+        app: built.app,
+        mutHeaders: { cookie, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken },
+      };
     })();
 
-    const give = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/engagement/xp-adjust`, headers: mutHeaders, payload: { userId: TARGET_USER_ID, mode: 'give', amount: 100 } });
+    const give = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/engagement/xp-adjust`,
+      headers: mutHeaders,
+      payload: { userId: TARGET_USER_ID, mode: 'give', amount: 100 },
+    });
     expect(give.statusCode).toBe(200);
     expect(give.json().xp).toBe(100);
     expect(give.json().level).toBe(1); // xpForLevel(1) === 100, so exactly 100 xp is level 1 (see engagement/__tests__/service.test.ts)
 
-    const give2 = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/engagement/xp-adjust`, headers: mutHeaders, payload: { userId: TARGET_USER_ID, mode: 'give', amount: 200 } });
+    const give2 = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/engagement/xp-adjust`,
+      headers: mutHeaders,
+      payload: { userId: TARGET_USER_ID, mode: 'give', amount: 200 },
+    });
     expect(give2.json().xp).toBe(300);
     expect(give2.json().level).toBeGreaterThanOrEqual(give.json().level);
 
-    const set = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/engagement/xp-adjust`, headers: mutHeaders, payload: { userId: TARGET_USER_ID, mode: 'set', amount: 0 } });
+    const set = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/engagement/xp-adjust`,
+      headers: mutHeaders,
+      payload: { userId: TARGET_USER_ID, mode: 'set', amount: 0 },
+    });
     expect(set.json().xp).toBe(0);
     expect(set.json().level).toBe(0);
 
-    const removeBelowZero = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/engagement/xp-adjust`, headers: mutHeaders, payload: { userId: TARGET_USER_ID, mode: 'remove', amount: 50 } });
+    const removeBelowZero = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/engagement/xp-adjust`,
+      headers: mutHeaders,
+      payload: { userId: TARGET_USER_ID, mode: 'remove', amount: 50 },
+    });
     expect(removeBelowZero.json().xp).toBe(0); // clamped, never negative
 
     await app.close();
@@ -226,7 +317,11 @@ describe('engagement reputation leaderboard', () => {
       return { app: built.app, cookieHeader: cookie };
     })();
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/engagement/rep/leaderboard`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/engagement/rep/leaderboard`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.items).toEqual([

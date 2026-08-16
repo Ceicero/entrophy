@@ -1,5 +1,13 @@
 import { ChannelType, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
-import { errorEmbed, fetchMemberSafe, listEmbed, safeDm, successEmbed, type CommandContext, type PluginCommand } from '../../sdk';
+import {
+  errorEmbed,
+  fetchMemberSafe,
+  listEmbed,
+  safeDm,
+  successEmbed,
+  type CommandContext,
+  type PluginCommand,
+} from '../../sdk';
 import { syncSuggestionMessage } from '../actions';
 import type { CommunityConfig } from '../manifest';
 import { isValidSuggestionTransition, type SuggestionStatus } from '../service';
@@ -21,28 +29,61 @@ const data = new SlashCommandBuilder()
     sub
       .setName('setup')
       .setDescription('Choose the channel suggestions are posted to.')
-      .addChannelOption((opt) => opt.setName('channel').setDescription('Suggestions channel').setRequired(true).addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)),
+      .addChannelOption((opt) =>
+        opt
+          .setName('channel')
+          .setDescription('Suggestions channel')
+          .setRequired(true)
+          .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('status')
-      .setDescription('Change a suggestion\'s status.')
-      .addIntegerOption((opt) => opt.setName('number').setDescription('Suggestion number').setRequired(true).setMinValue(1))
-      .addStringOption((opt) => opt.setName('status').setDescription('New status').setRequired(true).addChoices(...STATUS_CHOICES))
-      .addStringOption((opt) => opt.setName('note').setDescription('Optional note shown on the suggestion').setRequired(false).setMaxLength(500)),
+      .setDescription("Change a suggestion's status.")
+      .addIntegerOption((opt) =>
+        opt.setName('number').setDescription('Suggestion number').setRequired(true).setMinValue(1),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('status')
+          .setDescription('New status')
+          .setRequired(true)
+          .addChoices(...STATUS_CHOICES),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('note')
+          .setDescription('Optional note shown on the suggestion')
+          .setRequired(false)
+          .setMaxLength(500),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('list')
       .setDescription('List suggestions.')
-      .addStringOption((opt) => opt.setName('status').setDescription('Filter by status').setRequired(false).addChoices(...STATUS_CHOICES)),
+      .addStringOption((opt) =>
+        opt
+          .setName('status')
+          .setDescription('Filter by status')
+          .setRequired(false)
+          .addChoices(...STATUS_CHOICES),
+      ),
   );
 
 async function handleSetup(c: CommandContext): Promise<void> {
   const { interaction, ctx, guildId, t } = c;
   const channel = interaction.options.getChannel('channel', true);
-  await ctx.setConfig<CommunityConfig>(guildId, { suggestions: { channelId: channel.id, threads: true, dmAuthorOnStatus: true } }, { id: interaction.user.id, source: 'bot' });
-  await interaction.reply({ embeds: [successEmbed(t('suggestions.setupDone', { channel: `<#${channel.id}>` }))], ephemeral: true });
+  await ctx.setConfig<CommunityConfig>(
+    guildId,
+    { suggestions: { channelId: channel.id, threads: true, dmAuthorOnStatus: true } },
+    { id: interaction.user.id, source: 'bot' },
+  );
+  await interaction.reply({
+    embeds: [successEmbed(t('suggestions.setupDone', { channel: `<#${channel.id}>` }))],
+    ephemeral: true,
+  });
 }
 
 async function handleStatus(c: CommandContext): Promise<void> {
@@ -62,7 +103,10 @@ async function handleStatus(c: CommandContext): Promise<void> {
     return;
   }
 
-  const updated = await ctx.prisma.suggestion.update({ where: { id: suggestion.id }, data: { status, staffNote: note ?? suggestion.staffNote } });
+  const updated = await ctx.prisma.suggestion.update({
+    where: { id: suggestion.id },
+    data: { status, staffNote: note ?? suggestion.staffNote },
+  });
   await syncSuggestionMessage(ctx, updated);
   await ctx.audit({
     guildId,
@@ -79,11 +123,17 @@ async function handleStatus(c: CommandContext): Promise<void> {
   if (config.suggestions.dmAuthorOnStatus) {
     const member = await fetchMemberSafe(interaction.guild, updated.authorId);
     if (member) {
-      await safeDm(member.user, t('suggestions.dmStatusChanged', { number, status, guild: interaction.guild.name }));
+      await safeDm(
+        member.user,
+        t('suggestions.dmStatusChanged', { number, status, guild: interaction.guild.name }),
+      );
     }
   }
 
-  await interaction.reply({ embeds: [successEmbed(t('suggestions.statusChanged', { number, status }))], ephemeral: true });
+  await interaction.reply({
+    embeds: [successEmbed(t('suggestions.statusChanged', { number, status }))],
+    ephemeral: true,
+  });
 }
 
 async function handleList(c: CommandContext): Promise<void> {
@@ -94,7 +144,10 @@ async function handleList(c: CommandContext): Promise<void> {
     orderBy: { number: 'desc' },
     take: 25,
   });
-  const lines = suggestions.map((s) => `**#${s.number}** ${s.content.slice(0, 60)}${s.content.length > 60 ? '…' : ''} — ${s.status} (👍${s.upvotes} 👎${s.downvotes})`);
+  const lines = suggestions.map(
+    (s) =>
+      `**#${s.number}** ${s.content.slice(0, 60)}${s.content.length > 60 ? '…' : ''} — ${s.status} (👍${s.upvotes} 👎${s.downvotes})`,
+  );
   await interaction.reply({ embeds: [listEmbed(t('suggestions.listTitle'), lines)], ephemeral: true });
 }
 

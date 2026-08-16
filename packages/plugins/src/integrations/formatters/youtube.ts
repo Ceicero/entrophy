@@ -20,7 +20,10 @@ function fillTemplate(template: string, vars: Record<string, string>): string {
 }
 
 /** Builds the "new upload" alert embed for a YouTube video (SPEC.md §J). */
-export function formatYoutubeUploadEmbed(video: YoutubeVideo, options: FormatYoutubeOptions = {}): AlertEmbedData {
+export function formatYoutubeUploadEmbed(
+  video: YoutubeVideo,
+  options: FormatYoutubeOptions = {},
+): AlertEmbedData {
   const vars = { channel: video.channelTitle, title: video.title };
   const description = fillTemplate(options.template ?? '**{channel}** just uploaded a new video!', vars);
 

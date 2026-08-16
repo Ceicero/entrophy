@@ -3,7 +3,13 @@ import type { IntegrationConnection } from '@entrophy/database';
 import { redisKey } from '@entrophy/core';
 import type { PluginContext } from '../../sdk';
 import { formatTwitchStreamEmbed, type TwitchStream } from '../formatters/twitch';
-import { claimAlertOnce, markConnectionError, markConnectionSynced, readAlertConfig, sendConnectionAlert } from './util';
+import {
+  claimAlertOnce,
+  markConnectionError,
+  markConnectionSynced,
+  readAlertConfig,
+  sendConnectionAlert,
+} from './util';
 import type { IntegrationProviderDef, InboundWebhookEvent } from './types';
 
 const HELIX_BASE = 'https://api.twitch.tv/helix';
@@ -12,7 +18,11 @@ const TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
 export const twitchConfigSchema = z.object({
   target: z.string().trim().min(1).max(50), // Twitch login name (lowercase)
   channelId: z.string().regex(/^\d{17,20}$/),
-  roleId: z.string().regex(/^\d{17,20}$/).nullable().optional(),
+  roleId: z
+    .string()
+    .regex(/^\d{17,20}$/)
+    .nullable()
+    .optional(),
   template: z.string().max(300).nullable().optional(),
   /** Twitch EventSub subscription id, once created — set by `ensureTwitchEventSub`. */
   eventSubId: z.string().nullable().optional(),
@@ -42,7 +52,11 @@ export async function getTwitchAppToken(ctx: PluginContext): Promise<string | nu
   const cached = await ctx.redis.get(cacheKey);
   if (cached) return cached;
 
-  const params = new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: 'client_credentials' });
+  const params = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    grant_type: 'client_credentials',
+  });
   const res = await fetch(`${TOKEN_URL}?${params.toString()}`, { method: 'POST' });
   if (!res.ok) {
     ctx.logger.warn({ status: res.status }, 'integrations/twitch: failed to obtain app token');
@@ -56,7 +70,9 @@ export async function getTwitchAppToken(ctx: PluginContext): Promise<string | nu
 async function helixFetch<T>(ctx: PluginContext, path: string, token: string): Promise<T | null> {
   const clientId = ctx.env.TWITCH_CLIENT_ID;
   if (!clientId) return null;
-  const res = await fetch(`${HELIX_BASE}${path}`, { headers: { Authorization: `Bearer ${token}`, 'Client-Id': clientId } });
+  const res = await fetch(`${HELIX_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${token}`, 'Client-Id': clientId },
+  });
   if (!res.ok) {
     ctx.logger.warn({ status: res.status, path }, 'integrations/twitch: Helix request failed');
     return null;
@@ -64,15 +80,26 @@ async function helixFetch<T>(ctx: PluginContext, path: string, token: string): P
   return (await res.json()) as T;
 }
 
-async function lookupBroadcasterId(ctx: PluginContext, token: string, login: string): Promise<{ id: string; displayName: string } | null> {
-  const result = await helixFetch<HelixUsersResponse>(ctx, `/users?login=${encodeURIComponent(login.toLowerCase())}`, token);
+async function lookupBroadcasterId(
+  ctx: PluginContext,
+  token: string,
+  login: string,
+): Promise<{ id: string; displayName: string } | null> {
+  const result = await helixFetch<HelixUsersResponse>(
+    ctx,
+    `/users?login=${encodeURIComponent(login.toLowerCase())}`,
+    token,
+  );
   const user = result?.data[0];
   return user ? { id: user.id, displayName: user.display_name } : null;
 }
 
 /** Creates (idempotently — Twitch rejects an exact duplicate condition+type+callback with 409, treated as success)
  * the `stream.online` EventSub subscription for a connection's target, when webhook delivery is configured. */
-export async function ensureTwitchEventSub(ctx: PluginContext, connection: IntegrationConnection): Promise<void> {
+export async function ensureTwitchEventSub(
+  ctx: PluginContext,
+  connection: IntegrationConnection,
+): Promise<void> {
   const publicBase = ctx.env.PUBLIC_WEBHOOK_BASE_URL ?? ctx.env.API_BASE_URL;
   const secret = ctx.env.TWITCH_EVENTSUB_SECRET;
   if (!publicBase || !secret) return; // falls back to polling
@@ -107,7 +134,11 @@ export async function ensureTwitchEventSub(ctx: PluginContext, connection: Integ
     if (subId) {
       await ctx.prisma.integrationConnection.update({
         where: { id: connection.id },
-        data: { config: { ...(connection.config as Record<string, unknown>), eventSubId: subId }, externalAccountId: broadcaster.id, externalAccountName: broadcaster.displayName },
+        data: {
+          config: { ...(connection.config as Record<string, unknown>), eventSubId: subId },
+          externalAccountId: broadcaster.id,
+          externalAccountName: broadcaster.displayName,
+        },
       });
     }
   } else if (res.status !== 409) {
@@ -125,7 +156,11 @@ async function pollStreamOnline(ctx: PluginContext, connection: IntegrationConne
   const config = readAlertConfig(connection);
   if (!config.target) return;
 
-  const result = await helixFetch<HelixStreamsResponse>(ctx, `/streams?user_login=${encodeURIComponent(config.target.toLowerCase())}`, token);
+  const result = await helixFetch<HelixStreamsResponse>(
+    ctx,
+    `/streams?user_login=${encodeURIComponent(config.target.toLowerCase())}`,
+    token,
+  );
   if (result === null) {
     await markConnectionError(ctx, connection.id, 'Twitch Helix request failed.');
     return;
@@ -146,14 +181,29 @@ async function pollStreamOnline(ctx: PluginContext, connection: IntegrationConne
 /** Handles a `stream.online` EventSub notification queued by `apps/api/src/routes/webhooks.ts` — the payload has
  * no guildId (Twitch's callback is a single shared endpoint), so every CONNECTED twitch connection whose target
  * matches the broadcaster login is alerted. */
-async function handleTwitchInbound(ctx: PluginContext, _connection: IntegrationConnection | null, event: InboundWebhookEvent): Promise<void> {
-  const payload = event.payload as { subscription?: { type?: string }; event?: { id?: string; broadcaster_user_login?: string; broadcaster_user_name?: string; type?: string; started_at?: string } };
+async function handleTwitchInbound(
+  ctx: PluginContext,
+  _connection: IntegrationConnection | null,
+  event: InboundWebhookEvent,
+): Promise<void> {
+  const payload = event.payload as {
+    subscription?: { type?: string };
+    event?: {
+      id?: string;
+      broadcaster_user_login?: string;
+      broadcaster_user_name?: string;
+      type?: string;
+      started_at?: string;
+    };
+  };
   if (payload.subscription?.type !== 'stream.online' || !payload.event) return;
 
   const login = payload.event.broadcaster_user_login?.toLowerCase();
   if (!login) return;
 
-  const connections = await ctx.prisma.integrationConnection.findMany({ where: { provider: 'TWITCH', status: 'CONNECTED', deletedAt: null } });
+  const connections = await ctx.prisma.integrationConnection.findMany({
+    where: { provider: 'TWITCH', status: 'CONNECTED', deletedAt: null },
+  });
   const matches = connections.filter((c) => readAlertConfig(c).target.toLowerCase() === login);
 
   for (const connection of matches) {
@@ -183,7 +233,9 @@ export const twitchProvider: IntegrationProviderDef = {
   pollIntervalSeconds: 120,
   configSchema: twitchConfigSchema,
   async poll(ctx, connection) {
-    const usingEventSub = Boolean((ctx.env.PUBLIC_WEBHOOK_BASE_URL ?? ctx.env.API_BASE_URL) && ctx.env.TWITCH_EVENTSUB_SECRET);
+    const usingEventSub = Boolean(
+      (ctx.env.PUBLIC_WEBHOOK_BASE_URL ?? ctx.env.API_BASE_URL) && ctx.env.TWITCH_EVENTSUB_SECRET,
+    );
     if (usingEventSub) {
       await ensureTwitchEventSub(ctx, connection);
       await markConnectionSynced(ctx, connection.id);

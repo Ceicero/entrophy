@@ -106,24 +106,35 @@ describe('checkGiveawayEligibility', () => {
   };
 
   it('rejects entries to an ended giveaway', () => {
-    expect(checkGiveawayEligibility({ ...base, giveaway: { ...base.giveaway, ended: true } })).toEqual({ ok: false, reason: 'ended' });
+    expect(checkGiveawayEligibility({ ...base, giveaway: { ...base.giveaway, ended: true } })).toEqual({
+      ok: false,
+      reason: 'ended',
+    });
   });
 
   it('requires one of the required roles when set', () => {
     const input = { ...base, giveaway: { ...base.giveaway, requiredRoleIds: ['r1'] } };
     expect(checkGiveawayEligibility(input)).toEqual({ ok: false, reason: 'missing_role' });
-    expect(checkGiveawayEligibility({ ...input, member: { ...base.member, roleIds: ['r1'] } })).toEqual({ ok: true });
+    expect(checkGiveawayEligibility({ ...input, member: { ...base.member, roleIds: ['r1'] } })).toEqual({
+      ok: true,
+    });
   });
 
   it('enforces minimum account age', () => {
-    const input = { ...base, giveaway: { ...base.giveaway, minAccountAgeDays: 30 }, member: { ...base.member, accountCreatedAt: new Date('2025-12-25T00:00:00Z') } };
+    const input = {
+      ...base,
+      giveaway: { ...base.giveaway, minAccountAgeDays: 30 },
+      member: { ...base.member, accountCreatedAt: new Date('2025-12-25T00:00:00Z') },
+    };
     expect(checkGiveawayEligibility(input)).toEqual({ ok: false, reason: 'account_too_new' });
   });
 
   it('enforces minimum level', () => {
     const input = { ...base, giveaway: { ...base.giveaway, minLevel: 5 } };
     expect(checkGiveawayEligibility(input)).toEqual({ ok: false, reason: 'below_min_level' });
-    expect(checkGiveawayEligibility({ ...input, member: { ...base.member, level: 5 } })).toEqual({ ok: true });
+    expect(checkGiveawayEligibility({ ...input, member: { ...base.member, level: 5 } })).toEqual({
+      ok: true,
+    });
   });
 
   it('allows entry when every condition passes', () => {

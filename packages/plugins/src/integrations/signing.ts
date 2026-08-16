@@ -9,7 +9,12 @@ export interface SignedOutboundRequest {
 /** Builds the signed JSON body + headers for an outbound webhook POST (SPEC.md §J / ARCHITECTURE.md's
  * integrations connector spec): `X-Entrophy-Event`, `X-Entrophy-Signature` (HMAC-SHA256 hex of the body,
  * verifiable with core's `verifyHmacSha256`), `X-Entrophy-Delivery` (a fresh id per attempt-set). */
-export function signOutboundPayload(payload: unknown, secret: string, eventType: string, deliveryId: string = randomUUID()): SignedOutboundRequest {
+export function signOutboundPayload(
+  payload: unknown,
+  secret: string,
+  eventType: string,
+  deliveryId: string = randomUUID(),
+): SignedOutboundRequest {
   const body = JSON.stringify(payload);
   const signature = createHmac('sha256', secret).update(body).digest('hex');
   return {

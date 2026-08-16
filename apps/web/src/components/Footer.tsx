@@ -51,7 +51,12 @@ export function Footer() {
             <ul className="mt-3 space-y-2">
               {support && (
                 <li>
-                  <a href={support} target="_blank" rel="noopener noreferrer" className="text-sm text-grey-3 transition-colors hover:text-grey-7">
+                  <a
+                    href={support}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-grey-3 transition-colors hover:text-grey-7"
+                  >
                     Support server
                   </a>
                 </li>
@@ -64,7 +69,9 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        <div className="mt-10 border-t border-white/10 pt-6 text-xs text-grey-2">© {year} Entrophy. All rights reserved.</div>
+        <div className="mt-10 border-t border-white/10 pt-6 text-xs text-grey-2">
+          © {year} Entrophy. All rights reserved.
+        </div>
       </div>
     </footer>
   );

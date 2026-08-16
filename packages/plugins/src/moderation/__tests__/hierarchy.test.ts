@@ -5,7 +5,11 @@ import { hierarchyGuard, type HierarchyGuardInteraction } from '../../sdk';
 
 /** Minimal fake `GuildMember` — only the fields `hierarchyGuard`/`checkModerationTarget` read. */
 function fakeMember(id: string, highestRolePosition: number, isBot = false): GuildMember {
-  return { id, user: { bot: isBot }, roles: { highest: { position: highestRolePosition } } } as unknown as GuildMember;
+  return {
+    id,
+    user: { bot: isBot },
+    roles: { highest: { position: highestRolePosition } },
+  } as unknown as GuildMember;
 }
 
 function fakeGuild(ownerId: string, botMember: GuildMember): Guild {
@@ -39,21 +43,27 @@ describe('hierarchyGuard integration (moderation command layer)', () => {
   it('rejects acting on the guild owner', () => {
     const actor = fakeMember('mod-1', 50);
     const owner = fakeMember('guild-owner-1', 5); // low role position, but still the owner
-    expect(() => hierarchyGuard(interactionWith(actor, 'guild-owner-1'), owner, BOT_OWNER_IDS)).toThrow(PermissionError);
+    expect(() => hierarchyGuard(interactionWith(actor, 'guild-owner-1'), owner, BOT_OWNER_IDS)).toThrow(
+      PermissionError,
+    );
   });
 
   it('rejects acting on a configured bot owner regardless of role position', () => {
     const actor = fakeMember('mod-1', 90);
     const botOwnerTarget = fakeMember('owner-account-1', 1);
-    expect(() => hierarchyGuard(interactionWith(actor), botOwnerTarget, BOT_OWNER_IDS)).toThrow(PermissionError);
+    expect(() => hierarchyGuard(interactionWith(actor), botOwnerTarget, BOT_OWNER_IDS)).toThrow(
+      PermissionError,
+    );
   });
 
-  it('rejects a target whose highest role is at or above the actor\'s', () => {
+  it("rejects a target whose highest role is at or above the actor's", () => {
     const actor = fakeMember('mod-1', 50);
     const equalTarget = fakeMember('member-1', 50);
     const higherTarget = fakeMember('member-2', 51);
     expect(() => hierarchyGuard(interactionWith(actor), equalTarget, BOT_OWNER_IDS)).toThrow(PermissionError);
-    expect(() => hierarchyGuard(interactionWith(actor), higherTarget, BOT_OWNER_IDS)).toThrow(PermissionError);
+    expect(() => hierarchyGuard(interactionWith(actor), higherTarget, BOT_OWNER_IDS)).toThrow(
+      PermissionError,
+    );
   });
 
   it("rejects a target whose highest role is at or above the bot's own", () => {
@@ -62,9 +72,11 @@ describe('hierarchyGuard integration (moderation command layer)', () => {
     expect(() => hierarchyGuard(interactionWith(actor), target, BOT_OWNER_IDS)).toThrow(PermissionError);
   });
 
-  it('lets the guild owner act on anyone below the bot, ignoring the owner\'s own role position', () => {
+  it("lets the guild owner act on anyone below the bot, ignoring the owner's own role position", () => {
     const owner = fakeMember('guild-owner-1', 0); // owners often have no special role, position 0
     const target = fakeMember('member-1', 50);
-    expect(() => hierarchyGuard(interactionWith(owner, 'guild-owner-1'), target, BOT_OWNER_IDS)).not.toThrow();
+    expect(() =>
+      hierarchyGuard(interactionWith(owner, 'guild-owner-1'), target, BOT_OWNER_IDS),
+    ).not.toThrow();
   });
 });

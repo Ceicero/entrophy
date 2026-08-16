@@ -25,7 +25,9 @@ export const eventsRetentionJob: PluginJob = {
       if (days === null || days === undefined) continue;
 
       const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      const result = await ctx.prisma.automodEvent.deleteMany({ where: { guildId, createdAt: { lt: cutoff } } });
+      const result = await ctx.prisma.automodEvent.deleteMany({
+        where: { guildId, createdAt: { lt: cutoff } },
+      });
       totalDeleted += result.count;
     }
 

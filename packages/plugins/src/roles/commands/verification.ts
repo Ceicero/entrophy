@@ -23,27 +23,77 @@ const data = new SlashCommandBuilder()
     sub
       .setName('setup')
       .setDescription('Configure verification.')
-      .addStringOption((opt) => opt.setName('mode').setDescription('Verification method').addChoices(...MODE_CHOICES))
-      .addRoleOption((opt) => opt.setName('verified-role').setDescription('Role granted on successful verification'))
-      .addChannelOption((opt) => opt.setName('staff-channel').setDescription('Channel for the modal-mode approval queue').addChannelTypes(ChannelType.GuildText))
-      .addIntegerOption((opt) => opt.setName('min-account-age-days').setDescription('Minimum Discord account age required (0 = off)').setMinValue(0).setMaxValue(3650))
-      .addStringOption((opt) => opt.setName('underage-action').setDescription('Action when the account-age gate fails').addChoices(...UNDERAGE_ACTION_CHOICES))
-      .addRoleOption((opt) => opt.setName('quarantine-role').setDescription('Role applied by the quarantine action'))
-      .addStringOption((opt) => opt.setName('question1').setDescription('Modal-mode question 1').setMaxLength(300))
-      .addStringOption((opt) => opt.setName('question2').setDescription('Modal-mode question 2').setMaxLength(300))
-      .addStringOption((opt) => opt.setName('question3').setDescription('Modal-mode question 3').setMaxLength(300))
-      .addStringOption((opt) => opt.setName('question4').setDescription('Modal-mode question 4').setMaxLength(300))
-      .addStringOption((opt) => opt.setName('question5').setDescription('Modal-mode question 5').setMaxLength(300))
-      .addBooleanOption((opt) => opt.setName('clear-questions').setDescription('Clear all configured questions')),
+      .addStringOption((opt) =>
+        opt
+          .setName('mode')
+          .setDescription('Verification method')
+          .addChoices(...MODE_CHOICES),
+      )
+      .addRoleOption((opt) =>
+        opt.setName('verified-role').setDescription('Role granted on successful verification'),
+      )
+      .addChannelOption((opt) =>
+        opt
+          .setName('staff-channel')
+          .setDescription('Channel for the modal-mode approval queue')
+          .addChannelTypes(ChannelType.GuildText),
+      )
+      .addIntegerOption((opt) =>
+        opt
+          .setName('min-account-age-days')
+          .setDescription('Minimum Discord account age required (0 = off)')
+          .setMinValue(0)
+          .setMaxValue(3650),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('underage-action')
+          .setDescription('Action when the account-age gate fails')
+          .addChoices(...UNDERAGE_ACTION_CHOICES),
+      )
+      .addRoleOption((opt) =>
+        opt.setName('quarantine-role').setDescription('Role applied by the quarantine action'),
+      )
+      .addStringOption((opt) =>
+        opt.setName('question1').setDescription('Modal-mode question 1').setMaxLength(300),
+      )
+      .addStringOption((opt) =>
+        opt.setName('question2').setDescription('Modal-mode question 2').setMaxLength(300),
+      )
+      .addStringOption((opt) =>
+        opt.setName('question3').setDescription('Modal-mode question 3').setMaxLength(300),
+      )
+      .addStringOption((opt) =>
+        opt.setName('question4').setDescription('Modal-mode question 4').setMaxLength(300),
+      )
+      .addStringOption((opt) =>
+        opt.setName('question5').setDescription('Modal-mode question 5').setMaxLength(300),
+      )
+      .addBooleanOption((opt) =>
+        opt.setName('clear-questions').setDescription('Clear all configured questions'),
+      ),
   )
-  .addSubcommand((sub) => sub.setName('queue').setDescription('List pending (modal-mode) verification requests.'))
-  .addSubcommand((sub) => sub.setName('approve').setDescription('Approve a pending verification request.').addStringOption((opt) => opt.setName('request').setDescription('Request id').setRequired(true).setAutocomplete(true)))
+  .addSubcommand((sub) =>
+    sub.setName('queue').setDescription('List pending (modal-mode) verification requests.'),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName('approve')
+      .setDescription('Approve a pending verification request.')
+      .addStringOption((opt) =>
+        opt.setName('request').setDescription('Request id').setRequired(true).setAutocomplete(true),
+      ),
+  )
   .addSubcommand((sub) =>
     sub
       .setName('deny')
       .setDescription('Deny a pending verification request.')
-      .addStringOption((opt) => opt.setName('request').setDescription('Request id').setRequired(true).setAutocomplete(true))
-      .addStringOption((opt) => opt.setName('note').setDescription('Optional note sent to the member').setMaxLength(500)),
+      .addStringOption((opt) =>
+        opt.setName('request').setDescription('Request id').setRequired(true).setAutocomplete(true),
+      )
+      .addStringOption((opt) =>
+        opt.setName('note').setDescription('Optional note sent to the member').setMaxLength(500),
+      ),
   );
 
 export const command: PluginCommand = {
@@ -56,7 +106,14 @@ export const command: PluginCommand = {
       assertStaffLevel(c.staffLevel, 'admin', c.t);
       const mode = c.interaction.options.getString('mode') as VerificationConfig['mode'] | null;
       if (mode === 'captcha' && (!c.ctx.env.CAPTCHA_PROVIDER || c.ctx.env.CAPTCHA_PROVIDER === 'none')) {
-        await c.interaction.reply({ embeds: [errorEmbed('CAPTCHA mode requires `CAPTCHA_PROVIDER` to be set to `hcaptcha` or `turnstile` on the bot host.')], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [
+            errorEmbed(
+              'CAPTCHA mode requires `CAPTCHA_PROVIDER` to be set to `hcaptcha` or `turnstile` on the bot host.',
+            ),
+          ],
+          ephemeral: true,
+        });
         return;
       }
 
@@ -69,17 +126,39 @@ export const command: PluginCommand = {
       const nextVerification: VerificationConfig = {
         ...current.verification,
         mode: mode ?? current.verification.mode,
-        verifiedRoleId: c.interaction.options.getRole('verified-role')?.id ?? current.verification.verifiedRoleId,
-        staffChannelId: c.interaction.options.getChannel('staff-channel')?.id ?? current.verification.staffChannelId,
-        minAccountAgeDays: c.interaction.options.getInteger('min-account-age-days') ?? current.verification.minAccountAgeDays,
-        underageAction: (c.interaction.options.getString('underage-action') as VerificationConfig['underageAction'] | null) ?? current.verification.underageAction,
-        quarantineRoleId: c.interaction.options.getRole('quarantine-role')?.id ?? current.verification.quarantineRoleId,
-        questions: clearQuestions ? [] : questionInputs.length > 0 ? questionInputs : current.verification.questions,
+        verifiedRoleId:
+          c.interaction.options.getRole('verified-role')?.id ?? current.verification.verifiedRoleId,
+        staffChannelId:
+          c.interaction.options.getChannel('staff-channel')?.id ?? current.verification.staffChannelId,
+        minAccountAgeDays:
+          c.interaction.options.getInteger('min-account-age-days') ?? current.verification.minAccountAgeDays,
+        underageAction:
+          (c.interaction.options.getString('underage-action') as
+            VerificationConfig['underageAction'] | null) ?? current.verification.underageAction,
+        quarantineRoleId:
+          c.interaction.options.getRole('quarantine-role')?.id ?? current.verification.quarantineRoleId,
+        questions: clearQuestions
+          ? []
+          : questionInputs.length > 0
+            ? questionInputs
+            : current.verification.questions,
       };
 
-      const after = await c.ctx.setConfig<RolesConfig>(c.guildId, { verification: nextVerification }, { id: c.interaction.user.id, source: 'bot' });
+      const after = await c.ctx.setConfig<RolesConfig>(
+        c.guildId,
+        { verification: nextVerification },
+        { id: c.interaction.user.id, source: 'bot' },
+      );
 
-      await c.ctx.audit({ guildId: c.guildId, actorId: c.interaction.user.id, actorType: 'user', action: 'verification.settings.update', targetType: 'plugin_config', targetId: 'roles', source: 'bot' });
+      await c.ctx.audit({
+        guildId: c.guildId,
+        actorId: c.interaction.user.id,
+        actorType: 'user',
+        action: 'verification.settings.update',
+        targetType: 'plugin_config',
+        targetId: 'roles',
+        source: 'bot',
+      });
 
       await c.interaction.reply({
         embeds: [
@@ -100,8 +179,15 @@ export const command: PluginCommand = {
     }
 
     if (sub === 'queue') {
-      const pending = await c.ctx.prisma.verificationRequest.findMany({ where: { guildId: c.guildId, status: 'PENDING' }, orderBy: { createdAt: 'asc' }, take: 25 });
-      const lines = pending.map((r) => `\`${r.id}\` — <@${r.userId}> · ${r.method.toLowerCase()} · submitted <t:${Math.floor(r.createdAt.getTime() / 1000)}:R>`);
+      const pending = await c.ctx.prisma.verificationRequest.findMany({
+        where: { guildId: c.guildId, status: 'PENDING' },
+        orderBy: { createdAt: 'asc' },
+        take: 25,
+      });
+      const lines = pending.map(
+        (r) =>
+          `\`${r.id}\` — <@${r.userId}> · ${r.method.toLowerCase()} · submitted <t:${Math.floor(r.createdAt.getTime() / 1000)}:R>`,
+      );
       await c.interaction.reply({ embeds: [listEmbed('Verification queue', lines)], ephemeral: true });
       return;
     }
@@ -112,23 +198,44 @@ export const command: PluginCommand = {
 
       const roles = c.ctx.services.get('roles');
       if (!roles) {
-        await c.interaction.reply({ embeds: [errorEmbed('The roles service is not available right now.')], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [errorEmbed('The roles service is not available right now.')],
+          ephemeral: true,
+        });
         return;
       }
 
-      const request = await c.ctx.prisma.verificationRequest.findFirst({ where: { id: requestId, guildId: c.guildId } });
+      const request = await c.ctx.prisma.verificationRequest.findFirst({
+        where: { id: requestId, guildId: c.guildId },
+      });
       if (!request || request.status !== 'PENDING') {
-        await c.interaction.reply({ embeds: [errorEmbed('That request was not found or has already been decided.')], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [errorEmbed('That request was not found or has already been decided.')],
+          ephemeral: true,
+        });
         return;
       }
 
-      await roles.verificationDecision({ guildId: c.guildId, requestId, approve: sub === 'approve', reviewerId: c.interaction.user.id, note });
-      await c.interaction.reply({ embeds: [successEmbed(`Request ${sub === 'approve' ? 'approved' : 'denied'}.`)], ephemeral: true });
+      await roles.verificationDecision({
+        guildId: c.guildId,
+        requestId,
+        approve: sub === 'approve',
+        reviewerId: c.interaction.user.id,
+        note,
+      });
+      await c.interaction.reply({
+        embeds: [successEmbed(`Request ${sub === 'approve' ? 'approved' : 'denied'}.`)],
+        ephemeral: true,
+      });
     }
   },
   async autocomplete(c) {
     const query = String(c.interaction.options.getFocused()).toLowerCase();
-    const pending = await c.ctx.prisma.verificationRequest.findMany({ where: { guildId: c.guildId, status: 'PENDING' }, orderBy: { createdAt: 'asc' }, take: 25 });
+    const pending = await c.ctx.prisma.verificationRequest.findMany({
+      where: { guildId: c.guildId, status: 'PENDING' },
+      orderBy: { createdAt: 'asc' },
+      take: 25,
+    });
     const matches = pending.filter((r) => r.id.toLowerCase().includes(query) || r.userId.includes(query));
     await c.interaction.respond(matches.map((r) => ({ name: `${r.id} — user ${r.userId}`, value: r.id })));
   },

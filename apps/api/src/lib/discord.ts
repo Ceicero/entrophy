@@ -137,7 +137,11 @@ async function fetchDiscordUserGuildsUncached(accessToken: string): Promise<Disc
 }
 
 /** Fetches (and caches for 60s in Redis, per-user) the authenticated user's guild list. */
-export async function getCachedUserGuilds(redis: Redis, userId: string, accessToken: string): Promise<DiscordUserGuild[]> {
+export async function getCachedUserGuilds(
+  redis: Redis,
+  userId: string,
+  accessToken: string,
+): Promise<DiscordUserGuild[]> {
   const cacheKey = redisKey('userguilds', userId);
   const cached = await redis.get(cacheKey);
   if (cached !== null) {
@@ -196,10 +200,14 @@ export function hasBotToken(): boolean {
 
 async function fetchWithBotToken<T>(path: string): Promise<T> {
   if (!env.DISCORD_TOKEN) {
-    throw new AppError('bot_token_missing', 'DISCORD_TOKEN is not configured for the API, so Discord channel/role lists are unavailable.', {
-      status: 503,
-      expose: true,
-    });
+    throw new AppError(
+      'bot_token_missing',
+      'DISCORD_TOKEN is not configured for the API, so Discord channel/role lists are unavailable.',
+      {
+        status: 503,
+        expose: true,
+      },
+    );
   }
   const res = await fetch(`${DISCORD_API_BASE}${path}`, {
     headers: { Authorization: `Bot ${env.DISCORD_TOKEN}` },

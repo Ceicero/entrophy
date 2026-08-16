@@ -5,7 +5,12 @@ import { createRolesService } from '../service';
 import { filterAssignableRoles } from '../service';
 
 function fakeRole(id: string, opts: { permissions?: bigint; position?: number; managed?: boolean } = {}) {
-  return { id, permissions: { bitfield: opts.permissions ?? 0n }, position: opts.position ?? 1, managed: opts.managed ?? false };
+  return {
+    id,
+    permissions: { bitfield: opts.permissions ?? 0n },
+    position: opts.position ?? 1,
+    managed: opts.managed ?? false,
+  };
 }
 
 function fakeGuild(roles: ReturnType<typeof fakeRole>[], botTopPosition = 10) {
@@ -25,14 +30,20 @@ describe('filterAssignableRoles', () => {
       fakeRole('toohigh', { position: 15 }),
     ]);
 
-    const { allowed, skipped } = filterAssignableRoles(guild, ['safe', 'elevated', 'managed', 'toohigh', 'missing'], false);
+    const { allowed, skipped } = filterAssignableRoles(
+      guild,
+      ['safe', 'elevated', 'managed', 'toohigh', 'missing'],
+      false,
+    );
 
     expect(allowed).toEqual(['safe']);
     expect(skipped.map((s) => s.roleId).sort()).toEqual(['elevated', 'managed', 'missing', 'toohigh'].sort());
   });
 
   it('allows elevated roles when allowElevatedRoles is true', () => {
-    const guild = fakeGuild([fakeRole('elevated', { permissions: PermissionFlagsBits.BanMembers, position: 2 })]);
+    const guild = fakeGuild([
+      fakeRole('elevated', { permissions: PermissionFlagsBits.BanMembers, position: 2 }),
+    ]);
     const { allowed } = filterAssignableRoles(guild, ['elevated'], true);
     expect(allowed).toEqual(['elevated']);
   });
@@ -44,7 +55,14 @@ describe('createRolesService — verificationDecision', () => {
     const { ctx } = createTestContext({
       prismaOverrides: {
         verificationRequest: {
-          findFirst: () => Promise.resolve({ id: 'req1', guildId: 'g1', userId: 'u1', status: 'APPROVED', staffMessageId: null }),
+          findFirst: () =>
+            Promise.resolve({
+              id: 'req1',
+              guildId: 'g1',
+              userId: 'u1',
+              status: 'APPROVED',
+              staffMessageId: null,
+            }),
           update: () => {
             updateCalled = true;
             return Promise.resolve({});
@@ -54,22 +72,44 @@ describe('createRolesService — verificationDecision', () => {
     });
 
     const service = createRolesService(ctx);
-    await service.verificationDecision({ guildId: 'g1', requestId: 'req1', approve: true, reviewerId: 'mod1' });
+    await service.verificationDecision({
+      guildId: 'g1',
+      requestId: 'req1',
+      approve: true,
+      reviewerId: 'mod1',
+    });
 
     expect(updateCalled).toBe(false);
   });
 
   it('throws NotFoundError when the request does not exist', async () => {
-    const { ctx } = createTestContext({ prismaOverrides: { verificationRequest: { findFirst: () => Promise.resolve(null) } } });
+    const { ctx } = createTestContext({
+      prismaOverrides: { verificationRequest: { findFirst: () => Promise.resolve(null) } },
+    });
     const service = createRolesService(ctx);
-    await expect(service.verificationDecision({ guildId: 'g1', requestId: 'missing', approve: true, reviewerId: 'mod1' })).rejects.toThrow();
+    await expect(
+      service.verificationDecision({
+        guildId: 'g1',
+        requestId: 'missing',
+        approve: true,
+        reviewerId: 'mod1',
+      }),
+    ).rejects.toThrow();
   });
 
   it('supports the bot-actions single-object call shape for postPanel/testWelcome/verificationDecision', async () => {
-    const { ctx } = createTestContext({ prismaOverrides: { verificationRequest: { findFirst: () => Promise.resolve(null) } } });
+    const { ctx } = createTestContext({
+      prismaOverrides: { verificationRequest: { findFirst: () => Promise.resolve(null) } },
+    });
     const service = createRolesService(ctx);
     // apps/bot/src/host/bot-actions.ts calls `method.call(service, { guildId, payload, requestedBy })`.
-    const dual = service.verificationDecision as unknown as (arg: { guildId: string; payload: { requestId: string; approve: boolean }; requestedBy: string }) => Promise<void>;
-    await expect(dual({ guildId: 'g1', payload: { requestId: 'missing', approve: true }, requestedBy: 'mod1' })).rejects.toThrow();
+    const dual = service.verificationDecision as unknown as (arg: {
+      guildId: string;
+      payload: { requestId: string; approve: boolean };
+      requestedBy: string;
+    }) => Promise<void>;
+    await expect(
+      dual({ guildId: 'g1', payload: { requestId: 'missing', approve: true }, requestedBy: 'mod1' }),
+    ).rejects.toThrow();
   });
 });

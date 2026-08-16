@@ -12,12 +12,17 @@ export const memberLeaveHandler: PluginEventHandler<'guildMemberRemove'> = {
 
     // --- Goodbye message -------------------------------------------------------------------------------
     if (config.goodbye.enabled) {
-      const channel = config.goodbye.channelId ? await resolveTextChannel(member.guild, config.goodbye.channelId) : null;
+      const channel = config.goodbye.channelId
+        ? await resolveTextChannel(member.guild, config.goodbye.channelId)
+        : null;
       await deliverWelcomeGoodbye({
         ctx,
         guild: member.guild,
         channel,
-        member: { id: member.id, user: { tag: member.user?.tag, username: member.user?.username ?? 'Unknown' } },
+        member: {
+          id: member.id,
+          user: { tag: member.user?.tag, username: member.user?.username ?? 'Unknown' },
+        },
         section: config.goodbye,
         // Goodbye DMs routinely fail (the member just left and may have DMs closed) — `safeDm` inside
         // `deliverWelcomeGoodbye` already swallows that; `fetchUser` just needs to hand back something with `.send`.
@@ -34,10 +39,16 @@ export const memberLeaveHandler: PluginEventHandler<'guildMemberRemove'> = {
       for (const roleId of roleIds) {
         const role = member.guild.roles.cache.get(roleId);
         if (!role) continue;
-        if (isElevatedPermissionBitfield(role.permissions.bitfield) || role.position >= botTopRolePosition) elevatedOrUnsafe.add(roleId);
+        if (isElevatedPermissionBitfield(role.permissions.bitfield) || role.position >= botTopRolePosition)
+          elevatedOrUnsafe.add(roleId);
         if (role.managed) managed.add(roleId);
       }
-      const persistable = filterPersistableRoles({ roleIds, elevatedRoleIds: elevatedOrUnsafe, managedRoleIds: managed, everyoneRoleId: member.guild.roles.everyone.id });
+      const persistable = filterPersistableRoles({
+        roleIds,
+        elevatedRoleIds: elevatedOrUnsafe,
+        managedRoleIds: managed,
+        everyoneRoleId: member.guild.roles.everyone.id,
+      });
 
       if (persistable.length > 0) {
         await ctx.prisma.memberRoleSnapshot.upsert({

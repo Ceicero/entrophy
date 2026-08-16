@@ -1,7 +1,15 @@
-import { ActionRowBuilder, SlashCommandBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from 'discord.js';
+import {
+  ActionRowBuilder,
+  SlashCommandBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
+} from 'discord.js';
 import { buildCustomId, infoEmbed, type PluginCommand } from '../../sdk';
 
-const data = new SlashCommandBuilder().setName('help').setDescription('List every plugin and its commands.').setDMPermission(false);
+const data = new SlashCommandBuilder()
+  .setName('help')
+  .setDescription('List every plugin and its commands.')
+  .setDMPermission(false);
 
 const MAX_SELECT_OPTIONS = 25;
 
@@ -12,7 +20,12 @@ export const command: PluginCommand = {
     const host = c.ctx.services.get('host');
     if (!host) {
       await c.interaction.reply({
-        embeds: [infoEmbed(c.t('help.title'), 'The plugin catalog is not available right now. Try again in a moment.')],
+        embeds: [
+          infoEmbed(
+            c.t('help.title'),
+            'The plugin catalog is not available right now. Try again in a moment.',
+          ),
+        ],
         ephemeral: true,
       });
       return;

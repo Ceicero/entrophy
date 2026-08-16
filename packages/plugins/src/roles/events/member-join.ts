@@ -1,6 +1,11 @@
 import type { GuildMember } from 'discord.js';
 import { resolveTextChannel, safeDm, type PluginContext, type PluginEventHandler } from '../../sdk';
-import { filterPersistableRoles, isElevatedPermissionBitfield, isSnapshotFresh, passesAccountAgeGate } from '../engine';
+import {
+  filterPersistableRoles,
+  isElevatedPermissionBitfield,
+  isSnapshotFresh,
+  passesAccountAgeGate,
+} from '../engine';
 import type { RolesConfig } from '../manifest';
 import { deliverWelcomeGoodbye } from '../service';
 
@@ -11,7 +16,10 @@ export const memberJoinHandler: PluginEventHandler<'guildMemberAdd'> = {
     const config = await ctx.getConfig<RolesConfig>(member.guild.id);
 
     // --- Account-age gate ---------------------------------------------------------------------------------
-    if (config.verification.minAccountAgeDays > 0 && !passesAccountAgeGate(member.user.createdAt, config.verification.minAccountAgeDays)) {
+    if (
+      config.verification.minAccountAgeDays > 0 &&
+      !passesAccountAgeGate(member.user.createdAt, config.verification.minAccountAgeDays)
+    ) {
       const action = config.verification.underageAction;
       if (action === 'kick') {
         await safeDm(member.user, {
@@ -20,19 +28,42 @@ export const memberJoinHandler: PluginEventHandler<'guildMemberAdd'> = {
         try {
           await member.kick('Account-age gate: account too new');
         } catch (err) {
-          ctx.logger.warn({ err: err instanceof Error ? err.message : String(err), guildId: member.guild.id }, 'roles: account-age gate kick failed (missing permission?)');
+          ctx.logger.warn(
+            { err: err instanceof Error ? err.message : String(err), guildId: member.guild.id },
+            'roles: account-age gate kick failed (missing permission?)',
+          );
         }
-        await ctx.audit({ guildId: member.guild.id, actorId: member.id, actorType: 'system', action: 'roles.accountAgeGate.kick', targetType: 'member', targetId: member.id, source: 'bot' });
+        await ctx.audit({
+          guildId: member.guild.id,
+          actorId: member.id,
+          actorType: 'system',
+          action: 'roles.accountAgeGate.kick',
+          targetType: 'member',
+          targetId: member.id,
+          source: 'bot',
+        });
         return;
       }
       if (action === 'quarantine') {
         const automod = ctx.services.get('automod');
         if (automod) {
-          await automod.quarantine(member.guild.id, member.id, 'Account-age gate: account too new').catch(() => undefined);
+          await automod
+            .quarantine(member.guild.id, member.id, 'Account-age gate: account too new')
+            .catch(() => undefined);
         } else if (config.verification.quarantineRoleId) {
-          await member.roles.add(config.verification.quarantineRoleId, 'Account-age gate: account too new').catch(() => undefined);
+          await member.roles
+            .add(config.verification.quarantineRoleId, 'Account-age gate: account too new')
+            .catch(() => undefined);
         }
-        await ctx.audit({ guildId: member.guild.id, actorId: member.id, actorType: 'system', action: 'roles.accountAgeGate.quarantine', targetType: 'member', targetId: member.id, source: 'bot' });
+        await ctx.audit({
+          guildId: member.guild.id,
+          actorId: member.id,
+          actorType: 'system',
+          action: 'roles.accountAgeGate.quarantine',
+          targetType: 'member',
+          targetId: member.id,
+          source: 'bot',
+        });
       }
     }
 
@@ -46,10 +77,16 @@ export const memberJoinHandler: PluginEventHandler<'guildMemberAdd'> = {
 };
 
 /** Shared by `guildMemberAdd` (non-pending members) and `member-update.ts` (pending → not pending): restores persisted roles, then sends the welcome message. */
-export async function handleFullyJoined(ctx: PluginContext, member: GuildMember, config: RolesConfig): Promise<void> {
+export async function handleFullyJoined(
+  ctx: PluginContext,
+  member: GuildMember,
+  config: RolesConfig,
+): Promise<void> {
   // --- Role persistence restore --------------------------------------------------------------------------
   if (config.rolePersistence.enabled) {
-    const snapshot = await ctx.prisma.memberRoleSnapshot.findUnique({ where: { guildId_userId: { guildId: member.guild.id, userId: member.id } } });
+    const snapshot = await ctx.prisma.memberRoleSnapshot.findUnique({
+      where: { guildId_userId: { guildId: member.guild.id, userId: member.id } },
+    });
     if (snapshot && isSnapshotFresh(snapshot.leftAt, config.rolePersistence.maxDays)) {
       await member.guild.roles.fetch();
       const botTopRolePosition = member.guild.members.me?.roles.highest.position ?? 0;
@@ -58,7 +95,8 @@ export async function handleFullyJoined(ctx: PluginContext, member: GuildMember,
       for (const roleId of snapshot.roleIds) {
         const role = member.guild.roles.cache.get(roleId);
         if (!role) continue;
-        if (isElevatedPermissionBitfield(role.permissions.bitfield) || role.position >= botTopRolePosition) elevatedOrUnsafe.add(roleId);
+        if (isElevatedPermissionBitfield(role.permissions.bitfield) || role.position >= botTopRolePosition)
+          elevatedOrUnsafe.add(roleId);
         if (role.managed) managed.add(roleId);
       }
       const restorable = filterPersistableRoles({
@@ -87,7 +125,9 @@ export async function handleFullyJoined(ctx: PluginContext, member: GuildMember,
 
   // --- Welcome message ------------------------------------------------------------------------------------
   if (config.welcome.enabled) {
-    const channel = config.welcome.channelId ? await resolveTextChannel(member.guild, config.welcome.channelId) : null;
+    const channel = config.welcome.channelId
+      ? await resolveTextChannel(member.guild, config.welcome.channelId)
+      : null;
     await deliverWelcomeGoodbye({
       ctx,
       guild: member.guild,

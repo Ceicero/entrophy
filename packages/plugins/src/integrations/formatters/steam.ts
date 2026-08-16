@@ -15,7 +15,10 @@ export interface SteamNewsItem {
 
 /** Strips the light HTML/BBCode Steam's news API embeds in `contents`, for a plain-text embed description. */
 function stripMarkup(text: string): string {
-  return text.replace(HTML_TAG_PATTERN, '').replace(/\[.*?\]/g, '').trim();
+  return text
+    .replace(HTML_TAG_PATTERN, '')
+    .replace(/\[.*?\]/g, '')
+    .trim();
 }
 
 /** Builds the "news post" alert embed for a Steam app's news feed (SPEC.md §J). */

@@ -25,9 +25,25 @@ registerPluginLocales('community', { en });
 
 export const plugin = definePlugin({
   manifest,
-  commands: [pollCommand, giveawayCommand, suggestCommand, suggestionsCommand, announceCommand, remindCommand, eventCommand],
+  commands: [
+    pollCommand,
+    giveawayCommand,
+    suggestCommand,
+    suggestionsCommand,
+    announceCommand,
+    remindCommand,
+    eventCommand,
+  ],
   components: [...pollComponents, ...giveawayComponents, ...suggestionComponents, ...eventComponents],
-  jobs: [pollEndJob, giveawayEndJob, announcementRunJob, reminderDeliverJob, reminderSweepJob, eventReminderJob, suggestionSyncJob],
+  jobs: [
+    pollEndJob,
+    giveawayEndJob,
+    announcementRunJob,
+    reminderDeliverJob,
+    reminderSweepJob,
+    eventReminderJob,
+    suggestionSyncJob,
+  ],
   async health() {
     return { status: 'ok' };
   },

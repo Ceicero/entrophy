@@ -12,7 +12,12 @@ export interface TagInputProps {
 }
 
 /** Comma/Enter-delimited free-text tag input — used for word lists, domains, invite codes, and similar string arrays in the automod rule form. */
-export function TagInput({ value, onChange, placeholder = 'Type a value and press Enter', disabled }: TagInputProps) {
+export function TagInput({
+  value,
+  onChange,
+  placeholder = 'Type a value and press Enter',
+  disabled,
+}: TagInputProps) {
   const [draft, setDraft] = React.useState('');
 
   function commit() {
@@ -29,7 +34,12 @@ export function TagInput({ value, onChange, placeholder = 'Type a value and pres
             <Badge key={tag} variant="secondary" className="gap-1 pr-1">
               {tag}
               {!disabled ? (
-                <button type="button" aria-label={`Remove ${tag}`} onClick={() => onChange(value.filter((t) => t !== tag))} className="rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10">
+                <button
+                  type="button"
+                  aria-label={`Remove ${tag}`}
+                  onClick={() => onChange(value.filter((t) => t !== tag))}
+                  className="rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10"
+                >
                   <X className="h-3 w-3" />
                 </button>
               ) : null}

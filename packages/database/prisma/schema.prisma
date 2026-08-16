@@ -269,6 +269,7 @@ model Guild {
   webhookEndpoints       WebhookEndpoint[]
   dataRetentionPolicy    DataRetentionPolicy?
   dataRequests           DataRequest[]
+  dataExportBlobs        DataExportBlob[]
   aiUsages               AiUsage[]
   analyticsDaily         GuildAnalyticsDaily[]
   enforcerPolicies       EnforcerPolicy[]
@@ -442,11 +443,17 @@ model ModerationAppeal {
   reviewedAt     DateTime?
   decisionNote   String?
   staffMessageId String?
+  // Set once `applyAppealDecisionEffects` has actually run for this appeal (DM sent, timeout reversed / unban
+  // button posted, enforcer ledger entry emitted). Durable and permanent — unlike the old Redis
+  // `appeal-applied` marker (30-day TTL), this can never silently expire and cause `appeal-sync` to re-apply
+  // effects a second time.
+  effectsAppliedAt DateTime?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
   @@index([guildId])
   @@index([guildId, status])
+  @@index([status, effectsAppliedAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -1187,6 +1194,21 @@ model DataRequest {
   completedAt     DateTime?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+
+  @@index([guildId])
+}
+
+/** Content for a completed EXPORT `DataRequest`, downloaded via `GET /guilds/:guildId/data/requests/:id/download`.
+ * Kept separate from `DataRequest` (rather than a column there) since it can be large and most `DataRequest`
+ * reads (list/status polling) have no reason to load it. Deleted along with the guild (cascade) — an export
+ * blob has no reason to outlive the data it was generated from. */
+model DataExportBlob {
+  id        String   @id @default(cuid())
+  requestId String   @unique
+  guildId   String
+  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
 
   @@index([guildId])
 }

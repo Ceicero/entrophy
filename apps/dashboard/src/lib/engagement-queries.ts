@@ -13,9 +13,11 @@ import { apiFetch, toQueryString } from './api';
 /** Own query-key namespace for the engagement plugin, kept separate from the shared `queryKeys` in `./queries.ts` (which this app must not edit). */
 export const engagementQueryKeys = {
   config: (guildId: string) => ['guilds', guildId, 'engagement', 'config'] as const,
-  leaderboard: (guildId: string, cursor?: string) => ['guilds', guildId, 'engagement', 'leaderboard', cursor ?? null] as const,
+  leaderboard: (guildId: string, cursor?: string) =>
+    ['guilds', guildId, 'engagement', 'leaderboard', cursor ?? null] as const,
   rewards: (guildId: string) => ['guilds', guildId, 'engagement', 'rewards'] as const,
-  repLeaderboard: (guildId: string, cursor?: string) => ['guilds', guildId, 'engagement', 'rep-leaderboard', cursor ?? null] as const,
+  repLeaderboard: (guildId: string, cursor?: string) =>
+    ['guilds', guildId, 'engagement', 'rep-leaderboard', cursor ?? null] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -48,7 +50,10 @@ export function useUpdateEngagementConfig(guildId: string) {
 export function useLevelLeaderboard(guildId: string | undefined, cursor?: string) {
   return useQuery({
     queryKey: engagementQueryKeys.leaderboard(guildId ?? '', cursor),
-    queryFn: () => apiFetch<Paginated<LevelProfileDto>>(`/guilds/${guildId}/engagement/leaderboard${toQueryString({ cursor })}`),
+    queryFn: () =>
+      apiFetch<Paginated<LevelProfileDto>>(
+        `/guilds/${guildId}/engagement/leaderboard${toQueryString({ cursor })}`,
+      ),
     enabled: Boolean(guildId),
   });
 }
@@ -63,7 +68,8 @@ export interface XpAdjustInput {
 export function useXpAdjust(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: XpAdjustInput) => apiFetch<LevelProfileDto>(`/guilds/${guildId}/engagement/xp-adjust`, { method: 'POST', body: input }),
+    mutationFn: (input: XpAdjustInput) =>
+      apiFetch<LevelProfileDto>(`/guilds/${guildId}/engagement/xp-adjust`, { method: 'POST', body: input }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['guilds', guildId, 'engagement', 'leaderboard'] });
     },
@@ -96,7 +102,8 @@ export function useCreateLevelReward(guildId: string) {
 export function useDeleteLevelReward(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (rewardId: string) => apiFetch<void>(`/guilds/${guildId}/engagement/rewards/${rewardId}`, { method: 'DELETE' }),
+    mutationFn: (rewardId: string) =>
+      apiFetch<void>(`/guilds/${guildId}/engagement/rewards/${rewardId}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: engagementQueryKeys.rewards(guildId) });
     },
@@ -110,7 +117,10 @@ export function useDeleteLevelReward(guildId: string) {
 export function useRepLeaderboard(guildId: string | undefined, cursor?: string) {
   return useQuery({
     queryKey: engagementQueryKeys.repLeaderboard(guildId ?? '', cursor),
-    queryFn: () => apiFetch<Paginated<ReputationLeaderboardEntryDto>>(`/guilds/${guildId}/engagement/rep/leaderboard${toQueryString({ cursor })}`),
+    queryFn: () =>
+      apiFetch<Paginated<ReputationLeaderboardEntryDto>>(
+        `/guilds/${guildId}/engagement/rep/leaderboard${toQueryString({ cursor })}`,
+      ),
     enabled: Boolean(guildId),
   });
 }

@@ -18,7 +18,11 @@ export function Badge({ children, tone = 'default', className, ...rest }: BadgeP
 
   return (
     <span
-      className={clsx('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium', toneClasses, className)}
+      className={clsx(
+        'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
+        toneClasses,
+        className,
+      )}
       {...rest}
     >
       {children}

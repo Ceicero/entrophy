@@ -173,7 +173,9 @@ function describeMatcher(matcher: MatcherInput): string {
     case 'regex':
       return `regex: ${String(matcher.value)}`;
     case 'link_domain':
-      return matcherValues(matcher).filter((v) => v.trim().length > 0).length > 0 ? `link domain: ${matcherValues(matcher).join(', ')}` : 'link domain: any link';
+      return matcherValues(matcher).filter((v) => v.trim().length > 0).length > 0
+        ? `link domain: ${matcherValues(matcher).join(', ')}`
+        : 'link domain: any link';
     case 'invite':
       return 'Discord invite link';
     case 'mention_count':
@@ -192,7 +194,11 @@ function describeMatcher(matcher: MatcherInput): string {
  * exemptions, and returns every policy that matched — highest severity first (ARCHITECTURE.md §19). Pure and
  * synchronous by design so it can be unit-tested without any I/O.
  */
-export function evaluate(message: NormalizedMessage, policies: Policy[], options: EvaluateOptions = {}): Match[] {
+export function evaluate(
+  message: NormalizedMessage,
+  policies: Policy[],
+  options: EvaluateOptions = {},
+): Match[] {
   if (options.exemptStaffGlobally && message.isStaff) return [];
 
   const matches: Match[] = [];
@@ -201,7 +207,11 @@ export function evaluate(message: NormalizedMessage, policies: Policy[], options
     if (!policy.enabled) continue;
     if (policy.channelIds.length > 0 && !policy.channelIds.includes(message.channelId)) continue;
     if (policy.exemptChannelIds.includes(message.channelId)) continue;
-    if (policy.exemptRoleIds.length > 0 && message.authorRoleIds.some((roleId) => policy.exemptRoleIds.includes(roleId))) continue;
+    if (
+      policy.exemptRoleIds.length > 0 &&
+      message.authorRoleIds.some((roleId) => policy.exemptRoleIds.includes(roleId))
+    )
+      continue;
 
     const fired = policy.matchers.filter((matcher) => matchOne(message, matcher));
     if (fired.length === 0) continue;

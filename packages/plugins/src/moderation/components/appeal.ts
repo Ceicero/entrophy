@@ -29,8 +29,17 @@ const appealAcceptHandler: ComponentHandler = {
     assertPending(existing.status);
 
     const service = moderationService(c.ctx);
-    await service.decideAppeal({ guildId: c.guildId, appealId, accept: true, reviewerId: c.interaction.user.id });
-    await interaction.update({ content: `✅ Appeal accepted by <@${c.interaction.user.id}>.`, embeds: [], components: [] });
+    await service.decideAppeal({
+      guildId: c.guildId,
+      appealId,
+      accept: true,
+      reviewerId: c.interaction.user.id,
+    });
+    await interaction.update({
+      content: `✅ Appeal accepted by <@${c.interaction.user.id}>.`,
+      embeds: [],
+      components: [],
+    });
   },
 };
 
@@ -48,8 +57,17 @@ const appealDenyHandler: ComponentHandler = {
     assertPending(existing.status);
 
     const service = moderationService(c.ctx);
-    await service.decideAppeal({ guildId: c.guildId, appealId, accept: false, reviewerId: c.interaction.user.id });
-    await interaction.update({ content: `❌ Appeal denied by <@${c.interaction.user.id}>.`, embeds: [], components: [] });
+    await service.decideAppeal({
+      guildId: c.guildId,
+      appealId,
+      accept: false,
+      reviewerId: c.interaction.user.id,
+    });
+    await interaction.update({
+      content: `❌ Appeal denied by <@${c.interaction.user.id}>.`,
+      embeds: [],
+      components: [],
+    });
   },
 };
 
@@ -65,8 +83,17 @@ const appealUnbanHandler: ComponentHandler = {
     if (!appeal || appeal.guildId !== c.guildId) throw new NotFoundError('Appeal not found.');
 
     const service = moderationService(c.ctx);
-    await service.unban({ guildId: c.guildId, targetId: appeal.userId, moderatorId: c.interaction.user.id, reason: `Appeal ${appeal.id} accepted`, source: 'BOT' });
-    await interaction.update({ content: `${interaction.message.content}\n\n✅ Unbanned by <@${c.interaction.user.id}>.`, components: [] });
+    await service.unban({
+      guildId: c.guildId,
+      targetId: appeal.userId,
+      moderatorId: c.interaction.user.id,
+      reason: `Appeal ${appeal.id} accepted`,
+      source: 'BOT',
+    });
+    await interaction.update({
+      content: `${interaction.message.content}\n\n✅ Unbanned by <@${c.interaction.user.id}>.`,
+      components: [],
+    });
   },
 };
 
@@ -81,10 +108,21 @@ const appealModalHandler: ComponentHandler = {
     const caseNumber = caseNumberRaw ? Number(caseNumberRaw) : undefined;
 
     const service = moderationService(c.ctx);
-    await service.openAppeal({ guildId: c.guildId, userId: c.interaction.user.id, caseNumber, content, source: 'bot' });
+    await service.openAppeal({
+      guildId: c.guildId,
+      userId: c.interaction.user.id,
+      caseNumber,
+      content,
+      source: 'bot',
+    });
 
-    await interaction.reply({ embeds: [successEmbed(c.t('mod.appeal.submitted'))], ephemeral: true });
+    await interaction.reply({ embeds: [successEmbed(c.t('appeal.submitted'))], ephemeral: true });
   },
 };
 
-export const appealComponents: ComponentHandler[] = [appealAcceptHandler, appealDenyHandler, appealUnbanHandler, appealModalHandler];
+export const appealComponents: ComponentHandler[] = [
+  appealAcceptHandler,
+  appealDenyHandler,
+  appealUnbanHandler,
+  appealModalHandler,
+];

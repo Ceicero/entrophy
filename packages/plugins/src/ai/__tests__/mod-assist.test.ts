@@ -52,10 +52,17 @@ function buildFakeInteraction(opts: FakeInteractionOptions) {
     }),
   };
 
-  return { interaction: interaction as unknown as ChatInputCommandInteraction<'cached'>, editReplyCalls, deferReplyCalls };
+  return {
+    interaction: interaction as unknown as ChatInputCommandInteraction<'cached'>,
+    editReplyCalls,
+    deferReplyCalls,
+  };
 }
 
-function buildFakeAiService(response: Partial<AiCompleteResult> = {}): { service: AiService; calls: AiCompleteInput[] } {
+function buildFakeAiService(response: Partial<AiCompleteResult> = {}): {
+  service: AiService;
+  calls: AiCompleteInput[];
+} {
   const calls: AiCompleteInput[] = [];
   const service: AiService = {
     complete: vi.fn(async (input: AiCompleteInput) => {
@@ -75,7 +82,10 @@ function buildFakeAiService(response: Partial<AiCompleteResult> = {}): { service
 }
 
 /** Records every method call so the test can assert `mod-assist` never invokes an action method (warn/timeout/kick/ban/createCase). */
-function buildFakeModerationService(overrides: Partial<ModerationService> = {}): { service: ModerationService; calledMethods: string[] } {
+function buildFakeModerationService(overrides: Partial<ModerationService> = {}): {
+  service: ModerationService;
+  calledMethods: string[];
+} {
   const calledMethods: string[] = [];
   const track =
     <T extends unknown[], R>(name: string, impl: (...args: T) => R) =>
@@ -97,14 +107,15 @@ function buildFakeModerationService(overrides: Partial<ModerationService> = {}):
     getCase: track(
       'getCase',
       overrides.getCase ??
-        (async () => ({
-          id: 'case-1',
-          guildId: 'g1',
-          caseNumber: 7,
-          targetId: 'user-99',
-          type: 'WARN',
-          reason: 'spam',
-        }) as never),
+        (async () =>
+          ({
+            id: 'case-1',
+            guildId: 'g1',
+            caseNumber: 7,
+            targetId: 'user-99',
+            type: 'WARN',
+            reason: 'spam',
+          }) as never),
     ),
     listCases: track(
       'listCases',
@@ -130,7 +141,10 @@ function buildFakeModerationService(overrides: Partial<ModerationService> = {}):
   return { service, calledMethods };
 }
 
-function buildCommandContext(base: ReturnType<typeof createTestContext>, interaction: ChatInputCommandInteraction<'cached'>): CommandContext {
+function buildCommandContext(
+  base: ReturnType<typeof createTestContext>,
+  interaction: ChatInputCommandInteraction<'cached'>,
+): CommandContext {
   return {
     interaction,
     ctx: base.ctx,

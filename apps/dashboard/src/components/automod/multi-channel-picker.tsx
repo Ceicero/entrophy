@@ -22,7 +22,14 @@ export function MultiChannelPicker({ guildId, value, onChange, disabled }: Multi
         value={value.join(', ')}
         placeholder="Channel IDs, comma separated"
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
+        onChange={(e) =>
+          onChange(
+            e.target.value
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean),
+          )
+        }
       />
     );
   }
@@ -35,7 +42,12 @@ export function MultiChannelPicker({ guildId, value, onChange, disabled }: Multi
             <Badge key={id} variant="secondary" className="gap-1 pr-1">
               #{channelName(id)}
               {!disabled ? (
-                <button type="button" aria-label={`Remove ${channelName(id)}`} onClick={() => onChange(value.filter((v) => v !== id))} className="rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10">
+                <button
+                  type="button"
+                  aria-label={`Remove ${channelName(id)}`}
+                  onClick={() => onChange(value.filter((v) => v !== id))}
+                  className="rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10"
+                >
                   <X className="h-3 w-3" />
                 </button>
               ) : null}

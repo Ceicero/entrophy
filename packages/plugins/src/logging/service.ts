@@ -14,10 +14,17 @@ const PLUGIN_ID = 'logging' as const;
 function redactPayload(payload: LogPayload, customPatterns: string[], allowContent: boolean): LogPayload {
   const redacted: LogPayload = {
     ...payload,
-    description: payload.description !== undefined ? redactText(payload.description, customPatterns) : undefined,
+    description:
+      payload.description !== undefined ? redactText(payload.description, customPatterns) : undefined,
     fields: payload.fields?.map((field) => ({ ...field, value: redactText(field.value, customPatterns) })),
-    contentBefore: allowContent && payload.contentBefore !== undefined ? redactText(payload.contentBefore, customPatterns) : undefined,
-    contentAfter: allowContent && payload.contentAfter !== undefined ? redactText(payload.contentAfter, customPatterns) : undefined,
+    contentBefore:
+      allowContent && payload.contentBefore !== undefined
+        ? redactText(payload.contentBefore, customPatterns)
+        : undefined,
+    contentAfter:
+      allowContent && payload.contentAfter !== undefined
+        ? redactText(payload.contentAfter, customPatterns)
+        : undefined,
   };
   return pruneUndefined(redacted as unknown as Record<string, unknown>) as unknown as LogPayload;
 }
@@ -87,7 +94,10 @@ export class LoggingServiceImpl implements LoggingService {
           },
         });
       } catch (err) {
-        this.ctx.logger.error({ guildId, kind, err: err instanceof Error ? err.message : String(err) }, 'logging: failed to store a LogEvent row');
+        this.ctx.logger.error(
+          { guildId, kind, err: err instanceof Error ? err.message : String(err) },
+          'logging: failed to store a LogEvent row',
+        );
       }
     }
   }
@@ -111,7 +121,9 @@ export class LoggingServiceImpl implements LoggingService {
     const effectiveDays = Math.min(config.retentionDays, policyDays);
 
     const cutoff = new Date(Date.now() - effectiveDays * 24 * 60 * 60 * 1000);
-    const result = await this.ctx.prisma.logEvent.deleteMany({ where: { guildId, createdAt: { lt: cutoff } } });
+    const result = await this.ctx.prisma.logEvent.deleteMany({
+      where: { guildId, createdAt: { lt: cutoff } },
+    });
     return result.count;
   }
 

@@ -33,7 +33,9 @@ function parseKey(raw: string, sourceName: string): Buffer {
 function resolveKey(explicit?: string): Buffer {
   const raw = explicit ?? env.ENCRYPTION_KEY;
   if (!raw) {
-    throw new ConfigError('ENCRYPTION_KEY is not set. Generate one with generateEncryptionKey() or `openssl rand -base64 32`.');
+    throw new ConfigError(
+      'ENCRYPTION_KEY is not set. Generate one with generateEncryptionKey() or `openssl rand -base64 32`.',
+    );
   }
   return parseKey(raw, explicit ? 'the provided encryption key' : 'ENCRYPTION_KEY');
 }
@@ -60,7 +62,9 @@ export function encryptSecret(plain: string, key?: string): EncryptedString {
   const cipher = createCipheriv(ALGORITHM, keyBuf, iv);
   const ciphertext = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag();
-  return [FORMAT_VERSION, iv.toString('base64'), tag.toString('base64'), ciphertext.toString('base64')].join(':');
+  return [FORMAT_VERSION, iv.toString('base64'), tag.toString('base64'), ciphertext.toString('base64')].join(
+    ':',
+  );
 }
 
 /**

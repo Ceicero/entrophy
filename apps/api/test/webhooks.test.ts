@@ -92,7 +92,10 @@ describe('webhook signature verification', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/webhooks/stripe',
-      headers: { 'content-type': 'application/json', 'stripe-signature': stripeSignature(env.STRIPE_WEBHOOK_SECRET!, body, now) },
+      headers: {
+        'content-type': 'application/json',
+        'stripe-signature': stripeSignature(env.STRIPE_WEBHOOK_SECRET!, body, now),
+      },
       payload: body,
     });
 

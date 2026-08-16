@@ -51,7 +51,9 @@ export function summarizePermissions(permissions: PermissionsBitField): string {
   const otherCount = all.length - notable.length;
 
   if (notable.length === 0) {
-    return otherCount > 0 ? `No notable permissions (${otherCount} other permission${otherCount === 1 ? '' : 's'})` : 'No notable permissions';
+    return otherCount > 0
+      ? `No notable permissions (${otherCount} other permission${otherCount === 1 ? '' : 's'})`
+      : 'No notable permissions';
   }
 
   const readable = notable.map((flag) => flag.replace(/([a-z])([A-Z])/g, '$1 $2'));

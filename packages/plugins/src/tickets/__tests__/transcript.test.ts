@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildHtmlTranscript, buildJsonTranscript, type TranscriptMessage, type TranscriptTicketMeta } from '../transcript';
+import {
+  buildHtmlTranscript,
+  buildJsonTranscript,
+  type TranscriptMessage,
+  type TranscriptTicketMeta,
+} from '../transcript';
 
 const baseMeta: TranscriptTicketMeta = {
   number: 42,
@@ -54,30 +59,41 @@ describe('buildHtmlTranscript — XSS escaping', () => {
   });
 
   it('escapes a javascript: payload in the message text itself', () => {
-    const html = buildHtmlTranscript(baseMeta, [messageWith({ content: '<a href="javascript:alert(1)">click</a>' })]);
+    const html = buildHtmlTranscript(baseMeta, [
+      messageWith({ content: '<a href="javascript:alert(1)">click</a>' }),
+    ]);
     expect(html).not.toContain('<a href="javascript:alert(1)">');
     expect(html).toContain('&lt;a href=&quot;javascript:alert(1)&quot;&gt;');
   });
 
   it('neutralizes a javascript: attachment URL to a safe placeholder href', () => {
-    const html = buildHtmlTranscript(baseMeta, [messageWith({ attachments: [{ name: 'evil.txt', url: 'javascript:alert(1)' }] })]);
+    const html = buildHtmlTranscript(baseMeta, [
+      messageWith({ attachments: [{ name: 'evil.txt', url: 'javascript:alert(1)' }] }),
+    ]);
     expect(html).not.toContain('href="javascript:alert(1)"');
     expect(html).toContain('href="#"');
   });
 
   it('neutralizes a data: attachment URL', () => {
-    const html = buildHtmlTranscript(baseMeta, [messageWith({ attachments: [{ name: 'evil.html', url: 'data:text/html,<script>alert(1)</script>' }] })]);
+    const html = buildHtmlTranscript(baseMeta, [
+      messageWith({ attachments: [{ name: 'evil.html', url: 'data:text/html,<script>alert(1)</script>' }] }),
+    ]);
     expect(html).not.toContain('data:text/html');
     expect(html).toContain('href="#"');
   });
 
   it('keeps legitimate https attachment URLs intact (escaped, not neutralized)', () => {
-    const html = buildHtmlTranscript(baseMeta, [messageWith({ attachments: [{ name: 'file.png', url: 'https://cdn.example.com/file.png' }] })]);
+    const html = buildHtmlTranscript(baseMeta, [
+      messageWith({ attachments: [{ name: 'file.png', url: 'https://cdn.example.com/file.png' }] }),
+    ]);
     expect(html).toContain('href="https://cdn.example.com/file.png"');
   });
 
   it('escapes the ticket subject, tags, and close reason', () => {
-    const html = buildHtmlTranscript({ ...baseMeta, subject: '<b>hi</b>', closeReason: '<script>x</script>', tags: ['<i>tag</i>'] }, []);
+    const html = buildHtmlTranscript(
+      { ...baseMeta, subject: '<b>hi</b>', closeReason: '<script>x</script>', tags: ['<i>tag</i>'] },
+      [],
+    );
     expect(html).not.toContain('<b>hi</b>');
     expect(html).not.toContain('<script>x</script>');
     expect(html).not.toContain('<i>tag</i>');

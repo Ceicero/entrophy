@@ -1,4 +1,11 @@
-import { ChannelType, PermissionFlagsBits, type Guild, type GuildMember, type VoiceBasedChannel, type VoiceState } from 'discord.js';
+import {
+  ChannelType,
+  PermissionFlagsBits,
+  type Guild,
+  type GuildMember,
+  type VoiceBasedChannel,
+  type VoiceState,
+} from 'discord.js';
 import { fetchMemberSafe, type PluginContext, type PluginEventHandler } from '../../sdk';
 import type { EngagementConfig, EngagementTempVoiceConfig } from '../manifest';
 import { applyLevelUp } from '../level-actions';
@@ -27,7 +34,13 @@ function toVoiceMemberLike(member: GuildMember): VoiceMemberLike {
 }
 
 /** Stops `userId`'s voice-XP session (if any), persists the earned XP/minutes, and handles a level-up. */
-async function settleVoiceSession(ctx: PluginContext, guild: Guild, guildId: string, userId: string, xpPerMinute: number): Promise<void> {
+async function settleVoiceSession(
+  ctx: PluginContext,
+  guild: Guild,
+  guildId: string,
+  userId: string,
+  xpPerMinute: number,
+): Promise<void> {
   const minutes = await stopVoiceSession(ctx.redis, guildId, userId);
   if (minutes <= 0) return;
 
@@ -49,7 +62,13 @@ async function settleVoiceSession(ctx: PluginContext, guild: Guild, guildId: str
 }
 
 /** Starts/stops voice-XP sessions for every member of `channel` so its tracked state matches "does this channel currently qualify, and is each member eligible". */
-async function reconcileChannelVoiceXp(ctx: PluginContext, guild: Guild, guildId: string, channel: VoiceBasedChannel, xpPerMinute: number): Promise<void> {
+async function reconcileChannelVoiceXp(
+  ctx: PluginContext,
+  guild: Guild,
+  guildId: string,
+  channel: VoiceBasedChannel,
+  xpPerMinute: number,
+): Promise<void> {
   const members = [...channel.members.values()];
   const qualifies = channelQualifiesForVoiceXp(members.map(toVoiceMemberLike));
 
@@ -66,9 +85,18 @@ async function reconcileChannelVoiceXp(ctx: PluginContext, guild: Guild, guildId
 }
 
 /** Creates a fresh temp-voice channel and moves `member` into it when they join a configured hub channel. */
-async function createTempVoiceChannel(ctx: PluginContext, guild: Guild, guildId: string, hub: VoiceBasedChannel, member: GuildMember, config: EngagementTempVoiceConfig): Promise<void> {
+async function createTempVoiceChannel(
+  ctx: PluginContext,
+  guild: Guild,
+  guildId: string,
+  hub: VoiceBasedChannel,
+  member: GuildMember,
+  config: EngagementTempVoiceConfig,
+): Promise<void> {
   try {
-    const name = renderTempVoiceName(config.nameTemplate, { user: member.displayName || member.user.username });
+    const name = renderTempVoiceName(config.nameTemplate, {
+      user: member.displayName || member.user.username,
+    });
     const created = await guild.channels.create({
       name,
       type: ChannelType.GuildVoice,
@@ -77,19 +105,40 @@ async function createTempVoiceChannel(ctx: PluginContext, guild: Guild, guildId:
       permissionOverwrites: [
         {
           id: member.id,
-          allow: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.MoveMembers, PermissionFlagsBits.MuteMembers, PermissionFlagsBits.DeafenMembers],
+          allow: [
+            PermissionFlagsBits.ManageChannels,
+            PermissionFlagsBits.MoveMembers,
+            PermissionFlagsBits.MuteMembers,
+            PermissionFlagsBits.DeafenMembers,
+          ],
         },
       ],
     });
 
-    await ctx.prisma.tempVoiceChannel.create({ data: { guildId, channelId: created.id, ownerId: member.id, hubChannelId: hub.id } });
-    await ctx.audit({ guildId, actorId: member.id, actorType: 'user', action: 'engagement.tempvoice.create', targetType: 'channel', targetId: created.id, source: 'bot' });
+    await ctx.prisma.tempVoiceChannel.create({
+      data: { guildId, channelId: created.id, ownerId: member.id, hubChannelId: hub.id },
+    });
+    await ctx.audit({
+      guildId,
+      actorId: member.id,
+      actorType: 'user',
+      action: 'engagement.tempvoice.create',
+      targetType: 'channel',
+      targetId: created.id,
+      source: 'bot',
+    });
 
     await member.voice.setChannel(created.id).catch((err: unknown) => {
-      ctx.logger.warn({ guildId, channelId: created.id, err: err instanceof Error ? err.message : String(err) }, 'engagement: created temp voice channel but could not move member into it');
+      ctx.logger.warn(
+        { guildId, channelId: created.id, err: err instanceof Error ? err.message : String(err) },
+        'engagement: created temp voice channel but could not move member into it',
+      );
     });
   } catch (err) {
-    ctx.logger.warn({ guildId, hubChannelId: hub.id, err: err instanceof Error ? err.message : String(err) }, 'engagement: failed to create temp voice channel');
+    ctx.logger.warn(
+      { guildId, hubChannelId: hub.id, err: err instanceof Error ? err.message : String(err) },
+      'engagement: failed to create temp voice channel',
+    );
   }
 }
 
@@ -102,12 +151,24 @@ async function cleanupIfOrphaned(ctx: PluginContext, guild: Guild, channelId: st
   const memberCount = channel && channel.isVoiceBased() ? channel.members.size : 0;
   if (!isOrphanTempVoiceChannel(memberCount)) return;
 
-  if (channel) await channel.delete('Entrophy engagement: temp voice channel is empty').catch(() => undefined);
+  if (channel)
+    await channel.delete('Entrophy engagement: temp voice channel is empty').catch(() => undefined);
   await ctx.prisma.tempVoiceChannel.delete({ where: { id: row.id } }).catch(() => undefined);
 }
 
-async function handleTempVoice(ctx: PluginContext, guild: Guild, guildId: string, oldState: VoiceState, newState: VoiceState, config: EngagementTempVoiceConfig): Promise<void> {
-  if (newState.channelId && newState.channelId !== oldState.channelId && config.hubChannelIds.includes(newState.channelId)) {
+async function handleTempVoice(
+  ctx: PluginContext,
+  guild: Guild,
+  guildId: string,
+  oldState: VoiceState,
+  newState: VoiceState,
+  config: EngagementTempVoiceConfig,
+): Promise<void> {
+  if (
+    newState.channelId &&
+    newState.channelId !== oldState.channelId &&
+    config.hubChannelIds.includes(newState.channelId)
+  ) {
     const hub = newState.channel;
     const member = newState.member;
     if (hub && hub.isVoiceBased() && member) {

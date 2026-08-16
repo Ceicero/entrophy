@@ -18,7 +18,8 @@ const SUBCOMMAND_LIMIT = 25;
 // Discord ApplicationCommandOptionType: 1 = SUB_COMMAND, 2 = SUB_COMMAND_GROUP.
 function countLeafSubcommands(command: RESTPostAPIApplicationCommandsJSONBody): number {
   let count = 0;
-  for (const option of (command as { options?: { type: number; options?: { type: number }[] }[] }).options ?? []) {
+  for (const option of (command as { options?: { type: number; options?: { type: number }[] }[] }).options ??
+    []) {
     if (option.type === 1) {
       count += 1;
     } else if (option.type === 2) {
@@ -59,13 +60,17 @@ function main(): void {
   const noCollisions = collisions.length === 0;
 
   console.log(`Plugins loaded: ${registry.list().length}`);
-  console.log(`Top-level commands: ${topLevelCount} (limit ${TOP_LEVEL_COMMAND_LIMIT}) — ${commandLimitOk ? 'OK' : 'VIOLATION'}`);
+  console.log(
+    `Top-level commands: ${topLevelCount} (limit ${TOP_LEVEL_COMMAND_LIMIT}) — ${commandLimitOk ? 'OK' : 'VIOLATION'}`,
+  );
   console.log(
     `Max subcommands under one top-level command: ${maxSubcommands} on "${maxSubcommandsOwner}" (limit ${SUBCOMMAND_LIMIT}) — ${
       subcommandLimitOk ? 'OK' : 'VIOLATION'
     }`,
   );
-  console.log(`customId prefix ("pluginId:action") collisions: ${noCollisions ? 'none' : JSON.stringify(collisions)}`);
+  console.log(
+    `customId prefix ("pluginId:action") collisions: ${noCollisions ? 'none' : JSON.stringify(collisions)}`,
+  );
 
   if (!commandLimitOk || !subcommandLimitOk || !noCollisions) {
     process.exitCode = 1;

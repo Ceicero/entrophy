@@ -31,7 +31,10 @@ export const inboundJob: PluginJob<InboundJobData> = {
     const provider = getProvider(providerId);
 
     if (!provider?.handleInbound) {
-      ctx.logger.warn({ provider: providerTag }, 'integrations: inbound event for a provider with no handleInbound');
+      ctx.logger.warn(
+        { provider: providerTag },
+        'integrations: inbound event for a provider with no handleInbound',
+      );
       return;
     }
 

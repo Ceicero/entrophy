@@ -58,16 +58,23 @@ export function buildLedgerEmbed(input: LedgerEmbedInput): EmbedBuilder {
     { name: 'When', value: discordTimestamp(input.createdAt, 'F'), inline: true },
   ];
 
-  if (input.action) fields.push({ name: 'Action', value: truncate(input.action, EMBED_LIMITS.fieldValue), inline: true });
+  if (input.action)
+    fields.push({ name: 'Action', value: truncate(input.action, EMBED_LIMITS.fieldValue), inline: true });
   if (input.decidedBy) fields.push({ name: 'Decided by', value: userMention(input.decidedBy), inline: true });
-  if (input.policyName) fields.push({ name: 'Policy', value: truncate(input.policyName, EMBED_LIMITS.fieldValue), inline: true });
-  if (input.caseNumber !== undefined && input.caseNumber !== null) fields.push({ name: 'Case #', value: `#${input.caseNumber}`, inline: true });
+  if (input.policyName)
+    fields.push({ name: 'Policy', value: truncate(input.policyName, EMBED_LIMITS.fieldValue), inline: true });
+  if (input.caseNumber !== undefined && input.caseNumber !== null)
+    fields.push({ name: 'Case #', value: `#${input.caseNumber}`, inline: true });
 
   const contextLines: string[] = [];
   if (input.excerpt) contextLines.push(input.excerpt);
   if (input.messageJumpUrl) contextLines.push(`[Jump to message](${input.messageJumpUrl})`);
   if (contextLines.length > 0) {
-    fields.push({ name: 'Context', value: truncate(contextLines.join('\n'), EMBED_LIMITS.fieldValue), inline: false });
+    fields.push({
+      name: 'Context',
+      value: truncate(contextLines.join('\n'), EMBED_LIMITS.fieldValue),
+      inline: false,
+    });
   }
 
   return new EmbedBuilder()
@@ -104,15 +111,26 @@ export function buildFlagQueueEmbed(input: FlagQueueEmbedInput): EmbedBuilder {
     { name: 'User', value: `${userMention(input.userId)} (\`${input.userId}\`)`, inline: true },
     { name: 'Severity', value: input.severity, inline: true },
   ];
-  if (input.policyName) fields.push({ name: 'Policy', value: truncate(input.policyName, EMBED_LIMITS.fieldValue), inline: true });
-  if (input.suggestedAction) fields.push({ name: 'Suggested action', value: input.suggestedAction, inline: true });
-  if (input.matcherSummary) fields.push({ name: 'Matched', value: truncate(input.matcherSummary, EMBED_LIMITS.fieldValue), inline: false });
+  if (input.policyName)
+    fields.push({ name: 'Policy', value: truncate(input.policyName, EMBED_LIMITS.fieldValue), inline: true });
+  if (input.suggestedAction)
+    fields.push({ name: 'Suggested action', value: input.suggestedAction, inline: true });
+  if (input.matcherSummary)
+    fields.push({
+      name: 'Matched',
+      value: truncate(input.matcherSummary, EMBED_LIMITS.fieldValue),
+      inline: false,
+    });
 
   const contextLines: string[] = [];
   if (input.excerpt) contextLines.push(input.excerpt);
   if (input.messageJumpUrl) contextLines.push(`[Jump to message](${input.messageJumpUrl})`);
   if (contextLines.length > 0) {
-    fields.push({ name: 'Context', value: truncate(contextLines.join('\n'), EMBED_LIMITS.fieldValue), inline: false });
+    fields.push({
+      name: 'Context',
+      value: truncate(contextLines.join('\n'), EMBED_LIMITS.fieldValue),
+      inline: false,
+    });
   }
 
   if (input.riskScore !== undefined && input.riskScore !== null) {
@@ -139,7 +157,10 @@ export function buildFlagQueueEmbed(input: FlagQueueEmbedInput): EmbedBuilder {
 }
 
 /** Decision buttons (`enforcer:decide:<recordId>:<decision>`), one row per up-to-5 allowed decisions, plus a helper row. */
-export function buildFlagQueueComponents(recordId: string, allowedDecisions: EnforcerDecisionLower[]): ActionRowBuilder<ButtonBuilder>[] {
+export function buildFlagQueueComponents(
+  recordId: string,
+  allowedDecisions: EnforcerDecisionLower[],
+): ActionRowBuilder<ButtonBuilder>[] {
   const decideButtons = DECIDE_ORDER.filter((d) => allowedDecisions.includes(d)).map((decision) =>
     new ButtonBuilder()
       .setCustomId(buildCustomId('enforcer', 'decide', recordId, decision))
@@ -153,8 +174,14 @@ export function buildFlagQueueComponents(recordId: string, allowedDecisions: Enf
   }
 
   const helperRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId(buildCustomId('enforcer', 'context', recordId)).setLabel('View context').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(buildCustomId('enforcer', 'history', recordId)).setLabel('Suspect history').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(buildCustomId('enforcer', 'context', recordId))
+      .setLabel('View context')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId(buildCustomId('enforcer', 'history', recordId))
+      .setLabel('Suspect history')
+      .setStyle(ButtonStyle.Secondary),
   );
   rows.push(helperRow);
 
@@ -162,7 +189,10 @@ export function buildFlagQueueComponents(recordId: string, allowedDecisions: Enf
 }
 
 /** Same layout as `buildFlagQueueComponents` but every button disabled — used once a flag has been decided. */
-export function buildDecidedFlagQueueComponents(recordId: string, allowedDecisions: EnforcerDecisionLower[]): ActionRowBuilder<ButtonBuilder>[] {
+export function buildDecidedFlagQueueComponents(
+  recordId: string,
+  allowedDecisions: EnforcerDecisionLower[],
+): ActionRowBuilder<ButtonBuilder>[] {
   return buildFlagQueueComponents(recordId, allowedDecisions).map((row) => {
     const disabledRow = new ActionRowBuilder<ButtonBuilder>();
     for (const component of row.components) {

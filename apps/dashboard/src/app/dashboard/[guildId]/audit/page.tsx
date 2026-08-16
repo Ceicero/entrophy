@@ -3,7 +3,18 @@
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { Download } from 'lucide-react';
-import { Badge, Button, Input, PageHeader, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@entrophy/ui';
+import {
+  Badge,
+  Button,
+  Input,
+  PageHeader,
+  Pagination,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@entrophy/ui';
 import { auditExportCsvUrl, useAuditLog, type AuditLogFilters } from '../../../../lib/queries';
 import { DataTable, type DataTableColumn } from '../../../../components/data-table';
 import { formatDateTime, humanizeAction } from '../../../../lib/format';
@@ -29,9 +40,21 @@ export default function AuditLogPage() {
   }
 
   const columns: DataTableColumn<AuditLogEntryDto>[] = [
-    { key: 'action', header: 'Action', render: (row) => <span className="font-medium">{humanizeAction(row.action)}</span> },
-    { key: 'actor', header: 'Actor', render: (row) => <span className="font-mono text-xs">{row.actorId}</span> },
-    { key: 'target', header: 'Target', render: (row) => (row.targetId ? <span className="font-mono text-xs">{row.targetId}</span> : '—') },
+    {
+      key: 'action',
+      header: 'Action',
+      render: (row) => <span className="font-medium">{humanizeAction(row.action)}</span>,
+    },
+    {
+      key: 'actor',
+      header: 'Actor',
+      render: (row) => <span className="font-mono text-xs">{row.actorId}</span>,
+    },
+    {
+      key: 'target',
+      header: 'Target',
+      render: (row) => (row.targetId ? <span className="font-mono text-xs">{row.targetId}</span> : '—'),
+    },
     {
       key: 'source',
       header: 'Source',

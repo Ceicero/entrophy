@@ -61,7 +61,10 @@ function enforcerOverrides() {
   // `GuildConfigStore.getConfig`/`setConfig` (backing the settings routes) read/write `PluginConfig` and
   // invalidate their Redis cache on every write — so the settings PUT->GET round trip needs a real, stateful
   // `pluginConfig` fake, not the generic stub's always-`null`/always-`undefined` defaults.
-  const pluginConfigRows = new Map<string, { guildId: string; pluginId: string; config: Record<string, unknown>; version: number }>();
+  const pluginConfigRows = new Map<
+    string,
+    { guildId: string; pluginId: string; config: Record<string, unknown>; version: number }
+  >();
 
   return {
     store: { policies, records },
@@ -69,21 +72,34 @@ function enforcerOverrides() {
       guild: { findUnique: async () => ({ id: GUILD_ID, botPresent: true }) },
       pluginConfig: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        findUnique: async (args: any) => pluginConfigRows.get(`${args.where.guildId_pluginId.guildId}:${args.where.guildId_pluginId.pluginId}`) ?? null,
+        findUnique: async (args: any) =>
+          pluginConfigRows.get(
+            `${args.where.guildId_pluginId.guildId}:${args.where.guildId_pluginId.pluginId}`,
+          ) ?? null,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         upsert: async (args: any) => {
           const key = `${args.where.guildId_pluginId.guildId}:${args.where.guildId_pluginId.pluginId}`;
           const existing = pluginConfigRows.get(key);
           const row = existing
             ? { ...existing, config: args.update.config, version: existing.version + 1 }
-            : { guildId: args.create.guildId, pluginId: args.create.pluginId, config: args.create.config, version: 1 };
+            : {
+                guildId: args.create.guildId,
+                pluginId: args.create.pluginId,
+                config: args.create.config,
+                version: 1,
+              };
           pluginConfigRows.set(key, row);
           return row;
         },
       },
       enforcerPolicy: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake, args shape mirrors Prisma's generated types
-        findMany: async (args: any) => [...policies.values()].filter((p) => p.guildId === args?.where?.guildId && (args?.where?.deletedAt === undefined || p.deletedAt === args.where.deletedAt)),
+        findMany: async (args: any) =>
+          [...policies.values()].filter(
+            (p) =>
+              p.guildId === args?.where?.guildId &&
+              (args?.where?.deletedAt === undefined || p.deletedAt === args.where.deletedAt),
+          ),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         findFirst: async (args: any) => {
           const found = policies.get(args?.where?.id);
@@ -94,7 +110,14 @@ function enforcerOverrides() {
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         create: async (args: any) => {
-          const row: FakePolicy = { id: randomUUID(), updatedBy: null, createdAt: new Date(), updatedAt: new Date(), deletedAt: null, ...args.data };
+          const row: FakePolicy = {
+            id: randomUUID(),
+            updatedBy: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            deletedAt: null,
+            ...args.data,
+          };
           policies.set(row.id, row);
           return row;
         },
@@ -113,14 +136,22 @@ function enforcerOverrides() {
           let list = [...records.values()].filter((r) => r.guildId === args?.where?.guildId);
           if (args?.where?.kind) list = list.filter((r) => r.kind === args.where.kind);
           if (args?.where?.status) list = list.filter((r) => r.status === args.where.status);
-          list.sort((a, b) => (args?.orderBy?.createdAt === 'asc' ? a.createdAt.getTime() - b.createdAt.getTime() : b.createdAt.getTime() - a.createdAt.getTime()));
+          list.sort((a, b) =>
+            args?.orderBy?.createdAt === 'asc'
+              ? a.createdAt.getTime() - b.createdAt.getTime()
+              : b.createdAt.getTime() - a.createdAt.getTime(),
+          );
           return list;
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         findUnique: async (args: any) => {
           const key = args?.where?.guildId_recordNumber;
           if (!key) return null;
-          return [...records.values()].find((r) => r.guildId === key.guildId && r.recordNumber === key.recordNumber) ?? null;
+          return (
+            [...records.values()].find(
+              (r) => r.guildId === key.guildId && r.recordNumber === key.recordNumber,
+            ) ?? null
+          );
         },
       },
     },
@@ -132,7 +163,11 @@ async function authedContext() {
   const { app, redis, queues } = await buildTestApp(overrides);
   const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
   await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-  const mutHeaders = { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken };
+  const mutHeaders = {
+    cookie: cookieHeader,
+    origin: 'http://localhost:3000',
+    'x-csrf-token': session.csrfToken,
+  };
   return { app, cookieHeader, mutHeaders, store, queues };
 }
 
@@ -173,9 +208,18 @@ function makeRecord(overrides: Partial<FakeRecord> = {}): FakeRecord {
 describe('enforcer settings', () => {
   it('GET returns the default settings before any write', async () => {
     const { app, cookieHeader } = await authedContext();
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/enforcer/settings`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/enforcer/settings`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toMatchObject({ ledgerChannelId: null, ledgerVisibility: 'staff', autoFlagEnabled: true, captureContext: true });
+    expect(res.json()).toMatchObject({
+      ledgerChannelId: null,
+      ledgerVisibility: 'staff',
+      autoFlagEnabled: true,
+      captureContext: true,
+    });
   });
 
   it('PUT updates settings and GET reflects the change', async () => {
@@ -187,15 +231,28 @@ describe('enforcer settings', () => {
       payload: { ledgerChannelId: '333333333333333333', ledgerVisibility: 'everyone', captureContext: false },
     });
     expect(put.statusCode).toBe(200);
-    expect(put.json()).toMatchObject({ ledgerChannelId: '333333333333333333', ledgerVisibility: 'everyone', captureContext: false });
+    expect(put.json()).toMatchObject({
+      ledgerChannelId: '333333333333333333',
+      ledgerVisibility: 'everyone',
+      captureContext: false,
+    });
 
-    const get = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/enforcer/settings`, headers: { cookie: cookieHeader } });
+    const get = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/enforcer/settings`,
+      headers: { cookie: cookieHeader },
+    });
     expect(get.json()).toMatchObject({ ledgerChannelId: '333333333333333333', ledgerVisibility: 'everyone' });
   });
 
   it('PUT rejects an invalid ledgerVisibility value', async () => {
     const { app, mutHeaders } = await authedContext();
-    const res = await app.inject({ method: 'PUT', url: `/guilds/${GUILD_ID}/enforcer/settings`, headers: mutHeaders, payload: { ledgerVisibility: 'public' } });
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/enforcer/settings`,
+      headers: mutHeaders,
+      payload: { ledgerVisibility: 'public' },
+    });
     expect(res.statusCode).toBe(400);
   });
 });
@@ -204,20 +261,33 @@ describe('enforcer policies CRUD', () => {
   it('GET returns an empty list, POST creates a policy, GET /:id returns it', async () => {
     const { app, mutHeaders, cookieHeader } = await authedContext();
 
-    const empty = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/enforcer/policies`, headers: { cookie: cookieHeader } });
+    const empty = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/enforcer/policies`,
+      headers: { cookie: cookieHeader },
+    });
     expect(empty.json()).toEqual([]);
 
     const created = await app.inject({
       method: 'POST',
       url: `/guilds/${GUILD_ID}/enforcer/policies`,
       headers: mutHeaders,
-      payload: { name: 'No invites', description: 'Blocks invite links.', severity: 'MEDIUM', matchers: [{ type: 'invite', value: 'discord-invite' }] },
+      payload: {
+        name: 'No invites',
+        description: 'Blocks invite links.',
+        severity: 'MEDIUM',
+        matchers: [{ type: 'invite', value: 'discord-invite' }],
+      },
     });
     expect(created.statusCode).toBe(201);
     const policyId = created.json().id;
     expect(created.json().name).toBe('No invites');
 
-    const fetched = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}`, headers: { cookie: cookieHeader } });
+    const fetched = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}`,
+      headers: { cookie: cookieHeader },
+    });
     expect(fetched.statusCode).toBe(200);
     expect(fetched.json().id).toBe(policyId);
   });
@@ -239,7 +309,12 @@ describe('enforcer policies CRUD', () => {
       method: 'POST',
       url: `/guilds/${GUILD_ID}/enforcer/policies`,
       headers: mutHeaders,
-      payload: { name: 'Evil', description: 'x', severity: 'LOW', matchers: [{ type: 'regex', value: '(a+)+$' }] },
+      payload: {
+        name: 'Evil',
+        description: 'x',
+        severity: 'LOW',
+        matchers: [{ type: 'regex', value: '(a+)+$' }],
+      },
     });
     expect(res.statusCode).toBe(400);
   });
@@ -250,18 +325,36 @@ describe('enforcer policies CRUD', () => {
       method: 'POST',
       url: `/guilds/${GUILD_ID}/enforcer/policies`,
       headers: mutHeaders,
-      payload: { name: 'Temp', description: 'x', severity: 'LOW', matchers: [{ type: 'keyword', value: 'foo' }] },
+      payload: {
+        name: 'Temp',
+        description: 'x',
+        severity: 'LOW',
+        matchers: [{ type: 'keyword', value: 'foo' }],
+      },
     });
     const policyId = created.json().id;
 
-    const updated = await app.inject({ method: 'PUT', url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}`, headers: mutHeaders, payload: { enabled: false } });
+    const updated = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}`,
+      headers: mutHeaders,
+      payload: { enabled: false },
+    });
     expect(updated.statusCode).toBe(200);
     expect(updated.json().enabled).toBe(false);
 
-    const deleted = await app.inject({ method: 'DELETE', url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}`, headers: mutHeaders });
+    const deleted = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}`,
+      headers: mutHeaders,
+    });
     expect(deleted.statusCode).toBe(204);
 
-    const fetched = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}`, headers: { cookie: cookieHeader } });
+    const fetched = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}`,
+      headers: { cookie: cookieHeader },
+    });
     expect(fetched.statusCode).toBe(404);
   });
 
@@ -271,14 +364,29 @@ describe('enforcer policies CRUD', () => {
       method: 'POST',
       url: `/guilds/${GUILD_ID}/enforcer/policies`,
       headers: mutHeaders,
-      payload: { name: 'Word filter', description: 'x', severity: 'LOW', matchers: [{ type: 'keyword', value: 'badword' }] },
+      payload: {
+        name: 'Word filter',
+        description: 'x',
+        severity: 'LOW',
+        matchers: [{ type: 'keyword', value: 'badword' }],
+      },
     });
     const policyId = created.json().id;
 
-    const hit = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}/test`, headers: mutHeaders, payload: { text: 'this has badword in it' } });
+    const hit = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}/test`,
+      headers: mutHeaders,
+      payload: { text: 'this has badword in it' },
+    });
     expect(hit.json().matched).toBe(true);
 
-    const miss = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}/test`, headers: mutHeaders, payload: { text: 'a clean message' } });
+    const miss = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/enforcer/policies/${policyId}/test`,
+      headers: mutHeaders,
+      payload: { text: 'a clean message' },
+    });
     expect(miss.json().matched).toBe(false);
   });
 });
@@ -289,7 +397,11 @@ describe('enforcer records / queue / decide', () => {
     store.records.set('r1', makeRecord({ id: 'r1', recordNumber: 1, status: 'PENDING' }));
     store.records.set('r2', makeRecord({ id: 'r2', recordNumber: 2, status: 'ACTIONED', kind: 'DECISION' }));
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/enforcer/queue`, headers: mutHeaders });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/enforcer/queue`,
+      headers: mutHeaders,
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toHaveLength(1);
     expect(res.json()[0].id).toBe('r1');
@@ -299,11 +411,19 @@ describe('enforcer records / queue / decide', () => {
     const { app, mutHeaders, store } = await authedContext();
     store.records.set('r1', makeRecord({ id: 'r1', recordNumber: 7 }));
 
-    const found = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/enforcer/records/7`, headers: mutHeaders });
+    const found = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/enforcer/records/7`,
+      headers: mutHeaders,
+    });
     expect(found.statusCode).toBe(200);
     expect(found.json().recordNumber).toBe(7);
 
-    const missing = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/enforcer/records/999`, headers: mutHeaders });
+    const missing = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/enforcer/records/999`,
+      headers: mutHeaders,
+    });
     expect(missing.statusCode).toBe(404);
   });
 
@@ -322,9 +442,18 @@ describe('enforcer records / queue / decide', () => {
 
     const call = queues.calls.find((c) => c.queue === 'bot-actions');
     expect(call).toBeDefined();
-    expect(call!.data).toMatchObject({ type: 'enforcer.decide', guildId: GUILD_ID, payload: { recordId: 'r1', decision: 'WARN', reason: 'be nice' } });
+    expect(call!.data).toMatchObject({
+      type: 'enforcer.decide',
+      guildId: GUILD_ID,
+      payload: { recordId: 'r1', decision: 'WARN', reason: 'be nice' },
+    });
 
-    const missing = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/enforcer/records/999/decide`, headers: mutHeaders, payload: { decision: 'WARN' } });
+    const missing = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/enforcer/records/999/decide`,
+      headers: mutHeaders,
+      payload: { decision: 'WARN' },
+    });
     expect(missing.statusCode).toBe(404);
   });
 
@@ -332,7 +461,11 @@ describe('enforcer records / queue / decide', () => {
     const { app, mutHeaders, store } = await authedContext();
     store.records.set('r1', makeRecord({ id: 'r1', recordNumber: 1, excerpt: 'hello' }));
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/enforcer/records/export.csv`, headers: mutHeaders });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/enforcer/records/export.csv`,
+      headers: mutHeaders,
+    });
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('text/csv');
     expect(res.body).toContain('recordNumber,kind,status');

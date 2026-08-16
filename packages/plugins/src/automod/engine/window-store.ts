@@ -71,7 +71,8 @@ export class MemoryWindowStore implements WindowStore {
 /** Wraps `base` so every key is namespaced under `prefix` — used to give each `AutomodRule` its own isolated windows without threading a rule id through the (intentionally pure) evaluator signatures. */
 export function scopedWindowStore(base: WindowStore, prefix: string): WindowStore {
   return {
-    pushAndCount: (key, value, nowMs, windowMs) => base.pushAndCount(`${prefix}:${key}`, value, nowMs, windowMs),
+    pushAndCount: (key, value, nowMs, windowMs) =>
+      base.pushAndCount(`${prefix}:${key}`, value, nowMs, windowMs),
     peek: (key, nowMs, windowMs) => base.peek(`${prefix}:${key}`, nowMs, windowMs),
   };
 }

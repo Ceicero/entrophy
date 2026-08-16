@@ -2,7 +2,20 @@
 
 import * as React from 'react';
 import type { WelcomeGoodbyeDto } from '@entrophy/types/roles';
-import { Button, Card, CardContent, CardHeader, CardTitle, EmbedPreview, FormField, Input, Skeleton, Switch, Textarea, useToast } from '@entrophy/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmbedPreview,
+  FormField,
+  Input,
+  Skeleton,
+  Switch,
+  Textarea,
+  useToast,
+} from '@entrophy/ui';
 import {
   useGoodbyeConfig,
   useTestGoodbye,
@@ -31,7 +44,18 @@ interface SectionEditorProps {
   testing: boolean;
 }
 
-function SectionEditor({ guildId, label, data, isLoading, error, onRetry, onSave, saving, onTest, testing }: SectionEditorProps) {
+function SectionEditor({
+  guildId,
+  label,
+  data,
+  isLoading,
+  error,
+  onRetry,
+  onSave,
+  saving,
+  onTest,
+  testing,
+}: SectionEditorProps) {
   const [draft, setDraft] = React.useState<WelcomeGoodbyeDto | null>(null);
   const [embedTitle, setEmbedTitle] = React.useState('');
   const [embedDescription, setEmbedDescription] = React.useState('');
@@ -41,7 +65,12 @@ function SectionEditor({ guildId, label, data, isLoading, error, onRetry, onSave
   React.useEffect(() => {
     if (!data) return;
     setDraft(data);
-    const embed = (data.embed ?? {}) as { title?: string; description?: string; color?: string; footer?: { text?: string } };
+    const embed = (data.embed ?? {}) as {
+      title?: string;
+      description?: string;
+      color?: string;
+      footer?: { text?: string };
+    };
     setEmbedTitle(embed.title ?? '');
     setEmbedDescription(embed.description ?? '');
     setEmbedColor(embed.color ?? '#e5e5e5');
@@ -52,8 +81,14 @@ function SectionEditor({ guildId, label, data, isLoading, error, onRetry, onSave
   if (isLoading || !draft) return <Skeleton className="h-72 w-full" />;
 
   const hasEmbed = Boolean(embedTitle || embedDescription);
-  const previewVars = { user: 'ExampleUser', 'user.tag': 'ExampleUser', server: 'Your Server', memberCount: '128' };
-  const renderVars = (s: string) => s.replace(/\{(\w+(\.\w+)?)\}/g, (m, key) => (previewVars as Record<string, string>)[key] ?? m);
+  const previewVars = {
+    user: 'ExampleUser',
+    'user.tag': 'ExampleUser',
+    server: 'Your Server',
+    memberCount: '128',
+  };
+  const renderVars = (s: string) =>
+    s.replace(/\{(\w+(\.\w+)?)\}/g, (m, key) => (previewVars as Record<string, string>)[key] ?? m);
 
   function handleSave() {
     onSave({
@@ -62,7 +97,12 @@ function SectionEditor({ guildId, label, data, isLoading, error, onRetry, onSave
       message: draft!.message,
       dm: draft!.dm,
       embed: hasEmbed
-        ? { ...(embedTitle ? { title: embedTitle } : {}), ...(embedDescription ? { description: embedDescription } : {}), color: embedColor, ...(embedFooter ? { footer: { text: embedFooter } } : {}) }
+        ? {
+            ...(embedTitle ? { title: embedTitle } : {}),
+            ...(embedDescription ? { description: embedDescription } : {}),
+            color: embedColor,
+            ...(embedFooter ? { footer: { text: embedFooter } } : {}),
+          }
         : null,
     });
   }
@@ -76,15 +116,27 @@ function SectionEditor({ guildId, label, data, isLoading, error, onRetry, onSave
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-md border border-border p-3">
             <p className="text-sm font-medium">Enabled</p>
-            <Switch checked={draft.enabled} onCheckedChange={(v) => setDraft((p) => ({ ...p!, enabled: v }))} />
+            <Switch
+              checked={draft.enabled}
+              onCheckedChange={(v) => setDraft((p) => ({ ...p!, enabled: v }))}
+            />
           </div>
 
           <FormField label="Channel">
-            <DiscordChannelSelect guildId={guildId} value={draft.channelId} onChange={(v) => setDraft((p) => ({ ...p!, channelId: v }))} />
+            <DiscordChannelSelect
+              guildId={guildId}
+              value={draft.channelId}
+              onChange={(v) => setDraft((p) => ({ ...p!, channelId: v }))}
+            />
           </FormField>
 
           <FormField label="Message" hint={VARS_HINT}>
-            <Textarea value={draft.message ?? ''} onChange={(e) => setDraft((p) => ({ ...p!, message: e.target.value || null }))} rows={3} maxLength={2000} />
+            <Textarea
+              value={draft.message ?? ''}
+              onChange={(e) => setDraft((p) => ({ ...p!, message: e.target.value || null }))}
+              rows={3}
+              maxLength={2000}
+            />
           </FormField>
 
           <div className="flex items-center justify-between rounded-md border border-border p-3">
@@ -98,11 +150,21 @@ function SectionEditor({ guildId, label, data, isLoading, error, onRetry, onSave
               <Input value={embedTitle} onChange={(e) => setEmbedTitle(e.target.value)} maxLength={256} />
             </FormField>
             <FormField label="Description" hint={VARS_HINT}>
-              <Textarea value={embedDescription} onChange={(e) => setEmbedDescription(e.target.value)} rows={2} maxLength={2000} />
+              <Textarea
+                value={embedDescription}
+                onChange={(e) => setEmbedDescription(e.target.value)}
+                rows={2}
+                maxLength={2000}
+              />
             </FormField>
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Color">
-                <Input type="color" value={embedColor} onChange={(e) => setEmbedColor(e.target.value)} className="h-9 w-full" />
+                <Input
+                  type="color"
+                  value={embedColor}
+                  onChange={(e) => setEmbedColor(e.target.value)}
+                  className="h-9 w-full"
+                />
               </FormField>
               <FormField label="Footer">
                 <Input value={embedFooter} onChange={(e) => setEmbedFooter(e.target.value)} maxLength={256} />
@@ -130,7 +192,12 @@ function SectionEditor({ guildId, label, data, isLoading, error, onRetry, onSave
             content={draft.message ? renderVars(draft.message) : undefined}
             embed={
               hasEmbed
-                ? { title: embedTitle ? renderVars(embedTitle) : undefined, description: embedDescription ? renderVars(embedDescription) : undefined, color: embedColor, footer: embedFooter ? { text: embedFooter } : undefined }
+                ? {
+                    title: embedTitle ? renderVars(embedTitle) : undefined,
+                    description: embedDescription ? renderVars(embedDescription) : undefined,
+                    color: embedColor,
+                    footer: embedFooter ? { text: embedFooter } : undefined,
+                  }
                 : { description: '_Nothing configured yet._' }
             }
           />
@@ -163,13 +230,23 @@ export function WelcomeGoodbyeTab({ guildId }: { guildId: string }) {
         onSave={(patch) =>
           updateWelcome.mutate(patch, {
             onSuccess: () => toast({ title: 'Welcome message saved', variant: 'success' }),
-            onError: (err) => toast({ title: 'Could not save', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }),
+            onError: (err) =>
+              toast({
+                title: 'Could not save',
+                description: err instanceof ApiClientError ? err.message : undefined,
+                variant: 'destructive',
+              }),
           })
         }
         onTest={(channelId) =>
           testWelcome.mutate(channelId, {
             onSuccess: () => toast({ title: 'Test queued', variant: 'success' }),
-            onError: (err) => toast({ title: 'Could not send test', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }),
+            onError: (err) =>
+              toast({
+                title: 'Could not send test',
+                description: err instanceof ApiClientError ? err.message : undefined,
+                variant: 'destructive',
+              }),
           })
         }
       />
@@ -186,13 +263,23 @@ export function WelcomeGoodbyeTab({ guildId }: { guildId: string }) {
         onSave={(patch) =>
           updateGoodbye.mutate(patch, {
             onSuccess: () => toast({ title: 'Goodbye message saved', variant: 'success' }),
-            onError: (err) => toast({ title: 'Could not save', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }),
+            onError: (err) =>
+              toast({
+                title: 'Could not save',
+                description: err instanceof ApiClientError ? err.message : undefined,
+                variant: 'destructive',
+              }),
           })
         }
         onTest={(channelId) =>
           testGoodbye.mutate(channelId, {
             onSuccess: () => toast({ title: 'Test queued', variant: 'success' }),
-            onError: (err) => toast({ title: 'Could not send test', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }),
+            onError: (err) =>
+              toast({
+                title: 'Could not send test',
+                description: err instanceof ApiClientError ? err.message : undefined,
+                variant: 'destructive',
+              }),
           })
         }
       />

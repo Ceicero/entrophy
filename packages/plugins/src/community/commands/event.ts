@@ -1,5 +1,17 @@
-import { ChannelType, GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel, SlashCommandBuilder } from 'discord.js';
-import { errorEmbed, listEmbed, resolveTextChannel, successEmbed, type CommandContext, type PluginCommand } from '../../sdk';
+import {
+  ChannelType,
+  GuildScheduledEventEntityType,
+  GuildScheduledEventPrivacyLevel,
+  SlashCommandBuilder,
+} from 'discord.js';
+import {
+  errorEmbed,
+  listEmbed,
+  resolveTextChannel,
+  successEmbed,
+  type CommandContext,
+  type PluginCommand,
+} from '../../sdk';
 import { cancelEvent } from '../actions';
 import { buildEventComponents, buildEventEmbed, summarizeRsvps } from '../render';
 import { parseAt } from '../schedule';
@@ -14,19 +26,54 @@ const data = new SlashCommandBuilder()
     sub
       .setName('create')
       .setDescription('Create an event.')
-      .addStringOption((opt) => opt.setName('title').setDescription('Event title').setRequired(true).setMaxLength(100))
-      .addStringOption((opt) => opt.setName('starts-at').setDescription('When it starts: an ISO date/time or a duration like "2h"').setRequired(true))
-      .addStringOption((opt) => opt.setName('ends-at').setDescription('When it ends: an ISO date/time or a duration').setRequired(false))
-      .addChannelOption((opt) => opt.setName('channel').setDescription('Channel to announce and RSVP in (default: this channel)').setRequired(false).addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
-      .addStringOption((opt) => opt.setName('description').setDescription('Event description').setRequired(false).setMaxLength(1000))
-      .addBooleanOption((opt) => opt.setName('create-discord-event').setDescription('Also create a native Discord scheduled event (default: off)').setRequired(false)),
+      .addStringOption((opt) =>
+        opt.setName('title').setDescription('Event title').setRequired(true).setMaxLength(100),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('starts-at')
+          .setDescription('When it starts: an ISO date/time or a duration like "2h"')
+          .setRequired(true),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('ends-at')
+          .setDescription('When it ends: an ISO date/time or a duration')
+          .setRequired(false),
+      )
+      .addChannelOption((opt) =>
+        opt
+          .setName('channel')
+          .setDescription('Channel to announce and RSVP in (default: this channel)')
+          .setRequired(false)
+          .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+      )
+      .addStringOption((opt) =>
+        opt.setName('description').setDescription('Event description').setRequired(false).setMaxLength(1000),
+      )
+      .addBooleanOption((opt) =>
+        opt
+          .setName('create-discord-event')
+          .setDescription('Also create a native Discord scheduled event (default: off)')
+          .setRequired(false),
+      ),
   )
   .addSubcommand((sub) => sub.setName('list').setDescription('List upcoming events.'))
   .addSubcommand((sub) =>
-    sub.setName('cancel').setDescription('Cancel an event.').addStringOption((opt) => opt.setName('id').setDescription('Event id').setRequired(true).setAutocomplete(true)),
+    sub
+      .setName('cancel')
+      .setDescription('Cancel an event.')
+      .addStringOption((opt) =>
+        opt.setName('id').setDescription('Event id').setRequired(true).setAutocomplete(true),
+      ),
   )
   .addSubcommand((sub) =>
-    sub.setName('rsvps').setDescription('Show RSVP counts for an event.').addStringOption((opt) => opt.setName('id').setDescription('Event id').setRequired(true).setAutocomplete(true)),
+    sub
+      .setName('rsvps')
+      .setDescription('Show RSVP counts for an event.')
+      .addStringOption((opt) =>
+        opt.setName('id').setDescription('Event id').setRequired(true).setAutocomplete(true),
+      ),
   );
 
 async function handleCreate(c: CommandContext): Promise<void> {
@@ -97,21 +144,38 @@ async function handleCreate(c: CommandContext): Promise<void> {
     },
   });
 
-  const message = await channel.send({ embeds: [buildEventEmbed(event, { going: 0, maybe: 0, declined: 0 })], components: buildEventComponents(event.id, false) });
-  const updated = await ctx.prisma.communityEvent.update({ where: { id: event.id }, data: { messageId: message.id } });
+  const message = await channel.send({
+    embeds: [buildEventEmbed(event, { going: 0, maybe: 0, declined: 0 })],
+    components: buildEventComponents(event.id, false),
+  });
+  const updated = await ctx.prisma.communityEvent.update({
+    where: { id: event.id },
+    data: { messageId: message.id },
+  });
 
   const queue = ctx.queue('event-reminder');
   for (const minutes of upcomingReminderMinutes(config.eventReminderMinutes, updated.startsAt, new Date())) {
     const fireAt = updated.startsAt.getTime() - minutes * 60_000;
-    await queue.add('event-reminder', { eventId: updated.id, minutesBefore: minutes }, { jobId: `ev:${updated.id}:${minutes}`, delay: Math.max(0, fireAt - Date.now()) });
+    await queue.add(
+      'event-reminder',
+      { eventId: updated.id, minutesBefore: minutes },
+      { jobId: `ev:${updated.id}:${minutes}`, delay: Math.max(0, fireAt - Date.now()) },
+    );
   }
 
-  await interaction.reply({ embeds: [successEmbed(t('event.created', { channel: `<#${channel.id}>` }))], ephemeral: true });
+  await interaction.reply({
+    embeds: [successEmbed(t('event.created', { channel: `<#${channel.id}>` }))],
+    ephemeral: true,
+  });
 }
 
 async function handleList(c: CommandContext): Promise<void> {
   const { interaction, ctx, guildId, t } = c;
-  const events = await ctx.prisma.communityEvent.findMany({ where: { guildId, startsAt: { gte: new Date() } }, orderBy: { startsAt: 'asc' }, take: 25 });
+  const events = await ctx.prisma.communityEvent.findMany({
+    where: { guildId, startsAt: { gte: new Date() } },
+    orderBy: { startsAt: 'asc' },
+    take: 25,
+  });
   const lines = events.map((e) => `📅 **${e.title}** — ${e.startsAt.toISOString()} · \`${e.id}\``);
   await interaction.reply({ embeds: [listEmbed(t('event.listTitle'), lines)], ephemeral: true });
 }
@@ -154,8 +218,14 @@ export const command: PluginCommand = {
   async autocomplete(c) {
     const focused = c.interaction.options.getFocused(true);
     const query = String(focused.value).toLowerCase();
-    const events = await c.ctx.prisma.communityEvent.findMany({ where: { guildId: c.guildId }, orderBy: { startsAt: 'desc' }, take: 50 });
-    const matches = events.filter((e) => e.title.toLowerCase().includes(query) || e.id.includes(query)).slice(0, 25);
+    const events = await c.ctx.prisma.communityEvent.findMany({
+      where: { guildId: c.guildId },
+      orderBy: { startsAt: 'desc' },
+      take: 50,
+    });
+    const matches = events
+      .filter((e) => e.title.toLowerCase().includes(query) || e.id.includes(query))
+      .slice(0, 25);
     await c.interaction.respond(matches.map((e) => ({ name: e.title.slice(0, 100), value: e.id })));
   },
 };

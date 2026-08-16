@@ -2,7 +2,21 @@
 
 import * as React from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle, Button, Card, CardContent, CardHeader, CardTitle, FormField, Input, Skeleton, Switch, useToast } from '@entrophy/ui';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  FormField,
+  Input,
+  Skeleton,
+  Switch,
+  useToast,
+} from '@entrophy/ui';
 import { useRolePersistence, useSetRolePersistence } from '../../lib/roles-queries';
 import { ErrorState } from '../error-state';
 import { ApiClientError } from '../../lib/api';
@@ -25,8 +39,14 @@ export function PersistenceTab({ guildId }: { guildId: string }) {
     setPersistence.mutate(
       { enabled, maxDays, acknowledge: enabled },
       {
-        onSuccess: () => toast({ title: `Role persistence is now ${enabled ? 'on' : 'off'}`, variant: 'success' }),
-        onError: (err) => toast({ title: 'Could not save', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }),
+        onSuccess: () =>
+          toast({ title: `Role persistence is now ${enabled ? 'on' : 'off'}`, variant: 'success' }),
+        onError: (err) =>
+          toast({
+            title: 'Could not save',
+            description: err instanceof ApiClientError ? err.message : undefined,
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -55,14 +75,22 @@ export function PersistenceTab({ guildId }: { guildId: string }) {
         <div className="flex items-center justify-between rounded-md border border-border p-3">
           <div>
             <p className="text-sm font-medium">Enabled</p>
-            <p className="text-xs text-muted-foreground">Off by default. Turning this on is logged to the audit log.</p>
+            <p className="text-xs text-muted-foreground">
+              Off by default. Turning this on is logged to the audit log.
+            </p>
           </div>
           <Switch checked={data.enabled} onCheckedChange={handleToggle} disabled={setPersistence.isPending} />
         </div>
 
         <FormField label="Restore window (days)">
           <div className="flex gap-2">
-            <Input type="number" min={1} max={365} value={maxDays} onChange={(e) => setMaxDays(Number(e.target.value))} />
+            <Input
+              type="number"
+              min={1}
+              max={365}
+              value={maxDays}
+              onChange={(e) => setMaxDays(Number(e.target.value))}
+            />
             <Button variant="outline" onClick={handleSaveDays} disabled={setPersistence.isPending}>
               Save
             </Button>

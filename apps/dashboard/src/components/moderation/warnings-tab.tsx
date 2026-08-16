@@ -28,7 +28,10 @@ export function WarningsTab({ guildId }: { guildId: string }) {
       </div>
 
       {!userId ? (
-        <EmptyState title="Search for a member" description="Enter a Discord user id above to see their warning history." />
+        <EmptyState
+          title="Search for a member"
+          description="Enter a Discord user id above to see their warning history."
+        />
       ) : error ? (
         <ErrorState error={error} onRetry={() => refetch()} />
       ) : isLoading ? (
@@ -42,11 +45,15 @@ export function WarningsTab({ guildId }: { guildId: string }) {
       ) : (
         <ul className="space-y-2">
           {data?.items.map((w) => (
-            <li key={w.id} className="flex items-start justify-between gap-3 rounded-md border border-border p-3">
+            <li
+              key={w.id}
+              className="flex items-start justify-between gap-3 rounded-md border border-border p-3"
+            >
               <div>
                 <p className="text-sm">{w.reason ?? '_No reason given_'}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Case linked: <span className="font-mono">{w.caseId}</span> · Moderator <span className="font-mono">{w.moderatorId}</span>
+                  Case linked: <span className="font-mono">{w.caseId}</span> · Moderator{' '}
+                  <span className="font-mono">{w.moderatorId}</span>
                 </p>
               </div>
               <Badge variant={w.active ? 'warning' : 'outline'}>{w.active ? 'Active' : 'Cleared'}</Badge>

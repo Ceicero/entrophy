@@ -32,35 +32,66 @@ interface RolePayload {
 
 const kickHandlers = registerConfirmHandlers<KickPayload>('kick', async (c, payload) => {
   const service = moderationService(c.ctx);
-  const row = await service.kick({ guildId: c.guildId, moderatorId: c.interaction.user.id, source: 'BOT', ...payload });
+  const row = await service.kick({
+    guildId: c.guildId,
+    moderatorId: c.interaction.user.id,
+    source: 'BOT',
+    ...payload,
+  });
   await c.interaction.followUp({ embeds: [buildCaseLogEmbed(row)], ephemeral: true });
 });
 
 const banHandlers = registerConfirmHandlers<BanPayload>('ban', async (c, payload) => {
   const service = moderationService(c.ctx);
-  const row = await service.ban({ guildId: c.guildId, moderatorId: c.interaction.user.id, source: 'BOT', ...payload });
+  const row = await service.ban({
+    guildId: c.guildId,
+    moderatorId: c.interaction.user.id,
+    source: 'BOT',
+    ...payload,
+  });
   await c.interaction.followUp({ embeds: [buildCaseLogEmbed(row)], ephemeral: true });
 });
 
 const softbanHandlers = registerConfirmHandlers<SoftbanPayload>('softban', async (c, payload) => {
   const service = moderationService(c.ctx);
-  const row = await service.softban({ guildId: c.guildId, moderatorId: c.interaction.user.id, source: 'BOT', ...payload });
+  const row = await service.softban({
+    guildId: c.guildId,
+    moderatorId: c.interaction.user.id,
+    source: 'BOT',
+    ...payload,
+  });
   await c.interaction.followUp({ embeds: [buildCaseLogEmbed(row)], ephemeral: true });
 });
 
 const purgeHandlers = registerConfirmHandlers<PurgePayload>('purge', async (c, payload) => {
   const service = moderationService(c.ctx);
   try {
-    const result = await service.purge({ guildId: c.guildId, moderatorId: c.interaction.user.id, source: 'BOT', ...payload });
-    await c.interaction.followUp({ embeds: [successEmbed(c.t('mod.purge.success', { count: result.deletedCount }))], ephemeral: true });
+    const result = await service.purge({
+      guildId: c.guildId,
+      moderatorId: c.interaction.user.id,
+      source: 'BOT',
+      ...payload,
+    });
+    await c.interaction.followUp({
+      embeds: [successEmbed(c.t('purge.success', { count: result.deletedCount }))],
+      ephemeral: true,
+    });
   } catch (err) {
-    await c.interaction.followUp({ embeds: [errorEmbed(err instanceof Error ? err.message : c.t('errors.generic'))], ephemeral: true });
+    await c.interaction.followUp({
+      embeds: [errorEmbed(err instanceof Error ? err.message : c.t('errors.generic'))],
+      ephemeral: true,
+    });
   }
 });
 
 const roleHandlers = registerConfirmHandlers<RolePayload>('role', async (c, payload) => {
   const service = moderationService(c.ctx);
-  const row = await service.roleAction({ guildId: c.guildId, moderatorId: c.interaction.user.id, source: 'BOT', ...payload });
+  const row = await service.roleAction({
+    guildId: c.guildId,
+    moderatorId: c.interaction.user.id,
+    source: 'BOT',
+    ...payload,
+  });
   await c.interaction.followUp({ embeds: [buildCaseLogEmbed(row)], ephemeral: true });
 });
 

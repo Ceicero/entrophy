@@ -18,7 +18,11 @@ describe('error handler', () => {
     const { cookieHeader } = await loginAs(app, redis, { userId: USER_ID });
     await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/plugins`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/plugins`,
+      headers: { cookie: cookieHeader },
+    });
 
     expect(res.statusCode).toBe(500);
     const text = res.body;

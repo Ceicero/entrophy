@@ -21,7 +21,12 @@ describe('resolveReview', () => {
           findFirst: async () => existing,
           update: async (...args: unknown[]) => {
             updateArgs = args[0];
-            return { ...existing, reviewStatus: 'FALSE_POSITIVE', reviewedBy: 'mod1', reviewedAt: new Date() };
+            return {
+              ...existing,
+              reviewStatus: 'FALSE_POSITIVE',
+              reviewedBy: 'mod1',
+              reviewedAt: new Date(),
+            };
           },
         },
       },

@@ -35,7 +35,10 @@ const STATUS_BADGE: Record<ModerationAppealDto['status'], 'warning' | 'success' 
 
 export function AppealsTab({ guildId }: { guildId: string }) {
   const [statusFilter, setStatusFilter] = React.useState('PENDING');
-  const { data, isLoading, error, refetch } = useModerationAppeals(guildId, statusFilter === 'ALL' ? undefined : statusFilter);
+  const { data, isLoading, error, refetch } = useModerationAppeals(
+    guildId,
+    statusFilter === 'ALL' ? undefined : statusFilter,
+  );
   const decide = useDecideAppeal(guildId);
   const { toast } = useToast();
 
@@ -57,7 +60,11 @@ export function AppealsTab({ guildId }: { guildId: string }) {
           setPending(null);
         },
         onError: (err) =>
-          toast({ title: 'Could not decide appeal', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+          toast({
+            title: 'Could not decide appeal',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -106,7 +113,9 @@ export function AppealsTab({ guildId }: { guildId: string }) {
                 <Badge variant={STATUS_BADGE[appeal.status]}>{appeal.status}</Badge>
               </div>
               <p className="mt-2 text-sm">{appeal.content}</p>
-              {appeal.decisionNote ? <p className="mt-2 text-xs italic text-muted-foreground">Staff note: {appeal.decisionNote}</p> : null}
+              {appeal.decisionNote ? (
+                <p className="mt-2 text-xs italic text-muted-foreground">Staff note: {appeal.decisionNote}</p>
+              ) : null}
               {appeal.status === 'PENDING' ? (
                 <div className="mt-3 flex gap-2">
                   <Button size="sm" onClick={() => openDecision(appeal, true)}>
@@ -128,7 +137,7 @@ export function AppealsTab({ guildId }: { guildId: string }) {
             <DialogTitle>{pending?.accept ? 'Accept' : 'Deny'} this appeal?</DialogTitle>
             <DialogDescription>
               {pending?.accept
-                ? "Accepting a timeout case removes it immediately. Accepting a ban case only offers an \"Unban now\" button in Discord — it isn't automatic."
+                ? 'Accepting a timeout case removes it immediately. Accepting a ban case only offers an "Unban now" button in Discord — it isn\'t automatic.'
                 : 'The user will be notified that their appeal was denied.'}
             </DialogDescription>
           </DialogHeader>
@@ -140,7 +149,11 @@ export function AppealsTab({ guildId }: { guildId: string }) {
             <Button variant="outline" onClick={() => setPending(null)} disabled={decide.isPending}>
               Cancel
             </Button>
-            <Button variant={pending?.accept ? 'default' : 'destructive'} onClick={confirmDecision} disabled={decide.isPending}>
+            <Button
+              variant={pending?.accept ? 'default' : 'destructive'}
+              onClick={confirmDecision}
+              disabled={decide.isPending}
+            >
               {decide.isPending ? 'Working…' : pending?.accept ? 'Accept appeal' : 'Deny appeal'}
             </Button>
           </DialogFooter>

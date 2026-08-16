@@ -3,7 +3,20 @@
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { Plus } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, PageHeader, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from '@entrophy/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  PageHeader,
+  Skeleton,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  useToast,
+} from '@entrophy/ui';
 import type { AlertProviderId, IntegrationConnectionDetailDto } from '@entrophy/types/integrations';
 import {
   useAlertConnections,
@@ -37,7 +50,9 @@ export default function IntegrationsPage() {
   const [addAlertProvider, setAddAlertProvider] = React.useState<AlertProviderId | 'pick' | null>(null);
   const [inboundDialogOpen, setInboundDialogOpen] = React.useState(false);
   const [outboundDialogOpen, setOutboundDialogOpen] = React.useState(false);
-  const [revealed, setRevealed] = React.useState<{ title: string; url?: string; secret: string } | null>(null);
+  const [revealed, setRevealed] = React.useState<{ title: string; url?: string; secret: string } | null>(
+    null,
+  );
 
   const watchCounts = React.useMemo(() => {
     const counts = new Map<string, number>();
@@ -61,14 +76,24 @@ export default function IntegrationsPage() {
         if (result.url) window.location.assign(result.url);
         else toast({ title: 'Connected', variant: 'success' });
       },
-      onError: (err) => toast({ title: 'Could not connect', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not connect',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
   function handleDisconnect(connectionId: string) {
     disconnectConnection.mutate(connectionId, {
       onSuccess: () => toast({ title: 'Disconnected', variant: 'success' }),
-      onError: (err) => toast({ title: 'Could not disconnect', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not disconnect',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -161,18 +186,28 @@ export default function IntegrationsPage() {
         guildId={guildId}
         open={inboundDialogOpen}
         onOpenChange={setInboundDialogOpen}
-        onCreated={(result: CreateInboundWebhookResult) => setRevealed({ title: 'Inbound webhook created', url: result.url, secret: result.secret })}
+        onCreated={(result: CreateInboundWebhookResult) =>
+          setRevealed({ title: 'Inbound webhook created', url: result.url, secret: result.secret })
+        }
       />
 
       <OutboundWebhookDialog
         guildId={guildId}
         open={outboundDialogOpen}
         onOpenChange={setOutboundDialogOpen}
-        onCreated={(result: CreateOutboundWebhookResult) => setRevealed({ title: 'Outbound webhook created', secret: result.secret })}
+        onCreated={(result: CreateOutboundWebhookResult) =>
+          setRevealed({ title: 'Outbound webhook created', secret: result.secret })
+        }
       />
 
       {revealed ? (
-        <SecretRevealDialog open onOpenChange={(open) => !open && setRevealed(null)} title={revealed.title} url={revealed.url} secret={revealed.secret} />
+        <SecretRevealDialog
+          open
+          onOpenChange={(open) => !open && setRevealed(null)}
+          title={revealed.title}
+          url={revealed.url}
+          secret={revealed.secret}
+        />
       ) : null}
     </div>
   );

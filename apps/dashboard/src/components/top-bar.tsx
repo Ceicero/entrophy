@@ -41,7 +41,9 @@ export function TopBar({ title, onMenuClick }: TopBarProps) {
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="truncate">{user?.globalName ?? user?.username ?? 'Account'}</DropdownMenuLabel>
+            <DropdownMenuLabel className="truncate">
+              {user?.globalName ?? user?.username ?? 'Account'}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => void logout()}>
               <LogOut className="h-4 w-4" />

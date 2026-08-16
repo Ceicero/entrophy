@@ -3,8 +3,27 @@
 import * as React from 'react';
 import { Download } from 'lucide-react';
 import type { EnforcerRecordDto } from '@entrophy/types';
-import { Badge, Button, Input, PageHeader, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Sheet, SheetContent, SheetHeader, SheetTitle } from '@entrophy/ui';
-import { enforcerRecordsExportCsvUrl, useEnforcerRecords, type EnforcerRecordFilters } from '../../lib/enforcer-queries';
+import {
+  Badge,
+  Button,
+  Input,
+  PageHeader,
+  Pagination,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@entrophy/ui';
+import {
+  enforcerRecordsExportCsvUrl,
+  useEnforcerRecords,
+  type EnforcerRecordFilters,
+} from '../../lib/enforcer-queries';
 import { DataTable, type DataTableColumn } from '../data-table';
 import { formatDateTime } from '../../lib/format';
 
@@ -15,7 +34,8 @@ export interface LedgerTabProps {
 }
 
 function ContextSnapshotView({ snapshot }: { snapshot: unknown }) {
-  if (!Array.isArray(snapshot) || snapshot.length === 0) return <p className="text-xs text-muted-foreground">No stored context snapshot.</p>;
+  if (!Array.isArray(snapshot) || snapshot.length === 0)
+    return <p className="text-xs text-muted-foreground">No stored context snapshot.</p>;
   return (
     <div className="space-y-1">
       {(snapshot as { authorId: string; excerpt: string }[]).map((m, i) => (
@@ -41,7 +61,11 @@ export function LedgerTab({ guildId }: LedgerTabProps) {
   }
 
   const columns: DataTableColumn<EnforcerRecordDto>[] = [
-    { key: 'record', header: 'Record', render: (r) => <span className="font-mono text-xs">#E-{r.recordNumber}</span> },
+    {
+      key: 'record',
+      header: 'Record',
+      render: (r) => <span className="font-mono text-xs">#E-{r.recordNumber}</span>,
+    },
     { key: 'kind', header: 'Kind', render: (r) => <Badge variant="outline">{r.kind}</Badge> },
     { key: 'user', header: 'User', render: (r) => <span className="font-mono text-xs">{r.userId}</span> },
     { key: 'decision', header: 'Decision / status', render: (r) => r.decision ?? r.status ?? '—' },
@@ -65,8 +89,16 @@ export function LedgerTab({ guildId }: LedgerTabProps) {
       />
 
       <div className="flex flex-wrap gap-3">
-        <Input placeholder="Filter by user id" className="max-w-xs" value={filters.userId ?? ''} onChange={(e) => updateFilter({ userId: e.target.value || undefined })} />
-        <Select value={filters.kind ?? '__all__'} onValueChange={(v) => updateFilter({ kind: v === '__all__' ? undefined : v })}>
+        <Input
+          placeholder="Filter by user id"
+          className="max-w-xs"
+          value={filters.userId ?? ''}
+          onChange={(e) => updateFilter({ userId: e.target.value || undefined })}
+        />
+        <Select
+          value={filters.kind ?? '__all__'}
+          onValueChange={(v) => updateFilter({ kind: v === '__all__' ? undefined : v })}
+        >
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Kind" />
           </SelectTrigger>
@@ -79,7 +111,12 @@ export function LedgerTab({ guildId }: LedgerTabProps) {
             ))}
           </SelectContent>
         </Select>
-        <Input placeholder="Since, e.g. 7d, 24h" className="max-w-xs" value={filters.since ?? ''} onChange={(e) => updateFilter({ since: e.target.value || undefined })} />
+        <Input
+          placeholder="Since, e.g. 7d, 24h"
+          className="max-w-xs"
+          value={filters.since ?? ''}
+          onChange={(e) => updateFilter({ since: e.target.value || undefined })}
+        />
       </div>
 
       <DataTable
@@ -113,7 +150,8 @@ export function LedgerTab({ guildId }: LedgerTabProps) {
                 <span className="text-muted-foreground">Kind:</span> {detail.kind}
               </p>
               <p>
-                <span className="text-muted-foreground">User:</span> <span className="font-mono">{detail.userId}</span>
+                <span className="text-muted-foreground">User:</span>{' '}
+                <span className="font-mono">{detail.userId}</span>
               </p>
               <p>
                 <span className="text-muted-foreground">Source:</span> {detail.source}
@@ -130,7 +168,8 @@ export function LedgerTab({ guildId }: LedgerTabProps) {
               ) : null}
               {detail.decision ? (
                 <p>
-                  <span className="text-muted-foreground">Decision:</span> {detail.decision} {detail.decidedBy ? `by ${detail.decidedBy}` : ''}
+                  <span className="text-muted-foreground">Decision:</span> {detail.decision}{' '}
+                  {detail.decidedBy ? `by ${detail.decidedBy}` : ''}
                 </p>
               ) : null}
               {detail.decisionReason ? (
@@ -140,7 +179,8 @@ export function LedgerTab({ guildId }: LedgerTabProps) {
               ) : null}
               {detail.caseId ? (
                 <p>
-                  <span className="text-muted-foreground">Case id:</span> <span className="font-mono text-xs">{detail.caseId}</span>
+                  <span className="text-muted-foreground">Case id:</span>{' '}
+                  <span className="font-mono text-xs">{detail.caseId}</span>
                 </p>
               ) : null}
               {detail.excerpt ? (
@@ -150,7 +190,12 @@ export function LedgerTab({ guildId }: LedgerTabProps) {
                 </div>
               ) : null}
               {detail.messageJumpUrl ? (
-                <a className="text-primary underline" href={detail.messageJumpUrl} target="_blank" rel="noreferrer">
+                <a
+                  className="text-primary underline"
+                  href={detail.messageJumpUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   Jump to message
                 </a>
               ) : null}

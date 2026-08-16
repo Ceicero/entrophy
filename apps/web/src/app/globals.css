@@ -27,7 +27,13 @@
 body {
   background: var(--ink-0);
   color: var(--grey-7);
-  font-family: ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif;
+  font-family:
+    ui-sans-serif,
+    -apple-system,
+    'Segoe UI',
+    Inter,
+    Roboto,
+    sans-serif;
 }
 
 html[data-theme='light'] body {
@@ -68,16 +74,31 @@ html[data-theme='light'] .smoke-blob {
 }
 
 @keyframes smoke-drift-a {
-  0%, 100% { transform: translate(-4%, -2%) scale(1); }
-  50% { transform: translate(6%, 4%) scale(1.15); }
+  0%,
+  100% {
+    transform: translate(-4%, -2%) scale(1);
+  }
+  50% {
+    transform: translate(6%, 4%) scale(1.15);
+  }
 }
 @keyframes smoke-drift-b {
-  0%, 100% { transform: translate(3%, 5%) scale(1.05); }
-  50% { transform: translate(-6%, -3%) scale(0.95); }
+  0%,
+  100% {
+    transform: translate(3%, 5%) scale(1.05);
+  }
+  50% {
+    transform: translate(-6%, -3%) scale(0.95);
+  }
 }
 @keyframes smoke-drift-c {
-  0%, 100% { transform: translate(-5%, 3%) scale(0.9); }
-  50% { transform: translate(4%, -6%) scale(1.1); }
+  0%,
+  100% {
+    transform: translate(-5%, 3%) scale(0.9);
+  }
+  50% {
+    transform: translate(4%, -6%) scale(1.1);
+  }
 }
 
 /* Faint grain overlay (ARCHITECTURE.md §17): SVG feTurbulence noise, tiled, ~4% opacity. */

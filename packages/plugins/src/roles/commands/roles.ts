@@ -7,7 +7,16 @@ import {
   TextInputStyle,
   type ChatInputCommandInteraction,
 } from 'discord.js';
-import { assertStaffLevel, buildCustomId, errorEmbed, listEmbed, PendingStore, successEmbed, type CommandContext, type PluginCommand } from '../../sdk';
+import {
+  assertStaffLevel,
+  buildCustomId,
+  errorEmbed,
+  listEmbed,
+  PendingStore,
+  successEmbed,
+  type CommandContext,
+  type PluginCommand,
+} from '../../sdk';
 import { checkRoleAssignable } from '../engine';
 import type { RolesConfig } from '../manifest';
 
@@ -30,40 +39,111 @@ const data = new SlashCommandBuilder()
         sub
           .setName('create')
           .setDescription('Create a new role panel (opens a form for the title/description).')
-          .addChannelOption((opt) => opt.setName('channel').setDescription('Channel to post it in').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement).setRequired(true))
-          .addStringOption((opt) => opt.setName('style').setDescription('How members pick roles').setRequired(true).addChoices(...PANEL_STYLES))
-          .addStringOption((opt) => opt.setName('group').setDescription('Optional role group id (exclusive/max-selection rules)').setAutocomplete(true))
-          .addIntegerOption((opt) => opt.setName('max-selections').setDescription('Max roles a member may pick from this panel').setMinValue(1).setMaxValue(25)),
+          .addChannelOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('Channel to post it in')
+              .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+              .setRequired(true),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('style')
+              .setDescription('How members pick roles')
+              .setRequired(true)
+              .addChoices(...PANEL_STYLES),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('group')
+              .setDescription('Optional role group id (exclusive/max-selection rules)')
+              .setAutocomplete(true),
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName('max-selections')
+              .setDescription('Max roles a member may pick from this panel')
+              .setMinValue(1)
+              .setMaxValue(25),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('edit')
           .setDescription('Edit a role panel.')
-          .addStringOption((opt) => opt.setName('panel').setDescription('Panel to edit').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) =>
+            opt.setName('panel').setDescription('Panel to edit').setRequired(true).setAutocomplete(true),
+          )
           .addStringOption((opt) => opt.setName('title').setDescription('New title'))
           .addStringOption((opt) => opt.setName('description').setDescription('New description'))
-          .addChannelOption((opt) => opt.setName('channel').setDescription('New channel').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
-          .addStringOption((opt) => opt.setName('style').setDescription('New style').addChoices(...PANEL_STYLES))
-          .addIntegerOption((opt) => opt.setName('max-selections').setDescription('New max selections (0 clears it)').setMinValue(0).setMaxValue(25)),
+          .addChannelOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('New channel')
+              .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('style')
+              .setDescription('New style')
+              .addChoices(...PANEL_STYLES),
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName('max-selections')
+              .setDescription('New max selections (0 clears it)')
+              .setMinValue(0)
+              .setMaxValue(25),
+          ),
       )
-      .addSubcommand((sub) => sub.setName('delete').setDescription('Delete a role panel.').addStringOption((opt) => opt.setName('panel').setDescription('Panel to delete').setRequired(true).setAutocomplete(true)))
-      .addSubcommand((sub) => sub.setName('list').setDescription('List this server\'s role panels.'))
-      .addSubcommand((sub) => sub.setName('post').setDescription('Post (or repost) a panel to its channel.').addStringOption((opt) => opt.setName('panel').setDescription('Panel to post').setRequired(true).setAutocomplete(true)))
+      .addSubcommand((sub) =>
+        sub
+          .setName('delete')
+          .setDescription('Delete a role panel.')
+          .addStringOption((opt) =>
+            opt.setName('panel').setDescription('Panel to delete').setRequired(true).setAutocomplete(true),
+          ),
+      )
+      .addSubcommand((sub) => sub.setName('list').setDescription("List this server's role panels."))
+      .addSubcommand((sub) =>
+        sub
+          .setName('post')
+          .setDescription('Post (or repost) a panel to its channel.')
+          .addStringOption((opt) =>
+            opt.setName('panel').setDescription('Panel to post').setRequired(true).setAutocomplete(true),
+          ),
+      )
       .addSubcommand((sub) =>
         sub
           .setName('option-add')
           .setDescription('Add a role option to a panel.')
-          .addStringOption((opt) => opt.setName('panel').setDescription('Panel').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) =>
+            opt.setName('panel').setDescription('Panel').setRequired(true).setAutocomplete(true),
+          )
           .addRoleOption((opt) => opt.setName('role').setDescription('Role to grant').setRequired(true))
-          .addStringOption((opt) => opt.setName('label').setDescription('Button/select label (defaults to the role name)').setMaxLength(80))
-          .addStringOption((opt) => opt.setName('emoji').setDescription('Emoji (required for reaction-style panels)').setMaxLength(64))
-          .addStringOption((opt) => opt.setName('description').setDescription('Short description').setMaxLength(200)),
+          .addStringOption((opt) =>
+            opt
+              .setName('label')
+              .setDescription('Button/select label (defaults to the role name)')
+              .setMaxLength(80),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('emoji')
+              .setDescription('Emoji (required for reaction-style panels)')
+              .setMaxLength(64),
+          )
+          .addStringOption((opt) =>
+            opt.setName('description').setDescription('Short description').setMaxLength(200),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('option-remove')
           .setDescription('Remove a role option from a panel.')
-          .addStringOption((opt) => opt.setName('panel').setDescription('Panel').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) =>
+            opt.setName('panel').setDescription('Panel').setRequired(true).setAutocomplete(true),
+          )
           .addRoleOption((opt) => opt.setName('role').setDescription('Role to remove').setRequired(true)),
       ),
   )
@@ -75,9 +155,19 @@ const data = new SlashCommandBuilder()
         sub
           .setName('create')
           .setDescription('Create a role group.')
-          .addStringOption((opt) => opt.setName('name').setDescription('Group name').setRequired(true).setMaxLength(100))
-          .addBooleanOption((opt) => opt.setName('exclusive').setDescription('Selecting one role removes the others (default: off)'))
-          .addIntegerOption((opt) => opt.setName('max-selections').setDescription('Max roles from this group a member may hold').setMinValue(1).setMaxValue(25))
+          .addStringOption((opt) =>
+            opt.setName('name').setDescription('Group name').setRequired(true).setMaxLength(100),
+          )
+          .addBooleanOption((opt) =>
+            opt.setName('exclusive').setDescription('Selecting one role removes the others (default: off)'),
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName('max-selections')
+              .setDescription('Max roles from this group a member may hold')
+              .setMinValue(1)
+              .setMaxValue(25),
+          )
           .addRoleOption((opt) => opt.setName('role1').setDescription('Role to include'))
           .addRoleOption((opt) => opt.setName('role2').setDescription('Role to include'))
           .addRoleOption((opt) => opt.setName('role3').setDescription('Role to include'))
@@ -88,27 +178,46 @@ const data = new SlashCommandBuilder()
         sub
           .setName('edit')
           .setDescription('Edit a role group.')
-          .addStringOption((opt) => opt.setName('group').setDescription('Group to edit').setRequired(true).setAutocomplete(true))
+          .addStringOption((opt) =>
+            opt.setName('group').setDescription('Group to edit').setRequired(true).setAutocomplete(true),
+          )
           .addStringOption((opt) => opt.setName('name').setDescription('New name'))
-          .addBooleanOption((opt) => opt.setName('exclusive').setDescription('Selecting one role removes the others'))
-          .addIntegerOption((opt) => opt.setName('max-selections').setDescription('Max roles from this group (0 clears it)').setMinValue(0).setMaxValue(25))
+          .addBooleanOption((opt) =>
+            opt.setName('exclusive').setDescription('Selecting one role removes the others'),
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName('max-selections')
+              .setDescription('Max roles from this group (0 clears it)')
+              .setMinValue(0)
+              .setMaxValue(25),
+          )
           .addRoleOption((opt) => opt.setName('add-role').setDescription('Role to add to the group'))
           .addRoleOption((opt) => opt.setName('remove-role').setDescription('Role to remove from the group')),
       )
-      .addSubcommand((sub) => sub.setName('delete').setDescription('Delete a role group.').addStringOption((opt) => opt.setName('group').setDescription('Group to delete').setRequired(true).setAutocomplete(true)))
+      .addSubcommand((sub) =>
+        sub
+          .setName('delete')
+          .setDescription('Delete a role group.')
+          .addStringOption((opt) =>
+            opt.setName('group').setDescription('Group to delete').setRequired(true).setAutocomplete(true),
+          ),
+      )
       .addSubcommand((sub) => sub.setName('list').setDescription("List this server's role groups.")),
   )
   .addSubcommandGroup((group) =>
     group
       .setName('persist')
       .setDescription('Role persistence for returning members.')
-      .addSubcommand((sub) => sub.setName('on').setDescription('Turn on role persistence (disclosed to admins).'))
+      .addSubcommand((sub) =>
+        sub.setName('on').setDescription('Turn on role persistence (disclosed to admins).'),
+      )
       .addSubcommand((sub) => sub.setName('off').setDescription('Turn off role persistence.'))
       .addSubcommand((sub) => sub.setName('status').setDescription('Show whether role persistence is on.')),
   );
 
 const ROLE_PERSISTENCE_DISCLOSURE =
-  'When on, Entrophy stores a snapshot of a leaving member\'s roles (excluding elevated-permission and integration-managed roles) for up to the configured number of days, and restores them automatically if that member rejoins within that window. This is stored per-member in the database until it expires or is restored.';
+  "When on, Entrophy stores a snapshot of a leaving member's roles (excluding elevated-permission and integration-managed roles) for up to the configured number of days, and restores them automatically if that member rejoins within that window. This is stored per-member in the database until it expires or is restored.";
 
 export const command: PluginCommand = {
   data,
@@ -127,14 +236,24 @@ export const command: PluginCommand = {
     const query = String(focused.value).toLowerCase();
 
     if (focused.name === 'panel') {
-      const panels = await c.ctx.prisma.rolePanel.findMany({ where: { guildId: c.guildId, deletedAt: null }, orderBy: { createdAt: 'desc' }, take: 50 });
+      const panels = await c.ctx.prisma.rolePanel.findMany({
+        where: { guildId: c.guildId, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
       const matches = panels.filter((p) => p.title.toLowerCase().includes(query)).slice(0, 25);
-      await c.interaction.respond(matches.map((p) => ({ name: `${p.title} (${p.style.toLowerCase()})`, value: p.id })));
+      await c.interaction.respond(
+        matches.map((p) => ({ name: `${p.title} (${p.style.toLowerCase()})`, value: p.id })),
+      );
       return;
     }
 
     if (focused.name === 'group') {
-      const groups = await c.ctx.prisma.roleGroup.findMany({ where: { guildId: c.guildId }, orderBy: { createdAt: 'desc' }, take: 50 });
+      const groups = await c.ctx.prisma.roleGroup.findMany({
+        where: { guildId: c.guildId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
       const matches = groups.filter((g) => g.name.toLowerCase().includes(query)).slice(0, 25);
       await c.interaction.respond(matches.map((g) => ({ name: g.name, value: g.id })));
       return;
@@ -148,7 +267,12 @@ export const command: PluginCommand = {
 // panel
 // ---------------------------------------------------------------------------
 
-async function handlePanel(interaction: ChatInputCommandInteraction<'cached'>, c: CommandContext, sub: string, config: RolesConfig): Promise<void> {
+async function handlePanel(
+  interaction: ChatInputCommandInteraction<'cached'>,
+  c: CommandContext,
+  sub: string,
+  config: RolesConfig,
+): Promise<void> {
   if (sub === 'create') {
     const channel = interaction.options.getChannel('channel', true);
     const style = interaction.options.getString('style', true);
@@ -164,7 +288,10 @@ async function handlePanel(interaction: ChatInputCommandInteraction<'cached'>, c
     }
 
     const pendingStore = new PendingStore(c.ctx.redis);
-    const pendingId = await pendingStore.put({ channelId: channel.id, style, groupId: groupId ?? null, maxSelections: maxSelections ?? null }, 300);
+    const pendingId = await pendingStore.put(
+      { channelId: channel.id, style, groupId: groupId ?? null, maxSelections: maxSelections ?? null },
+      300,
+    );
 
     const modal = new ModalBuilder()
       .setCustomId(buildCustomId('roles', 'panel-create-modal', interaction.user.id, pendingId))
@@ -174,11 +301,27 @@ async function handlePanel(interaction: ChatInputCommandInteraction<'cached'>, c
         // don't cover modals, so this is built directly against discord.js's builder API.
         {
           type: 1,
-          components: [new TextInputBuilder().setCustomId('title').setLabel('Title').setStyle(TextInputStyle.Short).setMaxLength(100).setRequired(true).toJSON()],
+          components: [
+            new TextInputBuilder()
+              .setCustomId('title')
+              .setLabel('Title')
+              .setStyle(TextInputStyle.Short)
+              .setMaxLength(100)
+              .setRequired(true)
+              .toJSON(),
+          ],
         } as never,
         {
           type: 1,
-          components: [new TextInputBuilder().setCustomId('description').setLabel('Description (optional)').setStyle(TextInputStyle.Paragraph).setMaxLength(2000).setRequired(false).toJSON()],
+          components: [
+            new TextInputBuilder()
+              .setCustomId('description')
+              .setLabel('Description (optional)')
+              .setStyle(TextInputStyle.Paragraph)
+              .setMaxLength(2000)
+              .setRequired(false)
+              .toJSON(),
+          ],
         } as never,
       );
 
@@ -188,7 +331,9 @@ async function handlePanel(interaction: ChatInputCommandInteraction<'cached'>, c
 
   if (sub === 'edit') {
     const panelId = interaction.options.getString('panel', true);
-    const existing = await c.ctx.prisma.rolePanel.findFirst({ where: { id: panelId, guildId: c.guildId, deletedAt: null } });
+    const existing = await c.ctx.prisma.rolePanel.findFirst({
+      where: { id: panelId, guildId: c.guildId, deletedAt: null },
+    });
     if (!existing) {
       await interaction.reply({ embeds: [errorEmbed('Role panel not found.')], ephemeral: true });
       return;
@@ -207,32 +352,69 @@ async function handlePanel(interaction: ChatInputCommandInteraction<'cached'>, c
         ...(description !== null ? { description } : {}),
         ...(channel !== null ? { channelId: channel.id } : {}),
         ...(style !== null ? { style: style as never } : {}),
-        ...(maxSelectionsRaw !== null ? { maxSelections: maxSelectionsRaw === 0 ? null : maxSelectionsRaw } : {}),
+        ...(maxSelectionsRaw !== null
+          ? { maxSelections: maxSelectionsRaw === 0 ? null : maxSelectionsRaw }
+          : {}),
       },
     });
 
-    await c.ctx.audit({ guildId: c.guildId, actorId: interaction.user.id, actorType: 'user', action: 'roles.panel.update', targetType: 'role_panel', targetId: panelId, source: 'bot' });
-    await interaction.reply({ embeds: [successEmbed('Panel updated. Run `/roles panel post` to push the change to Discord.')], ephemeral: true });
+    await c.ctx.audit({
+      guildId: c.guildId,
+      actorId: interaction.user.id,
+      actorType: 'user',
+      action: 'roles.panel.update',
+      targetType: 'role_panel',
+      targetId: panelId,
+      source: 'bot',
+    });
+    await interaction.reply({
+      embeds: [successEmbed('Panel updated. Run `/roles panel post` to push the change to Discord.')],
+      ephemeral: true,
+    });
     return;
   }
 
   if (sub === 'delete') {
     const panelId = interaction.options.getString('panel', true);
-    const existing = await c.ctx.prisma.rolePanel.findFirst({ where: { id: panelId, guildId: c.guildId, deletedAt: null } });
+    const existing = await c.ctx.prisma.rolePanel.findFirst({
+      where: { id: panelId, guildId: c.guildId, deletedAt: null },
+    });
     if (!existing) {
       await interaction.reply({ embeds: [errorEmbed('Role panel not found.')], ephemeral: true });
       return;
     }
     await c.ctx.prisma.rolePanel.update({ where: { id: panelId }, data: { deletedAt: new Date() } });
-    await c.ctx.audit({ guildId: c.guildId, actorId: interaction.user.id, actorType: 'user', action: 'roles.panel.delete', targetType: 'role_panel', targetId: panelId, source: 'bot' });
-    await interaction.reply({ embeds: [successEmbed(`Deleted **${existing.title}**. The posted message (if any) was left as-is.`)], ephemeral: true });
+    await c.ctx.audit({
+      guildId: c.guildId,
+      actorId: interaction.user.id,
+      actorType: 'user',
+      action: 'roles.panel.delete',
+      targetType: 'role_panel',
+      targetId: panelId,
+      source: 'bot',
+    });
+    await interaction.reply({
+      embeds: [successEmbed(`Deleted **${existing.title}**. The posted message (if any) was left as-is.`)],
+      ephemeral: true,
+    });
     return;
   }
 
   if (sub === 'list') {
-    const panels = await c.ctx.prisma.rolePanel.findMany({ where: { guildId: c.guildId, deletedAt: null }, include: { options: true }, orderBy: { createdAt: 'desc' } });
-    const lines = panels.map((p: { title: string; style: string; channelId: string; options: unknown[]; messageId: string | null }) =>
-      `**${p.title}** — ${p.style.toLowerCase()} · <#${p.channelId}> · ${p.options.length} option(s)${p.messageId ? '' : ' · _not posted yet_'}`,
+    const panels = await c.ctx.prisma.rolePanel.findMany({
+      where: { guildId: c.guildId, deletedAt: null },
+      include: { options: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    const lines = panels.map(
+      (p: {
+        title: string;
+        style: string;
+        channelId: string;
+        options: unknown[];
+        messageId: string | null;
+      }) =>
+        `**${p.title}** — ${p.style.toLowerCase()} · <#${p.channelId}> · ${p.options.length} option(s)${p.messageId ? '' : ' · _not posted yet_'}`,
     );
     await interaction.reply({ embeds: [listEmbed('Role panels', lines)], ephemeral: true });
     return;
@@ -250,7 +432,9 @@ async function handlePanel(interaction: ChatInputCommandInteraction<'cached'>, c
       await roles.postPanel(c.guildId, panelId, interaction.user.id);
       await interaction.editReply({ embeds: [successEmbed('Panel posted.')] });
     } catch (err) {
-      await interaction.editReply({ embeds: [errorEmbed(err instanceof Error ? err.message : 'Failed to post the panel.')] });
+      await interaction.editReply({
+        embeds: [errorEmbed(err instanceof Error ? err.message : 'Failed to post the panel.')],
+      });
     }
     return;
   }
@@ -262,23 +446,35 @@ async function handlePanel(interaction: ChatInputCommandInteraction<'cached'>, c
     const emoji = interaction.options.getString('emoji');
     const description = interaction.options.getString('description');
 
-    const panel = await c.ctx.prisma.rolePanel.findFirst({ where: { id: panelId, guildId: c.guildId, deletedAt: null }, include: { options: true } });
+    const panel = await c.ctx.prisma.rolePanel.findFirst({
+      where: { id: panelId, guildId: c.guildId, deletedAt: null },
+      include: { options: true },
+    });
     if (!panel) {
       await interaction.reply({ embeds: [errorEmbed('Role panel not found.')], ephemeral: true });
       return;
     }
     if (panel.style === 'REACTIONS' && !emoji) {
-      await interaction.reply({ embeds: [errorEmbed('Reaction-style panels need an emoji for every option.')], ephemeral: true });
+      await interaction.reply({
+        embeds: [errorEmbed('Reaction-style panels need an emoji for every option.')],
+        ephemeral: true,
+      });
       return;
     }
     if (panel.options.length >= 25) {
-      await interaction.reply({ embeds: [errorEmbed('A panel can have at most 25 options.')], ephemeral: true });
+      await interaction.reply({
+        embeds: [errorEmbed('A panel can have at most 25 options.')],
+        ephemeral: true,
+      });
       return;
     }
 
     const botTopRolePosition = interaction.guild.members.me?.roles.highest.position ?? 0;
-    const guildRole = interaction.guild.roles.cache.get(role.id) ?? (await interaction.guild.roles.fetch(role.id).catch(() => null));
-    const permissionsBitfield = typeof role.permissions === 'string' ? BigInt(role.permissions) : role.permissions.bitfield;
+    const guildRole =
+      interaction.guild.roles.cache.get(role.id) ??
+      (await interaction.guild.roles.fetch(role.id).catch(() => null));
+    const permissionsBitfield =
+      typeof role.permissions === 'string' ? BigInt(role.permissions) : role.permissions.bitfield;
     const result = checkRoleAssignable({
       permissionsBitfield,
       position: guildRole?.position ?? 0,
@@ -287,12 +483,24 @@ async function handlePanel(interaction: ChatInputCommandInteraction<'cached'>, c
       allowElevatedRoles: config.allowElevatedRoles,
     });
     if (!result.ok) {
-      await interaction.reply({ embeds: [errorEmbed(assignabilityReasonMessage(result.reason))], ephemeral: true });
+      await interaction.reply({
+        embeds: [errorEmbed(assignabilityReasonMessage(result.reason))],
+        ephemeral: true,
+      });
       return;
     }
 
-    await c.ctx.prisma.rolePanelOption.create({ data: { panelId, roleId: role.id, label, emoji, description, position: panel.options.length } });
-    await interaction.reply({ embeds: [successEmbed(`Added **${label}** → <@&${role.id}>. Run \`/roles panel post\` to update the posted message.`)], ephemeral: true });
+    await c.ctx.prisma.rolePanelOption.create({
+      data: { panelId, roleId: role.id, label, emoji, description, position: panel.options.length },
+    });
+    await interaction.reply({
+      embeds: [
+        successEmbed(
+          `Added **${label}** → <@&${role.id}>. Run \`/roles panel post\` to update the posted message.`,
+        ),
+      ],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -301,17 +509,25 @@ async function handlePanel(interaction: ChatInputCommandInteraction<'cached'>, c
     const role = interaction.options.getRole('role', true);
     const deleted = await c.ctx.prisma.rolePanelOption.deleteMany({ where: { panelId, roleId: role.id } });
     if (deleted.count === 0) {
-      await interaction.reply({ embeds: [errorEmbed('That role is not an option on this panel.')], ephemeral: true });
+      await interaction.reply({
+        embeds: [errorEmbed('That role is not an option on this panel.')],
+        ephemeral: true,
+      });
       return;
     }
-    await interaction.reply({ embeds: [successEmbed('Removed. Run `/roles panel post` to update the posted message.')], ephemeral: true });
+    await interaction.reply({
+      embeds: [successEmbed('Removed. Run `/roles panel post` to update the posted message.')],
+      ephemeral: true,
+    });
     return;
   }
 }
 
 function assignabilityReasonMessage(reason: 'elevated' | 'managed' | 'hierarchy'): string {
-  if (reason === 'elevated') return 'That role grants an elevated permission (Administrator, Manage Server/Roles/Channels/Webhooks, Kick/Ban/Timeout Members, or Mention Everyone). Enable `allowElevatedRoles` in this plugin\'s config to allow it anyway.';
-  if (reason === 'managed') return 'That role is managed by an integration or bot and cannot be self-assigned.';
+  if (reason === 'elevated')
+    return "That role grants an elevated permission (Administrator, Manage Server/Roles/Channels/Webhooks, Kick/Ban/Timeout Members, or Mention Everyone). Enable `allowElevatedRoles` in this plugin's config to allow it anyway.";
+  if (reason === 'managed')
+    return 'That role is managed by an integration or bot and cannot be self-assigned.';
   return "That role is at or above my own highest role, so I can't grant or remove it. Move my role above it in Server Settings → Roles.";
 }
 
@@ -319,7 +535,11 @@ function assignabilityReasonMessage(reason: 'elevated' | 'managed' | 'hierarchy'
 // group
 // ---------------------------------------------------------------------------
 
-async function handleGroup(interaction: ChatInputCommandInteraction<'cached'>, c: CommandContext, sub: string): Promise<void> {
+async function handleGroup(
+  interaction: ChatInputCommandInteraction<'cached'>,
+  c: CommandContext,
+  sub: string,
+): Promise<void> {
   if (sub === 'create') {
     const name = interaction.options.getString('name', true);
     const exclusive = interaction.options.getBoolean('exclusive') ?? false;
@@ -329,8 +549,13 @@ async function handleGroup(interaction: ChatInputCommandInteraction<'cached'>, c
       .filter((r): r is NonNullable<typeof r> => r !== null)
       .map((r) => r.id);
 
-    const created = await c.ctx.prisma.roleGroup.create({ data: { guildId: c.guildId, name, exclusive, maxSelections, roleIds } });
-    await interaction.reply({ embeds: [successEmbed(`Created role group **${created.name}** with ${roleIds.length} role(s).`)], ephemeral: true });
+    const created = await c.ctx.prisma.roleGroup.create({
+      data: { guildId: c.guildId, name, exclusive, maxSelections, roleIds },
+    });
+    await interaction.reply({
+      embeds: [successEmbed(`Created role group **${created.name}** with ${roleIds.length} role(s).`)],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -356,7 +581,9 @@ async function handleGroup(interaction: ChatInputCommandInteraction<'cached'>, c
       data: {
         ...(name !== null ? { name } : {}),
         ...(exclusive !== null ? { exclusive } : {}),
-        ...(maxSelectionsRaw !== null ? { maxSelections: maxSelectionsRaw === 0 ? null : maxSelectionsRaw } : {}),
+        ...(maxSelectionsRaw !== null
+          ? { maxSelections: maxSelectionsRaw === 0 ? null : maxSelectionsRaw }
+          : {}),
         roleIds,
       },
     });
@@ -371,14 +598,23 @@ async function handleGroup(interaction: ChatInputCommandInteraction<'cached'>, c
       await interaction.reply({ embeds: [errorEmbed('Role group not found.')], ephemeral: true });
       return;
     }
-    await c.ctx.prisma.rolePanel.updateMany({ where: { guildId: c.guildId, groupId }, data: { groupId: null } });
+    await c.ctx.prisma.rolePanel.updateMany({
+      where: { guildId: c.guildId, groupId },
+      data: { groupId: null },
+    });
     await c.ctx.prisma.roleGroup.delete({ where: { id: groupId } });
-    await interaction.reply({ embeds: [successEmbed(`Deleted role group **${existing.name}**.`)], ephemeral: true });
+    await interaction.reply({
+      embeds: [successEmbed(`Deleted role group **${existing.name}**.`)],
+      ephemeral: true,
+    });
     return;
   }
 
   if (sub === 'list') {
-    const groups = await c.ctx.prisma.roleGroup.findMany({ where: { guildId: c.guildId }, orderBy: { createdAt: 'desc' } });
+    const groups = await c.ctx.prisma.roleGroup.findMany({
+      where: { guildId: c.guildId },
+      orderBy: { createdAt: 'desc' },
+    });
     const lines = groups.map(
       (g: { name: string; exclusive: boolean; maxSelections: number | null; roleIds: string[] }) =>
         `**${g.name}** — ${g.exclusive ? 'exclusive (max 1)' : g.maxSelections ? `max ${g.maxSelections}` : 'no limit'} · ${g.roleIds.length} role(s)`,
@@ -392,24 +628,51 @@ async function handleGroup(interaction: ChatInputCommandInteraction<'cached'>, c
 // persist
 // ---------------------------------------------------------------------------
 
-async function handlePersist(interaction: ChatInputCommandInteraction<'cached'>, c: CommandContext, sub: string): Promise<void> {
+async function handlePersist(
+  interaction: ChatInputCommandInteraction<'cached'>,
+  c: CommandContext,
+  sub: string,
+): Promise<void> {
   assertStaffLevel(c.staffLevel, 'admin', c.t);
 
   if (sub === 'status') {
     const config = await c.config<RolesConfig>();
     await interaction.reply({
-      embeds: [listEmbed('Role persistence', [`Status: ${config.rolePersistence.enabled ? 'On' : 'Off'}`, `Restore window: ${config.rolePersistence.maxDays} day(s)`, ROLE_PERSISTENCE_DISCLOSURE])],
+      embeds: [
+        listEmbed('Role persistence', [
+          `Status: ${config.rolePersistence.enabled ? 'On' : 'Off'}`,
+          `Restore window: ${config.rolePersistence.maxDays} day(s)`,
+          ROLE_PERSISTENCE_DISCLOSURE,
+        ]),
+      ],
       ephemeral: true,
     });
     return;
   }
 
   const enabled = sub === 'on';
-  const after = await c.ctx.setConfig<RolesConfig>(c.guildId, { rolePersistence: { ...(await c.config<RolesConfig>()).rolePersistence, enabled } }, { id: interaction.user.id, source: 'bot' });
-  await c.ctx.audit({ guildId: c.guildId, actorId: interaction.user.id, actorType: 'user', action: 'roles.persistence.toggle', targetType: 'plugin_config', targetId: 'roles', after: { enabled }, source: 'bot' });
+  const after = await c.ctx.setConfig<RolesConfig>(
+    c.guildId,
+    { rolePersistence: { ...(await c.config<RolesConfig>()).rolePersistence, enabled } },
+    { id: interaction.user.id, source: 'bot' },
+  );
+  await c.ctx.audit({
+    guildId: c.guildId,
+    actorId: interaction.user.id,
+    actorType: 'user',
+    action: 'roles.persistence.toggle',
+    targetType: 'plugin_config',
+    targetId: 'roles',
+    after: { enabled },
+    source: 'bot',
+  });
 
   await interaction.reply({
-    embeds: [successEmbed(`Role persistence is now **${enabled ? 'on' : 'off'}**.${enabled ? `\n\n${ROLE_PERSISTENCE_DISCLOSURE}` : ''} (Restore window: ${after.rolePersistence.maxDays} day(s).)`)],
+    embeds: [
+      successEmbed(
+        `Role persistence is now **${enabled ? 'on' : 'off'}**.${enabled ? `\n\n${ROLE_PERSISTENCE_DISCLOSURE}` : ''} (Restore window: ${after.rolePersistence.maxDays} day(s).)`,
+      ),
+    ],
     ephemeral: true,
   });
 }

@@ -29,20 +29,27 @@ describe('getTranslateAdapter (provider selection)', () => {
 
   it('returns null for deepl without an API key, and an adapter with one', () => {
     expect(getTranslateAdapter({ TRANSLATE_PROVIDER: 'deepl' })).toBeNull();
-    expect(getTranslateAdapter({ TRANSLATE_PROVIDER: 'deepl', DEEPL_API_KEY: 'abc:fx' })).toBeInstanceOf(DeeplTranslateAdapter);
+    expect(getTranslateAdapter({ TRANSLATE_PROVIDER: 'deepl', DEEPL_API_KEY: 'abc:fx' })).toBeInstanceOf(
+      DeeplTranslateAdapter,
+    );
   });
 
   it('returns null for libretranslate without a URL, and an adapter with one', () => {
     expect(getTranslateAdapter({ TRANSLATE_PROVIDER: 'libretranslate' })).toBeNull();
-    expect(getTranslateAdapter({ TRANSLATE_PROVIDER: 'libretranslate', LIBRETRANSLATE_URL: 'https://translate.example.com' })).toBeInstanceOf(
-      LibreTranslateAdapter,
-    );
+    expect(
+      getTranslateAdapter({
+        TRANSLATE_PROVIDER: 'libretranslate',
+        LIBRETRANSLATE_URL: 'https://translate.example.com',
+      }),
+    ).toBeInstanceOf(LibreTranslateAdapter);
   });
 });
 
 describe('DeeplTranslateAdapter', () => {
   it('POSTs to the free-tier host for a ":fx" key, with the expected form body and auth header', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ translations: [{ text: 'Hola', detected_source_language: 'EN' }] }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ translations: [{ text: 'Hola', detected_source_language: 'EN' }] }));
     const adapter = new DeeplTranslateAdapter('secret:fx', fetchMock);
 
     const result = await adapter.translate('Hello', 'es');
@@ -80,7 +87,11 @@ describe('DeeplTranslateAdapter', () => {
 
 describe('LibreTranslateAdapter', () => {
   it('POSTs JSON to <baseUrl>/translate with source/target/format', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ translatedText: 'Hola', detectedLanguage: { language: 'en', confidence: 0.9 } }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({ translatedText: 'Hola', detectedLanguage: { language: 'en', confidence: 0.9 } }),
+      );
     const adapter = new LibreTranslateAdapter('https://translate.example.com', 'my-key', fetchMock);
 
     const result = await adapter.translate('Hello', 'es');
@@ -89,8 +100,18 @@ describe('LibreTranslateAdapter', () => {
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('https://translate.example.com/translate');
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
-    expect(body).toMatchObject({ q: 'Hello', source: 'auto', target: 'es', format: 'text', api_key: 'my-key' });
-    expect(result).toEqual({ translatedText: 'Hola', detectedSourceLanguage: 'en', provider: 'libretranslate' });
+    expect(body).toMatchObject({
+      q: 'Hello',
+      source: 'auto',
+      target: 'es',
+      format: 'text',
+      api_key: 'my-key',
+    });
+    expect(result).toEqual({
+      translatedText: 'Hola',
+      detectedSourceLanguage: 'en',
+      provider: 'libretranslate',
+    });
   });
 
   it('rejects a misconfigured (private/internal) LIBRETRANSLATE_URL before making a request', async () => {

@@ -45,7 +45,10 @@ export function buildPanelButtonRows(panel: PanelWithOptions): ActionRowBuilder<
 /** Builds the single string-select row (select style), customId `roles:select:<panelId>`. */
 export function buildPanelSelectRow(panel: PanelWithOptions): ActionRowBuilder<StringSelectMenuBuilder> {
   const options = panel.options.slice(0, 25);
-  const maxValues = panel.maxSelections && panel.maxSelections > 0 ? Math.min(panel.maxSelections, options.length) : options.length;
+  const maxValues =
+    panel.maxSelections && panel.maxSelections > 0
+      ? Math.min(panel.maxSelections, options.length)
+      : options.length;
 
   const select = new StringSelectMenuBuilder()
     .setCustomId(buildCustomId(ROLES_PLUGIN_ID, 'select', panel.id))
@@ -54,7 +57,11 @@ export function buildPanelSelectRow(panel: PanelWithOptions): ActionRowBuilder<S
     .setMaxValues(Math.max(1, maxValues));
 
   for (const opt of options) {
-    const built = { label: opt.label.slice(0, 100), value: opt.roleId, description: opt.description?.slice(0, 100) };
+    const built = {
+      label: opt.label.slice(0, 100),
+      value: opt.roleId,
+      description: opt.description?.slice(0, 100),
+    };
     select.addOptions(opt.emoji ? { ...built, emoji: opt.emoji } : built);
   }
 
@@ -80,5 +87,7 @@ export function buildPanelMessagePayload(panel: PanelWithOptions): PanelMessageP
 
 /** For REACTIONS-style panels: the ordered list of `{ emoji, roleId }` pairs to react with after posting, skipping options with no emoji set. */
 export function reactionRoleMap(panel: PanelWithOptions): { emoji: string; roleId: string }[] {
-  return panel.options.filter((opt): opt is RolePanelOption & { emoji: string } => Boolean(opt.emoji)).map((opt) => ({ emoji: opt.emoji, roleId: opt.roleId }));
+  return panel.options
+    .filter((opt): opt is RolePanelOption & { emoji: string } => Boolean(opt.emoji))
+    .map((opt) => ({ emoji: opt.emoji, roleId: opt.roleId }));
 }

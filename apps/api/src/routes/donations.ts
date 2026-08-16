@@ -19,7 +19,10 @@ function presetsCents(): number[] {
 }
 
 function donationsUnavailable(): AppError {
-  return new AppError('donations_unavailable', 'Donations are not configured on this server right now.', { status: 503, expose: true });
+  return new AppError('donations_unavailable', 'Donations are not configured on this server right now.', {
+    status: 503,
+    expose: true,
+  });
 }
 
 let stripeClientPromise: Promise<Stripe> | null = null;
@@ -102,7 +105,10 @@ export default async function donationsRoutes(app: ZodFastifyInstance): Promise<
       }
 
       if (!session.url) {
-        app.log.error({ donationId: donation.id, sessionId: session.id }, 'Stripe checkout session has no url');
+        app.log.error(
+          { donationId: donation.id, sessionId: session.id },
+          'Stripe checkout session has no url',
+        );
         throw new ExternalServiceError('Could not start the donation checkout. Please try again shortly.');
       }
 

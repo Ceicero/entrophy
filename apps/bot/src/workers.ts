@@ -33,7 +33,10 @@ export function startWorkers(deps: StartWorkersDeps): StartedWorkers {
 
     const ctx = deps.ctxFactory(plugin);
     if (!ctx) {
-      deps.logger.warn({ plugin: plugin.manifest.id }, 'workers: no PluginContext available for a plugin with declared jobs; skipping');
+      deps.logger.warn(
+        { plugin: plugin.manifest.id },
+        'workers: no PluginContext available for a plugin with declared jobs; skipping',
+      );
       continue;
     }
 
@@ -43,7 +46,10 @@ export function startWorkers(deps: StartWorkersDeps): StartedWorkers {
       // sdk/types.ts) for the same reason every other heterogeneous-plugin-array loop in this file needs it;
       // each job's own `processor` stays fully typed.
       const processor = (bullJob: Job) => job.processor(ctx, bullJob as never);
-      const worker = new Worker(queueName, processor, { connection: deps.connection, concurrency: job.concurrency ?? 1 });
+      const worker = new Worker(queueName, processor, {
+        connection: deps.connection,
+        concurrency: job.concurrency ?? 1,
+      });
 
       worker.on('failed', (bullJob, err) => {
         deps.logger.error(

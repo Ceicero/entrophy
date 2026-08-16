@@ -20,7 +20,8 @@ async function readCount(redis: Redis, key: string): Promise<number> {
   return raw ? Number(raw) : 0;
 }
 
-export type BudgetCheckResult = { ok: true } | { ok: false; scope: 'guild' | 'user'; used: number; limit: number };
+export type BudgetCheckResult =
+  { ok: true } | { ok: false; scope: 'guild' | 'user'; used: number; limit: number };
 
 /**
  * Preemptively checks today's (UTC) usage against `dailyBudget`/`perUserBudget` before spending on a provider
@@ -46,7 +47,13 @@ export async function checkBudget(
 }
 
 /** Records `tokens` spent against both the guild's and the user's daily counters (UTC day of `now`). */
-export async function recordUsage(redis: Redis, guildId: string, userId: string, tokens: number, now: Date = new Date()): Promise<void> {
+export async function recordUsage(
+  redis: Redis,
+  guildId: string,
+  userId: string,
+  tokens: number,
+  now: Date = new Date(),
+): Promise<void> {
   if (tokens <= 0) return;
   const gKey = guildBudgetKey(guildId, now);
   const uKey = userBudgetKey(guildId, userId, now);
@@ -59,7 +66,12 @@ export async function recordUsage(redis: Redis, guildId: string, userId: string,
 }
 
 /** Current (UTC-day) usage totals, for display purposes (e.g. `/ai config view`). */
-export async function readUsage(redis: Redis, guildId: string, userId: string, now: Date = new Date()): Promise<{ guildUsed: number; userUsed: number }> {
+export async function readUsage(
+  redis: Redis,
+  guildId: string,
+  userId: string,
+  now: Date = new Date(),
+): Promise<{ guildUsed: number; userUsed: number }> {
   const [guildUsed, userUsed] = await Promise.all([
     readCount(redis, guildBudgetKey(guildId, now)),
     readCount(redis, userBudgetKey(guildId, userId, now)),

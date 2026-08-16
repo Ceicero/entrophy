@@ -3,10 +3,22 @@ import { z } from 'zod';
 import { AuditAction, NotFoundError, buildPaginated, paginate } from '@entrophy/core';
 import type { RolesConfig } from '@entrophy/plugins/roles/manifest';
 import type { Paginated, RolePanelDto } from '@entrophy/types';
-import type { OnboardingConfigDto, RoleGroupDto, RolePersistenceDto, VerificationRequestDto, VerificationSettingsDto, WelcomeGoodbyeDto } from '@entrophy/types/roles';
+import type {
+  OnboardingConfigDto,
+  RoleGroupDto,
+  RolePersistenceDto,
+  VerificationRequestDto,
+  VerificationSettingsDto,
+  WelcomeGoodbyeDto,
+} from '@entrophy/types/roles';
 import { writeDashboardAudit } from '../lib/audit';
 import { toRolePanelDto } from '../lib/dto';
-import { toOnboardingConfigDto, toRoleGroupDto, toVerificationRequestDto, toWelcomeGoodbyeDto } from '../lib/roles/dto';
+import {
+  toOnboardingConfigDto,
+  toRoleGroupDto,
+  toVerificationRequestDto,
+  toWelcomeGoodbyeDto,
+} from '../lib/roles/dto';
 import {
   groupBodySchema,
   groupParamSchema,
@@ -57,14 +69,18 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
   // Panels
   // ---------------------------------------------------------------------------------------------------------
 
-  app.get('/:guildId/roles/panels', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<RolePanelDto[]> => {
-    const rows = await app.prisma.rolePanel.findMany({
-      where: { guildId: request.guildId!, deletedAt: null },
-      include: { options: { orderBy: { position: 'asc' } } },
-      orderBy: { createdAt: 'desc' },
-    });
-    return rows.map(toRolePanelDto);
-  });
+  app.get(
+    '/:guildId/roles/panels',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<RolePanelDto[]> => {
+      const rows = await app.prisma.rolePanel.findMany({
+        where: { guildId: request.guildId!, deletedAt: null },
+        include: { options: { orderBy: { position: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
+      });
+      return rows.map(toRolePanelDto);
+    },
+  );
 
   app.post(
     '/:guildId/roles/panels',
@@ -83,7 +99,14 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
         include: { options: { orderBy: { position: 'asc' } } },
       });
 
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: AuditAction.RolesPanelCreate, targetType: 'role_panel', targetId: row.id, after: { title: row.title } });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.RolesPanelCreate,
+        targetType: 'role_panel',
+        targetId: row.id,
+        after: { title: row.title },
+      });
       reply.status(201);
       return toRolePanelDto(row);
     },
@@ -96,7 +119,9 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
       const guildId = request.guildId!;
       const session = request.session!;
       const { panelId } = request.params as { panelId: string };
-      const existing = await app.prisma.rolePanel.findFirst({ where: { id: panelId, guildId, deletedAt: null } });
+      const existing = await app.prisma.rolePanel.findFirst({
+        where: { id: panelId, guildId, deletedAt: null },
+      });
       if (!existing) throw new NotFoundError('Role panel not found.');
 
       const { options, ...panelFields } = request.body;
@@ -108,49 +133,99 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
         where: { id: panelId },
         data: {
           ...panelFields,
-          ...(options ? { options: { create: options.map((opt, index) => ({ ...opt, position: opt.position ?? index })) } } : {}),
+          ...(options
+            ? {
+                options: {
+                  create: options.map((opt, index) => ({ ...opt, position: opt.position ?? index })),
+                },
+              }
+            : {}),
         },
         include: { options: { orderBy: { position: 'asc' } } },
       });
 
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: AuditAction.RolesPanelUpdate, targetType: 'role_panel', targetId: panelId });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.RolesPanelUpdate,
+        targetType: 'role_panel',
+        targetId: panelId,
+      });
       return toRolePanelDto(updated);
     },
   );
 
-  app.delete('/:guildId/roles/panels/:panelId', { schema: { params: panelParamSchema }, preHandler: requireGuildAccess() }, async (request, reply) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { panelId } = request.params as { panelId: string };
-    const existing = await app.prisma.rolePanel.findFirst({ where: { id: panelId, guildId, deletedAt: null } });
-    if (!existing) throw new NotFoundError('Role panel not found.');
+  app.delete(
+    '/:guildId/roles/panels/:panelId',
+    { schema: { params: panelParamSchema }, preHandler: requireGuildAccess() },
+    async (request, reply) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { panelId } = request.params as { panelId: string };
+      const existing = await app.prisma.rolePanel.findFirst({
+        where: { id: panelId, guildId, deletedAt: null },
+      });
+      if (!existing) throw new NotFoundError('Role panel not found.');
 
-    await app.prisma.rolePanel.update({ where: { id: panelId }, data: { deletedAt: new Date() } });
-    await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: AuditAction.RolesPanelDelete, targetType: 'role_panel', targetId: panelId });
-    reply.status(204);
-    return null;
-  });
+      await app.prisma.rolePanel.update({ where: { id: panelId }, data: { deletedAt: new Date() } });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.RolesPanelDelete,
+        targetType: 'role_panel',
+        targetId: panelId,
+      });
+      reply.status(204);
+      return null;
+    },
+  );
 
-  app.post('/:guildId/roles/panels/:panelId/post', { schema: { params: panelParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { panelId } = request.params as { panelId: string };
-    const existing = await app.prisma.rolePanel.findFirst({ where: { id: panelId, guildId, deletedAt: null } });
-    if (!existing) throw new NotFoundError('Role panel not found.');
+  app.post(
+    '/:guildId/roles/panels/:panelId/post',
+    { schema: { params: panelParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { panelId } = request.params as { panelId: string };
+      const existing = await app.prisma.rolePanel.findFirst({
+        where: { id: panelId, guildId, deletedAt: null },
+      });
+      if (!existing) throw new NotFoundError('Role panel not found.');
 
-    await app.queues.botActions().add('bot-action', { type: 'roles.postPanel', guildId, payload: { panelId }, requestedBy: session.userId });
-    await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'roles.panel.post', targetType: 'role_panel', targetId: panelId });
-    return { ok: true, queued: true };
-  });
+      await app.queues
+        .botActions()
+        .add('bot-action', {
+          type: 'roles.postPanel',
+          guildId,
+          payload: { panelId },
+          requestedBy: session.userId,
+        });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'roles.panel.post',
+        targetType: 'role_panel',
+        targetId: panelId,
+      });
+      return { ok: true, queued: true };
+    },
+  );
 
   // ---------------------------------------------------------------------------------------------------------
   // Groups
   // ---------------------------------------------------------------------------------------------------------
 
-  app.get('/:guildId/roles/groups', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<RoleGroupDto[]> => {
-    const rows = await app.prisma.roleGroup.findMany({ where: { guildId: request.guildId! }, orderBy: { createdAt: 'desc' } });
-    return rows.map(toRoleGroupDto);
-  });
+  app.get(
+    '/:guildId/roles/groups',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<RoleGroupDto[]> => {
+      const rows = await app.prisma.roleGroup.findMany({
+        where: { guildId: request.guildId! },
+        orderBy: { createdAt: 'desc' },
+      });
+      return rows.map(toRoleGroupDto);
+    },
+  );
 
   app.post(
     '/:guildId/roles/groups',
@@ -159,7 +234,14 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
       const guildId = request.guildId!;
       const session = request.session!;
       const row = await app.prisma.roleGroup.create({ data: { guildId, ...request.body } });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'roles.group.create', targetType: 'role_group', targetId: row.id, after: { name: row.name } });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'roles.group.create',
+        targetType: 'role_group',
+        targetId: row.id,
+        after: { name: row.name },
+      });
       reply.status(201);
       return toRoleGroupDto(row);
     },
@@ -176,43 +258,77 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
       if (!existing) throw new NotFoundError('Role group not found.');
 
       const updated = await app.prisma.roleGroup.update({ where: { id: groupId }, data: request.body });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'roles.group.update', targetType: 'role_group', targetId: groupId });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'roles.group.update',
+        targetType: 'role_group',
+        targetId: groupId,
+      });
       return toRoleGroupDto(updated);
     },
   );
 
-  app.delete('/:guildId/roles/groups/:groupId', { schema: { params: groupParamSchema }, preHandler: requireGuildAccess() }, async (request, reply) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { groupId } = request.params as { groupId: string };
-    const existing = await app.prisma.roleGroup.findFirst({ where: { id: groupId, guildId } });
-    if (!existing) throw new NotFoundError('Role group not found.');
+  app.delete(
+    '/:guildId/roles/groups/:groupId',
+    { schema: { params: groupParamSchema }, preHandler: requireGuildAccess() },
+    async (request, reply) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { groupId } = request.params as { groupId: string };
+      const existing = await app.prisma.roleGroup.findFirst({ where: { id: groupId, guildId } });
+      if (!existing) throw new NotFoundError('Role group not found.');
 
-    await app.prisma.rolePanel.updateMany({ where: { guildId, groupId }, data: { groupId: null } });
-    await app.prisma.roleGroup.delete({ where: { id: groupId } });
-    await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'roles.group.delete', targetType: 'role_group', targetId: groupId });
-    reply.status(204);
-    return null;
-  });
+      await app.prisma.rolePanel.updateMany({ where: { guildId, groupId }, data: { groupId: null } });
+      await app.prisma.roleGroup.delete({ where: { id: groupId } });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'roles.group.delete',
+        targetType: 'role_group',
+        targetId: groupId,
+      });
+      reply.status(204);
+      return null;
+    },
+  );
 
   // ---------------------------------------------------------------------------------------------------------
   // Welcome / goodbye
   // ---------------------------------------------------------------------------------------------------------
 
-  app.get('/:guildId/roles/welcome', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<WelcomeGoodbyeDto> => {
-    const config = await getRolesConfig(app, request.guildId!);
-    return toWelcomeGoodbyeDto(config.welcome);
-  });
+  app.get(
+    '/:guildId/roles/welcome',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<WelcomeGoodbyeDto> => {
+      const config = await getRolesConfig(app, request.guildId!);
+      return toWelcomeGoodbyeDto(config.welcome);
+    },
+  );
 
   app.put(
     '/:guildId/roles/welcome',
-    { schema: { params: guildIdParamSchema, body: welcomeGoodbyeBodySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, body: welcomeGoodbyeBodySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<WelcomeGoodbyeDto> => {
       const guildId = request.guildId!;
       const session = request.session!;
       const current = await getRolesConfig(app, guildId);
-      const updated = await app.configStore.setConfig<RolesConfig>(guildId, ROLES_PLUGIN_ID, { welcome: { ...current.welcome, ...request.body } }, { id: session.userId, source: 'dashboard' });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: AuditAction.RolesWelcomeUpdate, targetType: 'plugin_config', targetId: ROLES_PLUGIN_ID });
+      const updated = await app.configStore.setConfig<RolesConfig>(
+        guildId,
+        ROLES_PLUGIN_ID,
+        { welcome: { ...current.welcome, ...request.body } },
+        { id: session.userId, source: 'dashboard' },
+      );
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.RolesWelcomeUpdate,
+        targetType: 'plugin_config',
+        targetId: ROLES_PLUGIN_ID,
+      });
       return toWelcomeGoodbyeDto(updated.welcome);
     },
   );
@@ -223,26 +339,57 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
     async (request) => {
       const guildId = request.guildId!;
       const session = request.session!;
-      await app.queues.botActions().add('bot-action', { type: 'roles.testWelcome', guildId, payload: { channelId: request.body.channelId, section: 'welcome' }, requestedBy: session.userId });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'roles.welcome.test', targetType: 'plugin_config', targetId: ROLES_PLUGIN_ID });
+      await app.queues
+        .botActions()
+        .add('bot-action', {
+          type: 'roles.testWelcome',
+          guildId,
+          payload: { channelId: request.body.channelId, section: 'welcome' },
+          requestedBy: session.userId,
+        });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'roles.welcome.test',
+        targetType: 'plugin_config',
+        targetId: ROLES_PLUGIN_ID,
+      });
       return { ok: true, queued: true };
     },
   );
 
-  app.get('/:guildId/roles/goodbye', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<WelcomeGoodbyeDto> => {
-    const config = await getRolesConfig(app, request.guildId!);
-    return toWelcomeGoodbyeDto(config.goodbye);
-  });
+  app.get(
+    '/:guildId/roles/goodbye',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<WelcomeGoodbyeDto> => {
+      const config = await getRolesConfig(app, request.guildId!);
+      return toWelcomeGoodbyeDto(config.goodbye);
+    },
+  );
 
   app.put(
     '/:guildId/roles/goodbye',
-    { schema: { params: guildIdParamSchema, body: welcomeGoodbyeBodySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, body: welcomeGoodbyeBodySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<WelcomeGoodbyeDto> => {
       const guildId = request.guildId!;
       const session = request.session!;
       const current = await getRolesConfig(app, guildId);
-      const updated = await app.configStore.setConfig<RolesConfig>(guildId, ROLES_PLUGIN_ID, { goodbye: { ...current.goodbye, ...request.body } }, { id: session.userId, source: 'dashboard' });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: AuditAction.RolesWelcomeUpdate, targetType: 'plugin_config', targetId: ROLES_PLUGIN_ID });
+      const updated = await app.configStore.setConfig<RolesConfig>(
+        guildId,
+        ROLES_PLUGIN_ID,
+        { goodbye: { ...current.goodbye, ...request.body } },
+        { id: session.userId, source: 'dashboard' },
+      );
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.RolesWelcomeUpdate,
+        targetType: 'plugin_config',
+        targetId: ROLES_PLUGIN_ID,
+      });
       return toWelcomeGoodbyeDto(updated.goodbye);
     },
   );
@@ -253,8 +400,21 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
     async (request) => {
       const guildId = request.guildId!;
       const session = request.session!;
-      await app.queues.botActions().add('bot-action', { type: 'roles.testWelcome', guildId, payload: { channelId: request.body.channelId, section: 'goodbye' }, requestedBy: session.userId });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'roles.goodbye.test', targetType: 'plugin_config', targetId: ROLES_PLUGIN_ID });
+      await app.queues
+        .botActions()
+        .add('bot-action', {
+          type: 'roles.testWelcome',
+          guildId,
+          payload: { channelId: request.body.channelId, section: 'goodbye' },
+          requestedBy: session.userId,
+        });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'roles.goodbye.test',
+        targetType: 'plugin_config',
+        targetId: ROLES_PLUGIN_ID,
+      });
       return { ok: true, queued: true };
     },
   );
@@ -263,32 +423,58 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
   // Verification
   // ---------------------------------------------------------------------------------------------------------
 
-  app.get('/:guildId/roles/verification/settings', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<VerificationSettingsDto> => {
-    const config = await getRolesConfig(app, request.guildId!);
-    return config.verification;
-  });
+  app.get(
+    '/:guildId/roles/verification/settings',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<VerificationSettingsDto> => {
+      const config = await getRolesConfig(app, request.guildId!);
+      return config.verification;
+    },
+  );
 
   app.put(
     '/:guildId/roles/verification/settings',
-    { schema: { params: guildIdParamSchema, body: verificationSettingsBodySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, body: verificationSettingsBodySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<VerificationSettingsDto> => {
       const guildId = request.guildId!;
       const session = request.session!;
       const current = await getRolesConfig(app, guildId);
-      const updated = await app.configStore.setConfig<RolesConfig>(guildId, ROLES_PLUGIN_ID, { verification: { ...current.verification, ...request.body } }, { id: session.userId, source: 'dashboard' });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'verification.settings.update', targetType: 'plugin_config', targetId: ROLES_PLUGIN_ID });
+      const updated = await app.configStore.setConfig<RolesConfig>(
+        guildId,
+        ROLES_PLUGIN_ID,
+        { verification: { ...current.verification, ...request.body } },
+        { id: session.userId, source: 'dashboard' },
+      );
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'verification.settings.update',
+        targetType: 'plugin_config',
+        targetId: ROLES_PLUGIN_ID,
+      });
       return updated.verification;
     },
   );
 
   app.get(
     '/:guildId/roles/verification/queue',
-    { schema: { params: guildIdParamSchema, querystring: paginationQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: paginationQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<Paginated<VerificationRequestDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit } = request.query;
       const { limit, offset } = paginate({ cursor, limit: rawLimit });
-      const rows = await app.prisma.verificationRequest.findMany({ where: { guildId, status: 'PENDING' }, orderBy: { createdAt: 'asc' }, skip: offset, take: limit + 1 });
+      const rows = await app.prisma.verificationRequest.findMany({
+        where: { guildId, status: 'PENDING' },
+        orderBy: { createdAt: 'asc' },
+        skip: offset,
+        take: limit + 1,
+      });
       return buildPaginated(rows.map(toVerificationRequestDto), limit, offset);
     },
   );
@@ -296,19 +482,33 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
   // Kept for backward compatibility with the prep-stage shape (`GET /:guildId/roles/verification`).
   app.get(
     '/:guildId/roles/verification',
-    { schema: { params: guildIdParamSchema, querystring: paginationQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: paginationQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<Paginated<VerificationRequestDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit } = request.query;
       const { limit, offset } = paginate({ cursor, limit: rawLimit });
-      const rows = await app.prisma.verificationRequest.findMany({ where: { guildId, status: 'PENDING' }, orderBy: { createdAt: 'asc' }, skip: offset, take: limit + 1 });
+      const rows = await app.prisma.verificationRequest.findMany({
+        where: { guildId, status: 'PENDING' },
+        orderBy: { createdAt: 'asc' },
+        skip: offset,
+        take: limit + 1,
+      });
       return buildPaginated(rows.map(toVerificationRequestDto), limit, offset);
     },
   );
 
   app.post(
     '/:guildId/roles/verification/:requestId/decide',
-    { schema: { params: verificationParamSchema, body: verificationDecisionSchema.extend({ approve: z.boolean() }) }, preHandler: requireGuildAccess() },
+    {
+      schema: {
+        params: verificationParamSchema,
+        body: verificationDecisionSchema.extend({ approve: z.boolean() }),
+      },
+      preHandler: requireGuildAccess(),
+    },
     async (request) => {
       const guildId = request.guildId!;
       const session = request.session!;
@@ -335,7 +535,10 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
 
   app.post(
     '/:guildId/roles/verification/:requestId/approve',
-    { schema: { params: verificationParamSchema, body: verificationDecisionSchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: verificationParamSchema, body: verificationDecisionSchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request) => {
       const guildId = request.guildId!;
       const session = request.session!;
@@ -343,15 +546,31 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
       const existing = await app.prisma.verificationRequest.findFirst({ where: { id: requestId, guildId } });
       if (!existing) throw new NotFoundError('Verification request not found.');
 
-      await app.queues.botActions().add('bot-action', { type: 'roles.verificationDecision', guildId, payload: { requestId, approve: true, note: request.body.note }, requestedBy: session.userId });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: AuditAction.VerificationApprove, targetType: 'verification_request', targetId: requestId });
+      await app.queues
+        .botActions()
+        .add('bot-action', {
+          type: 'roles.verificationDecision',
+          guildId,
+          payload: { requestId, approve: true, note: request.body.note },
+          requestedBy: session.userId,
+        });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.VerificationApprove,
+        targetType: 'verification_request',
+        targetId: requestId,
+      });
       return { ok: true, queued: true };
     },
   );
 
   app.post(
     '/:guildId/roles/verification/:requestId/deny',
-    { schema: { params: verificationParamSchema, body: verificationDecisionSchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: verificationParamSchema, body: verificationDecisionSchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request) => {
       const guildId = request.guildId!;
       const session = request.session!;
@@ -359,8 +578,21 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
       const existing = await app.prisma.verificationRequest.findFirst({ where: { id: requestId, guildId } });
       if (!existing) throw new NotFoundError('Verification request not found.');
 
-      await app.queues.botActions().add('bot-action', { type: 'roles.verificationDecision', guildId, payload: { requestId, approve: false, note: request.body.note }, requestedBy: session.userId });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: AuditAction.VerificationDeny, targetType: 'verification_request', targetId: requestId });
+      await app.queues
+        .botActions()
+        .add('bot-action', {
+          type: 'roles.verificationDecision',
+          guildId,
+          payload: { requestId, approve: false, note: request.body.note },
+          requestedBy: session.userId,
+        });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.VerificationDeny,
+        targetType: 'verification_request',
+        targetId: requestId,
+      });
       return { ok: true, queued: true };
     },
   );
@@ -369,19 +601,35 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
   // Onboarding
   // ---------------------------------------------------------------------------------------------------------
 
-  app.get('/:guildId/roles/onboarding', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<OnboardingConfigDto> => {
-    const config = await getRolesConfig(app, request.guildId!);
-    return toOnboardingConfigDto(config);
-  });
+  app.get(
+    '/:guildId/roles/onboarding',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<OnboardingConfigDto> => {
+      const config = await getRolesConfig(app, request.guildId!);
+      return toOnboardingConfigDto(config);
+    },
+  );
 
   app.put(
     '/:guildId/roles/onboarding',
-    { schema: { params: guildIdParamSchema, body: onboardingConfigBodySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, body: onboardingConfigBodySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<OnboardingConfigDto> => {
       const guildId = request.guildId!;
       const session = request.session!;
-      const updated = await app.configStore.setConfig<RolesConfig>(guildId, ROLES_PLUGIN_ID, request.body, { id: session.userId, source: 'dashboard' });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'onboarding.config.update', targetType: 'plugin_config', targetId: ROLES_PLUGIN_ID });
+      const updated = await app.configStore.setConfig<RolesConfig>(guildId, ROLES_PLUGIN_ID, request.body, {
+        id: session.userId,
+        source: 'dashboard',
+      });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'onboarding.config.update',
+        targetType: 'plugin_config',
+        targetId: ROLES_PLUGIN_ID,
+      });
       return toOnboardingConfigDto(updated);
     },
   );
@@ -390,10 +638,14 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
   // Role persistence
   // ---------------------------------------------------------------------------------------------------------
 
-  app.get('/:guildId/roles/persistence', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<RolePersistenceDto & { disclosure: string }> => {
-    const config = await getRolesConfig(app, request.guildId!);
-    return { ...config.rolePersistence, disclosure: ROLE_PERSISTENCE_DISCLOSURE };
-  });
+  app.get(
+    '/:guildId/roles/persistence',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<RolePersistenceDto & { disclosure: string }> => {
+      const config = await getRolesConfig(app, request.guildId!);
+      return { ...config.rolePersistence, disclosure: ROLE_PERSISTENCE_DISCLOSURE };
+    },
+  );
 
   app.post(
     '/:guildId/roles/persistence',
@@ -406,7 +658,12 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
       const updated = await app.configStore.setConfig<RolesConfig>(
         guildId,
         ROLES_PLUGIN_ID,
-        { rolePersistence: { enabled: request.body.enabled, maxDays: request.body.maxDays ?? current.rolePersistence.maxDays } },
+        {
+          rolePersistence: {
+            enabled: request.body.enabled,
+            maxDays: request.body.maxDays ?? current.rolePersistence.maxDays,
+          },
+        },
         { id: session.userId, source: 'dashboard' },
       );
 
@@ -416,7 +673,11 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
         action: 'roles.persistence.toggle',
         targetType: 'plugin_config',
         targetId: ROLES_PLUGIN_ID,
-        after: { enabled: updated.rolePersistence.enabled, maxDays: updated.rolePersistence.maxDays, acknowledgedDisclosure: request.body.acknowledge ?? false },
+        after: {
+          enabled: updated.rolePersistence.enabled,
+          maxDays: updated.rolePersistence.maxDays,
+          acknowledgedDisclosure: request.body.acknowledge ?? false,
+        },
       });
 
       return { ...updated.rolePersistence, disclosure: ROLE_PERSISTENCE_DISCLOSURE };

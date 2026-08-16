@@ -25,10 +25,19 @@ function fillTemplate(template: string, vars: Record<string, string>): string {
 }
 
 /** Builds the "went live" alert embed for a Twitch stream (ARCHITECTURE.md's integrations connector spec). */
-export function formatTwitchStreamEmbed(stream: TwitchStream, options: FormatTwitchOptions = {}): AlertEmbedData {
-  const vars = { streamer: stream.user_name || stream.user_login, title: stream.title ?? '', game: stream.game_name ?? 'a game' };
+export function formatTwitchStreamEmbed(
+  stream: TwitchStream,
+  options: FormatTwitchOptions = {},
+): AlertEmbedData {
+  const vars = {
+    streamer: stream.user_name || stream.user_login,
+    title: stream.title ?? '',
+    game: stream.game_name ?? 'a game',
+  };
   const description = fillTemplate(options.template ?? '**{streamer}** just went live playing {game}!', vars);
-  const thumb = stream.thumbnail_url ? stream.thumbnail_url.replace('{width}', '640').replace('{height}', '360') : undefined;
+  const thumb = stream.thumbnail_url
+    ? stream.thumbnail_url.replace('{width}', '640').replace('{height}', '360')
+    : undefined;
 
   return {
     title: stream.title || `${vars.streamer} is live on Twitch`,

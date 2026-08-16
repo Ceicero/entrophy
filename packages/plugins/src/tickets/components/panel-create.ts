@@ -27,7 +27,10 @@ const panelCreateModalHandler: ComponentHandler = {
     const pendingStore = new PendingStore(c.ctx.redis);
     const pending = await pendingStore.take<PanelCreatePendingPayload>(pendingId);
     if (!pending) {
-      await interaction.reply({ embeds: [errorEmbed('This form expired. Run `/ticket panel create` again.')], ephemeral: true });
+      await interaction.reply({
+        embeds: [errorEmbed('This form expired. Run `/ticket panel create` again.')],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -48,7 +51,10 @@ const panelCreateModalHandler: ComponentHandler = {
         supportRoleIds: pending.supportRoleIds,
         mode: pending.mode,
         slaMinutes: pending.slaMinutes,
-        intakeForm: config && config.intakeForm.length > 0 ? (config.intakeForm as unknown as Prisma.InputJsonValue) : undefined,
+        intakeForm:
+          config && config.intakeForm.length > 0
+            ? (config.intakeForm as unknown as Prisma.InputJsonValue)
+            : undefined,
       },
     });
 
@@ -59,7 +65,11 @@ const panelCreateModalHandler: ComponentHandler = {
     } catch (err) {
       if (err instanceof NotFoundError) throw err;
       await interaction.editReply({
-        embeds: [errorEmbed(`Panel "${panel.title}" was created, but I could not post it: ${err instanceof Error ? err.message : 'unknown error'}. Try \`/ticket panel post\` from the dashboard.`)],
+        embeds: [
+          errorEmbed(
+            `Panel "${panel.title}" was created, but I could not post it: ${err instanceof Error ? err.message : 'unknown error'}. Try \`/ticket panel post\` from the dashboard.`,
+          ),
+        ],
       });
       return;
     }
@@ -75,7 +85,11 @@ const panelCreateModalHandler: ComponentHandler = {
       source: 'bot',
     });
 
-    await interaction.editReply({ embeds: [successEmbed(`Created and posted the "${panel.title}" ticket panel in <#${panel.channelId}>.`)] });
+    await interaction.editReply({
+      embeds: [
+        successEmbed(`Created and posted the "${panel.title}" ticket panel in <#${panel.channelId}>.`),
+      ],
+    });
   },
 };
 

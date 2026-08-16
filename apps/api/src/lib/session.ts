@@ -34,7 +34,10 @@ function sessionKey(sid: string): string {
 }
 
 /** Encrypts the OAuth tokens, writes a new session row to Redis, and returns its id + decrypted-in-memory view. */
-export async function createSession(redis: Redis, input: CreateSessionInput): Promise<{ sid: string; session: SessionData }> {
+export async function createSession(
+  redis: Redis,
+  input: CreateSessionInput,
+): Promise<{ sid: string; session: SessionData }> {
   const sid = randomBytes(32).toString('hex');
   const csrfToken = randomBytes(24).toString('hex');
   const session: SessionData = {
@@ -60,7 +63,11 @@ export async function getSession(redis: Redis, sid: string): Promise<SessionData
 }
 
 /** Overwrites a session's stored data in place (e.g. after a token refresh), preserving its TTL. */
-export async function updateSession(redis: Redis, sid: string, patch: Partial<SessionData>): Promise<SessionData | null> {
+export async function updateSession(
+  redis: Redis,
+  sid: string,
+  patch: Partial<SessionData>,
+): Promise<SessionData | null> {
   const existing = await getSession(redis, sid);
   if (!existing) return null;
   const next = { ...existing, ...patch };

@@ -13,7 +13,10 @@ export const panelSelectHandler: ComponentHandler = {
     const [panelId] = c.args;
     const interaction = c.interaction as StringSelectMenuInteraction<'cached'>;
 
-    const panel = await c.ctx.prisma.rolePanel.findFirst({ where: { id: panelId, guildId: c.guildId, deletedAt: null }, include: { options: true } });
+    const panel = await c.ctx.prisma.rolePanel.findFirst({
+      where: { id: panelId, guildId: c.guildId, deletedAt: null },
+      include: { options: true },
+    });
     if (!panel) {
       await interaction.reply({ embeds: [errorEmbed('This panel no longer exists.')], ephemeral: true });
       return;
@@ -31,7 +34,13 @@ export const panelSelectHandler: ComponentHandler = {
     const safeSelected = selectedRoleIds.filter((roleId) => {
       const role = guild.roles.cache.get(roleId);
       if (!role) return false;
-      const result = checkRoleAssignable({ permissionsBitfield: role.permissions.bitfield, position: role.position, managed: role.managed, botTopRolePosition, allowElevatedRoles: config.allowElevatedRoles });
+      const result = checkRoleAssignable({
+        permissionsBitfield: role.permissions.bitfield,
+        position: role.position,
+        managed: role.managed,
+        botTopRolePosition,
+        allowElevatedRoles: config.allowElevatedRoles,
+      });
       if (!result.ok) skippedUnsafe.push(roleId);
       return result.ok;
     });

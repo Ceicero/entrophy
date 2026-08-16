@@ -14,7 +14,15 @@ export function toEmbedBuilder(data: AlertEmbedData): EmbedBuilder {
   if (data.imageUrl) embed.setImage(data.imageUrl);
   if (data.authorName) embed.setAuthor({ name: truncate(data.authorName, 256), iconURL: data.authorIconUrl });
   if (data.fields && data.fields.length > 0) {
-    embed.addFields(data.fields.slice(0, EMBED_LIMITS.fields).map((f) => ({ name: truncate(f.name, EMBED_LIMITS.fieldName), value: truncate(f.value, EMBED_LIMITS.fieldValue), inline: f.inline ?? false })));
+    embed.addFields(
+      data.fields
+        .slice(0, EMBED_LIMITS.fields)
+        .map((f) => ({
+          name: truncate(f.name, EMBED_LIMITS.fieldName),
+          value: truncate(f.value, EMBED_LIMITS.fieldValue),
+          inline: f.inline ?? false,
+        })),
+    );
   }
   if (data.footer) embed.setFooter({ text: truncate(data.footer, EMBED_LIMITS.footer) });
   embed.setTimestamp();
@@ -32,7 +40,11 @@ export interface AlertTarget {
  * bot can no longer see/post in, or a guild it's left, just means the alert is silently skipped (the caller
  * still records `lastSyncAt`/dedupe state so the underlying item is never re-alerted later).
  */
-export async function postAlert(ctx: PluginContext, target: AlertTarget, data: AlertEmbedData): Promise<boolean> {
+export async function postAlert(
+  ctx: PluginContext,
+  target: AlertTarget,
+  data: AlertEmbedData,
+): Promise<boolean> {
   try {
     const guild = await ctx.client.guilds.fetch(target.guildId).catch(() => null);
     if (!guild) return false;
@@ -48,7 +60,10 @@ export async function postAlert(ctx: PluginContext, target: AlertTarget, data: A
     });
     return true;
   } catch (err) {
-    ctx.logger.warn({ err, guildId: target.guildId, channelId: target.channelId }, 'integrations: failed to post alert');
+    ctx.logger.warn(
+      { err, guildId: target.guildId, channelId: target.channelId },
+      'integrations: failed to post alert',
+    );
     return false;
   }
 }

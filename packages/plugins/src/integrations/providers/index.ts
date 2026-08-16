@@ -1,5 +1,9 @@
 import type { IntegrationProvider as PrismaIntegrationProvider } from '@entrophy/database';
-import { INTEGRATION_PROVIDER_IDS, type IntegrationProviderId, type IntegrationProviderInfoDto } from '@entrophy/types/integrations';
+import {
+  INTEGRATION_PROVIDER_IDS,
+  type IntegrationProviderId,
+  type IntegrationProviderInfoDto,
+} from '@entrophy/types/integrations';
 import { githubProvider } from './github';
 import { genericWebhookProvider } from './generic-webhook';
 import { googleCalendarProvider } from './google-calendar';

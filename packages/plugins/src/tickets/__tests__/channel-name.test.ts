@@ -32,7 +32,7 @@ describe('ticketChannelName', () => {
     expect(ticketChannelName(3, '!!!')).toBe('ticket-3-user');
   });
 
-  it('never exceeds Discord\'s 100-character channel name limit', () => {
+  it("never exceeds Discord's 100-character channel name limit", () => {
     const name = ticketChannelName(123456, 'a'.repeat(200));
     expect(name.length).toBeLessThanOrEqual(100);
     expect(name.startsWith('ticket-123456-')).toBe(true);

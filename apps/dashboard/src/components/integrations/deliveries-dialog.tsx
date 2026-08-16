@@ -1,6 +1,19 @@
 'use client';
 
-import { Badge, Dialog, DialogContent, DialogHeader, DialogTitle, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@entrophy/ui';
+import {
+  Badge,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@entrophy/ui';
 import { useOutboundDeliveries } from '../../lib/integrations-queries';
 import { ErrorState } from '../error-state';
 
@@ -42,11 +55,17 @@ export function DeliveriesDialog({ guildId, endpointId, endpointName, onOpenChan
             <TableBody>
               {data.items.map((d) => (
                 <TableRow key={d.id}>
-                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{new Date(d.createdAt).toLocaleString()}</TableCell>
+                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                    {new Date(d.createdAt).toLocaleString()}
+                  </TableCell>
                   <TableCell>{d.attempt}</TableCell>
                   <TableCell>{d.status ?? '—'}</TableCell>
                   <TableCell>
-                    {d.success ? <Badge variant="success">Delivered</Badge> : <Badge variant="destructive">{d.error ?? 'Failed'}</Badge>}
+                    {d.success ? (
+                      <Badge variant="success">Delivered</Badge>
+                    ) : (
+                      <Badge variant="destructive">{d.error ?? 'Failed'}</Badge>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

@@ -47,17 +47,17 @@ alerts support roles when a ticket has gone unanswered too long.
 
 ## Commands
 
-| Command | Staff level | Notes |
-|---|---|---|
-| `/ticket open [subject]` | member | Any member; blocked by the per-user open-ticket limit. |
-| `/ticket close [reason]` | opener or helper | Confirmation step (or immediate, if `fastActions` is on). |
-| `/ticket add \| remove <user>` | helper | Channel-perm overwrite or thread member add/remove. |
-| `/ticket assign [user]` | helper | Omit `user` to unassign. |
-| `/ticket tag add \| remove <tag>` | helper | Up to 10 tags per ticket. |
-| `/ticket transcript [number] [format]` | opener (own ticket) or helper (any) | `format` is `html` (default) or `json`. |
-| `/ticket reopen <number>` | opener or helper | Only within `reopenWindowHours` of close. |
-| `/ticket config` | moderator | View only — edit via the dashboard/API. |
-| `/ticket panel create ...` | moderator | Slash options + a follow-up modal for title/description/button text. |
+| Command                                | Staff level                         | Notes                                                                |
+| -------------------------------------- | ----------------------------------- | -------------------------------------------------------------------- |
+| `/ticket open [subject]`               | member                              | Any member; blocked by the per-user open-ticket limit.               |
+| `/ticket close [reason]`               | opener or helper                    | Confirmation step (or immediate, if `fastActions` is on).            |
+| `/ticket add \| remove <user>`         | helper                              | Channel-perm overwrite or thread member add/remove.                  |
+| `/ticket assign [user]`                | helper                              | Omit `user` to unassign.                                             |
+| `/ticket tag add \| remove <tag>`      | helper                              | Up to 10 tags per ticket.                                            |
+| `/ticket transcript [number] [format]` | opener (own ticket) or helper (any) | `format` is `html` (default) or `json`.                              |
+| `/ticket reopen <number>`              | opener or helper                    | Only within `reopenWindowHours` of close.                            |
+| `/ticket config`                       | moderator                           | View only — edit via the dashboard/API.                              |
+| `/ticket panel create ...`             | moderator                           | Slash options + a follow-up modal for title/description/button text. |
 
 ## Config keys (`tickets.*`)
 
@@ -137,4 +137,4 @@ __tests__/*.test.ts                          unit tests for every pure module ab
   `enforcer`'s services) so both the dashboard's object-shape dispatch and any in-process positional call (per
   the declared `TicketsService` type) work correctly. `apps/api/src/routes/tickets.ts` enqueues the object shape
   (`{ type, guildId, payload: { panelId }, requestedBy }` / `{ type, guildId, payload: { ticketId, closedBy,
-  reason }, requestedBy }`).
+reason }, requestedBy }`).

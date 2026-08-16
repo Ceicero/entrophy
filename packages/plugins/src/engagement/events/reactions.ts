@@ -7,7 +7,10 @@ import { countEligibleReactors, decideStarboardAction } from '../service';
 const CUSTOM_EMOJI_PATTERN = /^<a?:\w+:(\d+)>$/;
 
 /** True if the reaction's emoji matches the configured starboard emoji (unicode, or `<a?:name:id>` for a custom emoji). */
-function emojiMatches(configuredEmoji: string, reactionEmoji: { name: string | null; id: string | null }): boolean {
+function emojiMatches(
+  configuredEmoji: string,
+  reactionEmoji: { name: string | null; id: string | null },
+): boolean {
   const customMatch = CUSTOM_EMOJI_PATTERN.exec(configuredEmoji);
   if (customMatch) {
     return reactionEmoji.id === customMatch[1];
@@ -15,13 +18,21 @@ function emojiMatches(configuredEmoji: string, reactionEmoji: { name: string | n
   return reactionEmoji.name === configuredEmoji;
 }
 
-function buildStarboardEmbed(message: Message, count: number, starboard: EngagementStarboardConfig, messageContentEnabled: boolean) {
+function buildStarboardEmbed(
+  message: Message,
+  count: number,
+  starboard: EngagementStarboardConfig,
+  messageContentEnabled: boolean,
+) {
   const embed = brandEmbed()
     .setAuthor({
       name: message.author.tag ?? message.author.username,
       iconURL: message.author.displayAvatarURL(),
     })
-    .addFields({ name: `${starboard.emoji} ${count}`, value: `[Jump to message](${message.url}) in <#${message.channelId}>` });
+    .addFields({
+      name: `${starboard.emoji} ${count}`,
+      value: `[Jump to message](${message.url}) in <#${message.channelId}>`,
+    });
 
   if (messageContentEnabled && message.content) {
     embed.setDescription(truncate(message.content, EMBED_LIMITS.description));
@@ -37,7 +48,9 @@ function buildStarboardEmbed(message: Message, count: number, starboard: Engagem
   return embed;
 }
 
-async function resolveFullReaction(reaction: MessageReaction | PartialMessageReaction): Promise<MessageReaction | null> {
+async function resolveFullReaction(
+  reaction: MessageReaction | PartialMessageReaction,
+): Promise<MessageReaction | null> {
   if (!reaction.partial) return reaction;
   try {
     return await reaction.fetch();
@@ -55,7 +68,11 @@ async function resolveFullMessage(reaction: MessageReaction): Promise<Message | 
   }
 }
 
-async function handleReactionChange(ctx: PluginContext, guildId: string, rawReaction: MessageReaction | PartialMessageReaction): Promise<void> {
+async function handleReactionChange(
+  ctx: PluginContext,
+  guildId: string,
+  rawReaction: MessageReaction | PartialMessageReaction,
+): Promise<void> {
   const config = await ctx.getConfig<EngagementConfig>(guildId);
   const starboard = config.starboard;
   if (!starboard.channelId) return;
@@ -83,11 +100,19 @@ async function handleReactionChange(ctx: PluginContext, guildId: string, rawReac
   const eligibleCount = countEligibleReactors(reactorIds, authorId, starboard.ignoreSelfStar);
 
   const existing = await ctx.prisma.starboardEntry.findUnique({ where: { sourceMessageId: message.id } });
-  const action = decideStarboardAction(Boolean(existing?.starboardMessageId), existing?.starCount ?? 0, eligibleCount, starboard.threshold);
+  const action = decideStarboardAction(
+    Boolean(existing?.starboardMessageId),
+    existing?.starCount ?? 0,
+    eligibleCount,
+    starboard.threshold,
+  );
 
   if (action === 'none') {
     if (existing && existing.starCount !== eligibleCount) {
-      await ctx.prisma.starboardEntry.update({ where: { id: existing.id }, data: { starCount: eligibleCount } });
+      await ctx.prisma.starboardEntry.update({
+        where: { id: existing.id },
+        data: { starCount: eligibleCount },
+      });
     }
     return;
   }
@@ -99,9 +124,20 @@ async function handleReactionChange(ctx: PluginContext, guildId: string, rawReac
       await starChannel.messages.delete(existing.starboardMessageId).catch(() => undefined);
     }
     if (existing) {
-      await ctx.prisma.starboardEntry.update({ where: { id: existing.id }, data: { starCount: eligibleCount, starboardMessageId: null } });
+      await ctx.prisma.starboardEntry.update({
+        where: { id: existing.id },
+        data: { starCount: eligibleCount, starboardMessageId: null },
+      });
     } else {
-      await ctx.prisma.starboardEntry.create({ data: { guildId, sourceMessageId: message.id, sourceChannelId: message.channelId, authorId, starCount: eligibleCount } });
+      await ctx.prisma.starboardEntry.create({
+        data: {
+          guildId,
+          sourceMessageId: message.id,
+          sourceChannelId: message.channelId,
+          authorId,
+          starCount: eligibleCount,
+        },
+      });
     }
     return;
   }
@@ -113,10 +149,20 @@ async function handleReactionChange(ctx: PluginContext, guildId: string, rawReac
     const posted = await starChannel.send({ embeds: [embed] }).catch(() => null);
     if (!posted) return;
     if (existing) {
-      await ctx.prisma.starboardEntry.update({ where: { id: existing.id }, data: { starCount: eligibleCount, starboardMessageId: posted.id } });
+      await ctx.prisma.starboardEntry.update({
+        where: { id: existing.id },
+        data: { starCount: eligibleCount, starboardMessageId: posted.id },
+      });
     } else {
       await ctx.prisma.starboardEntry.create({
-        data: { guildId, sourceMessageId: message.id, sourceChannelId: message.channelId, authorId, starCount: eligibleCount, starboardMessageId: posted.id },
+        data: {
+          guildId,
+          sourceMessageId: message.id,
+          sourceChannelId: message.channelId,
+          authorId,
+          starCount: eligibleCount,
+          starboardMessageId: posted.id,
+        },
       });
     }
     return;
@@ -125,7 +171,10 @@ async function handleReactionChange(ctx: PluginContext, guildId: string, rawReac
   // action === 'update'
   if (existing?.starboardMessageId) {
     await starChannel.messages.edit(existing.starboardMessageId, { embeds: [embed] }).catch(() => undefined);
-    await ctx.prisma.starboardEntry.update({ where: { id: existing.id }, data: { starCount: eligibleCount } });
+    await ctx.prisma.starboardEntry.update({
+      where: { id: existing.id },
+      data: { starCount: eligibleCount },
+    });
   }
 }
 

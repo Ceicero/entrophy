@@ -59,9 +59,15 @@ export function ConfirmDialog({
         {typedConfirmationPhrase ? (
           <div className="space-y-1.5">
             <Label htmlFor="confirm-phrase">
-              Type <span className="font-mono font-semibold text-foreground">{typedConfirmationPhrase}</span> to confirm
+              Type <span className="font-mono font-semibold text-foreground">{typedConfirmationPhrase}</span>{' '}
+              to confirm
             </Label>
-            <Input id="confirm-phrase" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" />
+            <Input
+              id="confirm-phrase"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              autoComplete="off"
+            />
           </div>
         ) : null}
 
@@ -69,7 +75,11 @@ export function ConfirmDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             {cancelLabel}
           </Button>
-          <Button variant={variant === 'destructive' ? 'destructive' : 'default'} onClick={onConfirm} disabled={locked || loading}>
+          <Button
+            variant={variant === 'destructive' ? 'destructive' : 'default'}
+            onClick={onConfirm}
+            disabled={locked || loading}
+          >
             {loading ? 'Working…' : confirmLabel}
           </Button>
         </DialogFooter>

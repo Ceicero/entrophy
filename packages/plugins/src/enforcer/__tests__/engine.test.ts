@@ -170,7 +170,10 @@ describe('evaluate: scope and exemptions', () => {
   });
 
   it('only applies within scoped channels when channelIds is non-empty', () => {
-    const policy = basePolicy({ channelIds: ['other-channel'], matchers: [{ type: 'keyword', value: 'foo' }] });
+    const policy = basePolicy({
+      channelIds: ['other-channel'],
+      matchers: [{ type: 'keyword', value: 'foo' }],
+    });
     expect(evaluate(baseMessage({ content: 'foo', channelId: 'c1' }), [policy])).toHaveLength(0);
     expect(evaluate(baseMessage({ content: 'foo', channelId: 'other-channel' }), [policy])).toHaveLength(1);
   });
@@ -198,8 +201,16 @@ describe('evaluate: severity ordering', () => {
   it('returns matches highest severity first', () => {
     const message = baseMessage({ content: 'foo bar baz' });
     const low = basePolicy({ id: 'low', severity: 'LOW', matchers: [{ type: 'keyword', value: 'foo' }] });
-    const critical = basePolicy({ id: 'critical', severity: 'CRITICAL', matchers: [{ type: 'keyword', value: 'baz' }] });
-    const medium = basePolicy({ id: 'medium', severity: 'MEDIUM', matchers: [{ type: 'keyword', value: 'bar' }] });
+    const critical = basePolicy({
+      id: 'critical',
+      severity: 'CRITICAL',
+      matchers: [{ type: 'keyword', value: 'baz' }],
+    });
+    const medium = basePolicy({
+      id: 'medium',
+      severity: 'MEDIUM',
+      matchers: [{ type: 'keyword', value: 'bar' }],
+    });
 
     const matches = evaluate(message, [low, critical, medium]);
     expect(matches.map((m) => m.policyId)).toEqual(['critical', 'medium', 'low']);

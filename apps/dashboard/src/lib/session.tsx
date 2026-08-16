@@ -48,7 +48,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [queryClient]);
 
-  const status: SessionStatus = query.isLoading ? 'loading' : query.data?.user ? 'authenticated' : 'unauthenticated';
+  const status: SessionStatus = query.isLoading
+    ? 'loading'
+    : query.data?.user
+      ? 'authenticated'
+      : 'unauthenticated';
 
   const value = React.useMemo<SessionContextValue>(
     () => ({

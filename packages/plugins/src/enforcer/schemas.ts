@@ -5,7 +5,16 @@
 import { z } from 'zod';
 import { validateUserRegex } from '@entrophy/core';
 
-export const MATCHER_TYPES = ['keyword', 'phrase', 'regex', 'link_domain', 'invite', 'mention_count', 'attachment_ext', 'ai_category'] as const;
+export const MATCHER_TYPES = [
+  'keyword',
+  'phrase',
+  'regex',
+  'link_domain',
+  'invite',
+  'mention_count',
+  'attachment_ext',
+  'ai_category',
+] as const;
 export type MatcherType = (typeof MATCHER_TYPES)[number];
 
 export const ENFORCER_DECISIONS = ['warn', 'timeout', 'mute', 'kick', 'ban', 'dismiss'] as const;
@@ -26,19 +35,31 @@ export const matcherSchema = z
     switch (matcher.type) {
       case 'mention_count': {
         if (typeof matcher.value !== 'number' || !Number.isInteger(matcher.value) || matcher.value < 1) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'mention_count matchers need an integer value >= 1.', path: ['value'] });
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'mention_count matchers need an integer value >= 1.',
+            path: ['value'],
+          });
         }
         break;
       }
       case 'regex': {
         if (typeof matcher.value !== 'string' || matcher.value.length === 0) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'regex matchers need a single pattern string.', path: ['value'] });
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'regex matchers need a single pattern string.',
+            path: ['value'],
+          });
           break;
         }
         const flags = matcher.caseSensitive ? '' : 'i';
         const result = validateUserRegex(matcher.value, flags);
         if (!result.ok) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: result.error ?? 'Invalid regex pattern.', path: ['value'] });
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: result.error ?? 'Invalid regex pattern.',
+            path: ['value'],
+          });
         }
         break;
       }
@@ -51,20 +72,32 @@ export const matcherSchema = z
       case 'attachment_ext': {
         const values = Array.isArray(matcher.value) ? matcher.value : [matcher.value];
         if (values.length === 0 || values.every((v) => typeof v !== 'string' || v.trim().length === 0)) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${matcher.type} matchers need at least one non-empty value.`, path: ['value'] });
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `${matcher.type} matchers need at least one non-empty value.`,
+            path: ['value'],
+          });
         }
         break;
       }
       case 'link_domain': {
         // Empty string/array is valid here — it means "match any link" (used by the external-links pack).
         if (typeof matcher.value === 'number') {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'link_domain matchers need a string or list of domains.', path: ['value'] });
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'link_domain matchers need a string or list of domains.',
+            path: ['value'],
+          });
         }
         break;
       }
       case 'ai_category': {
         if (typeof matcher.value !== 'string' || matcher.value.trim().length === 0) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'ai_category matchers need a category name.', path: ['value'] });
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'ai_category matchers need a category name.',
+            path: ['value'],
+          });
         }
         break;
       }

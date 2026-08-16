@@ -26,39 +26,41 @@ export default function Image() {
   const cell = 14;
 
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#050505',
-          color: '#e5e5e5',
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {SKULL_ROWS.map((row, y) => (
-            <div key={y} style={{ display: 'flex' }}>
-              {row.split('').map((bit, x) => (
-                <div
-                  key={x}
-                  style={{
-                    width: cell,
-                    height: cell,
-                    backgroundColor: bit === '1' ? '#d4d4d4' : 'transparent',
-                  }}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: 40, fontSize: 96, fontWeight: 700, letterSpacing: -2, display: 'flex' }}>ENTROPHY</div>
-        <div style={{ marginTop: 20, fontSize: 34, color: '#a3a3a3', display: 'flex' }}>Discord moderation you can trust</div>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#050505',
+        color: '#e5e5e5',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {SKULL_ROWS.map((row, y) => (
+          <div key={y} style={{ display: 'flex' }}>
+            {row.split('').map((bit, x) => (
+              <div
+                key={x}
+                style={{
+                  width: cell,
+                  height: cell,
+                  backgroundColor: bit === '1' ? '#d4d4d4' : 'transparent',
+                }}
+              />
+            ))}
+          </div>
+        ))}
       </div>
-    ),
+      <div style={{ marginTop: 40, fontSize: 96, fontWeight: 700, letterSpacing: -2, display: 'flex' }}>
+        ENTROPHY
+      </div>
+      <div style={{ marginTop: 20, fontSize: 34, color: '#a3a3a3', display: 'flex' }}>
+        Discord moderation you can trust
+      </div>
+    </div>,
     { ...size },
   );
 }

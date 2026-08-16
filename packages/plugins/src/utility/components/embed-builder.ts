@@ -14,9 +14,24 @@ import {
   type ModalSubmitInteraction,
 } from 'discord.js';
 import { assertPublicHttpUrl, SsrfError } from '@entrophy/core';
-import { assertBotPermissions, brandEmbed, buildCustomId, errorEmbed, PendingStore, type ComponentContext, type ComponentHandler } from '../../sdk';
+import {
+  assertBotPermissions,
+  brandEmbed,
+  buildCustomId,
+  errorEmbed,
+  PendingStore,
+  type ComponentContext,
+  type ComponentHandler,
+} from '../../sdk';
 import { buildEmbedModal } from '../commands/embed';
-import { embedPayloadFromJson, EmbedPayloadError, isPayloadEmpty, parseColorHex, sanitizeEmbedPayload, type EmbedBuilderPayload } from '../embed-payload';
+import {
+  embedPayloadFromJson,
+  EmbedPayloadError,
+  isPayloadEmpty,
+  parseColorHex,
+  sanitizeEmbedPayload,
+  type EmbedBuilderPayload,
+} from '../embed-payload';
 
 const PENDING_TTL_SECONDS = 600;
 
@@ -35,10 +50,22 @@ function buildPreviewComponents(ownerId: string, pendingId: string) {
   const channelSelect = new ChannelSelectMenuBuilder()
     .setCustomId(buildCustomId('utility', 'embed-channel', ownerId, pendingId))
     .setPlaceholder('Send to channel…')
-    .setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread, ChannelType.AnnouncementThread);
+    .setChannelTypes(
+      ChannelType.GuildText,
+      ChannelType.GuildAnnouncement,
+      ChannelType.PublicThread,
+      ChannelType.PrivateThread,
+      ChannelType.AnnouncementThread,
+    );
 
-  const editButton = new ButtonBuilder().setCustomId(buildCustomId('utility', 'embed-edit', ownerId, pendingId)).setLabel('Edit').setStyle(ButtonStyle.Secondary);
-  const importButton = new ButtonBuilder().setCustomId(buildCustomId('utility', 'embed-import', ownerId, pendingId)).setLabel('Import JSON').setStyle(ButtonStyle.Secondary);
+  const editButton = new ButtonBuilder()
+    .setCustomId(buildCustomId('utility', 'embed-edit', ownerId, pendingId))
+    .setLabel('Edit')
+    .setStyle(ButtonStyle.Secondary);
+  const importButton = new ButtonBuilder()
+    .setCustomId(buildCustomId('utility', 'embed-import', ownerId, pendingId))
+    .setLabel('Import JSON')
+    .setStyle(ButtonStyle.Secondary);
 
   return [
     new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(channelSelect),
@@ -57,7 +84,11 @@ async function validateImageUrl(imageUrl: string | undefined): Promise<void> {
 }
 
 /** Shared by the "create" and "import" modal submit handlers: sanitize + validate, store, and reply with the preview. */
-async function finishModalSubmit(c: ComponentContext, ownerId: string, rawPayload: EmbedBuilderPayload): Promise<void> {
+async function finishModalSubmit(
+  c: ComponentContext,
+  ownerId: string,
+  rawPayload: EmbedBuilderPayload,
+): Promise<void> {
   const interaction = c.interaction as unknown as ModalSubmitInteraction<'cached'>;
 
   let payload: EmbedBuilderPayload;
@@ -168,7 +199,9 @@ const importButtonHandler: ComponentHandler = {
     const [ownerId, pendingId] = c.args;
 
     const modal = new ModalBuilder()
-      .setCustomId(buildCustomId('utility', 'embed-import-modal', ownerId as string, (pendingId as string) ?? 'new'))
+      .setCustomId(
+        buildCustomId('utility', 'embed-import-modal', ownerId as string, (pendingId as string) ?? 'new'),
+      )
       .setTitle('Import embed JSON');
 
     const jsonInput = new TextInputBuilder()
@@ -176,7 +209,9 @@ const importButtonHandler: ComponentHandler = {
       .setLabel('Embed JSON')
       .setStyle(TextInputStyle.Paragraph)
       .setRequired(true)
-      .setPlaceholder('{ "title": "...", "description": "...", "color": 5793266, "image": { "url": "..." }, "footer": { "text": "..." } }')
+      .setPlaceholder(
+        '{ "title": "...", "description": "...", "color": 5793266, "image": { "url": "..." }, "footer": { "text": "..." } }',
+      )
       .setMaxLength(4000);
 
     modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(jsonInput));
@@ -205,19 +240,34 @@ const channelSelectHandler: ComponentHandler = {
     const channel = await interaction.guild.channels.fetch(channelId).catch(() => null);
 
     if (!channel || !channel.isTextBased()) {
-      await interaction.update({ content: 'That channel is not a text channel I can send to.', embeds: [embed], components: interaction.message.components });
+      await interaction.update({
+        content: 'That channel is not a text channel I can send to.',
+        embeds: [embed],
+        components: interaction.message.components,
+      });
       return;
     }
 
     try {
-      assertBotPermissions(channel, [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks], c.t);
+      assertBotPermissions(
+        channel,
+        [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks],
+        c.t,
+      );
     } catch {
-      await interaction.update({ content: `I'm missing permissions to send in <#${channelId}>.`, embeds: [embed], components: interaction.message.components });
+      await interaction.update({
+        content: `I'm missing permissions to send in <#${channelId}>.`,
+        embeds: [embed],
+        components: interaction.message.components,
+      });
       return;
     }
 
     await channel.send({ embeds: [embed] });
-    c.ctx.logger.info({ guildId: c.guildId, channelId, userId: interaction.user.id }, 'utility: embed builder sent a message');
+    c.ctx.logger.info(
+      { guildId: c.guildId, channelId, userId: interaction.user.id },
+      'utility: embed builder sent a message',
+    );
 
     await interaction.update({ content: `Sent to <#${channelId}>.`, embeds: [embed], components: [] });
   },

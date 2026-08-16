@@ -18,7 +18,10 @@ export const suggestionSyncJob: PluginJob<Record<string, never>> = {
     });
     for (const suggestion of recentlyUpdated) {
       await syncSuggestionMessage(ctx, suggestion).catch((err) => {
-        ctx.logger.error({ err, suggestionId: suggestion.id }, 'community: suggestion-sync failed to update a message');
+        ctx.logger.error(
+          { err, suggestionId: suggestion.id },
+          'community: suggestion-sync failed to update a message',
+        );
       });
     }
   },

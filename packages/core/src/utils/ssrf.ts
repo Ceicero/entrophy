@@ -74,7 +74,10 @@ async function defaultLookup(hostname: string): Promise<LookupAddress[]> {
  * no localhost/.local/.internal hostnames, all resolved DNS addresses public (rejects private/loopback/
  * link-local/CGNAT/multicast/unspecified/metadata), and restricted to ports 80/443 unless `allowPorts` is given.
  */
-export async function assertPublicHttpUrl(url: string, options: AssertPublicHttpUrlOptions = {}): Promise<URL> {
+export async function assertPublicHttpUrl(
+  url: string,
+  options: AssertPublicHttpUrlOptions = {},
+): Promise<URL> {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -97,7 +100,12 @@ export async function assertPublicHttpUrl(url: string, options: AssertPublicHttp
   // net.isIP()/isPrivateIp()/dns.lookup() all see the bare address.
   const bareHost = hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
 
-  if (bareHost === 'localhost' || bareHost.endsWith('.localhost') || bareHost.endsWith('.local') || bareHost.endsWith('.internal')) {
+  if (
+    bareHost === 'localhost' ||
+    bareHost.endsWith('.localhost') ||
+    bareHost.endsWith('.local') ||
+    bareHost.endsWith('.internal')
+  ) {
     throw new SsrfError('Requests to local/internal hostnames are not allowed.');
   }
 

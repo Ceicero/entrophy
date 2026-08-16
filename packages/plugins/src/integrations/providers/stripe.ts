@@ -3,7 +3,10 @@ import type { IntegrationConnection } from '@entrophy/database';
 import type { PluginContext } from '../../sdk';
 import type { IntegrationProviderDef, InboundWebhookEvent } from './types';
 
-export const stripeRewardRuleSchema = z.object({ priceId: z.string().min(1), roleId: z.string().regex(/^\d{17,20}$/) });
+export const stripeRewardRuleSchema = z.object({
+  priceId: z.string().min(1),
+  roleId: z.string().regex(/^\d{17,20}$/),
+});
 export const stripeConfigSchema = z.object({
   rewards: z.array(stripeRewardRuleSchema).default([]),
 });
@@ -42,7 +45,10 @@ function firstPriceId(items: unknown): string | undefined {
  * customer.subscription.deleted to role rewards by priceId"). Returns `null` when the event type isn't one of
  * the three handled, the Discord user id is missing, or the price id doesn't match a configured rule.
  */
-export function resolveStripeRoleReward(event: StripeEventLike, rewards: StripeRewardRule[]): ResolvedStripeReward | null {
+export function resolveStripeRoleReward(
+  event: StripeEventLike,
+  rewards: StripeRewardRule[],
+): ResolvedStripeReward | null {
   const object = event.data?.object;
   if (!object) return null;
 
@@ -52,7 +58,10 @@ export function resolveStripeRoleReward(event: StripeEventLike, rewards: StripeR
   let guildId: string | null = null;
 
   if (event.type === 'checkout.session.completed') {
-    discordUserId = typeof object.client_reference_id === 'string' ? object.client_reference_id : readMetadataField(object, 'discord_user_id');
+    discordUserId =
+      typeof object.client_reference_id === 'string'
+        ? object.client_reference_id
+        : readMetadataField(object, 'discord_user_id');
     priceId = readMetadataField(object, 'priceId');
     guildId = readMetadataField(object, 'guildId') ?? null;
     action = 'add';
@@ -77,7 +86,13 @@ export function resolveStripeRoleReward(event: StripeEventLike, rewards: StripeR
   return { guildId, discordUserId, priceId, roleId: rule.roleId, action };
 }
 
-async function applyRoleReward(ctx: PluginContext, guildId: string, discordUserId: string, roleId: string, action: 'add' | 'remove'): Promise<void> {
+async function applyRoleReward(
+  ctx: PluginContext,
+  guildId: string,
+  discordUserId: string,
+  roleId: string,
+  action: 'add' | 'remove',
+): Promise<void> {
   try {
     const guild = await ctx.client.guilds.fetch(guildId);
     const member = await guild.members.fetch(discordUserId).catch(() => null);
@@ -85,23 +100,34 @@ async function applyRoleReward(ctx: PluginContext, guildId: string, discordUserI
     if (action === 'add') await member.roles.add(roleId, 'Stripe role reward');
     else await member.roles.remove(roleId, 'Stripe role reward revoked');
   } catch (err) {
-    ctx.logger.warn({ err, guildId, discordUserId, roleId, action }, 'integrations/stripe: failed to apply role reward');
+    ctx.logger.warn(
+      { err, guildId, discordUserId, roleId, action },
+      'integrations/stripe: failed to apply role reward',
+    );
   }
 }
 
 /** Stripe events arrive at one shared endpoint (no per-guild endpointId) — the guild is recovered from
  * `metadata.guildId`, which whoever creates the Checkout Session / subscription for role rewards must set. */
-async function handleStripeInbound(ctx: PluginContext, _connection: IntegrationConnection | null, event: InboundWebhookEvent): Promise<void> {
+async function handleStripeInbound(
+  ctx: PluginContext,
+  _connection: IntegrationConnection | null,
+  event: InboundWebhookEvent,
+): Promise<void> {
   const stripeEvent = event.payload as StripeEventLike;
-  const guildIdFromEvent = (stripeEvent.data?.object?.metadata as Record<string, unknown> | undefined)?.guildId;
+  const guildIdFromEvent = (stripeEvent.data?.object?.metadata as Record<string, unknown> | undefined)
+    ?.guildId;
   const candidateGuildIds: string[] = [];
   if (typeof guildIdFromEvent === 'string') candidateGuildIds.push(guildIdFromEvent);
 
   // Fall back to scanning this guild's own connection config if metadata didn't carry the guild id directly —
   // still bounded (only STRIPE connections), and only reached when the checkout/subscription metadata omitted it.
-  const connections = candidateGuildIds.length > 0
-    ? await ctx.prisma.integrationConnection.findMany({ where: { provider: 'STRIPE', guildId: { in: candidateGuildIds }, deletedAt: null } })
-    : await ctx.prisma.integrationConnection.findMany({ where: { provider: 'STRIPE', deletedAt: null } });
+  const connections =
+    candidateGuildIds.length > 0
+      ? await ctx.prisma.integrationConnection.findMany({
+          where: { provider: 'STRIPE', guildId: { in: candidateGuildIds }, deletedAt: null },
+        })
+      : await ctx.prisma.integrationConnection.findMany({ where: { provider: 'STRIPE', deletedAt: null } });
 
   for (const connection of connections) {
     const raw = (connection.config as Record<string, unknown> | null) ?? {};
@@ -109,7 +135,9 @@ async function handleStripeInbound(ctx: PluginContext, _connection: IntegrationC
     const resolved = resolveStripeRoleReward(stripeEvent, rewards);
     if (!resolved) continue;
     await applyRoleReward(ctx, connection.guildId, resolved.discordUserId, resolved.roleId, resolved.action);
-    await ctx.prisma.integrationConnection.update({ where: { id: connection.id }, data: { lastSyncAt: new Date(), lastError: null } }).catch(() => undefined);
+    await ctx.prisma.integrationConnection
+      .update({ where: { id: connection.id }, data: { lastSyncAt: new Date(), lastError: null } })
+      .catch(() => undefined);
   }
 }
 

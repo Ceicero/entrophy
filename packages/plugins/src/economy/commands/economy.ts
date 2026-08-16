@@ -1,6 +1,13 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { hasStaffLevel } from '@entrophy/core';
-import { errorEmbed, infoEmbed, listEmbed, successEmbed, type CommandContext, type PluginCommand } from '../../sdk';
+import {
+  errorEmbed,
+  infoEmbed,
+  listEmbed,
+  successEmbed,
+  type CommandContext,
+  type PluginCommand,
+} from '../../sdk';
 import type { EconomyConfig } from '../manifest';
 import { encodeStreakNote, formatCurrency, parseStreakFromNote, rollDaily, validateGive } from '../service';
 
@@ -8,26 +15,63 @@ const data = new SlashCommandBuilder()
   .setName('economy')
   .setDescription('Virtual currency — no real-money value, no purchases, no cash-out.')
   .setDMPermission(false)
-  .addSubcommand((sub) => sub.setName('balance').setDescription('Check a balance.').addUserOption((opt) => opt.setName('user').setDescription('Whose balance to check (default: you)').setRequired(false)))
+  .addSubcommand((sub) =>
+    sub
+      .setName('balance')
+      .setDescription('Check a balance.')
+      .addUserOption((opt) =>
+        opt.setName('user').setDescription('Whose balance to check (default: you)').setRequired(false),
+      ),
+  )
   .addSubcommand((sub) => sub.setName('daily').setDescription('Claim your daily reward.'))
   .addSubcommand((sub) =>
     sub
       .setName('give')
       .setDescription('Give some of your balance to another member.')
       .addUserOption((opt) => opt.setName('user').setDescription('Who to give to').setRequired(true))
-      .addIntegerOption((opt) => opt.setName('amount').setDescription('How much to give').setRequired(true).setMinValue(1)),
+      .addIntegerOption((opt) =>
+        opt.setName('amount').setDescription('How much to give').setRequired(true).setMinValue(1),
+      ),
   )
   .addSubcommand((sub) => sub.setName('leaderboard').setDescription('Show the top balances.'))
   .addSubcommand((sub) =>
     sub
       .setName('config')
       .setDescription('View or change the currency name/symbol and reward amounts.')
-      .addStringOption((opt) => opt.setName('currency-name').setDescription('Currency name, e.g. "Coins"').setRequired(false).setMaxLength(32))
-      .addStringOption((opt) => opt.setName('currency-symbol').setDescription('Currency symbol/emoji, e.g. "🪙"').setRequired(false).setMaxLength(8))
-      .addIntegerOption((opt) => opt.setName('daily-min').setDescription('Minimum daily reward').setRequired(false).setMinValue(0))
-      .addIntegerOption((opt) => opt.setName('daily-max').setDescription('Maximum daily reward').setRequired(false).setMinValue(0))
-      .addIntegerOption((opt) => opt.setName('give-min').setDescription('Minimum /economy give amount').setRequired(false).setMinValue(1))
-      .addIntegerOption((opt) => opt.setName('give-max').setDescription('Maximum /economy give amount').setRequired(false).setMinValue(1)),
+      .addStringOption((opt) =>
+        opt
+          .setName('currency-name')
+          .setDescription('Currency name, e.g. "Coins"')
+          .setRequired(false)
+          .setMaxLength(32),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('currency-symbol')
+          .setDescription('Currency symbol/emoji, e.g. "🪙"')
+          .setRequired(false)
+          .setMaxLength(8),
+      )
+      .addIntegerOption((opt) =>
+        opt.setName('daily-min').setDescription('Minimum daily reward').setRequired(false).setMinValue(0),
+      )
+      .addIntegerOption((opt) =>
+        opt.setName('daily-max').setDescription('Maximum daily reward').setRequired(false).setMinValue(0),
+      )
+      .addIntegerOption((opt) =>
+        opt
+          .setName('give-min')
+          .setDescription('Minimum /economy give amount')
+          .setRequired(false)
+          .setMinValue(1),
+      )
+      .addIntegerOption((opt) =>
+        opt
+          .setName('give-max')
+          .setDescription('Maximum /economy give amount')
+          .setRequired(false)
+          .setMinValue(1),
+      ),
   )
   .addSubcommandGroup((group) =>
     group
@@ -36,18 +80,34 @@ const data = new SlashCommandBuilder()
       .addSubcommand((sub) =>
         sub
           .setName('add')
-          .setDescription('Add to a member\'s balance.')
+          .setDescription("Add to a member's balance.")
           .addUserOption((opt) => opt.setName('user').setDescription('Who to credit').setRequired(true))
-          .addIntegerOption((opt) => opt.setName('amount').setDescription('Amount to add').setRequired(true).setMinValue(1))
-          .addStringOption((opt) => opt.setName('reason').setDescription('Reason (recorded on the transaction)').setRequired(false).setMaxLength(200)),
+          .addIntegerOption((opt) =>
+            opt.setName('amount').setDescription('Amount to add').setRequired(true).setMinValue(1),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('reason')
+              .setDescription('Reason (recorded on the transaction)')
+              .setRequired(false)
+              .setMaxLength(200),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('remove')
-          .setDescription('Remove from a member\'s balance.')
+          .setDescription("Remove from a member's balance.")
           .addUserOption((opt) => opt.setName('user').setDescription('Who to debit').setRequired(true))
-          .addIntegerOption((opt) => opt.setName('amount').setDescription('Amount to remove').setRequired(true).setMinValue(1))
-          .addStringOption((opt) => opt.setName('reason').setDescription('Reason (recorded on the transaction)').setRequired(false).setMaxLength(200)),
+          .addIntegerOption((opt) =>
+            opt.setName('amount').setDescription('Amount to remove').setRequired(true).setMinValue(1),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('reason')
+              .setDescription('Reason (recorded on the transaction)')
+              .setRequired(false)
+              .setMaxLength(200),
+          ),
       ),
   );
 
@@ -64,7 +124,12 @@ async function handleBalance(c: CommandContext): Promise<void> {
   const target = c.interaction.options.getUser('user') ?? c.interaction.user;
   const account = await getOrCreateAccount(c, target.id);
   await c.interaction.reply({
-    embeds: [infoEmbed(c.t('balanceTitle', { user: target.username }), formatCurrency(account.balance, config.currencySymbol))],
+    embeds: [
+      infoEmbed(
+        c.t('balanceTitle', { user: target.username }),
+        formatCurrency(account.balance, config.currencySymbol),
+      ),
+    ],
     ephemeral: true,
   });
 }
@@ -81,7 +146,13 @@ async function handleDaily(c: CommandContext): Promise<void> {
   });
   const priorStreak = parseStreakFromNote(lastDailyTx?.note);
 
-  const result = rollDaily({ now: new Date(), lastDailyAt: account.lastDailyAt, priorStreak, config, rng: Math.random });
+  const result = rollDaily({
+    now: new Date(),
+    lastDailyAt: account.lastDailyAt,
+    priorStreak,
+    config,
+    rng: Math.random,
+  });
   if (!result.ok) {
     const hours = Math.ceil(result.retryAfterMs / (60 * 60 * 1000));
     await c.interaction.reply({ embeds: [errorEmbed(t('dailyCooldown', { hours }))], ephemeral: true });
@@ -90,14 +161,28 @@ async function handleDaily(c: CommandContext): Promise<void> {
 
   const amount = BigInt(result.amount);
   await ctx.prisma.$transaction([
-    ctx.prisma.economyAccount.update({ where: { id: account.id }, data: { balance: { increment: amount }, lastDailyAt: new Date() } }),
+    ctx.prisma.economyAccount.update({
+      where: { id: account.id },
+      data: { balance: { increment: amount }, lastDailyAt: new Date() },
+    }),
     ctx.prisma.economyTransaction.create({
-      data: { guildId, accountId: account.id, toUserId: userId, amount, type: 'daily', note: encodeStreakNote(result.streak) },
+      data: {
+        guildId,
+        accountId: account.id,
+        toUserId: userId,
+        amount,
+        type: 'daily',
+        note: encodeStreakNote(result.streak),
+      },
     }),
   ]);
 
   await c.interaction.reply({
-    embeds: [successEmbed(t('dailyClaimed', { amount: formatCurrency(amount, config.currencySymbol), streak: result.streak }))],
+    embeds: [
+      successEmbed(
+        t('dailyClaimed', { amount: formatCurrency(amount, config.currencySymbol), streak: result.streak }),
+      ),
+    ],
     ephemeral: true,
   });
 }
@@ -131,18 +216,46 @@ async function handleGive(c: CommandContext): Promise<void> {
   const bigAmount = BigInt(amount);
 
   await ctx.prisma.$transaction([
-    ctx.prisma.economyAccount.update({ where: { id: senderAccount.id }, data: { balance: { decrement: bigAmount } } }),
-    ctx.prisma.economyAccount.update({ where: { id: targetAccount.id }, data: { balance: { increment: bigAmount } } }),
-    ctx.prisma.economyTransaction.create({ data: { guildId, accountId: senderAccount.id, fromUserId: senderId, toUserId: target.id, amount: bigAmount, type: 'give' } }),
+    ctx.prisma.economyAccount.update({
+      where: { id: senderAccount.id },
+      data: { balance: { decrement: bigAmount } },
+    }),
+    ctx.prisma.economyAccount.update({
+      where: { id: targetAccount.id },
+      data: { balance: { increment: bigAmount } },
+    }),
+    ctx.prisma.economyTransaction.create({
+      data: {
+        guildId,
+        accountId: senderAccount.id,
+        fromUserId: senderId,
+        toUserId: target.id,
+        amount: bigAmount,
+        type: 'give',
+      },
+    }),
   ]);
 
-  await c.interaction.reply({ embeds: [successEmbed(t('gave', { amount: formatCurrency(bigAmount, config.currencySymbol), user: target.username }))], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [
+      successEmbed(
+        t('gave', { amount: formatCurrency(bigAmount, config.currencySymbol), user: target.username }),
+      ),
+    ],
+    ephemeral: true,
+  });
 }
 
 async function handleLeaderboard(c: CommandContext): Promise<void> {
   const config = await c.config<EconomyConfig>();
-  const rows = await c.ctx.prisma.economyAccount.findMany({ where: { guildId: c.guildId }, orderBy: { balance: 'desc' }, take: 10 });
-  const lines = rows.map((row, i) => `**${i + 1}.** <@${row.userId}> — ${formatCurrency(row.balance, config.currencySymbol)}`);
+  const rows = await c.ctx.prisma.economyAccount.findMany({
+    where: { guildId: c.guildId },
+    orderBy: { balance: 'desc' },
+    take: 10,
+  });
+  const lines = rows.map(
+    (row, i) => `**${i + 1}.** <@${row.userId}> — ${formatCurrency(row.balance, config.currencySymbol)}`,
+  );
   await c.interaction.reply({ embeds: [listEmbed(c.t('leaderboardTitle'), lines)], ephemeral: true });
 }
 
@@ -224,7 +337,14 @@ async function handleAdminAdjust(c: CommandContext, direction: 1 | -1): Promise<
   });
 
   await interaction.reply({
-    embeds: [successEmbed(t(direction === 1 ? 'admin.added' : 'admin.removed', { amount: formatCurrency(BigInt(amount), config.currencySymbol), user: target.username }))],
+    embeds: [
+      successEmbed(
+        t(direction === 1 ? 'admin.added' : 'admin.removed', {
+          amount: formatCurrency(BigInt(amount), config.currencySymbol),
+          user: target.username,
+        }),
+      ),
+    ],
     ephemeral: true,
   });
 }
@@ -238,7 +358,10 @@ export const command: PluginCommand = {
 
     if (group === 'admin') {
       if (!hasStaffLevel(c.staffLevel, 'moderator')) {
-        await c.interaction.reply({ embeds: [errorEmbed(c.t('errors.missing_staff_level', { level: 'moderator' }))], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [errorEmbed(c.t('errors.missing_staff_level', { level: 'moderator' }))],
+          ephemeral: true,
+        });
         return;
       }
       return handleAdminAdjust(c, sub === 'add' ? 1 : -1);
@@ -250,7 +373,10 @@ export const command: PluginCommand = {
     if (sub === 'leaderboard') return handleLeaderboard(c);
     if (sub === 'config') {
       if (!hasStaffLevel(c.staffLevel, 'moderator')) {
-        await c.interaction.reply({ embeds: [errorEmbed(c.t('errors.missing_staff_level', { level: 'moderator' }))], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [errorEmbed(c.t('errors.missing_staff_level', { level: 'moderator' }))],
+          ephemeral: true,
+        });
         return;
       }
       return handleConfig(c);

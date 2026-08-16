@@ -11,7 +11,10 @@ const helpSelectHandler: ComponentHandler = {
     const interaction = c.interaction as unknown as StringSelectMenuInteraction<'cached'>;
     const pluginId = interaction.values[0] as PluginId | undefined;
     if (!pluginId) {
-      await interaction.update({ embeds: [infoEmbed('Help', 'Nothing was selected.')], components: interaction.message.components });
+      await interaction.update({
+        embeds: [infoEmbed('Help', 'Nothing was selected.')],
+        components: interaction.message.components,
+      });
       return;
     }
 
@@ -26,11 +29,17 @@ const helpSelectHandler: ComponentHandler = {
         : ['_No commands are registered for this plugin yet._'];
 
     if (catalog.degraded) {
-      lines.push('', '_(Live command details are temporarily unavailable — showing what is known from the plugin registry.)_');
+      lines.push(
+        '',
+        '_(Live command details are temporarily unavailable — showing what is known from the plugin registry.)_',
+      );
     }
 
     const title = manifest ? `${manifest.name} commands` : `${pluginId} commands`;
-    await interaction.update({ embeds: [listEmbed(title, lines)], components: interaction.message.components });
+    await interaction.update({
+      embeds: [listEmbed(title, lines)],
+      components: interaction.message.components,
+    });
   },
 };
 

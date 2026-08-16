@@ -16,7 +16,12 @@ export const plugin = definePlugin({
   manifest,
   commands: [levelCommand, repCommand, starboardCommand, tempvoiceCommand],
   components: [...levelComponents],
-  events: [messageCreateHandler, voiceStateUpdateHandler, messageReactionAddHandler, messageReactionRemoveHandler],
+  events: [
+    messageCreateHandler,
+    voiceStateUpdateHandler,
+    messageReactionAddHandler,
+    messageReactionRemoveHandler,
+  ],
   jobs: [tempVoiceSweepJob],
   async health(ctx) {
     try {

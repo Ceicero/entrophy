@@ -21,7 +21,11 @@ interface GithubRepoFields {
  * schema column for filters, and this endpoint's `events: String[]` is the one place they can live without a
  * database change.
  */
-function parseFilters(events: string[]): { allowedTypes: Set<string>; repos: Set<string>; branches: Set<string> } {
+function parseFilters(events: string[]): {
+  allowedTypes: Set<string>;
+  repos: Set<string>;
+  branches: Set<string>;
+} {
   const allowedTypes = new Set<string>();
   const repos = new Set<string>();
   const branches = new Set<string>();
@@ -39,7 +43,11 @@ function branchOf(eventType: string, payload: GithubRepoFields): string | null {
   return null;
 }
 
-async function handleGithubInbound(ctx: PluginContext, _connection: IntegrationConnection | null, event: InboundWebhookEvent): Promise<void> {
+async function handleGithubInbound(
+  ctx: PluginContext,
+  _connection: IntegrationConnection | null,
+  event: InboundWebhookEvent,
+): Promise<void> {
   if (!event.endpointId) return;
   const endpoint = await ctx.prisma.webhookEndpoint.findUnique({ where: { id: event.endpointId } });
   if (!endpoint || !endpoint.enabled || endpoint.deletedAt) return;
@@ -62,7 +70,10 @@ async function handleGithubInbound(ctx: PluginContext, _connection: IntegrationC
   if (!embed || !endpoint.channelId) return;
 
   await postAlert(ctx, { guildId: endpoint.guildId, channelId: endpoint.channelId }, embed);
-  await ctx.prisma.webhookEndpoint.update({ where: { id: endpoint.id }, data: { lastDeliveryAt: new Date() } });
+  await ctx.prisma.webhookEndpoint.update({
+    where: { id: endpoint.id },
+    data: { lastDeliveryAt: new Date() },
+  });
 }
 
 export const githubProvider: IntegrationProviderDef = {

@@ -16,7 +16,8 @@ import type { ComponentContext, ComponentHandler, PluginContext } from './types'
 
 const DEFAULT_TTL_SECONDS = 60;
 
-export type ConfirmationInteraction = ChatInputCommandInteraction<'cached'> | ContextMenuCommandInteraction<'cached'>;
+export type ConfirmationInteraction =
+  ChatInputCommandInteraction<'cached'> | ContextMenuCommandInteraction<'cached'>;
 
 export interface RequestConfirmationOptions<T> {
   interaction: ConfirmationInteraction;
@@ -44,8 +45,20 @@ export interface ConfirmationResult<T> {
  * Non-fast-actions path replies ephemerally with `embed` plus Confirm/Cancel buttons and stores `payload` in
  * Redis (via `PendingStore`) keyed by a short id embedded in both custom ids.
  */
-export async function requestConfirmation<T>(options: RequestConfirmationOptions<T>): Promise<ConfirmationResult<T>> {
-  const { interaction, ctx, pluginId, action, ownerId, embed, payload, ttlSec = DEFAULT_TTL_SECONDS, fastActions } = options;
+export async function requestConfirmation<T>(
+  options: RequestConfirmationOptions<T>,
+): Promise<ConfirmationResult<T>> {
+  const {
+    interaction,
+    ctx,
+    pluginId,
+    action,
+    ownerId,
+    embed,
+    payload,
+    ttlSec = DEFAULT_TTL_SECONDS,
+    fastActions,
+  } = options;
 
   if (fastActions) {
     return { confirmed: true, payload };
@@ -111,7 +124,11 @@ export function registerConfirmHandlers<T = unknown>(
       const disabledRows = disableAllButtons(interaction.message.components);
 
       if (payload === null) {
-        await interaction.update({ content: 'This confirmation has expired. Please run the command again.', embeds: [], components: disabledRows });
+        await interaction.update({
+          content: 'This confirmation has expired. Please run the command again.',
+          embeds: [],
+          components: disabledRows,
+        });
         return;
       }
 

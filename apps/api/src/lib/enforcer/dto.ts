@@ -1,7 +1,12 @@
 // Maps Prisma rows to `@entrophy/types/enforcer` DTOs, mirroring the convention in `apps/api/src/lib/dto.ts`
 // (kept in a separate file under our ownership rather than editing the shared one).
 import type { EnforcerPolicy, EnforcerRecord } from '@entrophy/database';
-import type { EnforcerMatcherDto, EnforcerPolicyDto, EnforcerRecordDto, EnforcerSettingsDto } from '@entrophy/types';
+import type {
+  EnforcerMatcherDto,
+  EnforcerPolicyDto,
+  EnforcerRecordDto,
+  EnforcerSettingsDto,
+} from '@entrophy/types';
 import type { EnforcerConfig } from '@entrophy/plugins/enforcer/manifest';
 
 export function toEnforcerPolicyDto(row: EnforcerPolicy): EnforcerPolicyDto {

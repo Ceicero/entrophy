@@ -16,7 +16,10 @@ export const reminderSweepJob: PluginJob<Record<string, never>> = {
     });
     for (const reminder of overdue) {
       await deliverReminder(ctx, reminder.id).catch((err) => {
-        ctx.logger.error({ err, reminderId: reminder.id }, 'community: reminder-sweep failed to deliver a reminder');
+        ctx.logger.error(
+          { err, reminderId: reminder.id },
+          'community: reminder-sweep failed to deliver a reminder',
+        );
       });
     }
   },

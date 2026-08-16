@@ -23,7 +23,10 @@ export function CodeBlock({ className, code, language, copyable = true, ...props
   }, [code]);
 
   return (
-    <div className={cn('group relative overflow-hidden rounded-md border border-border bg-muted', className)} {...props}>
+    <div
+      className={cn('group relative overflow-hidden rounded-md border border-border bg-muted', className)}
+      {...props}
+    >
       {copyable ? (
         <IconButton
           label={copied ? 'Copied' : 'Copy code'}

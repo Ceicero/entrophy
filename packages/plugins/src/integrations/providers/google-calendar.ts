@@ -13,12 +13,22 @@ export const googleCalendarConfigSchema = z.object({
   // with the other alert-style providers' commands; the dashboard leaves it blank.
   target: z.string().max(200).nullable().optional().default(''),
   channelId: z.string().regex(/^\d{17,20}$/),
-  roleId: z.string().regex(/^\d{17,20}$/).nullable().optional(),
+  roleId: z
+    .string()
+    .regex(/^\d{17,20}$/)
+    .nullable()
+    .optional(),
   template: z.string().max(300).nullable().optional(),
 });
 
 interface GoogleEventsResponse {
-  items?: { id: string; summary?: string; htmlLink?: string; start?: { dateTime?: string; date?: string }; location?: string }[];
+  items?: {
+    id: string;
+    summary?: string;
+    htmlLink?: string;
+    start?: { dateTime?: string; date?: string };
+    location?: string;
+  }[];
 }
 
 function eventEmbed(item: NonNullable<GoogleEventsResponse['items']>[number]): AlertEmbedData {
@@ -29,7 +39,9 @@ function eventEmbed(item: NonNullable<GoogleEventsResponse['items']>[number]): A
     url: item.htmlLink,
     description: startTs ? `Starts <t:${startTs}:F> (<t:${startTs}:R>)` : 'Upcoming event',
     color: GOOGLE_BLUE,
-    fields: item.location ? [{ name: 'Location', value: truncate(item.location, EMBED_LIMITS.fieldValue) }] : [],
+    fields: item.location
+      ? [{ name: 'Location', value: truncate(item.location, EMBED_LIMITS.fieldValue) }]
+      : [],
     footer: 'Google Calendar',
   };
 }
@@ -44,7 +56,11 @@ export const googleCalendarProvider: IntegrationProviderDef = {
   async poll(ctx, connection) {
     const accessToken = await getValidAccessToken(ctx, 'google_calendar', connection);
     if (!accessToken) {
-      await markConnectionError(ctx, connection.id, 'Google Calendar is not authorized (connect again from the dashboard).');
+      await markConnectionError(
+        ctx,
+        connection.id,
+        'Google Calendar is not authorized (connect again from the dashboard).',
+      );
       return;
     }
 
@@ -58,9 +74,12 @@ export const googleCalendarProvider: IntegrationProviderDef = {
       orderBy: 'startTime',
     });
 
-    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
     if (!res.ok) {
       await markConnectionError(ctx, connection.id, `Google Calendar request failed (${res.status}).`);
       return;

@@ -9,15 +9,15 @@ redaction, retention, and a searchable dashboard audit log. Default enabled (Dis
 All under `/logs` (`ModerateMembers` required by default to see the command; `set`/`disable`/`retention`/`redact`
 require `admin` staff level, checked internally):
 
-| Command | Staff level | What it does |
-|---|---|---|
-| `/logs set <kind> <channel>` | admin | Routes a kind (or `default`) to a channel; also re-enables that kind if it was disabled |
-| `/logs disable <kind>` | admin | Stops logging a kind; keeps its channel mapping for later |
-| `/logs status` | moderator | Shows the kind → channel table, storage/retention/redaction settings, and privileged-intent status |
-| `/logs retention <days>` | admin | Sets this plugin's own `LogEvent` retention window |
-| `/logs redact add\|remove\|list <regex>` | admin | Manages custom redaction patterns (validated with `validateUserRegex`) |
-| `/logs test <kind>` | moderator | Sends a sample entry through the real log/redact/store pipeline |
-| `/logs search user:<user> [kind] [since]` | moderator | Ephemeral, paginated search of stored `LogEvent` rows |
+| Command                                   | Staff level | What it does                                                                                       |
+| ----------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------- |
+| `/logs set <kind> <channel>`              | admin       | Routes a kind (or `default`) to a channel; also re-enables that kind if it was disabled            |
+| `/logs disable <kind>`                    | admin       | Stops logging a kind; keeps its channel mapping for later                                          |
+| `/logs status`                            | moderator   | Shows the kind → channel table, storage/retention/redaction settings, and privileged-intent status |
+| `/logs retention <days>`                  | admin       | Sets this plugin's own `LogEvent` retention window                                                 |
+| `/logs redact add\|remove\|list <regex>`  | admin       | Manages custom redaction patterns (validated with `validateUserRegex`)                             |
+| `/logs test <kind>`                       | moderator   | Sends a sample entry through the real log/redact/store pipeline                                    |
+| `/logs search user:<user> [kind] [since]` | moderator   | Ephemeral, paginated search of stored `LogEvent` rows                                              |
 
 ## Config keys (`configSchema`, all defaulted)
 
@@ -30,12 +30,12 @@ require `admin` staff level, checked internally):
 
 ## Permissions (why, and fallback if missing)
 
-| Permission | Feature | Optional | Fallback |
-|---|---|---|---|
-| View Channel, Send Messages | Posting log embeds | No | That channel's logs are skipped and an error is logged |
-| Embed Links | Rich log embeds | No | Discord blocks the send entirely; the embed is dropped |
-| Read Message History | Live edit/delete diffing | Yes | Falls back to cached data only |
-| Manage Guild | Invite-use attribution (`invite.use`) | Yes | Member joins still logged, just without which invite was used |
+| Permission                  | Feature                               | Optional | Fallback                                                      |
+| --------------------------- | ------------------------------------- | -------- | ------------------------------------------------------------- |
+| View Channel, Send Messages | Posting log embeds                    | No       | That channel's logs are skipped and an error is logged        |
+| Embed Links                 | Rich log embeds                       | No       | Discord blocks the send entirely; the embed is dropped        |
+| Read Message History        | Live edit/delete diffing              | Yes      | Falls back to cached data only                                |
+| Manage Guild                | Invite-use attribution (`invite.use`) | Yes      | Member joins still logged, just without which invite was used |
 
 ## Privileged intents
 

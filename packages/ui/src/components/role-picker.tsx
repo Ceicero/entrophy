@@ -23,9 +23,21 @@ export interface RolePickerProps {
 const NONE = '__none__';
 
 /** Select over provided Discord role options. */
-export function RolePicker({ options, value, onChange, placeholder = 'Select a role', allowNone = true, noneLabel = 'None', disabled }: RolePickerProps) {
+export function RolePicker({
+  options,
+  value,
+  onChange,
+  placeholder = 'Select a role',
+  allowNone = true,
+  noneLabel = 'None',
+  disabled,
+}: RolePickerProps) {
   return (
-    <Select value={value ?? NONE} onValueChange={(next) => onChange(next === NONE ? null : next)} disabled={disabled}>
+    <Select
+      value={value ?? NONE}
+      onValueChange={(next) => onChange(next === NONE ? null : next)}
+      disabled={disabled}
+    >
       <SelectTrigger>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>

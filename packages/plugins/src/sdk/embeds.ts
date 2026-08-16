@@ -1,9 +1,12 @@
 import { EmbedBuilder } from 'discord.js';
-import { BRAND, EMBED_LIMITS, truncate } from '@entrophy/core';
+import { BRAND, EMBED_LIMITS, brandIconUrl, env, truncate } from '@entrophy/core';
 
-/** A bare embed pre-set to the platform brand color and footer, timestamped. */
+/** A bare embed pre-set to the platform brand color and footer (with the brand icon when `WEB_URL` is set), timestamped. */
 export function brandEmbed(): EmbedBuilder {
-  return new EmbedBuilder().setColor(BRAND.color).setFooter({ text: BRAND.name }).setTimestamp();
+  return new EmbedBuilder()
+    .setColor(BRAND.color)
+    .setFooter({ text: BRAND.name, iconURL: brandIconUrl(env) })
+    .setTimestamp();
 }
 
 /** A green-accented success embed with `text` as its description. */

@@ -1,7 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import { Button, Card, CardContent, CardHeader, CardTitle, FormField, Input, Skeleton, useToast } from '@entrophy/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  FormField,
+  Input,
+  Skeleton,
+  useToast,
+} from '@entrophy/ui';
 import type { EngagementConfigDto } from '@entrophy/types/engagement';
 import { useEngagementConfig, useUpdateEngagementConfig } from '../../lib/engagement-queries';
 import { DiscordChannelSelect } from '../discord-selects';
@@ -21,7 +31,10 @@ export function TempVoiceTab({ guildId }: { guildId: string }) {
     if (data) setDraft(data.tempVoice);
   }, [data]);
 
-  function set<K extends keyof EngagementConfigDto['tempVoice']>(key: K, value: EngagementConfigDto['tempVoice'][K]) {
+  function set<K extends keyof EngagementConfigDto['tempVoice']>(
+    key: K,
+    value: EngagementConfigDto['tempVoice'][K],
+  ) {
     setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
 
@@ -32,7 +45,11 @@ export function TempVoiceTab({ guildId }: { guildId: string }) {
       {
         onSuccess: () => toast({ title: 'Temp voice settings saved', variant: 'success' }),
         onError: (err) =>
-          toast({ title: 'Could not save', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+          toast({
+            title: 'Could not save',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -57,20 +74,45 @@ export function TempVoiceTab({ guildId }: { guildId: string }) {
           </p>
         ) : null}
 
-        <FormField label="Hub channels" hint="Members who join one of these voice channels get their own temporary channel.">
-          <MultiChannelPicker guildId={guildId} value={draft.hubChannelIds} onChange={(v) => set('hubChannelIds', v)} filterType={VOICE_CHANNEL_TYPE} />
+        <FormField
+          label="Hub channels"
+          hint="Members who join one of these voice channels get their own temporary channel."
+        >
+          <MultiChannelPicker
+            guildId={guildId}
+            value={draft.hubChannelIds}
+            onChange={(v) => set('hubChannelIds', v)}
+            filterType={VOICE_CHANNEL_TYPE}
+          />
         </FormField>
 
-        <FormField label="Category" hint="New channels are created under this category. Leave empty to use the hub's own category.">
+        <FormField
+          label="Category"
+          hint="New channels are created under this category. Leave empty to use the hub's own category."
+        >
           <CategoryPicker guildId={guildId} value={draft.categoryId} onChange={(v) => set('categoryId', v)} />
         </FormField>
 
         <FormField label="Name template" hint="{user} is replaced with the creator's display name.">
-          <Input value={draft.nameTemplate} onChange={(e) => set('nameTemplate', e.target.value)} maxLength={100} />
+          <Input
+            value={draft.nameTemplate}
+            onChange={(e) => set('nameTemplate', e.target.value)}
+            maxLength={100}
+          />
         </FormField>
 
-        <FormField label="Default user limit" hint="0 = no limit. The channel owner can change this per-channel with /tempvoice limit.">
-          <Input type="number" min={0} max={99} value={draft.userLimit} onChange={(e) => set('userLimit', Number(e.target.value))} className="w-32" />
+        <FormField
+          label="Default user limit"
+          hint="0 = no limit. The channel owner can change this per-channel with /tempvoice limit."
+        >
+          <Input
+            type="number"
+            min={0}
+            max={99}
+            value={draft.userLimit}
+            onChange={(e) => set('userLimit', Number(e.target.value))}
+            className="w-32"
+          />
         </FormField>
       </CardContent>
     </Card>
@@ -82,6 +124,21 @@ export function TempVoiceTab({ guildId }: { guildId: string }) {
  * categories only — acceptable since picking a non-category id here just fails validation server-side
  * (Discord rejects a non-category `parent`), and the hint text tells the admin what to pick.
  */
-function CategoryPicker({ guildId, value, onChange }: { guildId: string; value: string | null; onChange: (next: string | null) => void }) {
-  return <DiscordChannelSelect guildId={guildId} value={value} onChange={onChange} placeholder="Same as hub's category" />;
+function CategoryPicker({
+  guildId,
+  value,
+  onChange,
+}: {
+  guildId: string;
+  value: string | null;
+  onChange: (next: string | null) => void;
+}) {
+  return (
+    <DiscordChannelSelect
+      guildId={guildId}
+      value={value}
+      onChange={onChange}
+      placeholder="Same as hub's category"
+    />
+  );
 }

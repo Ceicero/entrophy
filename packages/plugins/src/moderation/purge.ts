@@ -9,7 +9,10 @@ export function validatePurgeCount(requested: number, purgeMax: number): PurgeVa
     return { ok: false, error: 'Purge count must be between 1 and 100 (Discord bulk-delete limit).' };
   }
   if (requested > purgeMax) {
-    return { ok: false, error: `This server's configured purge limit is ${purgeMax}. Lower the count or raise the limit in settings.` };
+    return {
+      ok: false,
+      error: `This server's configured purge limit is ${purgeMax}. Lower the count or raise the limit in settings.`,
+    };
   }
   return { ok: true, count: requested };
 }
@@ -37,11 +40,15 @@ const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
  * author, and optional case-insensitive content substring, then takes at most `limit`. Kept separate from any
  * discord.js `Collection`/fetch call so it's unit-testable without a live gateway connection.
  */
-export function filterMessagesForPurge(messages: PurgeCandidateMessage[], options: PurgeFilterOptions): PurgeCandidateMessage[] {
+export function filterMessagesForPurge(
+  messages: PurgeCandidateMessage[],
+  options: PurgeFilterOptions,
+): PurgeCandidateMessage[] {
   const filtered = messages.filter((message) => {
     if (message.ageMs >= FOURTEEN_DAYS_MS) return false;
     if (options.userId && message.authorId !== options.userId) return false;
-    if (options.contains && !(message.content ?? '').toLowerCase().includes(options.contains.toLowerCase())) return false;
+    if (options.contains && !(message.content ?? '').toLowerCase().includes(options.contains.toLowerCase()))
+      return false;
     return true;
   });
   return filtered.slice(0, options.limit);

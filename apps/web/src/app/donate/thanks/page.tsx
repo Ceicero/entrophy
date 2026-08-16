@@ -19,8 +19,8 @@ export default function DonateThanksPage() {
       <Glass className="mx-auto max-w-lg p-10 text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-grey-7">Thank you</h1>
         <p className="mt-4 text-sm leading-relaxed text-grey-3">
-          Your donation helps keep Entrophy&apos;s hosting and development running. If your card was charged, you&apos;ll see a receipt
-          from Stripe in your inbox.
+          Your donation helps keep Entrophy&apos;s hosting and development running. If your card was charged,
+          you&apos;ll see a receipt from Stripe in your inbox.
         </p>
         <div className="mt-8">
           <ButtonLink href="/" variant="outline">

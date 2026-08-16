@@ -16,7 +16,8 @@ export const POLICY_PACKS: PolicyPack[] = [
   {
     key: 'invites',
     name: 'Discord invite links',
-    description: 'Flags messages containing a Discord server invite link (discord.gg / discord.com/invite / discordapp.com/invite).',
+    description:
+      'Flags messages containing a Discord server invite link (discord.gg / discord.com/invite / discordapp.com/invite).',
     severity: 'MEDIUM',
     matchers: [{ type: 'invite', value: 'discord-invite' }],
     suggestedAction: 'warn',
@@ -38,7 +39,14 @@ export const POLICY_PACKS: PolicyPack[] = [
     matchers: [
       {
         type: 'link_domain',
-        value: ['discord-nitro.com', 'discordnitro.gift', 'discordapp-gift.com', 'discocrd.com', 'steamcommunlty.com', 'steamcommunnity.com'],
+        value: [
+          'discord-nitro.com',
+          'discordnitro.gift',
+          'discordapp-gift.com',
+          'discocrd.com',
+          'steamcommunlty.com',
+          'steamcommunnity.com',
+        ],
       },
     ],
     suggestedAction: 'timeout',

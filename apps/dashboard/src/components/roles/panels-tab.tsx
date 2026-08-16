@@ -31,19 +31,39 @@ import {
   Textarea,
   useToast,
 } from '@entrophy/ui';
-import { useRolePanels, useCreateRolePanel, useUpdateRolePanel, useDeleteRolePanel, usePostRolePanel, type RolePanelInput, type RolePanelOptionInput } from '../../lib/roles-queries';
+import {
+  useRolePanels,
+  useCreateRolePanel,
+  useUpdateRolePanel,
+  useDeleteRolePanel,
+  usePostRolePanel,
+  type RolePanelInput,
+  type RolePanelOptionInput,
+} from '../../lib/roles-queries';
 import { DiscordChannelSelect, DiscordRoleSelect } from '../discord-selects';
 import { ErrorState } from '../error-state';
 import { ApiClientError } from '../../lib/api';
 
-const STYLE_LABEL: Record<string, string> = { BUTTONS: 'Buttons', SELECT: 'Select menu', REACTIONS: 'Reactions' };
+const STYLE_LABEL: Record<string, string> = {
+  BUTTONS: 'Buttons',
+  SELECT: 'Select menu',
+  REACTIONS: 'Reactions',
+};
 
 function emptyOption(): RolePanelOptionInput {
   return { roleId: '', label: '', emoji: '', description: '' };
 }
 
 function emptyForm(): RolePanelInput {
-  return { channelId: '', title: '', description: '', style: 'BUTTONS', groupId: null, maxSelections: null, options: [emptyOption()] };
+  return {
+    channelId: '',
+    title: '',
+    description: '',
+    style: 'BUTTONS',
+    groupId: null,
+    maxSelections: null,
+    options: [emptyOption()],
+  };
 }
 
 export function PanelsTab({ guildId, groups }: { guildId: string; groups: RoleGroupDto[] }) {
@@ -73,13 +93,24 @@ export function PanelsTab({ guildId, groups }: { guildId: string; groups: RoleGr
       style: panel.mode === 'button' ? 'BUTTONS' : panel.mode === 'select' ? 'SELECT' : 'REACTIONS',
       groupId: null,
       maxSelections: panel.maxSelections,
-      options: panel.options.length > 0 ? panel.options.map((o) => ({ roleId: o.roleId, label: o.label, emoji: o.emoji ?? '', description: o.description ?? '' })) : [emptyOption()],
+      options:
+        panel.options.length > 0
+          ? panel.options.map((o) => ({
+              roleId: o.roleId,
+              label: o.label,
+              emoji: o.emoji ?? '',
+              description: o.description ?? '',
+            }))
+          : [emptyOption()],
     });
     setDialogOpen(true);
   }
 
   function setOption(index: number, patch: Partial<RolePanelOptionInput>) {
-    setForm((prev) => ({ ...prev, options: prev.options.map((o, i) => (i === index ? { ...o, ...patch } : o)) }));
+    setForm((prev) => ({
+      ...prev,
+      options: prev.options.map((o, i) => (i === index ? { ...o, ...patch } : o)),
+    }));
   }
 
   function addOption() {
@@ -102,7 +133,12 @@ export function PanelsTab({ guildId, groups }: { guildId: string; groups: RoleGr
         toast({ title: editingId ? 'Panel updated' : 'Panel created', variant: 'success' });
         setDialogOpen(false);
       },
-      onError: (err: unknown) => toast({ title: 'Could not save the panel', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onError: (err: unknown) =>
+        toast({
+          title: 'Could not save the panel',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     };
     if (editingId) {
       updatePanel.mutate({ panelId: editingId, ...payload }, onSettled);
@@ -113,8 +149,14 @@ export function PanelsTab({ guildId, groups }: { guildId: string; groups: RoleGr
 
   function handlePost(panelId: string) {
     postPanel.mutate(panelId, {
-      onSuccess: () => toast({ title: 'Posting queued — check the channel in a few seconds.', variant: 'success' }),
-      onError: (err) => toast({ title: 'Could not post the panel', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onSuccess: () =>
+        toast({ title: 'Posting queued — check the channel in a few seconds.', variant: 'success' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not post the panel',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -134,7 +176,10 @@ export function PanelsTab({ guildId, groups }: { guildId: string; groups: RoleGr
       </div>
 
       {!panels || panels.length === 0 ? (
-        <EmptyState title="No role panels yet" description="Create one so members can pick their own roles." />
+        <EmptyState
+          title="No role panels yet"
+          description="Create one so members can pick their own roles."
+        />
       ) : (
         <Table>
           <TableHeader>
@@ -151,19 +196,43 @@ export function PanelsTab({ guildId, groups }: { guildId: string; groups: RoleGr
             {panels.map((panel) => (
               <TableRow key={panel.id}>
                 <TableCell className="font-medium">{panel.title}</TableCell>
-                <TableCell>{STYLE_LABEL[panel.mode === 'button' ? 'BUTTONS' : panel.mode === 'select' ? 'SELECT' : 'REACTIONS']}</TableCell>
-                <TableCell>{panel.channelId ? <code className="text-xs">{panel.channelId}</code> : '—'}</TableCell>
+                <TableCell>
+                  {
+                    STYLE_LABEL[
+                      panel.mode === 'button' ? 'BUTTONS' : panel.mode === 'select' ? 'SELECT' : 'REACTIONS'
+                    ]
+                  }
+                </TableCell>
+                <TableCell>
+                  {panel.channelId ? <code className="text-xs">{panel.channelId}</code> : '—'}
+                </TableCell>
                 <TableCell>{panel.options.length}</TableCell>
-                <TableCell>{panel.messageId ? <Badge variant="secondary">Posted</Badge> : <Badge variant="outline">Not posted</Badge>}</TableCell>
+                <TableCell>
+                  {panel.messageId ? (
+                    <Badge variant="secondary">Posted</Badge>
+                  ) : (
+                    <Badge variant="outline">Not posted</Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
-                    <Button size="sm" variant="outline" onClick={() => handlePost(panel.id)} disabled={postPanel.isPending}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handlePost(panel.id)}
+                      disabled={postPanel.isPending}
+                    >
                       <Send className="mr-1 h-3.5 w-3.5" /> Post
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => openEdit(panel)}>
                       Edit
                     </Button>
-                    <IconButton label="Delete panel" size="sm" variant="outline" onClick={() => handleDelete(panel.id)}>
+                    <IconButton
+                      label="Delete panel"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDelete(panel.id)}
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </IconButton>
                   </div>
@@ -183,10 +252,17 @@ export function PanelsTab({ guildId, groups }: { guildId: string; groups: RoleGr
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField label="Title">
-                <Input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} maxLength={100} />
+                <Input
+                  value={form.title}
+                  onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                  maxLength={100}
+                />
               </FormField>
               <FormField label="Style">
-                <Select value={form.style} onValueChange={(v) => setForm((p) => ({ ...p, style: v as RolePanelInput['style'] }))}>
+                <Select
+                  value={form.style}
+                  onValueChange={(v) => setForm((p) => ({ ...p, style: v as RolePanelInput['style'] }))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -200,15 +276,30 @@ export function PanelsTab({ guildId, groups }: { guildId: string; groups: RoleGr
             </div>
 
             <FormField label="Description" hint="Optional, shown above the options in the posted embed.">
-              <Textarea value={form.description ?? ''} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} maxLength={2000} rows={2} />
+              <Textarea
+                value={form.description ?? ''}
+                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                maxLength={2000}
+                rows={2}
+              />
             </FormField>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField label="Channel">
-                <DiscordChannelSelect guildId={guildId} value={form.channelId || null} onChange={(v) => setForm((p) => ({ ...p, channelId: v ?? '' }))} />
+                <DiscordChannelSelect
+                  guildId={guildId}
+                  value={form.channelId || null}
+                  onChange={(v) => setForm((p) => ({ ...p, channelId: v ?? '' }))}
+                />
               </FormField>
-              <FormField label="Group (optional)" hint="Exclusive / max-selection rules shared across panels.">
-                <Select value={form.groupId ?? '__none__'} onValueChange={(v) => setForm((p) => ({ ...p, groupId: v === '__none__' ? null : v }))}>
+              <FormField
+                label="Group (optional)"
+                hint="Exclusive / max-selection rules shared across panels."
+              >
+                <Select
+                  value={form.groupId ?? '__none__'}
+                  onValueChange={(v) => setForm((p) => ({ ...p, groupId: v === '__none__' ? null : v }))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="No group" />
                   </SelectTrigger>
@@ -230,7 +321,12 @@ export function PanelsTab({ guildId, groups }: { guildId: string; groups: RoleGr
                 min={0}
                 max={25}
                 value={form.maxSelections ?? ''}
-                onChange={(e) => setForm((p) => ({ ...p, maxSelections: e.target.value === '' ? null : Number(e.target.value) }))}
+                onChange={(e) =>
+                  setForm((p) => ({
+                    ...p,
+                    maxSelections: e.target.value === '' ? null : Number(e.target.value),
+                  }))
+                }
               />
             </FormField>
 
@@ -243,26 +339,54 @@ export function PanelsTab({ guildId, groups }: { guildId: string; groups: RoleGr
               </div>
               <div className="space-y-2">
                 {form.options.map((option, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_1fr_4rem_1fr_auto] items-end gap-2 rounded-md border border-border p-2">
+                  <div
+                    key={i}
+                    className="grid grid-cols-[1fr_1fr_4rem_1fr_auto] items-end gap-2 rounded-md border border-border p-2"
+                  >
                     <FormField label="Role">
-                      <DiscordRoleSelect guildId={guildId} value={option.roleId || null} onChange={(v) => setOption(i, { roleId: v ?? '' })} />
+                      <DiscordRoleSelect
+                        guildId={guildId}
+                        value={option.roleId || null}
+                        onChange={(v) => setOption(i, { roleId: v ?? '' })}
+                      />
                     </FormField>
                     <FormField label="Label">
-                      <Input value={option.label} onChange={(e) => setOption(i, { label: e.target.value })} maxLength={80} />
+                      <Input
+                        value={option.label}
+                        onChange={(e) => setOption(i, { label: e.target.value })}
+                        maxLength={80}
+                      />
                     </FormField>
                     <FormField label="Emoji">
-                      <Input value={option.emoji ?? ''} onChange={(e) => setOption(i, { emoji: e.target.value })} maxLength={64} />
+                      <Input
+                        value={option.emoji ?? ''}
+                        onChange={(e) => setOption(i, { emoji: e.target.value })}
+                        maxLength={64}
+                      />
                     </FormField>
                     <FormField label="Description">
-                      <Input value={option.description ?? ''} onChange={(e) => setOption(i, { description: e.target.value })} maxLength={200} />
+                      <Input
+                        value={option.description ?? ''}
+                        onChange={(e) => setOption(i, { description: e.target.value })}
+                        maxLength={200}
+                      />
                     </FormField>
-                    <IconButton label="Remove option" variant="outline" onClick={() => removeOption(i)} disabled={form.options.length <= 1}>
+                    <IconButton
+                      label="Remove option"
+                      variant="outline"
+                      onClick={() => removeOption(i)}
+                      disabled={form.options.length <= 1}
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </IconButton>
                   </div>
                 ))}
               </div>
-              {form.style === 'REACTIONS' ? <p className="text-xs text-muted-foreground">Reaction-style panels need an emoji on every option.</p> : null}
+              {form.style === 'REACTIONS' ? (
+                <p className="text-xs text-muted-foreground">
+                  Reaction-style panels need an emoji on every option.
+                </p>
+              ) : null}
             </div>
           </div>
 

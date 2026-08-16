@@ -3,7 +3,10 @@
 // but the decisions (is this role safe to assign? what should the message say?) come from engine.ts.
 import type { Guild, GuildMember, Role, TextBasedChannel } from 'discord.js';
 import { NotFoundError, truncate } from '@entrophy/core';
-import type { RolesService, VerificationDecisionInput as SdkVerificationDecisionInput } from '../sdk/services';
+import type {
+  RolesService,
+  VerificationDecisionInput as SdkVerificationDecisionInput,
+} from '../sdk/services';
 import { errorEmbed, resolveTextChannel, safeDm, successEmbed, type PluginContext } from '../sdk';
 import {
   checkRoleAssignable,
@@ -19,7 +22,10 @@ async function getRolesConfig(ctx: PluginContext, guildId: string): Promise<Role
   return ctx.getConfig<RolesConfig>(guildId);
 }
 
-function templateVarsFor(member: { id: string; user: { tag?: string; username: string } }, guild: Guild): TemplateVars {
+function templateVarsFor(
+  member: { id: string; user: { tag?: string; username: string } },
+  guild: Guild,
+): TemplateVars {
   const tag = member.user.tag ?? member.user.username;
   return {
     user: tag,
@@ -65,17 +71,25 @@ export function filterAssignableRoles(
 }
 
 function assignabilityMessage(reason: 'elevated' | 'managed' | 'hierarchy'): string {
-  if (reason === 'elevated') return 'This role grants an elevated permission and elevated roles are not allowed here.';
-  if (reason === 'managed') return 'This role is managed by an integration/bot and cannot be assigned manually.';
+  if (reason === 'elevated')
+    return 'This role grants an elevated permission and elevated roles are not allowed here.';
+  if (reason === 'managed')
+    return 'This role is managed by an integration/bot and cannot be assigned manually.';
   return "This role is at or above the bot's own highest role, so the bot can't assign it.";
 }
 
 /** Renders `section` of the welcome/goodbye config for `member` in `guild`; returns null if that section is disabled or has nothing to send. */
-export function renderWelcomeGoodbye(section: WelcomeGoodbyeConfig, member: { id: string; user: { tag?: string; username: string } }, guild: Guild) {
+export function renderWelcomeGoodbye(
+  section: WelcomeGoodbyeConfig,
+  member: { id: string; user: { tag?: string; username: string } },
+  guild: Guild,
+) {
   if (!section.enabled) return null;
   const vars = templateVarsFor(member, guild);
   const content = section.message ? renderTemplate(section.message, vars) : undefined;
-  const embed = section.embed ? (renderTemplateDeep(section.embed, vars) as Record<string, unknown>) : undefined;
+  const embed = section.embed
+    ? (renderTemplateDeep(section.embed, vars) as Record<string, unknown>)
+    : undefined;
   if (!content && !embed) return null;
   return { content, embed };
 }
@@ -104,7 +118,10 @@ async function deliverWelcomeGoodbye(params: {
       await (channel as TextBasedChannel & { send: (p: unknown) => Promise<unknown> }).send(payload);
       sent = true;
     } catch (err) {
-      ctx.logger.warn({ err: err instanceof Error ? err.message : String(err), guildId: guild.id }, 'roles: failed to send welcome/goodbye message');
+      ctx.logger.warn(
+        { err: err instanceof Error ? err.message : String(err), guildId: guild.id },
+        'roles: failed to send welcome/goodbye message',
+      );
     }
   }
 
@@ -123,7 +140,13 @@ async function deliverWelcomeGoodbye(params: {
 }
 
 export function createRolesService(ctx: PluginContext): RolesService {
-  async function assignRolesCore(input: { guildId: string; userId: string; addRoleIds?: string[]; removeRoleIds?: string[]; reason?: string }): Promise<void> {
+  async function assignRolesCore(input: {
+    guildId: string;
+    userId: string;
+    addRoleIds?: string[];
+    removeRoleIds?: string[];
+    reason?: string;
+  }): Promise<void> {
     const guild = await ctx.client.guilds.fetch(input.guildId).catch(() => null);
     if (!guild) throw new NotFoundError('The bot is not in that server.');
     await guild.roles.fetch();
@@ -134,19 +157,40 @@ export function createRolesService(ctx: PluginContext): RolesService {
     const addRoleIds = input.addRoleIds ?? [];
     const removeRoleIds = input.removeRoleIds ?? [];
 
-    const { allowed: allowedToAdd, skipped } = filterAssignableRoles(guild, addRoleIds, config.allowElevatedRoles);
+    const { allowed: allowedToAdd, skipped } = filterAssignableRoles(
+      guild,
+      addRoleIds,
+      config.allowElevatedRoles,
+    );
     for (const skip of skipped) {
-      ctx.logger.warn({ guildId: input.guildId, userId: input.userId, roleId: skip.roleId, reason: skip.reason }, 'roles: skipped an unsafe role assignment');
+      ctx.logger.warn(
+        { guildId: input.guildId, userId: input.userId, roleId: skip.roleId, reason: skip.reason },
+        'roles: skipped an unsafe role assignment',
+      );
     }
 
     if (allowedToAdd.length > 0) {
       await member.roles.add(allowedToAdd, input.reason).catch((err: unknown) => {
-        ctx.logger.error({ err: err instanceof Error ? err.message : String(err), guildId: input.guildId, userId: input.userId }, 'roles: failed to add roles');
+        ctx.logger.error(
+          {
+            err: err instanceof Error ? err.message : String(err),
+            guildId: input.guildId,
+            userId: input.userId,
+          },
+          'roles: failed to add roles',
+        );
       });
     }
     if (removeRoleIds.length > 0) {
       await member.roles.remove(removeRoleIds, input.reason).catch((err: unknown) => {
-        ctx.logger.error({ err: err instanceof Error ? err.message : String(err), guildId: input.guildId, userId: input.userId }, 'roles: failed to remove roles');
+        ctx.logger.error(
+          {
+            err: err instanceof Error ? err.message : String(err),
+            guildId: input.guildId,
+            userId: input.userId,
+          },
+          'roles: failed to remove roles',
+        );
       });
     }
   }
@@ -155,10 +199,17 @@ export function createRolesService(ctx: PluginContext): RolesService {
     const config = await getRolesConfig(ctx, input.guildId);
 
     if (config.verification.verifiedRoleId) {
-      await assignRolesCore({ guildId: input.guildId, userId: input.userId, addRoleIds: [config.verification.verifiedRoleId], reason: `Verified via ${input.method}` });
+      await assignRolesCore({
+        guildId: input.guildId,
+        userId: input.userId,
+        addRoleIds: [config.verification.verifiedRoleId],
+        reason: `Verified via ${input.method}`,
+      });
     }
 
-    const existing = await ctx.prisma.onboardingProgress.findUnique({ where: { guildId_userId: { guildId: input.guildId, userId: input.userId } } });
+    const existing = await ctx.prisma.onboardingProgress.findUnique({
+      where: { guildId_userId: { guildId: input.guildId, userId: input.userId } },
+    });
     const progress = parseOnboardingProgress(existing?.steps);
     progress.verifiedAt = new Date().toISOString();
 
@@ -179,7 +230,11 @@ export function createRolesService(ctx: PluginContext): RolesService {
       source: 'bot',
     });
 
-    ctx.events.emit('member.verified', { guildId: input.guildId, userId: input.userId, method: input.method });
+    ctx.events.emit('member.verified', {
+      guildId: input.guildId,
+      userId: input.userId,
+      method: input.method,
+    });
   }
 
   async function postPanelCore(guildId: string, panelId: string, requestedBy?: string): Promise<void> {
@@ -188,14 +243,17 @@ export function createRolesService(ctx: PluginContext): RolesService {
       include: { options: { orderBy: { position: 'asc' } } },
     });
     if (!panel) throw new NotFoundError('Role panel not found.');
-    if (panel.options.length === 0) throw new NotFoundError('This panel has no role options yet — add at least one before posting.');
+    if (panel.options.length === 0)
+      throw new NotFoundError('This panel has no role options yet — add at least one before posting.');
 
     const guild = await ctx.client.guilds.fetch(guildId).catch(() => null);
     if (!guild) throw new NotFoundError('The bot is not in that server.');
 
     const channel = await resolveTextChannel(guild, panel.channelId);
     if (!channel) {
-      throw new NotFoundError("I can't send messages in the configured channel — check it exists and I have View Channel + Send Messages there.");
+      throw new NotFoundError(
+        "I can't send messages in the configured channel — check it exists and I have View Channel + Send Messages there.",
+      );
     }
 
     const payload = buildPanelMessagePayload(panel as PanelWithOptions);
@@ -217,18 +275,29 @@ export function createRolesService(ctx: PluginContext): RolesService {
       if (panel.style === 'REACTIONS') {
         for (const { emoji } of reactionRoleMap(panel as PanelWithOptions)) {
           await sent.react(emoji).catch((err: unknown) => {
-            ctx.logger.warn({ err: err instanceof Error ? err.message : String(err), guildId, panelId }, 'roles: failed to add a reaction to a reaction-style panel');
+            ctx.logger.warn(
+              { err: err instanceof Error ? err.message : String(err), guildId, panelId },
+              'roles: failed to add a reaction to a reaction-style panel',
+            );
           });
         }
       }
     }
 
-    await ctx.prisma.rolePanel.update({ where: { id: panel.id }, data: { messageId, channelId: channel.id } });
+    await ctx.prisma.rolePanel.update({
+      where: { id: panel.id },
+      data: { messageId, channelId: channel.id },
+    });
 
     ctx.logger.info({ guildId, panelId, requestedBy }, 'roles: posted role panel');
   }
 
-  async function testWelcomeCore(guildId: string, requestedBy: string, channelId?: string, section: 'welcome' | 'goodbye' = 'welcome'): Promise<void> {
+  async function testWelcomeCore(
+    guildId: string,
+    requestedBy: string,
+    channelId?: string,
+    section: 'welcome' | 'goodbye' = 'welcome',
+  ): Promise<void> {
     const config = await getRolesConfig(ctx, guildId);
     const guild = await ctx.client.guilds.fetch(guildId).catch(() => null);
     if (!guild) throw new NotFoundError('The bot is not in that server.');
@@ -240,14 +309,19 @@ export function createRolesService(ctx: PluginContext): RolesService {
     }
     const channel = await resolveTextChannel(guild, targetChannelId);
     if (!channel) {
-      throw new NotFoundError("I can't send messages in that channel — check it exists and I have View Channel + Send Messages there.");
+      throw new NotFoundError(
+        "I can't send messages in that channel — check it exists and I have View Channel + Send Messages there.",
+      );
     }
 
     const requester = await guild.members.fetch(requestedBy).catch(() => null);
     const member = requester ?? { id: requestedBy, user: { tag: 'Preview User', username: 'Preview User' } };
 
     const rendered = renderWelcomeGoodbye({ ...sectionConfig, enabled: true }, member as GuildMember, guild);
-    const preview = rendered ?? { content: `_No ${section} message or embed is configured yet — this is a placeholder preview._`, embed: undefined };
+    const preview = rendered ?? {
+      content: `_No ${section} message or embed is configured yet — this is a placeholder preview._`,
+      embed: undefined,
+    };
 
     await channel.send({
       content: `**[Preview]** ${preview.content ?? ''}`.trim(),
@@ -256,13 +330,19 @@ export function createRolesService(ctx: PluginContext): RolesService {
   }
 
   async function verificationDecisionCore(input: SdkVerificationDecisionInput): Promise<void> {
-    const request = await ctx.prisma.verificationRequest.findFirst({ where: { id: input.requestId, guildId: input.guildId } });
+    const request = await ctx.prisma.verificationRequest.findFirst({
+      where: { id: input.requestId, guildId: input.guildId },
+    });
     if (!request) throw new NotFoundError('Verification request not found.');
     if (request.status !== 'PENDING') return; // Already decided; two moderators cannot act on the same request twice.
 
     await ctx.prisma.verificationRequest.update({
       where: { id: request.id },
-      data: { status: input.approve ? 'APPROVED' : 'DENIED', reviewedBy: input.reviewerId, reviewedAt: new Date() },
+      data: {
+        status: input.approve ? 'APPROVED' : 'DENIED',
+        reviewedBy: input.reviewerId,
+        reviewedAt: new Date(),
+      },
     });
 
     if (input.approve) {
@@ -314,8 +394,12 @@ export function createRolesService(ctx: PluginContext): RolesService {
   // (`postPanel(guildId, panelId, requestedBy)`, etc). In-process callers (other plugins holding a real
   // `RolesService` reference) still call positionally per the declared type. Both shapes are supported here;
   // see README.md "Known integration gap" and this build's openIssues for a proposed host-side fix.
-  function isBotActionObjectCall(args: unknown[]): args is [{ guildId: string; payload?: unknown; requestedBy?: string }] {
-    return args.length === 1 && typeof args[0] === 'object' && args[0] !== null && 'guildId' in (args[0] as object);
+  function isBotActionObjectCall(
+    args: unknown[],
+  ): args is [{ guildId: string; payload?: unknown; requestedBy?: string }] {
+    return (
+      args.length === 1 && typeof args[0] === 'object' && args[0] !== null && 'guildId' in (args[0] as object)
+    );
   }
 
   // `verificationDecision`'s real (positional) interface is ALREADY a single object
@@ -323,7 +407,9 @@ export function createRolesService(ctx: PluginContext): RolesService {
   // "one object with a guildId key" check above can't disambiguate it from a bot-action call — both shapes
   // have a top-level `guildId`. Distinguish by the bot-action shape's `payload` wrapper, which the real
   // `VerificationDecisionInput` never has.
-  function isBotActionVerificationCall(args: unknown[]): args is [{ guildId: string; payload?: unknown; requestedBy?: string }] {
+  function isBotActionVerificationCall(
+    args: unknown[],
+  ): args is [{ guildId: string; payload?: unknown; requestedBy?: string }] {
     if (!isBotActionObjectCall(args)) return false;
     const obj = args[0];
     return 'payload' in obj && !('requestId' in obj) && !('approve' in obj);
@@ -354,7 +440,13 @@ export function createRolesService(ctx: PluginContext): RolesService {
       const { guildId, payload, requestedBy } = args[0];
       const p = payload as { requestId: string; approve: boolean; note?: string } | undefined;
       if (!p) throw new NotFoundError('Missing verification decision payload.');
-      return verificationDecisionCore({ guildId, requestId: p.requestId, approve: p.approve, reviewerId: requestedBy ?? 'system', note: p.note });
+      return verificationDecisionCore({
+        guildId,
+        requestId: p.requestId,
+        approve: p.approve,
+        reviewerId: requestedBy ?? 'system',
+        note: p.note,
+      });
     }
     const [input] = args as [SdkVerificationDecisionInput];
     return verificationDecisionCore(input);

@@ -79,7 +79,9 @@ export class PluginRegistry {
         }
         const owner = seenCommandNames.get(name);
         if (owner) {
-          throw new Error(`PluginRegistry: duplicate command name "${name}" registered by both "${owner}" and "${id}".`);
+          throw new Error(
+            `PluginRegistry: duplicate command name "${name}" registered by both "${owner}" and "${id}".`,
+          );
         }
         seenCommandNames.set(name, id);
       }
@@ -87,7 +89,9 @@ export class PluginRegistry {
       const seenActions = new Set<string>();
       for (const component of plugin.components ?? []) {
         if (seenActions.has(component.action)) {
-          throw new Error(`PluginRegistry: plugin "${id}" registers duplicate component action "${component.action}".`);
+          throw new Error(
+            `PluginRegistry: plugin "${id}" registers duplicate component action "${component.action}".`,
+          );
         }
         seenActions.add(component.action);
       }
@@ -133,7 +137,9 @@ export class PluginRegistry {
       keyof PrivilegedIntentsEnabled,
     ][]) {
       if (!enabled[enabledKey]) continue;
-      const anyPluginNeedsIt = this.orderedPlugins.some((plugin) => plugin.manifest.privilegedIntents?.includes(privileged));
+      const anyPluginNeedsIt = this.orderedPlugins.some((plugin) =>
+        plugin.manifest.privilegedIntents?.includes(privileged),
+      );
       if (anyPluginNeedsIt) {
         intents.add(PRIVILEGED_INTENT_TO_BIT[privileged]);
       }

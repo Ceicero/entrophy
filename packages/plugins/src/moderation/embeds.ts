@@ -1,7 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import { discordTimestamp, escapeMarkdown, sanitizeEmbedText, truncate } from '@entrophy/core';
 import type { ModerationAppeal, ModerationCase } from '@entrophy/database';
-import { BRAND, EMBED_LIMITS } from '@entrophy/core';
+import { BRAND, EMBED_LIMITS, brandIconUrl, env } from '@entrophy/core';
 import { brandEmbed, userMention } from '../sdk';
 
 const CASE_TYPE_LABEL: Record<ModerationCase['type'], string> = {
@@ -47,24 +47,43 @@ export function buildCaseLogEmbed(row: ModerationCase): EmbedBuilder {
     .addFields(
       { name: 'User', value: `${userMention(row.targetId)} (\`${row.targetId}\`)`, inline: true },
       { name: 'Moderator', value: `${userMention(row.moderatorId)} (\`${row.moderatorId}\`)`, inline: true },
-      { name: 'Reason', value: row.reason ? truncate(escapeMarkdown(row.reason), EMBED_LIMITS.fieldValue) : '_No reason given_', inline: false },
+      {
+        name: 'Reason',
+        value: row.reason
+          ? truncate(escapeMarkdown(row.reason), EMBED_LIMITS.fieldValue)
+          : '_No reason given_',
+        inline: false,
+      },
     );
 
   if (row.durationMs) {
     const expires = row.expiresAt ? discordTimestamp(row.expiresAt, 'R') : null;
-    embed.addFields({ name: 'Duration', value: expires ? `Until ${expires}` : `${Math.round(row.durationMs / 1000)}s`, inline: true });
+    embed.addFields({
+      name: 'Duration',
+      value: expires ? `Until ${expires}` : `${Math.round(row.durationMs / 1000)}s`,
+      inline: true,
+    });
   }
 
   if (row.evidenceUrls.length > 0) {
-    embed.addFields({ name: 'Evidence', value: truncate(row.evidenceUrls.map((url, i) => `[Link ${i + 1}](${url})`).join(', '), EMBED_LIMITS.fieldValue) });
+    embed.addFields({
+      name: 'Evidence',
+      value: truncate(
+        row.evidenceUrls.map((url, i) => `[Link ${i + 1}](${url})`).join(', '),
+        EMBED_LIMITS.fieldValue,
+      ),
+    });
   }
 
-  embed.setFooter({ text: `${BRAND.name} · Case #${row.caseNumber}` });
+  embed.setFooter({ text: `${BRAND.name} · Case #${row.caseNumber}`, iconURL: brandIconUrl(env) });
   return embed;
 }
 
 /** The DM sent to the affected user, when `dmOnAction`/`dmUser` allow it. Text-only — see manifest privacyNotes. */
-export function buildCaseDmEmbed(row: Pick<ModerationCase, 'type' | 'reason' | 'caseNumber'>, guildName: string): EmbedBuilder {
+export function buildCaseDmEmbed(
+  row: Pick<ModerationCase, 'type' | 'reason' | 'caseNumber'>,
+  guildName: string,
+): EmbedBuilder {
   const embed = brandEmbed()
     .setColor(CASE_TYPE_COLOR[row.type] ?? BRAND.color)
     .setTitle(`Moderation notice from ${guildName}`)
@@ -94,7 +113,11 @@ export function buildAppealEmbed(appeal: ModerationAppeal, caseNumber: number | 
 }
 
 /** Sent to the appellant (and, for dashboard/async decisions, posted where a staff follow-up is needed). */
-export function buildAppealDecisionEmbed(accepted: boolean, caseNumber: number | null, decisionNote: string | null): EmbedBuilder {
+export function buildAppealDecisionEmbed(
+  accepted: boolean,
+  caseNumber: number | null,
+  decisionNote: string | null,
+): EmbedBuilder {
   const embed = brandEmbed()
     .setColor(accepted ? 0x22c55e : 0xef4444)
     .setTitle(accepted ? 'Appeal accepted' : 'Appeal denied')

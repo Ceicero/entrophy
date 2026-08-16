@@ -31,6 +31,8 @@ describe('media providers', () => {
   it('isMediaAvailable is false for every shipped provider (none is never configured; example-licensed is a template)', () => {
     expect(isMediaAvailable({})).toBe(false);
     expect(isMediaAvailable({ MEDIA_PROVIDER: 'none' })).toBe(false);
-    expect(isMediaAvailable({ MEDIA_PROVIDER: 'example-licensed', EXAMPLE_LICENSED_API_KEY: 'x' })).toBe(false);
+    expect(isMediaAvailable({ MEDIA_PROVIDER: 'example-licensed', EXAMPLE_LICENSED_API_KEY: 'x' })).toBe(
+      false,
+    );
   });
 });

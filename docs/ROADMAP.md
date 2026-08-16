@@ -39,7 +39,7 @@ any VPS via `docker-compose.yml` behind Caddy — see `infra/DEPLOYMENT.md`.
   tests so much as a note for anyone trying to run `pnpm test:e2e` locally: it will hang or fail
   against a dashboard alone with no API behind it.
 - **Engagement XP adjustments don't re-sync level-role rewards instantly.** `/level xp give|remove|
-  set` (and the equivalent dashboard action) changes a member's stored XP/level immediately, but
+set` (and the equivalent dashboard action) changes a member's stored XP/level immediately, but
   level-role rewards are only granted/revoked when a member naturally levels up through
   `level.up` events **or** when a staff member explicitly runs `/level rewards sync` (or the
   dashboard's equivalent), which recomputes every ranked member's role rewards in one pass. Manually
@@ -53,7 +53,7 @@ any VPS via `docker-compose.yml` behind Caddy — see `infra/DEPLOYMENT.md`.
   an empty state until a real collection job exists, not fake data.
 - **Privacy policy/terms pages are explicitly templates.** `apps/web`'s `/privacy` and `/terms`
   render a visible "this is a template" banner on purpose — see
-  `docs/PRIVACY_POLICY_TEMPLATE.md` §0. This is intentional, not a gap to close by MVP; it needs an
+  `docs/PRIVACY_POLICY_TEMPLATE.md`'s intro. This is intentional, not a gap to close by MVP; it needs an
   operator's actual review before it stops being a template, which is outside engineering scope.
 
 ## v1 — hardening

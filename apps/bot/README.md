@@ -77,13 +77,13 @@ Used by the Docker healthcheck (`infra/docker/Dockerfile.bot`) and safe to poll 
 
 See `.env.example` for the full documented list. The ones that specifically affect bot behavior:
 
-| Variable | Effect |
-|---|---|
-| `DISCORD_TOKEN`, `DISCORD_CLIENT_ID` | required to boot |
-| `DATABASE_URL`, `REDIS_URL` | required to boot |
-| `BOT_OWNER_IDS` | comma-separated user ids; floored at `admin` staff level everywhere, and required for `botOwnerOnly` commands |
-| `DEV_GUILD_ID` | default target for `register` (instant guild-scoped updates instead of global) |
-| `BOT_HEALTH_PORT` | health server port, default `3002` |
+| Variable                                                                                          | Effect                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`                                                              | required to boot                                                                                                                                                           |
+| `DATABASE_URL`, `REDIS_URL`                                                                       | required to boot                                                                                                                                                           |
+| `BOT_OWNER_IDS`                                                                                   | comma-separated user ids; floored at `admin` staff level everywhere, and required for `botOwnerOnly` commands                                                              |
+| `DEV_GUILD_ID`                                                                                    | default target for `register` (instant guild-scoped updates instead of global)                                                                                             |
+| `BOT_HEALTH_PORT`                                                                                 | health server port, default `3002`                                                                                                                                         |
 | `ENABLE_MESSAGE_CONTENT_INTENT` / `ENABLE_GUILD_MEMBERS_INTENT` / `ENABLE_GUILD_PRESENCES_INTENT` | privileged intents — only enable after Discord approval/eligibility; plugins that need one degrade gracefully (not crash) when it's off, per `PluginRegistry.availability` |
 
 ## What to test by hand after a change

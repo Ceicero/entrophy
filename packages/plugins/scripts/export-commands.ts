@@ -8,8 +8,16 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ApplicationCommandOptionType, ApplicationCommandType, PermissionsBitField, type PermissionResolvable } from 'discord.js';
-import type { RESTPostAPIApplicationCommandsJSONBody, APIApplicationCommandOption } from 'discord-api-types/v10';
+import {
+  ApplicationCommandOptionType,
+  ApplicationCommandType,
+  PermissionsBitField,
+  type PermissionResolvable,
+} from 'discord.js';
+import type {
+  RESTPostAPIApplicationCommandsJSONBody,
+  APIApplicationCommandOption,
+} from 'discord-api-types/v10';
 import { INVITE_PERMISSIONS_BITFIELD } from '@entrophy/core';
 import { allPlugins } from '../src/index';
 import type { PluginCommand } from '../src/sdk';
@@ -22,7 +30,10 @@ const DOCS_INVITE_OUTPUT = join(REPO_ROOT, 'docs', 'invite.json');
 // NEXT_PUBLIC_INVITE_PERMISSIONS is unset) so it never drifts from `INVITE_PERMISSIONS` in `@entrophy/core`.
 const WEB_INVITE_OUTPUT = join(REPO_ROOT, 'apps', 'web', 'src', 'data', 'invite.json');
 
-const SUBCOMMAND_TYPES = new Set<number>([ApplicationCommandOptionType.Subcommand, ApplicationCommandOptionType.SubcommandGroup]);
+const SUBCOMMAND_TYPES = new Set<number>([
+  ApplicationCommandOptionType.Subcommand,
+  ApplicationCommandOptionType.SubcommandGroup,
+]);
 
 interface ExportedOption {
   name: string;
@@ -80,7 +91,10 @@ function toExportedOption(option: APIApplicationCommandOption): ExportedOption {
 }
 
 /** Flattens subcommands and subcommand-groups (one level of group nesting max, per Discord's own limit) into a flat list. */
-function extractSubcommands(rootName: string, options: APIApplicationCommandOption[] | undefined): ExportedSubcommand[] {
+function extractSubcommands(
+  rootName: string,
+  options: APIApplicationCommandOption[] | undefined,
+): ExportedSubcommand[] {
   if (!options) return [];
   const out: ExportedSubcommand[] = [];
 
@@ -121,7 +135,9 @@ function exportCommand(command: PluginCommand): ExportedCommand {
   const json = command.data.toJSON() as RESTPostAPIApplicationCommandsJSONBody;
   const type = commandType(json);
   const rootName = json.name;
-  const options = (json.options ?? []).filter((o): o is APIApplicationCommandOption => !SUBCOMMAND_TYPES.has(o.type));
+  const options = (json.options ?? []).filter(
+    (o): o is APIApplicationCommandOption => !SUBCOMMAND_TYPES.has(o.type),
+  );
 
   const discordPermissions = command.requirement?.discordPermissions
     ? command.requirement.discordPermissions.flatMap((p) => permissionNames(p))

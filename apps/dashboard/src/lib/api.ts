@@ -42,7 +42,12 @@ export interface ApiFetchInit extends Omit<RequestInit, 'body'> {
 }
 
 function isBodyInit(value: unknown): value is BodyInit {
-  return typeof value === 'string' || value instanceof FormData || value instanceof Blob || value instanceof URLSearchParams;
+  return (
+    typeof value === 'string' ||
+    value instanceof FormData ||
+    value instanceof Blob ||
+    value instanceof URLSearchParams
+  );
 }
 
 /**
@@ -86,7 +91,9 @@ export async function apiFetch<T = unknown>(path: string, init: ApiFetchInit = {
 
   const contentType = response.headers.get('content-type') ?? '';
   const isJson = contentType.includes('application/json');
-  const payload: unknown = isJson ? await response.json().catch(() => null) : await response.text().catch(() => null);
+  const payload: unknown = isJson
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => null);
 
   if (!response.ok) {
     const errorBody =

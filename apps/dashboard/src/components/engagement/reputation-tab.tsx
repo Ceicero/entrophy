@@ -1,9 +1,24 @@
 'use client';
 
 import * as React from 'react';
-import { Button, Card, CardContent, CardHeader, CardTitle, FormField, Input, Skeleton, Switch, useToast } from '@entrophy/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  FormField,
+  Input,
+  Skeleton,
+  Switch,
+  useToast,
+} from '@entrophy/ui';
 import type { EngagementConfigDto, ReputationLeaderboardEntryDto } from '@entrophy/types/engagement';
-import { useEngagementConfig, useRepLeaderboard, useUpdateEngagementConfig } from '../../lib/engagement-queries';
+import {
+  useEngagementConfig,
+  useRepLeaderboard,
+  useUpdateEngagementConfig,
+} from '../../lib/engagement-queries';
 import { DataTable, type DataTableColumn } from '../data-table';
 import { ErrorState } from '../error-state';
 import { ApiClientError } from '../../lib/api';
@@ -30,7 +45,11 @@ export function ReputationTab({ guildId }: { guildId: string }) {
       {
         onSuccess: () => toast({ title: 'Reputation settings saved', variant: 'success' }),
         onError: (err) =>
-          toast({ title: 'Could not save', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+          toast({
+            title: 'Could not save',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -66,12 +85,28 @@ export function ReputationTab({ guildId }: { guildId: string }) {
           <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
             <div>
               <p className="text-sm font-medium">Reputation enabled</p>
-              <p className="text-xs text-muted-foreground">Lets members thank each other with {'`/rep give`'}.</p>
+              <p className="text-xs text-muted-foreground">
+                Lets members thank each other with {'`/rep give`'}.
+              </p>
             </div>
-            <Switch checked={draft.enabled} onCheckedChange={(v) => set('enabled', v)} disabled={update.isPending} />
+            <Switch
+              checked={draft.enabled}
+              onCheckedChange={(v) => set('enabled', v)}
+              disabled={update.isPending}
+            />
           </div>
-          <FormField label="Cooldown (hours)" hint="How often each member can give reputation. Also caps how often the same member can be thanked by them.">
-            <Input type="number" min={1} max={720} value={draft.cooldownHours} onChange={(e) => set('cooldownHours', Number(e.target.value))} className="w-40" />
+          <FormField
+            label="Cooldown (hours)"
+            hint="How often each member can give reputation. Also caps how often the same member can be thanked by them."
+          >
+            <Input
+              type="number"
+              min={1}
+              max={720}
+              value={draft.cooldownHours}
+              onChange={(e) => set('cooldownHours', Number(e.target.value))}
+              className="w-40"
+            />
           </FormField>
         </CardContent>
       </Card>

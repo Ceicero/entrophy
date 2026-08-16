@@ -41,7 +41,11 @@ export const command: PluginCommand = {
       await store.save(session);
 
       const rendered = renderWizardStep(session, manifests);
-      await c.interaction.reply({ embeds: rendered.embeds, components: rendered.components, ephemeral: true });
+      await c.interaction.reply({
+        embeds: rendered.embeds,
+        components: rendered.components,
+        ephemeral: true,
+      });
       return;
     }
 

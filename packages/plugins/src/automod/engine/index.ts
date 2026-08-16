@@ -44,7 +44,10 @@ export const MESSAGE_RULE_TYPES = [
 ] as const satisfies readonly AutomodRuleTypeValue[];
 
 /** Rule types evaluated against a guild member join (`guildMemberAdd`). */
-export const JOIN_RULE_TYPES = ['ACCOUNT_AGE', 'RAID_DETECTION'] as const satisfies readonly AutomodRuleTypeValue[];
+export const JOIN_RULE_TYPES = [
+  'ACCOUNT_AGE',
+  'RAID_DETECTION',
+] as const satisfies readonly AutomodRuleTypeValue[];
 
 const MESSAGE_EVALUATORS: Record<(typeof MESSAGE_RULE_TYPES)[number], MessageEvaluator<never>> = {
   MESSAGE_FREQUENCY: evaluateMessageFrequency,
@@ -120,7 +123,10 @@ export async function evaluateMessageRule(
 }
 
 /** Same as `evaluateMessageRule`, for join-based rule types (`ACCOUNT_AGE`, `RAID_DETECTION`). */
-export async function evaluateJoinRule(config: AutomodRuleConfig, input: JoinEvaluatorInput): Promise<EvaluatorResult> {
+export async function evaluateJoinRule(
+  config: AutomodRuleConfig,
+  input: JoinEvaluatorInput,
+): Promise<EvaluatorResult> {
   const evaluator = JOIN_EVALUATORS[config.type as keyof typeof JOIN_EVALUATORS];
   if (!evaluator) return NO_MATCH;
   return evaluator(input, config as never);
@@ -140,7 +146,8 @@ export async function testRuleWithText(
   if (!isMessageRuleType(config.type)) {
     return {
       matched: false,
-      reason: 'This rule type evaluates member joins (not message text), so it cannot be tested with sample text.',
+      reason:
+        'This rule type evaluates member joins (not message text), so it cannot be tested with sample text.',
     };
   }
 
@@ -151,8 +158,8 @@ export async function testRuleWithText(
     authorId: overrides.authorId ?? 'test-user',
     authorBot: overrides.authorBot ?? false,
     content: sampleText,
-    userMentionCount: overrides.userMentionCount ?? (sampleText.match(/<@!?\d+>/g)?.length ?? 0),
-    roleMentionCount: overrides.roleMentionCount ?? (sampleText.match(/<@&\d+>/g)?.length ?? 0),
+    userMentionCount: overrides.userMentionCount ?? sampleText.match(/<@!?\d+>/g)?.length ?? 0,
+    roleMentionCount: overrides.roleMentionCount ?? sampleText.match(/<@&\d+>/g)?.length ?? 0,
     everyoneMentioned: overrides.everyoneMentioned ?? /@(everyone|here)\b/.test(sampleText),
     attachments: overrides.attachments ?? [],
     channelNsfw: overrides.channelNsfw ?? false,

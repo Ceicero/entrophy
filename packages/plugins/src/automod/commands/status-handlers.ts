@@ -12,7 +12,9 @@ export async function handleStatus(c: CommandContext): Promise<void> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const [eventsLast24h, pendingReview] = await Promise.all([
     c.ctx.prisma.automodEvent.count({ where: { guildId: c.guildId, createdAt: { gte: since } } }),
-    c.ctx.prisma.automodEvent.count({ where: { guildId: c.guildId, reviewStatus: { in: ['NONE', 'PENDING'] } } }),
+    c.ctx.prisma.automodEvent.count({
+      where: { guildId: c.guildId, reviewStatus: { in: ['NONE', 'PENDING'] } },
+    }),
   ]);
 
   const lines = [
@@ -26,10 +28,16 @@ export async function handleStatus(c: CommandContext): Promise<void> {
   ];
 
   if (inactiveRules.length > 0) {
-    lines.push('', `Inactive: ${inactiveRules.map((r) => `**${r.name}**`).join(', ')} — enable the required privileged intent to activate them.`);
+    lines.push(
+      '',
+      `Inactive: ${inactiveRules.map((r) => `**${r.name}**`).join(', ')} — enable the required privileged intent to activate them.`,
+    );
   }
 
-  await c.interaction.reply({ embeds: [infoEmbed(c.t('automod.status.title'), lines.join('\n'))], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [infoEmbed(c.t('automod.status.title'), lines.join('\n'))],
+    ephemeral: true,
+  });
 }
 
 /** `/automod dryrun on|off` — guild-wide dry-run toggle (admin only; TASK: "dryrun <on|off> (guild-wide, admin)"). */
@@ -38,7 +46,11 @@ export async function handleDryrun(c: CommandContext): Promise<void> {
   const on = c.interaction.options.getString('state', true) === 'on';
 
   // `ctx.setConfig` (GuildConfigStore.setConfig) already writes the audit entry (before/after diff, redacted).
-  const after = await c.ctx.setConfig<AutomodConfig>(c.guildId, { dryRun: on }, { id: c.interaction.user.id, source: 'bot' });
+  const after = await c.ctx.setConfig<AutomodConfig>(
+    c.guildId,
+    { dryRun: on },
+    { id: c.interaction.user.id, source: 'bot' },
+  );
 
   await c.interaction.reply({
     embeds: [successEmbed(after.dryRun ? c.t('automod.dryrun.enabled') : c.t('automod.dryrun.disabled'))],

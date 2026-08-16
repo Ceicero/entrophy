@@ -70,6 +70,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Check plugin i18n coverage (every plugin registers locales/en.json; every t()/c.t() key resolves)
+        run: pnpm --filter @entrophy/plugins check:i18n
+
       - name: Export commands (fails if docs/commands.json is stale)
         run: |
           pnpm commands:export

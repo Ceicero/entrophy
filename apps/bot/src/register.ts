@@ -50,7 +50,8 @@ function resolveTarget(args: ParsedArgs): { scope: 'global' } | { scope: 'guild'
 }
 
 function printSummaryTable(commands: { name: string; type: number }[]): void {
-  const typeLabel = (type: number): string => (type === 1 ? 'slash' : type === 2 ? 'user-menu' : type === 3 ? 'message-menu' : `type-${type}`);
+  const typeLabel = (type: number): string =>
+    type === 1 ? 'slash' : type === 2 ? 'user-menu' : type === 3 ? 'message-menu' : `type-${type}`;
   const nameWidth = Math.max(4, ...commands.map((c) => c.name.length));
   // eslint-disable-next-line no-console -- this is a CLI tool; its whole job is to print a summary to stdout.
   console.log(`${'NAME'.padEnd(nameWidth)}  TYPE`);
@@ -77,8 +78,14 @@ async function main(): Promise<void> {
       ? Routes.applicationGuildCommands(env.DISCORD_CLIENT_ID as string, target.guildId)
       : Routes.applicationCommands(env.DISCORD_CLIENT_ID as string);
 
-  const targetDescription = target.scope === 'guild' ? `guild ${target.guildId} (instant)` : 'globally (may take up to an hour to propagate)';
-  logger.info({ target, commandCount: commands.length, clear: args.clear }, `${args.clear ? 'Clearing' : 'Registering'} commands ${targetDescription}`);
+  const targetDescription =
+    target.scope === 'guild'
+      ? `guild ${target.guildId} (instant)`
+      : 'globally (may take up to an hour to propagate)';
+  logger.info(
+    { target, commandCount: commands.length, clear: args.clear },
+    `${args.clear ? 'Clearing' : 'Registering'} commands ${targetDescription}`,
+  );
 
   const result = (await rest.put(route, { body: commands })) as { name: string; type: number }[];
 

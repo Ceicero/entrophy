@@ -2,7 +2,13 @@ import { z } from 'zod';
 import { redisKey } from '@entrophy/core';
 import type { PluginContext } from '../../sdk';
 import { formatRedditPostEmbed, isRedditPostNsfw, type RedditPost } from '../formatters/reddit';
-import { claimAlertOnce, markConnectionError, markConnectionSynced, readAlertConfig, sendConnectionAlert } from './util';
+import {
+  claimAlertOnce,
+  markConnectionError,
+  markConnectionSynced,
+  readAlertConfig,
+  sendConnectionAlert,
+} from './util';
 import type { IntegrationProviderDef } from './types';
 
 const TOKEN_URL = 'https://www.reddit.com/api/v1/access_token';
@@ -16,7 +22,11 @@ export const redditConfigSchema = z.object({
     .max(24)
     .transform((s) => s.replace(/^\/?r\//i, '')),
   channelId: z.string().regex(/^\d{17,20}$/),
-  roleId: z.string().regex(/^\d{17,20}$/).nullable().optional(),
+  roleId: z
+    .string()
+    .regex(/^\d{17,20}$/)
+    .nullable()
+    .optional(),
   template: z.string().max(300).nullable().optional(),
   nsfwFilter: z.boolean().default(true),
 });
@@ -42,7 +52,11 @@ async function getRedditAppToken(ctx: PluginContext): Promise<string | null> {
   const basic = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
   const res = await fetch(TOKEN_URL, {
     method: 'POST',
-    headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': userAgent },
+    headers: {
+      Authorization: `Basic ${basic}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': userAgent,
+    },
     body: new URLSearchParams({ grant_type: 'client_credentials' }),
   });
   if (!res.ok) {

@@ -18,7 +18,10 @@ export interface TranslateEnv extends EnvLike {
  * Selects the configured translate adapter from env, or `null` if translation isn't configured
  * (`TRANSLATE_PROVIDER` unset/`none`, or the selected provider is missing its required env var).
  */
-export function getTranslateAdapter(env: TranslateEnv, fetchImpl: typeof fetch = fetch): TranslateAdapter | null {
+export function getTranslateAdapter(
+  env: TranslateEnv,
+  fetchImpl: typeof fetch = fetch,
+): TranslateAdapter | null {
   const provider = (env.TRANSLATE_PROVIDER ?? 'none').toLowerCase();
 
   if (provider === 'deepl') {

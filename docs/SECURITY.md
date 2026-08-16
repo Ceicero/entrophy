@@ -9,16 +9,16 @@ recap in `docs/ARCHITECTURE.md` §15 and the compliance rules in `docs/SPEC.md`.
 
 **What we protect, in rough order of blast radius if it leaked:**
 
-| Asset | Why it matters if compromised |
-|---|---|
-| `DISCORD_TOKEN` (bot token) | Full control of the bot's Discord identity — read/send messages, moderate, in every server it's in. |
-| `ENCRYPTION_KEY` | Decrypts every OAuth token, webhook secret, and stored AI API key at rest across every server. |
-| OAuth access/refresh tokens (`OAuthToken.accessTokenEnc`/`refreshTokenEnc`) | Act as the Discord user (or connected integration account) who authorized them. |
-| `SESSION_SECRET` | Signs dashboard session cookies — a leak lets an attacker forge a session for any user. |
-| Guild/member data (moderation cases, warnings, notes, Enforcer records, tickets, logs) | Server-scoped moderation and behavioral history; some of it (staff notes, ticket transcripts, Enforcer excerpts) can contain sensitive free text about real people. |
-| Webhook secrets (`WebhookEndpoint.secretEnc`) | Let an attacker forge inbound webhook deliveries or, for outbound endpoints, read what's being sent. |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Could forge donation events or (with the secret key) act on the Stripe account. |
-| Third-party integration keys (Twitch, GitHub, Google, Microsoft, Notion, OpenAI/Anthropic, etc.) | Scoped to whatever that provider's key grants — usually read access to public data or a connected account's data. |
+| Asset                                                                                            | Why it matters if compromised                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DISCORD_TOKEN` (bot token)                                                                      | Full control of the bot's Discord identity — read/send messages, moderate, in every server it's in.                                                                 |
+| `ENCRYPTION_KEY`                                                                                 | Decrypts every OAuth token, webhook secret, and stored AI API key at rest across every server.                                                                      |
+| OAuth access/refresh tokens (`OAuthToken.accessTokenEnc`/`refreshTokenEnc`)                      | Act as the Discord user (or connected integration account) who authorized them.                                                                                     |
+| `SESSION_SECRET`                                                                                 | Signs dashboard session cookies — a leak lets an attacker forge a session for any user.                                                                             |
+| Guild/member data (moderation cases, warnings, notes, Enforcer records, tickets, logs)           | Server-scoped moderation and behavioral history; some of it (staff notes, ticket transcripts, Enforcer excerpts) can contain sensitive free text about real people. |
+| Webhook secrets (`WebhookEndpoint.secretEnc`)                                                    | Let an attacker forge inbound webhook deliveries or, for outbound endpoints, read what's being sent.                                                                |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`                                                    | Could forge donation events or (with the secret key) act on the Stripe account.                                                                                     |
+| Third-party integration keys (Twitch, GitHub, Google, Microsoft, Notion, OpenAI/Anthropic, etc.) | Scoped to whatever that provider's key grants — usually read access to public data or a connected account's data.                                                   |
 
 **Who we're defending against:** opportunistic scanners hitting public endpoints, a malicious or
 compromised guild member trying to escalate privilege or exfiltrate other members' data, a
@@ -27,7 +27,7 @@ one bad click by a real admin non-catastrophic), and credential leaks (accidenta
 exposure, a leaked `.env`). We are explicitly **not** trying to defend against a fully compromised
 production host (an attacker with shell access on the API/bot container can already read
 `process.env` and decrypt anything) — the controls below are about not making that box easier to
-compromise in the first place, and about limiting damage if one *credential* (not the whole host)
+compromise in the first place, and about limiting damage if one _credential_ (not the whole host)
 leaks.
 
 **What we deliberately don't store**, because it can't leak if it isn't there: message content by
@@ -83,7 +83,7 @@ Each of these is implemented in code today, not aspirational — file references
   passwords, secrets, and message content from every log line even if a bug tried to log them.
 - **Least-privilege bot invite** — `INVITE_PERMISSIONS` never includes `Administrator`; every plugin
   declares exactly the Discord permissions it needs in its manifest, auditable via `/permissions
-  audit`.
+audit`.
 
 ## 3. Reporting a vulnerability
 
@@ -115,7 +115,7 @@ a shared screenshot, a support ticket).
 2. Set the new token as `DISCORD_TOKEN` on the `bot` service's environment and restart it (see
    `infra/DEPLOYMENT.md` §7 for the exact steps per hosting platform).
 3. Once the bot reconnects, review recent audit log entries (`/audit` in the dashboard or `/logs
-   search`) for anything unexpected the old token might have done while compromised.
+search`) for anything unexpected the old token might have done while compromised.
 4. If you suspect the leak happened via a specific commit or log, also rotate anything else that
    might have been exposed alongside it — leaks are rarely single-secret.
 
@@ -141,14 +141,14 @@ secret — treat it seriously even on suspicion alone.
    `ai` plugin's `PluginConfig.config.apiKeyEnc`, decrypting each (via the same primary-then-previous
    fallback) and re-encrypting under the current `ENCRYPTION_KEY`. It's idempotent and safe to
    re-run; use `--reencrypt:secrets -- --dry-run` (i.e. `pnpm --filter @entrophy/database exec tsx
-   scripts/reencrypt-secrets.ts --dry-run`) first if you want a preview without writing anything. The
+scripts/reencrypt-secrets.ts --dry-run`) first if you want a preview without writing anything. The
    script is `packages/database/scripts/reencrypt-secrets.ts` — if a future encrypted field is added
    to the schema or a plugin's config, add it to that script's coverage.
 5. Once the script reports zero failures, remove `ENCRYPTION_KEY_PREVIOUS` (leaving it set
    indefinitely means the compromised key can still decrypt anything an attacker captured mid-
    rotation) and restart `bot`/`api` one more time.
 6. If the leak was severe enough that you believe an attacker actually captured encrypted values
-   *and* the key before you rotated, treat every credential those values represented (every
+   _and_ the key before you rotated, treat every credential those values represented (every
    connected OAuth account, every webhook secret, every stored AI API key) as compromised too, and
    have affected users/integrations re-authenticate or roll their own keys.
 
@@ -196,4 +196,4 @@ makes this Redis flush redundant (but harmless to also run).
 - Bump the version in `docs/ARCHITECTURE.md` §2's pinned-range table when you deliberately move a
   major version, so the table stays the source of truth for what's actually running.
 - After any dependency bump, the full gate still applies before merging: `pnpm lint && pnpm
-  typecheck && pnpm test && pnpm build` (this is exactly what CI runs).
+typecheck && pnpm test && pnpm build` (this is exactly what CI runs).

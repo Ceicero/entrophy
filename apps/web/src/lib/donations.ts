@@ -15,13 +15,21 @@ export async function fetchDonationPresets(): Promise<DonationPresetsDto> {
   } catch {
     // API unreachable (down, misconfigured URL, offline build preview, etc.) degrades to the same
     // "unavailable" shape the API itself returns when Stripe isn't configured.
-    return { enabled: false, currency: 'usd', presetsCents: [300, 500, 1000, 2500, 5000], minCents: 100, maxCents: 50000 };
+    return {
+      enabled: false,
+      currency: 'usd',
+      presetsCents: [300, 500, 1000, 2500, 5000],
+      minCents: 100,
+      maxCents: 50000,
+    };
   }
 }
 
 /** Client-side call of `POST /donations/checkout`. Throws `DonationsApiError` with a user-facing message on
  * failure — the caller shows it inline instead of navigating anywhere. */
-export async function startDonationCheckout(body: DonationCheckoutRequest): Promise<DonationCheckoutResponse> {
+export async function startDonationCheckout(
+  body: DonationCheckoutRequest,
+): Promise<DonationCheckoutResponse> {
   const res = await fetch(`${apiUrl()}/donations/checkout`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -29,8 +37,12 @@ export async function startDonationCheckout(body: DonationCheckoutRequest): Prom
   });
 
   if (!res.ok) {
-    const payload = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
-    throw new DonationsApiError(payload?.error?.message ?? 'Could not start checkout. Please try again shortly.');
+    const payload = (await res.json().catch(() => null)) as {
+      error?: { code?: string; message?: string };
+    } | null;
+    throw new DonationsApiError(
+      payload?.error?.message ?? 'Could not start checkout. Please try again shortly.',
+    );
   }
 
   return (await res.json()) as DonationCheckoutResponse;

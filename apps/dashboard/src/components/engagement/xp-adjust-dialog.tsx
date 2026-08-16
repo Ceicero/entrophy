@@ -58,7 +58,11 @@ export function XpAdjustDialog({ guildId, open, onOpenChange }: XpAdjustDialogPr
       { userId: userId.trim(), mode, amount: amountNum, reason: reason.trim() || undefined },
       {
         onSuccess: (result) => {
-          toast({ title: 'XP updated', description: `Now level ${result.level} (${result.xp.toLocaleString()} XP).`, variant: 'success' });
+          toast({
+            title: 'XP updated',
+            description: `Now level ${result.level} (${result.xp.toLocaleString()} XP).`,
+            variant: 'success',
+          });
           onOpenChange(false);
         },
         onError: (err) =>
@@ -76,12 +80,23 @@ export function XpAdjustDialog({ guildId, open, onOpenChange }: XpAdjustDialogPr
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Adjust XP</DialogTitle>
-          <DialogDescription>Give, remove, or set a member&apos;s XP total directly. Every adjustment is written to the audit log.</DialogDescription>
+          <DialogDescription>
+            Give, remove, or set a member&apos;s XP total directly. Every adjustment is written to the audit
+            log.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <FormField label="Member's Discord user ID" hint="Right-click a member in Discord with Developer Mode on → Copy User ID.">
-            <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="123456789012345678" autoComplete="off" />
+          <FormField
+            label="Member's Discord user ID"
+            hint="Right-click a member in Discord with Developer Mode on → Copy User ID."
+          >
+            <Input
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="123456789012345678"
+              autoComplete="off"
+            />
           </FormField>
 
           <div className="grid grid-cols-2 gap-3">
@@ -98,7 +113,13 @@ export function XpAdjustDialog({ guildId, open, onOpenChange }: XpAdjustDialogPr
               </Select>
             </FormField>
             <FormField label="Amount">
-              <Input type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="100" />
+              <Input
+                type="number"
+                min={0}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="100"
+              />
             </FormField>
           </div>
 

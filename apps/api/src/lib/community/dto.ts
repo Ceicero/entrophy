@@ -1,6 +1,15 @@
 // Maps Prisma rows to the community/economy DTOs in `@entrophy/types/community` (same pattern as
 // apps/api/src/lib/dto.ts, kept in this new file per the community build stage's ownership).
-import type { CommunityEvent, EventRsvp, Giveaway, Poll, PollOption, PollVote, ScheduledAnnouncement, Suggestion } from '@entrophy/database';
+import type {
+  CommunityEvent,
+  EventRsvp,
+  Giveaway,
+  Poll,
+  PollOption,
+  PollVote,
+  ScheduledAnnouncement,
+  Suggestion,
+} from '@entrophy/database';
 import type {
   AnnouncementContentDto,
   AnnouncementDto,
@@ -14,14 +23,22 @@ import type {
 
 export function toPollOptionDto(row: PollOption, votes: PollVote[], anonymous: boolean): PollOptionDto {
   const optionVotes = votes.filter((v) => v.optionId === row.id);
-  const dto: PollOptionDto = { id: row.id, label: row.label, position: row.position, emoji: row.emoji, votes: optionVotes.length };
+  const dto: PollOptionDto = {
+    id: row.id,
+    label: row.label,
+    position: row.position,
+    emoji: row.emoji,
+    votes: optionVotes.length,
+  };
   if (!anonymous) dto.voterIds = optionVotes.map((v) => v.userId);
   return dto;
 }
 
 export function toPollDto(row: Poll & { options: PollOption[]; votes?: PollVote[] }): PollDto {
   const votes = row.votes ?? [];
-  const options = [...row.options].sort((a, b) => a.position - b.position).map((o) => toPollOptionDto(o, votes, row.anonymous));
+  const options = [...row.options]
+    .sort((a, b) => a.position - b.position)
+    .map((o) => toPollOptionDto(o, votes, row.anonymous));
   return {
     id: row.id,
     guildId: row.guildId,
@@ -41,8 +58,17 @@ export function toPollDto(row: Poll & { options: PollOption[]; votes?: PollVote[
 }
 
 export function toPollResultsDto(row: Poll, options: PollOption[], votes: PollVote[]): PollResultsDto {
-  const sorted = [...options].sort((a, b) => a.position - b.position).map((o) => toPollOptionDto(o, votes, row.anonymous));
-  return { pollId: row.id, question: row.question, anonymous: row.anonymous, closed: row.closed, totalVotes: votes.length, options: sorted };
+  const sorted = [...options]
+    .sort((a, b) => a.position - b.position)
+    .map((o) => toPollOptionDto(o, votes, row.anonymous));
+  return {
+    pollId: row.id,
+    question: row.question,
+    anonymous: row.anonymous,
+    closed: row.closed,
+    totalVotes: votes.length,
+    options: sorted,
+  };
 }
 
 export function toGiveawayDto(row: Giveaway & { entryCount: number }): GiveawayDto {
@@ -86,7 +112,12 @@ export function toSuggestionDto(row: Suggestion): SuggestionDto {
 }
 
 function toAnnouncementContent(raw: unknown): AnnouncementContentDto {
-  if (raw && typeof raw === 'object' && 'content' in raw && typeof (raw as { content: unknown }).content === 'string') {
+  if (
+    raw &&
+    typeof raw === 'object' &&
+    'content' in raw &&
+    typeof (raw as { content: unknown }).content === 'string'
+  ) {
     return { content: (raw as { content: string }).content };
   }
   return { content: '' };

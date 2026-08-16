@@ -5,7 +5,11 @@ import { hostnameMatchesDomain } from '../engine/scam-list';
 
 describe('automodRuleConfigSchema — REGEX_FILTER catastrophic pattern rejection', () => {
   it('accepts a safe pattern', () => {
-    const result = automodRuleConfigSchema.safeParse({ type: 'REGEX_FILTER', pattern: '\\bbadword\\b', flags: 'i' });
+    const result = automodRuleConfigSchema.safeParse({
+      type: 'REGEX_FILTER',
+      pattern: '\\bbadword\\b',
+      flags: 'i',
+    });
     expect(result.success).toBe(true);
   });
 
@@ -15,7 +19,11 @@ describe('automodRuleConfigSchema — REGEX_FILTER catastrophic pattern rejectio
   });
 
   it('rejects an overlong pattern', () => {
-    const result = automodRuleConfigSchema.safeParse({ type: 'REGEX_FILTER', pattern: 'a'.repeat(300), flags: 'i' });
+    const result = automodRuleConfigSchema.safeParse({
+      type: 'REGEX_FILTER',
+      pattern: 'a'.repeat(300),
+      flags: 'i',
+    });
     expect(result.success).toBe(false);
   });
 
@@ -72,7 +80,11 @@ describe('hostnameMatchesDomain', () => {
 
 describe('DEFAULT_SCAM_KEYWORD_PATTERNS', () => {
   it('matches common bait phrases', () => {
-    const samples = ['FREE NITRO for the first 10!', 'claim your steam gift now', 'you have won a nitro giveaway'];
+    const samples = [
+      'FREE NITRO for the first 10!',
+      'claim your steam gift now',
+      'you have won a nitro giveaway',
+    ];
     for (const sample of samples) {
       expect(DEFAULT_SCAM_KEYWORD_PATTERNS.some((p) => p.test(sample))).toBe(true);
     }

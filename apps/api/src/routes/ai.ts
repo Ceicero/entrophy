@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { encryptSecret } from '@entrophy/core';
+import { assertPublicHttpUrl, encryptSecret, SsrfError, ValidationError } from '@entrophy/core';
 import type { AiSettingsDto, AiTestResultDto, AiUsageSummaryDto } from '@entrophy/types/ai';
 import type { ZodFastifyInstance } from '../lib/http';
 import { requireGuildAccess } from '../lib/guild-access';
@@ -27,7 +27,10 @@ const settingsBodySchema = z.object({
   apiKey: z.string().trim().min(1).max(500).optional(),
   clearKey: z.boolean().optional(),
   allowEnvKeys: z.boolean().optional(),
-  allowedChannelIds: z.array(z.string().regex(/^\d{17,20}$/)).max(50).optional(),
+  allowedChannelIds: z
+    .array(z.string().regex(/^\d{17,20}$/))
+    .max(50)
+    .optional(),
   userCooldownSeconds: z.number().int().min(0).max(3600).optional(),
   dailyTokenBudget: z.number().int().min(1000).max(10_000_000).optional(),
   perUserDailyTokenBudget: z.number().int().min(100).max(1_000_000).optional(),
@@ -59,7 +62,12 @@ interface AiUsageRow {
   createdAt: Date;
 }
 
-function summarizeUsage(guildId: string, days: number, config: AiConfigShape, rows: AiUsageRow[]): AiUsageSummaryDto {
+function summarizeUsage(
+  guildId: string,
+  days: number,
+  config: AiConfigShape,
+  rows: AiUsageRow[],
+): AiUsageSummaryDto {
   const dailyMap = new Map<string, { promptTokens: number; completionTokens: number; requests: number }>();
   const commandMap = new Map<string, { requests: number; totalTokens: number }>();
   let totalPromptTokens = 0;
@@ -112,11 +120,15 @@ function summarizeUsage(guildId: string, days: number, config: AiConfigShape, ro
 
 /** `/guilds/:guildId/ai` — AI assistant settings (provider key never round-tripped in plaintext), usage summary, and a live connection test (ARCHITECTURE.md §10, task spec §K). */
 export default async function aiRoutes(app: ZodFastifyInstance): Promise<void> {
-  app.get('/:guildId/ai/settings', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    const guildId = request.guildId!;
-    const config = await app.configStore.getConfig<AiConfigShape>(guildId, AI_PLUGIN_ID);
-    return toSettingsDto(guildId, config);
-  });
+  app.get(
+    '/:guildId/ai/settings',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      const guildId = request.guildId!;
+      const config = await app.configStore.getConfig<AiConfigShape>(guildId, AI_PLUGIN_ID);
+      return toSettingsDto(guildId, config);
+    },
+  );
 
   app.put(
     '/:guildId/ai/settings',
@@ -125,6 +137,14 @@ export default async function aiRoutes(app: ZodFastifyInstance): Promise<void> {
       const guildId = request.guildId!;
       const session = request.session!;
       const { apiKey, clearKey, ...rest } = request.body;
+
+      if (rest.provider === 'compatible' && rest.baseUrl) {
+        try {
+          await assertPublicHttpUrl(rest.baseUrl);
+        } catch (err) {
+          throw new ValidationError(err instanceof SsrfError ? err.message : 'That base URL is not allowed.');
+        }
+      }
 
       const patch: Partial<AiConfigShape> = { ...rest };
       if (clearKey) {
@@ -143,7 +163,10 @@ export default async function aiRoutes(app: ZodFastifyInstance): Promise<void> {
 
   app.get(
     '/:guildId/ai/usage',
-    { schema: { params: guildIdParamSchema, querystring: usageQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: usageQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request) => {
       const guildId = request.guildId!;
       const days = request.query.days ?? 30;
@@ -169,7 +192,9 @@ export default async function aiRoutes(app: ZodFastifyInstance): Promise<void> {
       const guildId = request.guildId!;
       const session = request.session!;
 
-      const job = await app.queues.botActions().add('bot-action', { type: 'ai.test', guildId, requestedBy: session.userId });
+      const job = await app.queues
+        .botActions()
+        .add('bot-action', { type: 'ai.test', guildId, requestedBy: session.userId });
       // `bot-actions` jobs are processed asynchronously by the bot process — there is no synchronous result to
       // return yet. Report that the check was queued rather than fabricating a result; the dashboard polls
       // `GET /ai/usage` (a `system-test` usage row appears once the bot records the round-trip) or re-runs the

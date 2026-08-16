@@ -25,8 +25,10 @@ export const channelUpdate: PluginEventHandler<'channelUpdate'> = {
 
     const changes: string[] = [];
     if (oldChannel.name !== newChannel.name) changes.push(`Name: ${oldChannel.name} → ${newChannel.name}`);
-    if ('topic' in oldChannel && 'topic' in newChannel && oldChannel.topic !== newChannel.topic) changes.push('Topic changed');
-    if ('nsfw' in oldChannel && 'nsfw' in newChannel && oldChannel.nsfw !== newChannel.nsfw) changes.push(`NSFW: ${oldChannel.nsfw} → ${newChannel.nsfw}`);
+    if ('topic' in oldChannel && 'topic' in newChannel && oldChannel.topic !== newChannel.topic)
+      changes.push('Topic changed');
+    if ('nsfw' in oldChannel && 'nsfw' in newChannel && oldChannel.nsfw !== newChannel.nsfw)
+      changes.push(`NSFW: ${oldChannel.nsfw} → ${newChannel.nsfw}`);
     if (changes.length === 0) return;
 
     await logging.log(newChannel.guild.id, 'channel.update', {

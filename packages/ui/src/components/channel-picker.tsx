@@ -27,7 +27,15 @@ const NONE = '__none__';
 const VOICE_TYPES = new Set([2, 13]);
 
 /** Select over provided Discord channel options, with a text/voice icon per option. */
-export function ChannelPicker({ options, value, onChange, placeholder = 'Select a channel', allowNone = true, noneLabel = 'None', disabled }: ChannelPickerProps) {
+export function ChannelPicker({
+  options,
+  value,
+  onChange,
+  placeholder = 'Select a channel',
+  allowNone = true,
+  noneLabel = 'None',
+  disabled,
+}: ChannelPickerProps) {
   return (
     <Select
       value={value ?? NONE}
@@ -42,7 +50,11 @@ export function ChannelPicker({ options, value, onChange, placeholder = 'Select 
         {options.map((opt) => (
           <SelectItem key={opt.id} value={opt.id}>
             <span className="flex items-center gap-1.5">
-              {VOICE_TYPES.has(opt.type ?? 0) ? <Volume2 className="h-3.5 w-3.5 text-muted-foreground" /> : <Hash className="h-3.5 w-3.5 text-muted-foreground" />}
+              {VOICE_TYPES.has(opt.type ?? 0) ? (
+                <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
               {opt.name}
             </span>
           </SelectItem>

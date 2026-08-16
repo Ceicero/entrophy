@@ -1,4 +1,9 @@
-import { ChannelType, PermissionFlagsBits, SlashCommandBuilder, type GuildTextBasedChannel } from 'discord.js';
+import {
+  ChannelType,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+  type GuildTextBasedChannel,
+} from 'discord.js';
 import { EMBED_LIMITS, ValidationError, truncate } from '@entrophy/core';
 import { infoEmbed, type PluginCommand } from '../../sdk';
 import { AiUnavailableError, enforceCooldown } from '../service';
@@ -11,22 +16,45 @@ const MAX_COUNT = 100;
 const DEFAULT_COUNT = 30;
 const MAX_CHARS_PER_MESSAGE = 400;
 
-const SUMMARIZABLE_CHANNEL_TYPES = [ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread];
+const SUMMARIZABLE_CHANNEL_TYPES = [
+  ChannelType.GuildText,
+  ChannelType.GuildAnnouncement,
+  ChannelType.PublicThread,
+  ChannelType.PrivateThread,
+];
 
 const data = new SlashCommandBuilder()
   .setName('summarize')
   .setDescription('Summarize recent messages in a channel using the AI assistant.')
   .setDMPermission(false)
-  .addIntegerOption((opt) => opt.setName('count').setDescription(`How many recent messages to summarize (${MIN_COUNT}-${MAX_COUNT}, default ${DEFAULT_COUNT})`).setMinValue(MIN_COUNT).setMaxValue(MAX_COUNT))
+  .addIntegerOption((opt) =>
+    opt
+      .setName('count')
+      .setDescription(
+        `How many recent messages to summarize (${MIN_COUNT}-${MAX_COUNT}, default ${DEFAULT_COUNT})`,
+      )
+      .setMinValue(MIN_COUNT)
+      .setMaxValue(MAX_COUNT),
+  )
   .addChannelOption((opt) =>
     opt
       .setName('channel')
       .setDescription('Channel to summarize (default: this channel)')
-      .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread),
+      .addChannelTypes(
+        ChannelType.GuildText,
+        ChannelType.GuildAnnouncement,
+        ChannelType.PublicThread,
+        ChannelType.PrivateThread,
+      ),
   );
 
 function isSummarizable(channel: unknown): channel is GuildTextBasedChannel {
-  return channel != null && typeof channel === 'object' && 'type' in channel && SUMMARIZABLE_CHANNEL_TYPES.includes((channel as { type: ChannelType }).type);
+  return (
+    channel != null &&
+    typeof channel === 'object' &&
+    'type' in channel &&
+    SUMMARIZABLE_CHANNEL_TYPES.includes((channel as { type: ChannelType }).type)
+  );
 }
 
 export const command: PluginCommand = {
@@ -84,7 +112,10 @@ export const command: PluginCommand = {
       prompt: buildSummarizePrompt(messages),
     });
 
-    const embed = infoEmbed(c.t('summarize.replyTitle', { channel: targetChannel.name }), truncate(result.text, EMBED_LIMITS.description)).setFooter({
+    const embed = infoEmbed(
+      c.t('summarize.replyTitle', { channel: targetChannel.name }),
+      truncate(result.text, EMBED_LIMITS.description),
+    ).setFooter({
       text: AI_DISCLOSURE,
     });
     await c.interaction.editReply({ embeds: [embed] });

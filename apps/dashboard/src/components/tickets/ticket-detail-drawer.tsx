@@ -47,7 +47,12 @@ export function TicketDetailDrawer({ guildId, ticketId, onOpenChange }: TicketDe
       { ticketId: ticket.id, assigneeId: assigneeInput.trim() || null },
       {
         onSuccess: () => toast({ title: 'Assignee updated', variant: 'success' }),
-        onError: (err) => toast({ title: 'Could not update assignee', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+        onError: (err) =>
+          toast({
+            title: 'Could not update assignee',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -58,11 +63,20 @@ export function TicketDetailDrawer({ guildId, ticketId, onOpenChange }: TicketDe
       { ticketId: ticket.id, reason: closeReason.trim() || undefined },
       {
         onSuccess: () => {
-          toast({ title: 'Closing ticket…', description: 'The bot is generating the transcript and locking the channel.', variant: 'success' });
+          toast({
+            title: 'Closing ticket…',
+            description: 'The bot is generating the transcript and locking the channel.',
+            variant: 'success',
+          });
           setCloseOpen(false);
           setCloseReason('');
         },
-        onError: (err) => toast({ title: 'Could not close ticket', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+        onError: (err) =>
+          toast({
+            title: 'Could not close ticket',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -87,7 +101,9 @@ export function TicketDetailDrawer({ guildId, ticketId, onOpenChange }: TicketDe
             <div className="flex-1 space-y-5 overflow-y-auto py-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={ticket.status === 'OPEN' ? 'success' : 'outline'}>{ticket.status}</Badge>
-                <Badge variant="outline">{ticket.mode === 'CHANNEL' ? 'Private channel' : 'Private thread'}</Badge>
+                <Badge variant="outline">
+                  {ticket.mode === 'CHANNEL' ? 'Private channel' : 'Private thread'}
+                </Badge>
                 {ticket.slaBreached ? <Badge variant="destructive">SLA breached</Badge> : null}
                 {ticket.tags.map((tag) => (
                   <Badge key={tag} variant="secondary">
@@ -128,12 +144,24 @@ export function TicketDetailDrawer({ guildId, ticketId, onOpenChange }: TicketDe
               <div className="space-y-2">
                 <Label htmlFor="assignee">Assignee</Label>
                 <div className="flex gap-2">
-                  <Input id="assignee" value={assigneeInput} placeholder="Staff user ID" onChange={(e) => setAssigneeInput(e.target.value)} disabled={assign.isPending} />
+                  <Input
+                    id="assignee"
+                    value={assigneeInput}
+                    placeholder="Staff user ID"
+                    onChange={(e) => setAssigneeInput(e.target.value)}
+                    disabled={assign.isPending}
+                  />
                   <Button variant="outline" onClick={handleAssign} disabled={assign.isPending}>
                     Save
                   </Button>
                   {assigneeInput ? (
-                    <Button variant="ghost" size="icon" aria-label="Clear assignee" onClick={() => setAssigneeInput('')} disabled={assign.isPending}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Clear assignee"
+                      onClick={() => setAssigneeInput('')}
+                      disabled={assign.isPending}
+                    >
                       <XIcon className="h-4 w-4" />
                     </Button>
                   ) : null}
@@ -173,7 +201,11 @@ export function TicketDetailDrawer({ guildId, ticketId, onOpenChange }: TicketDe
                     </a>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">{ticket.status === 'OPEN' ? 'Generated when the ticket closes.' : 'No transcript available.'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {ticket.status === 'OPEN'
+                      ? 'Generated when the ticket closes.'
+                      : 'No transcript available.'}
+                  </p>
                 )}
               </div>
             </div>
@@ -193,7 +225,11 @@ export function TicketDetailDrawer({ guildId, ticketId, onOpenChange }: TicketDe
               description={
                 <div className="space-y-2 text-left">
                   <p>A transcript will be generated and the channel/thread will be locked.</p>
-                  <Input placeholder="Reason (optional)" value={closeReason} onChange={(e) => setCloseReason(e.target.value)} />
+                  <Input
+                    placeholder="Reason (optional)"
+                    value={closeReason}
+                    onChange={(e) => setCloseReason(e.target.value)}
+                  />
                 </div>
               }
               confirmLabel="Close ticket"

@@ -2,7 +2,16 @@
 
 import { Plus, X } from 'lucide-react';
 import type { EnforcerMatcherDto } from '@entrophy/types';
-import { Button, Checkbox, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@entrophy/ui';
+import {
+  Button,
+  Checkbox,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@entrophy/ui';
 
 const MATCHER_TYPES: { value: EnforcerMatcherDto['type']; label: string }[] = [
   { value: 'keyword', label: 'Keyword (word match)' },
@@ -56,7 +65,16 @@ export function MatcherBuilder({ matchers, onChange, disabled }: MatcherBuilderP
       {matchers.map((matcher, index) => (
         <div key={index} className="space-y-2 rounded-md border border-border p-3">
           <div className="flex items-center gap-2">
-            <Select value={matcher.type} onValueChange={(v) => updateMatcher(index, { type: v as EnforcerMatcherDto['type'], value: v === 'mention_count' ? 1 : '' })} disabled={disabled}>
+            <Select
+              value={matcher.type}
+              onValueChange={(v) =>
+                updateMatcher(index, {
+                  type: v as EnforcerMatcherDto['type'],
+                  value: v === 'mention_count' ? 1 : '',
+                })
+              }
+              disabled={disabled}
+            >
               <SelectTrigger className="w-64">
                 <SelectValue />
               </SelectTrigger>
@@ -68,13 +86,22 @@ export function MatcherBuilder({ matchers, onChange, disabled }: MatcherBuilderP
                 ))}
               </SelectContent>
             </Select>
-            <Button type="button" variant="ghost" size="icon" onClick={() => removeMatcher(index)} disabled={disabled || matchers.length <= 1} aria-label="Remove matcher">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => removeMatcher(index)}
+              disabled={disabled || matchers.length <= 1}
+              aria-label="Remove matcher"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
 
           {matcher.type === 'invite' ? (
-            <p className="text-xs text-muted-foreground">Matches any Discord invite link found in the message — no value needed.</p>
+            <p className="text-xs text-muted-foreground">
+              Matches any Discord invite link found in the message — no value needed.
+            </p>
           ) : matcher.type === 'mention_count' ? (
             <Input
               type="number"
@@ -89,19 +116,33 @@ export function MatcherBuilder({ matchers, onChange, disabled }: MatcherBuilderP
               value={valueToText(matcher.value)}
               onChange={(e) => updateMatcher(index, { value: textToValue(matcher.type, e.target.value) })}
               disabled={disabled}
-              placeholder={matcher.type === 'regex' ? 'Regex pattern' : matcher.type === 'link_domain' ? 'Comma-separated domains, blank = any link' : 'Comma-separated values'}
+              placeholder={
+                matcher.type === 'regex'
+                  ? 'Regex pattern'
+                  : matcher.type === 'link_domain'
+                    ? 'Comma-separated domains, blank = any link'
+                    : 'Comma-separated values'
+              }
             />
           )}
 
-          {(matcher.type === 'keyword' || matcher.type === 'phrase' || matcher.type === 'regex') ? (
+          {matcher.type === 'keyword' || matcher.type === 'phrase' || matcher.type === 'regex' ? (
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 text-xs">
-                <Checkbox checked={Boolean(matcher.caseSensitive)} onCheckedChange={(v) => updateMatcher(index, { caseSensitive: v === true })} disabled={disabled} />
+                <Checkbox
+                  checked={Boolean(matcher.caseSensitive)}
+                  onCheckedChange={(v) => updateMatcher(index, { caseSensitive: v === true })}
+                  disabled={disabled}
+                />
                 Case-sensitive
               </label>
               {matcher.type === 'keyword' ? (
                 <label className="flex items-center gap-2 text-xs">
-                  <Checkbox checked={matcher.wholeWord !== false} onCheckedChange={(v) => updateMatcher(index, { wholeWord: v === true })} disabled={disabled} />
+                  <Checkbox
+                    checked={matcher.wholeWord !== false}
+                    onCheckedChange={(v) => updateMatcher(index, { wholeWord: v === true })}
+                    disabled={disabled}
+                  />
                   Whole word only
                 </label>
               ) : null}

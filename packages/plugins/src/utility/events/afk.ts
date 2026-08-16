@@ -29,7 +29,9 @@ async function notifyAboutAfkMentions(ctx: PluginContext, message: Message<true>
     const acquired = await ctx.redis.set(dedupeKey, '1', 'EX', MENTION_NOTICE_COOLDOWN_SECONDS, 'NX');
     if (acquired !== 'OK') continue;
 
-    lines.push(`<@${user.id}> is AFK${status.message ? `: ${status.message}` : ''} (since <t:${Math.floor(status.since.getTime() / 1000)}:R>)`);
+    lines.push(
+      `<@${user.id}> is AFK${status.message ? `: ${status.message}` : ''} (since <t:${Math.floor(status.since.getTime() / 1000)}:R>)`,
+    );
   }
 
   if (lines.length === 0) return;
@@ -40,7 +42,10 @@ async function notifyAboutAfkMentions(ctx: PluginContext, message: Message<true>
       allowedMentions: { parse: [] },
     });
   } catch (err) {
-    ctx.logger.warn({ err: err instanceof Error ? err.message : String(err), guildId: message.guildId }, 'utility: failed to send an AFK mention notice');
+    ctx.logger.warn(
+      { err: err instanceof Error ? err.message : String(err), guildId: message.guildId },
+      'utility: failed to send an AFK mention notice',
+    );
   }
 }
 

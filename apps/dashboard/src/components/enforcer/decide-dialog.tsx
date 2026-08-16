@@ -2,7 +2,19 @@
 
 import * as React from 'react';
 import type { EnforcerRecordDto } from '@entrophy/types';
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, FormField, Input, Textarea, useToast } from '@entrophy/ui';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  FormField,
+  Input,
+  Textarea,
+  useToast,
+} from '@entrophy/ui';
 import { useDecideEnforcerRecord, type DecideInput } from '../../lib/enforcer-queries';
 import { ApiClientError } from '../../lib/api';
 
@@ -35,16 +47,30 @@ export function DecideDialog({ guildId, record, decision, onOpenChange }: Decide
   function handleConfirm() {
     if (!record || !decision) return;
     const durationMs = duration.trim() ? parseDurationLoose(duration.trim()) : undefined;
-    const banDeleteMessageSeconds = decision === 'BAN' && deleteDays.trim() ? Math.min(7, Math.max(0, Number(deleteDays))) * 86_400 : undefined;
+    const banDeleteMessageSeconds =
+      decision === 'BAN' && deleteDays.trim()
+        ? Math.min(7, Math.max(0, Number(deleteDays))) * 86_400
+        : undefined;
 
     decide.mutate(
-      { recordNumber: record.recordNumber, decision, reason: reason.trim() || undefined, durationMs, banDeleteMessageSeconds },
+      {
+        recordNumber: record.recordNumber,
+        decision,
+        reason: reason.trim() || undefined,
+        durationMs,
+        banDeleteMessageSeconds,
+      },
       {
         onSuccess: () => {
           toast({ title: `${decision} queued for record #E-${record.recordNumber}`, variant: 'success' });
           onOpenChange(false);
         },
-        onError: (err) => toast({ title: 'Could not record decision', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+        onError: (err) =>
+          toast({
+            title: 'Could not record decision',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -56,21 +82,41 @@ export function DecideDialog({ guildId, record, decision, onOpenChange }: Decide
           <DialogTitle>
             {decision} — record #E-{record?.recordNumber}
           </DialogTitle>
-          <DialogDescription>This is executed through the bot (moderation plugin, hierarchy checks, and — unless turned off — a DM to the user).</DialogDescription>
+          <DialogDescription>
+            This is executed through the bot (moderation plugin, hierarchy checks, and — unless turned off — a
+            DM to the user).
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <FormField label="Reason">
-            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={1000} disabled={decide.isPending} />
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              maxLength={1000}
+              disabled={decide.isPending}
+            />
           </FormField>
           {decision && NEEDS_DURATION.includes(decision) ? (
             <FormField label="Duration" hint="e.g. 30m, 2h — blank uses the server default.">
-              <Input value={duration} onChange={(e) => setDuration(e.target.value)} disabled={decide.isPending} />
+              <Input
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                disabled={decide.isPending}
+              />
             </FormField>
           ) : null}
           {decision === 'BAN' ? (
             <FormField label="Delete messages from the last N days (0-7)">
-              <Input type="number" min={0} max={7} value={deleteDays} onChange={(e) => setDeleteDays(e.target.value)} disabled={decide.isPending} />
+              <Input
+                type="number"
+                min={0}
+                max={7}
+                value={deleteDays}
+                onChange={(e) => setDeleteDays(e.target.value)}
+                disabled={decide.isPending}
+              />
             </FormField>
           ) : null}
         </div>
@@ -79,7 +125,11 @@ export function DecideDialog({ guildId, record, decision, onOpenChange }: Decide
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={decide.isPending}>
             Cancel
           </Button>
-          <Button variant={decision === 'KICK' || decision === 'BAN' ? 'destructive' : 'default'} onClick={handleConfirm} disabled={decide.isPending}>
+          <Button
+            variant={decision === 'KICK' || decision === 'BAN' ? 'destructive' : 'default'}
+            onClick={handleConfirm}
+            disabled={decide.isPending}
+          >
             {decide.isPending ? 'Recording…' : `Confirm ${decision}`}
           </Button>
         </DialogFooter>

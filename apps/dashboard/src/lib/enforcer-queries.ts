@@ -7,10 +7,13 @@ import { API_BASE_URL, apiFetch, toQueryString } from './api';
 export const enforcerQueryKeys = {
   settings: (guildId: string) => ['guilds', guildId, 'enforcer', 'settings'] as const,
   policies: (guildId: string) => ['guilds', guildId, 'enforcer', 'policies'] as const,
-  policy: (guildId: string, policyId: string) => ['guilds', guildId, 'enforcer', 'policies', policyId] as const,
+  policy: (guildId: string, policyId: string) =>
+    ['guilds', guildId, 'enforcer', 'policies', policyId] as const,
   queue: (guildId: string) => ['guilds', guildId, 'enforcer', 'queue'] as const,
-  records: (guildId: string, filters: EnforcerRecordFilters) => ['guilds', guildId, 'enforcer', 'records', filters] as const,
-  record: (guildId: string, recordNumber: number) => ['guilds', guildId, 'enforcer', 'records', recordNumber] as const,
+  records: (guildId: string, filters: EnforcerRecordFilters) =>
+    ['guilds', guildId, 'enforcer', 'records', filters] as const,
+  record: (guildId: string, recordNumber: number) =>
+    ['guilds', guildId, 'enforcer', 'records', recordNumber] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -28,7 +31,8 @@ export function useEnforcerSettings(guildId: string | undefined) {
 export function useUpdateEnforcerSettings(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (patch: Partial<EnforcerSettingsDto>) => apiFetch<EnforcerSettingsDto>(`/guilds/${guildId}/enforcer/settings`, { method: 'PUT', body: patch }),
+    mutationFn: (patch: Partial<EnforcerSettingsDto>) =>
+      apiFetch<EnforcerSettingsDto>(`/guilds/${guildId}/enforcer/settings`, { method: 'PUT', body: patch }),
     onSuccess: (data) => {
       queryClient.setQueryData(enforcerQueryKeys.settings(guildId), data);
     },
@@ -47,12 +51,16 @@ export function useEnforcerPolicies(guildId: string | undefined) {
   });
 }
 
-export type EnforcerPolicyInput = Omit<EnforcerPolicyDto, 'id' | 'guildId' | 'createdBy' | 'updatedBy' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
+export type EnforcerPolicyInput = Omit<
+  EnforcerPolicyDto,
+  'id' | 'guildId' | 'createdBy' | 'updatedBy' | 'createdAt' | 'updatedAt' | 'deletedAt'
+>;
 
 export function useCreateEnforcerPolicy(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: EnforcerPolicyInput) => apiFetch<EnforcerPolicyDto>(`/guilds/${guildId}/enforcer/policies`, { method: 'POST', body }),
+    mutationFn: (body: EnforcerPolicyInput) =>
+      apiFetch<EnforcerPolicyDto>(`/guilds/${guildId}/enforcer/policies`, { method: 'POST', body }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: enforcerQueryKeys.policies(guildId) });
     },
@@ -63,7 +71,10 @@ export function useUpdateEnforcerPolicy(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ policyId, patch }: { policyId: string; patch: Partial<EnforcerPolicyInput> }) =>
-      apiFetch<EnforcerPolicyDto>(`/guilds/${guildId}/enforcer/policies/${policyId}`, { method: 'PUT', body: patch }),
+      apiFetch<EnforcerPolicyDto>(`/guilds/${guildId}/enforcer/policies/${policyId}`, {
+        method: 'PUT',
+        body: patch,
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: enforcerQueryKeys.policies(guildId) });
     },
@@ -73,7 +84,8 @@ export function useUpdateEnforcerPolicy(guildId: string) {
 export function useDeleteEnforcerPolicy(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (policyId: string) => apiFetch<void>(`/guilds/${guildId}/enforcer/policies/${policyId}`, { method: 'DELETE' }),
+    mutationFn: (policyId: string) =>
+      apiFetch<void>(`/guilds/${guildId}/enforcer/policies/${policyId}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: enforcerQueryKeys.policies(guildId) });
     },
@@ -88,7 +100,10 @@ export interface EnforcerPolicyTestResult {
 export function useTestEnforcerPolicy(guildId: string) {
   return useMutation({
     mutationFn: ({ policyId, text }: { policyId: string; text: string }) =>
-      apiFetch<EnforcerPolicyTestResult>(`/guilds/${guildId}/enforcer/policies/${policyId}/test`, { method: 'POST', body: { text } }),
+      apiFetch<EnforcerPolicyTestResult>(`/guilds/${guildId}/enforcer/policies/${policyId}/test`, {
+        method: 'POST',
+        body: { text },
+      }),
   });
 }
 
@@ -117,7 +132,10 @@ export function useDecideEnforcerRecord(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ recordNumber, ...body }: DecideInput) =>
-      apiFetch<{ queued: boolean }>(`/guilds/${guildId}/enforcer/records/${recordNumber}/decide`, { method: 'POST', body }),
+      apiFetch<{ queued: boolean }>(`/guilds/${guildId}/enforcer/records/${recordNumber}/decide`, {
+        method: 'POST',
+        body,
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: enforcerQueryKeys.queue(guildId) });
       void queryClient.invalidateQueries({ queryKey: ['guilds', guildId, 'enforcer', 'records'] });
@@ -143,7 +161,10 @@ export interface EnforcerRecordFilters {
 export function useEnforcerRecords(guildId: string | undefined, filters: EnforcerRecordFilters = {}) {
   return useQuery({
     queryKey: enforcerQueryKeys.records(guildId ?? '', filters),
-    queryFn: () => apiFetch<Paginated<EnforcerRecordDto>>(`/guilds/${guildId}/enforcer/records${toQueryString({ ...filters })}`),
+    queryFn: () =>
+      apiFetch<Paginated<EnforcerRecordDto>>(
+        `/guilds/${guildId}/enforcer/records${toQueryString({ ...filters })}`,
+      ),
     enabled: Boolean(guildId),
   });
 }

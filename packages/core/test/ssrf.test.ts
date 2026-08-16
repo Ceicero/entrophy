@@ -45,14 +45,16 @@ describe('assertPublicHttpUrl', () => {
   });
 
   it('rejects a literal private IPv4 host', async () => {
-    await expect(assertPublicHttpUrl('https://127.0.0.1/webhook', { allowPorts: [443] })).rejects.toBeInstanceOf(
-      SsrfError,
-    );
+    await expect(
+      assertPublicHttpUrl('https://127.0.0.1/webhook', { allowPorts: [443] }),
+    ).rejects.toBeInstanceOf(SsrfError);
     await expect(assertPublicHttpUrl('https://10.0.0.5/webhook')).rejects.toBeInstanceOf(SsrfError);
   });
 
   it('rejects the cloud metadata IP', async () => {
-    await expect(assertPublicHttpUrl('https://169.254.169.254/latest/meta-data')).rejects.toBeInstanceOf(SsrfError);
+    await expect(assertPublicHttpUrl('https://169.254.169.254/latest/meta-data')).rejects.toBeInstanceOf(
+      SsrfError,
+    );
   });
 
   it('rejects a literal IPv6 link-local host', async () => {
@@ -72,7 +74,9 @@ describe('assertPublicHttpUrl', () => {
   });
 
   it('accepts a public https URL resolving to a public address', async () => {
-    const url = await assertPublicHttpUrl('https://example.com/webhook', { lookup: lookupTo('93.184.216.34') });
+    const url = await assertPublicHttpUrl('https://example.com/webhook', {
+      lookup: lookupTo('93.184.216.34'),
+    });
     expect(url.hostname).toBe('example.com');
   });
 

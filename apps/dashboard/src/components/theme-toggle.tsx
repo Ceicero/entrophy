@@ -19,7 +19,15 @@ export function ThemeToggle() {
       variant="ghost"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
     >
-      {mounted ? isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" /> : <span className="h-4 w-4" />}
+      {mounted ? (
+        isDark ? (
+          <Sun className="h-4 w-4" />
+        ) : (
+          <Moon className="h-4 w-4" />
+        )
+      ) : (
+        <span className="h-4 w-4" />
+      )}
     </IconButton>
   );
 }

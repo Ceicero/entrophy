@@ -26,7 +26,9 @@ export function resolveApiKey(config: AiConfig, env: ResolveKeyEnv): ResolvedKey
     }
   }
 
-  if (config.allowEnvKeys) {
+  // Never fall back to the operator's environment key for a guild-supplied `compatible` base URL — that would
+  // send the operator's OpenAI key as a Bearer token to a third-party host the guild controls.
+  if (config.allowEnvKeys && config.provider !== 'compatible') {
     const envKeyName = envKeyNameFor(config.provider);
     const envKey = env[envKeyName];
     if (envKey) {

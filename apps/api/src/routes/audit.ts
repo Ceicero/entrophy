@@ -16,7 +16,10 @@ const listQuerySchema = paginationQuerySchema.extend({
 export default async function auditRoutes(app: ZodFastifyInstance): Promise<void> {
   app.get(
     '/:guildId/audit',
-    { schema: { params: guildIdParamSchema, querystring: listQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: listQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<Paginated<AuditLogEntryDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit, action, actorId } = request.query;
@@ -39,7 +42,11 @@ export default async function auditRoutes(app: ZodFastifyInstance): Promise<void
     { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
     async (request, reply) => {
       const guildId = request.guildId!;
-      const rows = await app.prisma.auditLog.findMany({ where: { guildId }, orderBy: { createdAt: 'desc' }, take: 10000 });
+      const rows = await app.prisma.auditLog.findMany({
+        where: { guildId },
+        orderBy: { createdAt: 'desc' },
+        take: 10000,
+      });
       const csv = toCsv(
         rows.map((row) => ({
           id: row.id,

@@ -18,16 +18,37 @@ const data = new SlashCommandBuilder()
   .setName('music')
   .setDescription('Manage the music queue.')
   .setDMPermission(false)
-  .addSubcommand((sub) => sub.setName('play').setDescription('Search and queue a track.').addStringOption((opt) => opt.setName('query').setDescription('Search text or a track URL').setRequired(true)))
+  .addSubcommand((sub) =>
+    sub
+      .setName('play')
+      .setDescription('Search and queue a track.')
+      .addStringOption((opt) =>
+        opt.setName('query').setDescription('Search text or a track URL').setRequired(true),
+      ),
+  )
   .addSubcommand((sub) => sub.setName('queue').setDescription('Show the current queue.'))
   .addSubcommand((sub) => sub.setName('skip').setDescription('Skip to the next track.'))
   .addSubcommand((sub) => sub.setName('pause').setDescription('Pause playback.'))
   .addSubcommand((sub) => sub.setName('resume').setDescription('Resume playback.'))
   .addSubcommand((sub) =>
-    sub.setName('volume').setDescription('Set the volume (0-150).').addIntegerOption((opt) => opt.setName('level').setDescription('0-150').setRequired(true).setMinValue(0).setMaxValue(150)),
+    sub
+      .setName('volume')
+      .setDescription('Set the volume (0-150).')
+      .addIntegerOption((opt) =>
+        opt.setName('level').setDescription('0-150').setRequired(true).setMinValue(0).setMaxValue(150),
+      ),
   )
   .addSubcommand((sub) =>
-    sub.setName('loop').setDescription('Set the loop mode.').addStringOption((opt) => opt.setName('mode').setDescription('Loop mode').setRequired(true).addChoices(...LOOP_CHOICES)),
+    sub
+      .setName('loop')
+      .setDescription('Set the loop mode.')
+      .addStringOption((opt) =>
+        opt
+          .setName('mode')
+          .setDescription('Loop mode')
+          .setRequired(true)
+          .addChoices(...LOOP_CHOICES),
+      ),
   )
   .addSubcommand((sub) => sub.setName('stop').setDescription('Stop playback and clear the queue.'))
   .addSubcommand((sub) => sub.setName('shuffle').setDescription('Shuffle the upcoming tracks.'))
@@ -36,10 +57,31 @@ const data = new SlashCommandBuilder()
     group
       .setName('playlist')
       .setDescription('Saved playlists.')
-      .addSubcommand((sub) => sub.setName('save').setDescription('Save the current queue as a playlist.').addStringOption((opt) => opt.setName('name').setDescription('Playlist name').setRequired(true).setMaxLength(100)))
-      .addSubcommand((sub) => sub.setName('load').setDescription('Queue a saved playlist.').addStringOption((opt) => opt.setName('name').setDescription('Playlist name').setRequired(true).setAutocomplete(true)))
+      .addSubcommand((sub) =>
+        sub
+          .setName('save')
+          .setDescription('Save the current queue as a playlist.')
+          .addStringOption((opt) =>
+            opt.setName('name').setDescription('Playlist name').setRequired(true).setMaxLength(100),
+          ),
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('load')
+          .setDescription('Queue a saved playlist.')
+          .addStringOption((opt) =>
+            opt.setName('name').setDescription('Playlist name').setRequired(true).setAutocomplete(true),
+          ),
+      )
       .addSubcommand((sub) => sub.setName('list').setDescription('List saved playlists.'))
-      .addSubcommand((sub) => sub.setName('delete').setDescription('Delete a saved playlist.').addStringOption((opt) => opt.setName('name').setDescription('Playlist name').setRequired(true).setAutocomplete(true))),
+      .addSubcommand((sub) =>
+        sub
+          .setName('delete')
+          .setDescription('Delete a saved playlist.')
+          .addStringOption((opt) =>
+            opt.setName('name').setDescription('Playlist name').setRequired(true).setAutocomplete(true),
+          ),
+      ),
   );
 
 function playlistKey(name: string): string {
@@ -48,7 +90,9 @@ function playlistKey(name: string): string {
 
 function formatTrack(track: Track, index?: number): string {
   const prefix = index !== undefined ? `${index + 1}. ` : '';
-  const duration = track.durationSec ? ` (${Math.floor(track.durationSec / 60)}:${String(track.durationSec % 60).padStart(2, '0')})` : '';
+  const duration = track.durationSec
+    ? ` (${Math.floor(track.durationSec / 60)}:${String(track.durationSec % 60).padStart(2, '0')})`
+    : '';
   const artist = track.artist ? ` — ${track.artist}` : '';
   return `${prefix}[${track.title}${artist}](${track.url})${duration}`;
 }
@@ -57,7 +101,11 @@ function queueSummaryLines(state: QueueState): string[] {
   if (state.tracks.length === 0) return ['The queue is empty.'];
   const lines: string[] = [];
   const current = state.currentIndex >= 0 ? state.tracks[state.currentIndex] : undefined;
-  lines.push(current ? `${state.playing ? '▶️ Now playing' : '⏸️ Paused'}: ${formatTrack(current)}` : 'Nothing is currently selected.');
+  lines.push(
+    current
+      ? `${state.playing ? '▶️ Now playing' : '⏸️ Paused'}: ${formatTrack(current)}`
+      : 'Nothing is currently selected.',
+  );
   lines.push(`Volume: ${state.volume} · Loop: ${state.loop}`);
   const upcoming = state.tracks.slice(state.currentIndex + 1, state.currentIndex + 11);
   if (upcoming.length > 0) {
@@ -93,7 +141,10 @@ export const command: PluginCommand = {
         isAloneInVoiceChannel: isAlone,
       });
 
-    if ((group === 'playlist' && PLAYLIST_MUTATING_SUBCOMMANDS.has(sub)) || (!group && MUTATING_SUBCOMMANDS.has(sub))) {
+    if (
+      (group === 'playlist' && PLAYLIST_MUTATING_SUBCOMMANDS.has(sub)) ||
+      (!group && MUTATING_SUBCOMMANDS.has(sub))
+    ) {
       if (!djAllowed()) {
         throw new PermissionError(c.t('errors.notDj'));
       }
@@ -122,7 +173,10 @@ export const command: PluginCommand = {
       }
       case 'queue': {
         const state = await queueManager.getState(c.guildId, config.defaultVolume);
-        await c.interaction.reply({ embeds: [listEmbed(c.t('queue.title'), queueSummaryLines(state))], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [listEmbed(c.t('queue.title'), queueSummaryLines(state))],
+          ephemeral: true,
+        });
         return;
       }
       case 'skip': {
@@ -143,7 +197,10 @@ export const command: PluginCommand = {
       case 'volume': {
         const level = c.interaction.options.getInteger('level', true);
         const state = await queueManager.setVolume(c.guildId, level);
-        await c.interaction.reply({ embeds: [successEmbed(c.t('volume.done', { level: state.volume }))], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [successEmbed(c.t('volume.done', { level: state.volume }))],
+          ephemeral: true,
+        });
         return;
       }
       case 'loop': {
@@ -159,7 +216,10 @@ export const command: PluginCommand = {
       }
       case 'shuffle': {
         const state = await queueManager.shuffle(c.guildId);
-        await c.interaction.reply({ embeds: [successEmbed(c.t('shuffle.done', { count: state.tracks.length }))], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [successEmbed(c.t('shuffle.done', { count: state.tracks.length }))],
+          ephemeral: true,
+        });
         return;
       }
       case 'nowplaying': {
@@ -185,11 +245,18 @@ export const command: PluginCommand = {
     const matches = Object.values(config.playlists)
       .filter((p) => p.name.toLowerCase().includes(query))
       .slice(0, 25);
-    await c.interaction.respond(matches.map((p) => ({ name: `${p.name} (${p.tracks.length} tracks)`, value: p.name })));
+    await c.interaction.respond(
+      matches.map((p) => ({ name: `${p.name} (${p.tracks.length} tracks)`, value: p.name })),
+    );
   },
 };
 
-async function handlePlaylistSubcommand(c: CommandContext, sub: string, config: MediaConfig, queueManager: MediaQueueManager): Promise<void> {
+async function handlePlaylistSubcommand(
+  c: CommandContext,
+  sub: string,
+  config: MediaConfig,
+  queueManager: MediaQueueManager,
+): Promise<void> {
   const actor = { id: c.interaction.user.id, source: 'bot' as const };
 
   if (sub === 'list') {
@@ -207,7 +274,12 @@ async function handlePlaylistSubcommand(c: CommandContext, sub: string, config: 
     const key = playlistKey(name);
     const nextPlaylists = {
       ...config.playlists,
-      [key]: { name, tracks: state.tracks, createdBy: c.interaction.user.id, createdAt: new Date().toISOString() },
+      [key]: {
+        name,
+        tracks: state.tracks,
+        createdBy: c.interaction.user.id,
+        createdAt: new Date().toISOString(),
+      },
     };
     await c.ctx.setConfig<MediaConfig>(c.guildId, { playlists: nextPlaylists }, actor);
     await c.interaction.reply({ embeds: [successEmbed(c.t('playlist.saved', { name }))], ephemeral: true });
@@ -222,7 +294,12 @@ async function handlePlaylistSubcommand(c: CommandContext, sub: string, config: 
     }
     const tracksWithFreshIds: Track[] = playlist.tracks.map((t) => ({ ...t, id: newId() }));
     await queueManager.add(c.guildId, tracksWithFreshIds, config.defaultVolume);
-    await c.interaction.reply({ embeds: [successEmbed(c.t('playlist.loaded', { name: playlist.name, count: tracksWithFreshIds.length }))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [
+        successEmbed(c.t('playlist.loaded', { name: playlist.name, count: tracksWithFreshIds.length })),
+      ],
+      ephemeral: true,
+    });
     return;
   }
 

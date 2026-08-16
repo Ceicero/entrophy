@@ -12,7 +12,10 @@ export default function EngagementPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Engagement" description="Leveling and XP, reputation, the starboard, and temporary voice channels." />
+      <PageHeader
+        title="Engagement"
+        description="Leveling and XP, reputation, the starboard, and temporary voice channels."
+      />
 
       <Tabs defaultValue="leveling">
         <TabsList>

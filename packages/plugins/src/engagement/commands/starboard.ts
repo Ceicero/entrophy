@@ -15,25 +15,47 @@ const data = new SlashCommandBuilder()
         sub
           .setName('channel')
           .setDescription('Channel starred messages get posted to.')
-          .addChannelOption((opt) => opt.setName('channel').setDescription('Leave empty to disable the starboard.').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)),
+          .addChannelOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('Leave empty to disable the starboard.')
+              .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('threshold')
           .setDescription('How many stars a message needs to be posted.')
-          .addIntegerOption((opt) => opt.setName('count').setDescription('Star count required.').setMinValue(1).setMaxValue(1000).setRequired(true)),
+          .addIntegerOption((opt) =>
+            opt
+              .setName('count')
+              .setDescription('Star count required.')
+              .setMinValue(1)
+              .setMaxValue(1000)
+              .setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('emoji')
           .setDescription('Which emoji counts as a star.')
-          .addStringOption((opt) => opt.setName('emoji').setDescription('A unicode emoji or a custom emoji from this server.').setRequired(true)),
+          .addStringOption((opt) =>
+            opt
+              .setName('emoji')
+              .setDescription('A unicode emoji or a custom emoji from this server.')
+              .setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('selfstar')
           .setDescription('Whether authors can star their own message.')
-          .addBooleanOption((opt) => opt.setName('ignore').setDescription('True = self-stars do not count (default).').setRequired(true)),
+          .addBooleanOption((opt) =>
+            opt
+              .setName('ignore')
+              .setDescription('True = self-stars do not count (default).')
+              .setRequired(true),
+          ),
       ),
   )
   .addSubcommand((sub) => sub.setName('status').setDescription('Show the current starboard configuration.'));
@@ -49,9 +71,19 @@ export const command: PluginCommand = {
     if (group === 'set') {
       if (sub === 'channel') {
         const channel = c.interaction.options.getChannel('channel');
-        await c.ctx.setConfig<EngagementConfig>(c.guildId, { starboard: { ...config.starboard, channelId: channel?.id ?? null } }, { id: c.interaction.user.id, source: 'bot' });
+        await c.ctx.setConfig<EngagementConfig>(
+          c.guildId,
+          { starboard: { ...config.starboard, channelId: channel?.id ?? null } },
+          { id: c.interaction.user.id, source: 'bot' },
+        );
         await c.interaction.reply({
-          embeds: [successEmbed(channel ? c.t('starboard.set.channel', { channel: `<#${channel.id}>` }) : c.t('starboard.set.channelCleared'))],
+          embeds: [
+            successEmbed(
+              channel
+                ? c.t('starboard.set.channel', { channel: `<#${channel.id}>` })
+                : c.t('starboard.set.channelCleared'),
+            ),
+          ],
           ephemeral: true,
         });
         return;
@@ -59,8 +91,15 @@ export const command: PluginCommand = {
 
       if (sub === 'threshold') {
         const count = c.interaction.options.getInteger('count', true);
-        await c.ctx.setConfig<EngagementConfig>(c.guildId, { starboard: { ...config.starboard, threshold: count } }, { id: c.interaction.user.id, source: 'bot' });
-        await c.interaction.reply({ embeds: [successEmbed(c.t('starboard.set.threshold', { threshold: count }))], ephemeral: true });
+        await c.ctx.setConfig<EngagementConfig>(
+          c.guildId,
+          { starboard: { ...config.starboard, threshold: count } },
+          { id: c.interaction.user.id, source: 'bot' },
+        );
+        await c.interaction.reply({
+          embeds: [successEmbed(c.t('starboard.set.threshold', { threshold: count }))],
+          ephemeral: true,
+        });
         return;
       }
 
@@ -70,15 +109,29 @@ export const command: PluginCommand = {
           await c.interaction.reply({ embeds: [errorEmbed('Emoji cannot be empty.')], ephemeral: true });
           return;
         }
-        await c.ctx.setConfig<EngagementConfig>(c.guildId, { starboard: { ...config.starboard, emoji } }, { id: c.interaction.user.id, source: 'bot' });
-        await c.interaction.reply({ embeds: [successEmbed(c.t('starboard.set.emoji', { emoji }))], ephemeral: true });
+        await c.ctx.setConfig<EngagementConfig>(
+          c.guildId,
+          { starboard: { ...config.starboard, emoji } },
+          { id: c.interaction.user.id, source: 'bot' },
+        );
+        await c.interaction.reply({
+          embeds: [successEmbed(c.t('starboard.set.emoji', { emoji }))],
+          ephemeral: true,
+        });
         return;
       }
 
       // sub === 'selfstar'
       const ignore = c.interaction.options.getBoolean('ignore', true);
-      await c.ctx.setConfig<EngagementConfig>(c.guildId, { starboard: { ...config.starboard, ignoreSelfStar: ignore } }, { id: c.interaction.user.id, source: 'bot' });
-      await c.interaction.reply({ embeds: [successEmbed(c.t('starboard.set.selfstar', { state: ignore ? 'ignored' : 'counted' }))], ephemeral: true });
+      await c.ctx.setConfig<EngagementConfig>(
+        c.guildId,
+        { starboard: { ...config.starboard, ignoreSelfStar: ignore } },
+        { id: c.interaction.user.id, source: 'bot' },
+      );
+      await c.interaction.reply({
+        embeds: [successEmbed(c.t('starboard.set.selfstar', { state: ignore ? 'ignored' : 'counted' }))],
+        ephemeral: true,
+      });
       return;
     }
 

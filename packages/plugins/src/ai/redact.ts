@@ -10,9 +10,11 @@ const URL_PATTERN = /https?:\/\/([a-zA-Z0-9.-]+(?::\d+)?)(?:\/[^\s<>()]*)?/gi;
 // Heuristic for API keys/tokens/secrets: long runs (>=20 chars) of base62-ish characters, optionally with a
 // recognizable provider prefix (OpenAI `sk-`, GitHub `ghp_`/`gho_`, Slack `xox*-`, generic `Bearer <token>`),
 // or any 32+ char hex/base64-ish run that looks machine-generated rather than a normal word.
-const PREFIXED_TOKEN_PATTERN = /\b(?:sk-[A-Za-z0-9]{10,}|sk-ant-[A-Za-z0-9-]{10,}|gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})\b/g;
+const PREFIXED_TOKEN_PATTERN =
+  /\b(?:sk-[A-Za-z0-9]{10,}|sk-ant-[A-Za-z0-9-]{10,}|gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})\b/g;
 const BEARER_TOKEN_PATTERN = /\bBearer\s+[A-Za-z0-9._-]{10,}\b/gi;
-const LONG_OPAQUE_TOKEN_PATTERN = /\b(?=[A-Za-z0-9_-]{24,}\b)(?=[A-Za-z0-9_-]*\d)(?=[A-Za-z0-9_-]*[A-Za-z])[A-Za-z0-9_-]{24,}\b/g;
+const LONG_OPAQUE_TOKEN_PATTERN =
+  /\b(?=[A-Za-z0-9_-]{24,}\b)(?=[A-Za-z0-9_-]*\d)(?=[A-Za-z0-9_-]*[A-Za-z])[A-Za-z0-9_-]{24,}\b/g;
 
 /** Replaces Discord user/role/channel mentions and @everyone/@here with a neutral placeholder. */
 export function redactMentions(text: string): string {

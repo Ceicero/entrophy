@@ -1,5 +1,12 @@
 // Buttons posted on a ticket's opening embed (Close/Claim/Add user) and closing message (Reopen).
-import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, type ButtonInteraction, type ModalSubmitInteraction } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  type ButtonInteraction,
+  type ModalSubmitInteraction,
+} from 'discord.js';
 import { PermissionError, ValidationError, hasStaffLevel } from '@entrophy/core';
 import {
   buildCustomId,
@@ -64,14 +71,28 @@ const closeHandler: ComponentHandler = {
 
     if (result.confirmed) {
       await interaction.reply({ embeds: [successEmbed('Closing this ticket…')], ephemeral: true });
-      await closeTicketCore(c.ctx, { guildId: c.guildId, ticketId: ticket.id, closedBy: interaction.user.id, source: 'bot' });
+      await closeTicketCore(c.ctx, {
+        guildId: c.guildId,
+        ticketId: ticket.id,
+        closedBy: interaction.user.id,
+        source: 'bot',
+      });
     }
   },
 };
 
-const [confirmCloseHandler, cancelCloseHandler] = registerConfirmHandlers<CloseTicketPayload>('close-ticket', async (c, payload) => {
-  await closeTicketCore(c.ctx, { guildId: c.guildId, ticketId: payload.ticketId, closedBy: c.interaction.user.id, reason: payload.reason, source: 'bot' });
-});
+const [confirmCloseHandler, cancelCloseHandler] = registerConfirmHandlers<CloseTicketPayload>(
+  'close-ticket',
+  async (c, payload) => {
+    await closeTicketCore(c.ctx, {
+      guildId: c.guildId,
+      ticketId: payload.ticketId,
+      closedBy: c.interaction.user.id,
+      reason: payload.reason,
+      source: 'bot',
+    });
+  },
+);
 
 const claimHandler: ComponentHandler = {
   action: 'claim',
@@ -111,7 +132,12 @@ const addUserHandler: ComponentHandler = {
       .setTitle('Add a user to this ticket')
       .addComponents(
         new ActionRowBuilder<TextInputBuilder>().addComponents(
-          new TextInputBuilder().setCustomId('user').setLabel('User ID or @mention').setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(40),
+          new TextInputBuilder()
+            .setCustomId('user')
+            .setLabel('User ID or @mention')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMaxLength(40),
         ),
       );
     await interaction.showModal(modal);
@@ -129,7 +155,10 @@ const addUserModalHandler: ComponentHandler = {
     const raw = interaction.fields.getTextInputValue('user').trim();
     const userId = extractUserId(raw);
     if (!userId) {
-      await interaction.reply({ embeds: [errorEmbed('Could not find a user id in that input. Paste a user ID or @mention.')], ephemeral: true });
+      await interaction.reply({
+        embeds: [errorEmbed('Could not find a user id in that input. Paste a user ID or @mention.')],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -143,7 +172,10 @@ const addUserModalHandler: ComponentHandler = {
       throw err;
     }
 
-    await interaction.reply({ embeds: [successEmbed(`Added <@${userId}> to this ticket.`)], ephemeral: true });
+    await interaction.reply({
+      embeds: [successEmbed(`Added <@${userId}> to this ticket.`)],
+      ephemeral: true,
+    });
   },
 };
 
@@ -161,15 +193,28 @@ const reopenButtonHandler: ComponentHandler = {
       return;
     }
     if (ticket.openerId !== interaction.user.id && !hasStaffLevel(c.staffLevel, 'helper')) {
-      await interaction.reply({ embeds: [errorEmbed('Only the ticket opener or support staff can reopen this ticket.')], ephemeral: true });
+      await interaction.reply({
+        embeds: [errorEmbed('Only the ticket opener or support staff can reopen this ticket.')],
+        ephemeral: true,
+      });
       return;
     }
 
     await interaction.deferReply({ ephemeral: true });
     try {
-      const updated = await reopenTicketCore(c.ctx, { guildId: c.guildId, ticketId: ticket.id, reopenedBy: interaction.user.id });
-      const location = updated.channelId ? `<#${updated.channelId}>` : updated.threadId ? `<#${updated.threadId}>` : 'its original location';
-      await interaction.editReply({ embeds: [successEmbed(`Reopened ticket #${updated.number} in ${location}.`)] });
+      const updated = await reopenTicketCore(c.ctx, {
+        guildId: c.guildId,
+        ticketId: ticket.id,
+        reopenedBy: interaction.user.id,
+      });
+      const location = updated.channelId
+        ? `<#${updated.channelId}>`
+        : updated.threadId
+          ? `<#${updated.threadId}>`
+          : 'its original location';
+      await interaction.editReply({
+        embeds: [successEmbed(`Reopened ticket #${updated.number} in ${location}.`)],
+      });
     } catch (err) {
       if (err instanceof ValidationError) {
         await interaction.editReply({ embeds: [errorEmbed(err.message)] });

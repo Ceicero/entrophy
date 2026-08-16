@@ -19,7 +19,11 @@ export async function nextTicketNumber(prisma: PrismaClient, guildId: string): P
 const TICKET_NUMBER_MAX_ATTEMPTS = 3;
 
 /** Fetches the next ticket number and calls `create(number)`, retrying up to 3 times on a `[guildId, number]` P2002 violation. */
-export async function withNextTicketNumber<T>(prisma: PrismaClient, guildId: string, create: (number: number) => Promise<T>): Promise<T> {
+export async function withNextTicketNumber<T>(
+  prisma: PrismaClient,
+  guildId: string,
+  create: (number: number) => Promise<T>,
+): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt < TICKET_NUMBER_MAX_ATTEMPTS; attempt++) {
     const number = await nextTicketNumber(prisma, guildId);

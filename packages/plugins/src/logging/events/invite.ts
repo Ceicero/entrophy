@@ -24,7 +24,11 @@ export const inviteDelete: PluginEventHandler<'inviteDelete'> = {
   async handler(ctx, invite) {
     if (!invite.guild) return;
     const snapshot = await readInviteSnapshot(ctx.redis, invite.guild.id);
-    await writeInviteSnapshot(ctx.redis, invite.guild.id, snapshot.filter((entry) => entry.code !== invite.code));
+    await writeInviteSnapshot(
+      ctx.redis,
+      invite.guild.id,
+      snapshot.filter((entry) => entry.code !== invite.code),
+    );
   },
 };
 

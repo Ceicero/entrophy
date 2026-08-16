@@ -30,11 +30,20 @@ export const tempVoiceSweepJob: PluginJob = {
         }
 
         if (isOrphanTempVoiceChannel(channel.members.size)) {
-          await channel.delete('Entrophy engagement: temp voice sweep (empty channel)').catch(() => undefined);
+          await channel
+            .delete('Entrophy engagement: temp voice sweep (empty channel)')
+            .catch(() => undefined);
           await ctx.prisma.tempVoiceChannel.delete({ where: { id: row.id } }).catch(() => undefined);
         }
       } catch (err) {
-        ctx.logger.warn({ guildId: row.guildId, channelId: row.channelId, err: err instanceof Error ? err.message : String(err) }, 'engagement: tempvoice sweep failed for one channel');
+        ctx.logger.warn(
+          {
+            guildId: row.guildId,
+            channelId: row.channelId,
+            err: err instanceof Error ? err.message : String(err),
+          },
+          'engagement: tempvoice sweep failed for one channel',
+        );
       }
     }
   },

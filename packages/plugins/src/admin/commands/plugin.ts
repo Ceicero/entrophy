@@ -1,6 +1,15 @@
 import { PermissionFlagsBits, SlashCommandBuilder, type EmbedBuilder } from 'discord.js';
 import type { PluginId } from '@entrophy/types';
-import { assertStaffLevel, errorEmbed, infoEmbed, listEmbed, paginatedReply, successEmbed, type PluginCommand, type PluginManifest } from '../../sdk';
+import {
+  assertStaffLevel,
+  errorEmbed,
+  infoEmbed,
+  listEmbed,
+  paginatedReply,
+  successEmbed,
+  type PluginCommand,
+  type PluginManifest,
+} from '../../sdk';
 
 const data = new SlashCommandBuilder()
   .setName('plugin')
@@ -11,19 +20,25 @@ const data = new SlashCommandBuilder()
     sub
       .setName('enable')
       .setDescription('Enable a plugin.')
-      .addStringOption((opt) => opt.setName('plugin').setDescription('Plugin id').setRequired(true).setAutocomplete(true)),
+      .addStringOption((opt) =>
+        opt.setName('plugin').setDescription('Plugin id').setRequired(true).setAutocomplete(true),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('disable')
       .setDescription('Disable a plugin.')
-      .addStringOption((opt) => opt.setName('plugin').setDescription('Plugin id').setRequired(true).setAutocomplete(true)),
+      .addStringOption((opt) =>
+        opt.setName('plugin').setDescription('Plugin id').setRequired(true).setAutocomplete(true),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('status')
       .setDescription("Show a plugin's status, or every plugin's if none is given.")
-      .addStringOption((opt) => opt.setName('plugin').setDescription('Plugin id').setRequired(false).setAutocomplete(true)),
+      .addStringOption((opt) =>
+        opt.setName('plugin').setDescription('Plugin id').setRequired(false).setAutocomplete(true),
+      ),
   )
   .addSubcommand((sub) => sub.setName('list').setDescription('List every plugin, grouped by category.'));
 
@@ -31,7 +46,9 @@ function capitalize(value: string): string {
   return value.length > 0 ? value[0].toUpperCase() + value.slice(1) : value;
 }
 
-function availabilityLine(availability: { available: boolean; degraded?: boolean; reason?: string } | undefined): string {
+function availabilityLine(
+  availability: { available: boolean; degraded?: boolean; reason?: string } | undefined,
+): string {
   if (!availability || availability.available === false) {
     return `❌ Unavailable${availability?.reason ? ` — ${availability.reason}` : ''}`;
   }
@@ -64,7 +81,9 @@ export const command: PluginCommand = {
         lines.push(`**${capitalize(category)}**`);
         for (const manifest of list) {
           const enabled = manifest.alwaysEnabled ? true : await host.isPluginEnabled(c.guildId, manifest.id);
-          lines.push(`${enabled ? '🟢' : '⚪'} ${manifest.name} (\`${manifest.id}\`)${manifest.alwaysEnabled ? ' — always enabled' : ''}`);
+          lines.push(
+            `${enabled ? '🟢' : '⚪'} ${manifest.name} (\`${manifest.id}\`)${manifest.alwaysEnabled ? ' — always enabled' : ''}`,
+          );
         }
       }
 
@@ -78,7 +97,10 @@ export const command: PluginCommand = {
       const targets = pluginId ? manifests.filter((manifest) => manifest.id === pluginId) : manifests;
 
       if (pluginId && targets.length === 0) {
-        await c.interaction.reply({ embeds: [errorEmbed(c.t('plugin.unknownPlugin', { plugin: pluginId }))], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [errorEmbed(c.t('plugin.unknownPlugin', { plugin: pluginId }))],
+          ephemeral: true,
+        });
         return;
       }
 
@@ -100,7 +122,12 @@ export const command: PluginCommand = {
       if (pages.length <= 1) {
         await c.interaction.reply({ embeds: pages, ephemeral: true });
       } else {
-        await paginatedReply({ interaction: c.interaction, pages, ownerId: c.interaction.user.id, pluginId: 'admin' });
+        await paginatedReply({
+          interaction: c.interaction,
+          pages,
+          ownerId: c.interaction.user.id,
+          pluginId: 'admin',
+        });
       }
       return;
     }
@@ -109,20 +136,32 @@ export const command: PluginCommand = {
     const pluginId = c.interaction.options.getString('plugin', true) as PluginId;
     const manifest = host.getManifest(pluginId);
     if (!manifest) {
-      await c.interaction.reply({ embeds: [errorEmbed(c.t('plugin.unknownPlugin', { plugin: pluginId }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [errorEmbed(c.t('plugin.unknownPlugin', { plugin: pluginId }))],
+        ephemeral: true,
+      });
       return;
     }
     if (manifest.alwaysEnabled) {
-      await c.interaction.reply({ embeds: [errorEmbed(c.t('plugin.alwaysEnabled', { plugin: manifest.name }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [errorEmbed(c.t('plugin.alwaysEnabled', { plugin: manifest.name }))],
+        ephemeral: true,
+      });
       return;
     }
 
     if (sub === 'enable') {
       await host.enable(c.guildId, pluginId, actor);
-      await c.interaction.reply({ embeds: [successEmbed(c.t('plugin.enabledMessage', { plugin: manifest.name }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [successEmbed(c.t('plugin.enabledMessage', { plugin: manifest.name }))],
+        ephemeral: true,
+      });
     } else {
       await host.disable(c.guildId, pluginId, actor);
-      await c.interaction.reply({ embeds: [successEmbed(c.t('plugin.disabledMessage', { plugin: manifest.name }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [successEmbed(c.t('plugin.disabledMessage', { plugin: manifest.name }))],
+        ephemeral: true,
+      });
     }
   },
   async autocomplete(c) {
@@ -134,9 +173,14 @@ export const command: PluginCommand = {
     const manifests = host
       .listManifests()
       .filter((manifest) => (sub === 'enable' || sub === 'disable' ? !manifest.alwaysEnabled : true))
-      .filter((manifest) => manifest.id.toLowerCase().includes(query) || manifest.name.toLowerCase().includes(query))
+      .filter(
+        (manifest) =>
+          manifest.id.toLowerCase().includes(query) || manifest.name.toLowerCase().includes(query),
+      )
       .slice(0, 25);
 
-    await c.interaction.respond(manifests.map((manifest) => ({ name: `${manifest.name} (${manifest.id})`, value: manifest.id })));
+    await c.interaction.respond(
+      manifests.map((manifest) => ({ name: `${manifest.name} (${manifest.id})`, value: manifest.id })),
+    );
   },
 };

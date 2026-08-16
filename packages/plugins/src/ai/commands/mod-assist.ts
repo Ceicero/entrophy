@@ -10,11 +10,20 @@ const RECENT_REASONS_SHOWN = 5;
 
 const data = new SlashCommandBuilder()
   .setName('mod-assist')
-  .setDescription('Ask the AI assistant to suggest options for a moderation case (staff only — never acts on its own).')
+  .setDescription(
+    'Ask the AI assistant to suggest options for a moderation case (staff only — never acts on its own).',
+  )
   .setDMPermission(false)
-  .addIntegerOption((opt) => opt.setName('case-number').setDescription('A case number to look up').setMinValue(1))
+  .addIntegerOption((opt) =>
+    opt.setName('case-number').setDescription('A case number to look up').setMinValue(1),
+  )
   .addUserOption((opt) => opt.setName('user').setDescription('A user to look up case history for'))
-  .addStringOption((opt) => opt.setName('context').setDescription('Extra context for the suggestion (not stored, not message content)').setMaxLength(1000));
+  .addStringOption((opt) =>
+    opt
+      .setName('context')
+      .setDescription('Extra context for the suggestion (not stored, not message content)')
+      .setMaxLength(1000),
+  );
 
 function summarizeCases(cases: { type: string; reason: string | null }[]): ModAssistCaseSummary {
   const byType: Record<string, number> = {};
@@ -68,7 +77,11 @@ export const command: PluginCommand = {
 
     await c.interaction.deferReply({ ephemeral: true });
 
-    const { items } = await moderationService.listCases({ guildId: c.guildId, targetId: targetUserId, limit: CASE_HISTORY_LIMIT });
+    const { items } = await moderationService.listCases({
+      guildId: c.guildId,
+      targetId: targetUserId,
+      limit: CASE_HISTORY_LIMIT,
+    });
     const summary = summarizeCases(items);
 
     const result = await aiService.complete({

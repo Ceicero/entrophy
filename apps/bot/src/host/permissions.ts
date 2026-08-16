@@ -1,5 +1,11 @@
 import { PermissionsBitField, type GuildMember, type PermissionResolvable } from 'discord.js';
-import { describePermission, hasStaffLevel, resolveStaffLevel, type MemberLike, type StaffRoleConfig } from '@entrophy/core';
+import {
+  describePermission,
+  hasStaffLevel,
+  resolveStaffLevel,
+  type MemberLike,
+  type StaffRoleConfig,
+} from '@entrophy/core';
 import type { StaffLevel } from '@entrophy/types';
 import type { CommandRequirement } from '@entrophy/plugins';
 
@@ -32,7 +38,10 @@ export function resolveInteractionStaffLevel(input: ResolveInteractionStaffLevel
 }
 
 export interface EvaluateRequirementInput {
-  requirement: CommandRequirement | Pick<CommandRequirement, 'staffLevel' | 'discordPermissions' | 'botOwnerOnly'> | undefined;
+  requirement:
+    | CommandRequirement
+    | Pick<CommandRequirement, 'staffLevel' | 'discordPermissions' | 'botOwnerOnly'>
+    | undefined;
   staffLevel: StaffLevel;
   /** The actor's Discord permission bitfield in the relevant guild/channel context. */
   actorPermissionsBitfield: bigint;
@@ -66,17 +75,29 @@ export function evaluateRequirement(input: EvaluateRequirementInput): Requiremen
   }
 
   const staffDeclared = requirement.staffLevel !== undefined;
-  const permsDeclared = requirement.discordPermissions !== undefined && requirement.discordPermissions.length > 0;
+  const permsDeclared =
+    requirement.discordPermissions !== undefined && requirement.discordPermissions.length > 0;
 
   if (!staffDeclared && !permsDeclared) {
     return { ok: true };
   }
 
-  const satisfiesStaff = staffDeclared ? hasStaffLevel(staffLevel, requirement.staffLevel as StaffLevel) : false;
-  const requiredPermissionBits = permsDeclared ? (requirement.discordPermissions as PermissionResolvable[]).map((p) => PermissionsBitField.resolve(p)) : [];
-  const satisfiesPerms = permsDeclared ? requiredPermissionBits.every((bit) => (actorPermissionsBitfield & bit) === bit) : false;
+  const satisfiesStaff = staffDeclared
+    ? hasStaffLevel(staffLevel, requirement.staffLevel as StaffLevel)
+    : false;
+  const requiredPermissionBits = permsDeclared
+    ? (requirement.discordPermissions as PermissionResolvable[]).map((p) => PermissionsBitField.resolve(p))
+    : [];
+  const satisfiesPerms = permsDeclared
+    ? requiredPermissionBits.every((bit) => (actorPermissionsBitfield & bit) === bit)
+    : false;
 
-  const ok = staffDeclared && permsDeclared ? satisfiesStaff || satisfiesPerms : staffDeclared ? satisfiesStaff : satisfiesPerms;
+  const ok =
+    staffDeclared && permsDeclared
+      ? satisfiesStaff || satisfiesPerms
+      : staffDeclared
+        ? satisfiesStaff
+        : satisfiesPerms;
 
   if (ok) return { ok: true };
 
@@ -86,7 +107,9 @@ export function evaluateRequirement(input: EvaluateRequirementInput): Requiremen
     return { ok: false, reason: 'missing_staff_level', level: requirement.staffLevel as StaffLevel };
   }
 
-  const missing = requiredPermissionBits.filter((bit) => (actorPermissionsBitfield & bit) !== bit).map(describePermission);
+  const missing = requiredPermissionBits
+    .filter((bit) => (actorPermissionsBitfield & bit) !== bit)
+    .map(describePermission);
   return { ok: false, reason: 'missing_discord_permission', permission: missing.join(', ') };
 }
 

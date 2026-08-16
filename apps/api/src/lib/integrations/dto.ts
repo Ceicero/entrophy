@@ -2,7 +2,11 @@
 // subtree) rather than the shared `lib/dto.ts`, since the base `IntegrationConnectionDto`/`WebhookEndpointDto`
 // mappers there already cover the fields every other route needs; these add the integrations-specific detail.
 import type { IntegrationConnection, WebhookDelivery, WebhookEndpoint } from '@entrophy/database';
-import type { IntegrationConnectionDetailDto, WebhookDeliveryDto, WebhookEndpointDetailDto } from '@entrophy/types/integrations';
+import type {
+  IntegrationConnectionDetailDto,
+  WebhookDeliveryDto,
+  WebhookEndpointDetailDto,
+} from '@entrophy/types/integrations';
 import { toIntegrationConnectionDto, toWebhookEndpointDto } from '../dto';
 
 export function toIntegrationConnectionDetailDto(row: IntegrationConnection): IntegrationConnectionDetailDto {

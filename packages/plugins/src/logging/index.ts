@@ -41,7 +41,9 @@ export const plugin = definePlugin({
   async health(ctx) {
     // No external dependency beyond Discord + the database, both of which the host's own `/health` already
     // probes; this just confirms the plugin's own service registered successfully.
-    return ctx.services.get('logging') ? { status: 'ok' } : { status: 'degraded', details: 'logging service failed to register' };
+    return ctx.services.get('logging')
+      ? { status: 'ok' }
+      : { status: 'degraded', details: 'logging service failed to register' };
   },
 });
 

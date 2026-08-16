@@ -2,7 +2,8 @@ import type { Message } from 'discord.js';
 import type { NormalizedMessage } from './engine';
 
 // discord.gg/xxx, discord.com/invite/xxx, discordapp.com/invite/xxx (ARCHITECTURE.md §19).
-const INVITE_PATTERN = /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg\/|discord(?:app)?\.com\/invite\/)[a-z0-9-]+/gi;
+const INVITE_PATTERN =
+  /(?:https?:\/\/)?(?:www\.)?(?:discord\.gg\/|discord(?:app)?\.com\/invite\/)[a-z0-9-]+/gi;
 const URL_PATTERN = /https?:\/\/[^\s<>()[\]]+/gi;
 
 /** Extracts every `https?://` URL from `content`, best-effort (no validation beyond the scheme). */
@@ -28,7 +29,8 @@ export interface NormalizeOptions {
  */
 export function normalizeMessage(message: Message, options: NormalizeOptions): NormalizedMessage {
   const content = message.content ?? '';
-  const mentionsCount = message.mentions.users.size + message.mentions.roles.size + (message.mentions.everyone ? 1 : 0);
+  const mentionsCount =
+    message.mentions.users.size + message.mentions.roles.size + (message.mentions.everyone ? 1 : 0);
 
   return {
     content,
@@ -36,7 +38,10 @@ export function normalizeMessage(message: Message, options: NormalizeOptions): N
     authorRoleIds: message.member ? [...message.member.roles.cache.keys()] : [],
     channelId: message.channelId,
     mentionsCount,
-    attachments: [...message.attachments.values()].map((att) => ({ name: att.name, contentType: att.contentType ?? undefined })),
+    attachments: [...message.attachments.values()].map((att) => ({
+      name: att.name,
+      contentType: att.contentType ?? undefined,
+    })),
     links: extractLinks(content),
     invites: extractInvites(content),
     isStaff: options.isStaff,

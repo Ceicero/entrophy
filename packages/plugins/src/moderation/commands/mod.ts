@@ -1,4 +1,10 @@
-import { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, type GuildMember, type Role } from 'discord.js';
+import {
+  EmbedBuilder,
+  PermissionFlagsBits,
+  SlashCommandBuilder,
+  type GuildMember,
+  type Role,
+} from 'discord.js';
 import { ValidationError } from '@entrophy/core';
 import type { ModerationCase, ModerationCaseType } from '@entrophy/database';
 import {
@@ -24,8 +30,22 @@ import { parseEvidenceUrls } from '../validators';
 import { getFastActions, moderationService } from './shared';
 
 const CASE_TYPES = [
-  'WARN', 'TIMEOUT', 'UNTIMEOUT', 'KICK', 'BAN', 'UNBAN', 'SOFTBAN', 'PURGE',
-  'LOCK', 'UNLOCK', 'SLOWMODE', 'NICK', 'ROLE_ADD', 'ROLE_REMOVE', 'QUARANTINE', 'NOTE',
+  'WARN',
+  'TIMEOUT',
+  'UNTIMEOUT',
+  'KICK',
+  'BAN',
+  'UNBAN',
+  'SOFTBAN',
+  'PURGE',
+  'LOCK',
+  'UNLOCK',
+  'SLOWMODE',
+  'NICK',
+  'ROLE_ADD',
+  'ROLE_REMOVE',
+  'QUARANTINE',
+  'NOTE',
 ] as const satisfies readonly ModerationCaseType[];
 
 const ELEVATED_PERMISSION_FLAGS = [
@@ -58,8 +78,12 @@ const data = new SlashCommandBuilder()
       .setName('warn')
       .setDescription('Warn a member. Repeated warnings can trigger automatic escalation.')
       .addUserOption((o) => o.setName('user').setDescription('The member to warn').setRequired(true))
-      .addStringOption((o) => o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000))
-      .addStringOption((o) => o.setName('evidence').setDescription('Evidence links, comma-separated (optional)').setRequired(false)),
+      .addStringOption((o) =>
+        o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000),
+      )
+      .addStringOption((o) =>
+        o.setName('evidence').setDescription('Evidence links, comma-separated (optional)').setRequired(false),
+      ),
   )
   .addSubcommand((sub) =>
     sub
@@ -72,113 +96,220 @@ const data = new SlashCommandBuilder()
       .setName('clearwarns')
       .setDescription("Clear a member's active warnings.")
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
-      .addStringOption((o) => o.setName('id').setDescription('Clear only this warning id (optional — clears all if omitted)').setRequired(false)),
+      .addStringOption((o) =>
+        o
+          .setName('id')
+          .setDescription('Clear only this warning id (optional — clears all if omitted)')
+          .setRequired(false),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('timeout')
       .setDescription('Time out a member (up to 28 days).')
       .addUserOption((o) => o.setName('user').setDescription('The member to time out').setRequired(true))
-      .addStringOption((o) => o.setName('duration').setDescription('e.g. 10m, 2h, 1d, 1h30m').setRequired(true))
-      .addStringOption((o) => o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000)),
+      .addStringOption((o) =>
+        o.setName('duration').setDescription('e.g. 10m, 2h, 1d, 1h30m').setRequired(true),
+      )
+      .addStringOption((o) =>
+        o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('untimeout')
       .setDescription("Remove a member's timeout.")
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
-      .addStringOption((o) => o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000)),
+      .addStringOption((o) =>
+        o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('kick')
       .setDescription('Kick a member from the server.')
       .addUserOption((o) => o.setName('user').setDescription('The member to kick').setRequired(true))
-      .addStringOption((o) => o.setName('reason').setDescription('Reason (optional unless required by settings)').setRequired(false).setMaxLength(1000))
-      .addStringOption((o) => o.setName('evidence').setDescription('Evidence links, comma-separated (optional)').setRequired(false)),
+      .addStringOption((o) =>
+        o
+          .setName('reason')
+          .setDescription('Reason (optional unless required by settings)')
+          .setRequired(false)
+          .setMaxLength(1000),
+      )
+      .addStringOption((o) =>
+        o.setName('evidence').setDescription('Evidence links, comma-separated (optional)').setRequired(false),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('ban')
       .setDescription('Ban a user from the server.')
       .addUserOption((o) => o.setName('user').setDescription('The user to ban').setRequired(true))
-      .addStringOption((o) => o.setName('reason').setDescription('Reason (optional unless required by settings)').setRequired(false).setMaxLength(1000))
-      .addIntegerOption((o) => o.setName('delete-days').setDescription('Delete this many days of their recent messages (0-7)').setRequired(false).setMinValue(0).setMaxValue(7))
-      .addStringOption((o) => o.setName('duration').setDescription('Temporary ban duration, e.g. 7d, 30d (optional — omit for permanent)').setRequired(false))
-      .addStringOption((o) => o.setName('evidence').setDescription('Evidence links, comma-separated (optional)').setRequired(false)),
+      .addStringOption((o) =>
+        o
+          .setName('reason')
+          .setDescription('Reason (optional unless required by settings)')
+          .setRequired(false)
+          .setMaxLength(1000),
+      )
+      .addIntegerOption((o) =>
+        o
+          .setName('delete-days')
+          .setDescription('Delete this many days of their recent messages (0-7)')
+          .setRequired(false)
+          .setMinValue(0)
+          .setMaxValue(7),
+      )
+      .addStringOption((o) =>
+        o
+          .setName('duration')
+          .setDescription('Temporary ban duration, e.g. 7d, 30d (optional — omit for permanent)')
+          .setRequired(false),
+      )
+      .addStringOption((o) =>
+        o.setName('evidence').setDescription('Evidence links, comma-separated (optional)').setRequired(false),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('unban')
       .setDescription('Unban a user by id.')
       .addStringOption((o) => o.setName('user-id').setDescription("The user's Discord id").setRequired(true))
-      .addStringOption((o) => o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000)),
+      .addStringOption((o) =>
+        o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('softban')
-      .setDescription("Ban and immediately unban a user — clears their recent messages without a lasting ban.")
+      .setDescription(
+        'Ban and immediately unban a user — clears their recent messages without a lasting ban.',
+      )
       .addUserOption((o) => o.setName('user').setDescription('The user to softban').setRequired(true))
-      .addStringOption((o) => o.setName('reason').setDescription('Reason (optional unless required by settings)').setRequired(false).setMaxLength(1000))
-      .addIntegerOption((o) => o.setName('delete-days').setDescription('Delete this many days of their recent messages (0-7, default 1)').setRequired(false).setMinValue(0).setMaxValue(7))
-      .addStringOption((o) => o.setName('evidence').setDescription('Evidence links, comma-separated (optional)').setRequired(false)),
+      .addStringOption((o) =>
+        o
+          .setName('reason')
+          .setDescription('Reason (optional unless required by settings)')
+          .setRequired(false)
+          .setMaxLength(1000),
+      )
+      .addIntegerOption((o) =>
+        o
+          .setName('delete-days')
+          .setDescription('Delete this many days of their recent messages (0-7, default 1)')
+          .setRequired(false)
+          .setMinValue(0)
+          .setMaxValue(7),
+      )
+      .addStringOption((o) =>
+        o.setName('evidence').setDescription('Evidence links, comma-separated (optional)').setRequired(false),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('purge')
       .setDescription('Bulk-delete recent messages in this channel.')
-      .addIntegerOption((o) => o.setName('count').setDescription('How many messages (1-100)').setRequired(true).setMinValue(1).setMaxValue(100))
-      .addUserOption((o) => o.setName('user').setDescription('Only delete messages from this user (optional)').setRequired(false))
-      .addStringOption((o) => o.setName('contains').setDescription('Only delete messages containing this text (requires message content access)').setRequired(false))
-      .addStringOption((o) => o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000)),
+      .addIntegerOption((o) =>
+        o
+          .setName('count')
+          .setDescription('How many messages (1-100)')
+          .setRequired(true)
+          .setMinValue(1)
+          .setMaxValue(100),
+      )
+      .addUserOption((o) =>
+        o.setName('user').setDescription('Only delete messages from this user (optional)').setRequired(false),
+      )
+      .addStringOption((o) =>
+        o
+          .setName('contains')
+          .setDescription('Only delete messages containing this text (requires message content access)')
+          .setRequired(false),
+      )
+      .addStringOption((o) =>
+        o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('lock')
       .setDescription('Lock a channel (prevent @everyone from sending messages).')
-      .addChannelOption((o) => o.setName('channel').setDescription('Channel to lock (defaults to this channel)').setRequired(false))
-      .addStringOption((o) => o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000)),
+      .addChannelOption((o) =>
+        o.setName('channel').setDescription('Channel to lock (defaults to this channel)').setRequired(false),
+      )
+      .addStringOption((o) =>
+        o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('unlock')
       .setDescription('Unlock a previously locked channel.')
-      .addChannelOption((o) => o.setName('channel').setDescription('Channel to unlock (defaults to this channel)').setRequired(false))
-      .addStringOption((o) => o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000)),
+      .addChannelOption((o) =>
+        o
+          .setName('channel')
+          .setDescription('Channel to unlock (defaults to this channel)')
+          .setRequired(false),
+      )
+      .addStringOption((o) =>
+        o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('slowmode')
       .setDescription('Set (or turn off) a channel slowmode.')
-      .addStringOption((o) => o.setName('seconds').setDescription('Seconds between messages, or "off"').setRequired(true))
-      .addChannelOption((o) => o.setName('channel').setDescription('Channel (defaults to this channel)').setRequired(false)),
+      .addStringOption((o) =>
+        o.setName('seconds').setDescription('Seconds between messages, or "off"').setRequired(true),
+      )
+      .addChannelOption((o) =>
+        o.setName('channel').setDescription('Channel (defaults to this channel)').setRequired(false),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('nick')
       .setDescription("Change a member's nickname.")
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
-      .addStringOption((o) => o.setName('nickname').setDescription('New nickname, or "reset" to clear it').setRequired(true).setMaxLength(32)),
+      .addStringOption((o) =>
+        o
+          .setName('nickname')
+          .setDescription('New nickname, or "reset" to clear it')
+          .setRequired(true)
+          .setMaxLength(32),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('note')
       .setDescription('Add a staff note about a member (visible to staff only).')
       .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
-      .addStringOption((o) => o.setName('text').setDescription('Note text').setRequired(true).setMaxLength(2000)),
+      .addStringOption((o) =>
+        o.setName('text').setDescription('Note text').setRequired(true).setMaxLength(2000),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('case')
       .setDescription('Show a moderation case by number.')
-      .addIntegerOption((o) => o.setName('number').setDescription('Case number').setRequired(true).setMinValue(1)),
+      .addIntegerOption((o) =>
+        o.setName('number').setDescription('Case number').setRequired(true).setMinValue(1),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('cases')
       .setDescription('List moderation cases, optionally filtered.')
-      .addUserOption((o) => o.setName('user').setDescription('Filter by target user (optional)').setRequired(false))
-      .addStringOption((o) => o.setName('type').setDescription('Filter by case type (optional)').setRequired(false).addChoices(...CASE_TYPES.map((t) => ({ name: caseTypeLabel(t), value: t })))),
+      .addUserOption((o) =>
+        o.setName('user').setDescription('Filter by target user (optional)').setRequired(false),
+      )
+      .addStringOption((o) =>
+        o
+          .setName('type')
+          .setDescription('Filter by case type (optional)')
+          .setRequired(false)
+          .addChoices(...CASE_TYPES.map((t) => ({ name: caseTypeLabel(t), value: t }))),
+      ),
   )
   .addSubcommand((sub) =>
     sub
@@ -196,7 +327,9 @@ const data = new SlashCommandBuilder()
           .setDescription('Add a role to a member.')
           .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
           .addRoleOption((o) => o.setName('role').setDescription('The role to add').setRequired(true))
-          .addStringOption((o) => o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000)),
+          .addStringOption((o) =>
+            o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000),
+          ),
       )
       .addSubcommand((sub) =>
         sub
@@ -204,13 +337,20 @@ const data = new SlashCommandBuilder()
           .setDescription('Remove a role from a member.')
           .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
           .addRoleOption((o) => o.setName('role').setDescription('The role to remove').setRequired(true))
-          .addStringOption((o) => o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000)),
+          .addStringOption((o) =>
+            o.setName('reason').setDescription('Reason (optional)').setRequired(false).setMaxLength(1000),
+          ),
       ),
   );
 
-function requireReason(config: ModerationConfig, action: 'kick' | 'ban' | 'softban', reason: string | null, t: CommandContext['t']): void {
+function requireReason(
+  config: ModerationConfig,
+  action: 'kick' | 'ban' | 'softban',
+  reason: string | null,
+  t: CommandContext['t'],
+): void {
   if (config.requireReasonFor.includes(action) && (!reason || reason.trim().length === 0)) {
-    throw new ValidationError(t('mod.errors.reasonRequired', { action }));
+    throw new ValidationError(t('errors.reasonRequired', { action }));
   }
 }
 
@@ -220,13 +360,18 @@ async function resolveTargetMember(c: CommandContext, optionName = 'user'): Prom
   const user = c.interaction.options.getUser(optionName, true);
   const fetched = await fetchMemberSafe(c.interaction.guild, user.id);
   if (!fetched) {
-    throw new ValidationError(c.t('mod.errors.notAMember'));
+    throw new ValidationError(c.t('errors.notAMember'));
   }
   return fetched;
 }
 
 function guardHierarchy(c: CommandContext, target: GuildMember): void {
-  hierarchyGuard({ guild: c.interaction.guild, member: c.interaction.member as GuildMember }, target, c.ctx.botOwnerIds, c.t);
+  hierarchyGuard(
+    { guild: c.interaction.guild, member: c.interaction.member as GuildMember },
+    target,
+    c.ctx.botOwnerIds,
+    c.t,
+  );
 }
 
 async function replyCase(c: CommandContext, row: ModerationCase, note?: string): Promise<void> {
@@ -246,7 +391,13 @@ async function handleWarn(c: CommandContext): Promise<void> {
   if (!evidence.ok) throw new ValidationError(evidence.error);
 
   const service = moderationService(c.ctx);
-  const row = await service.warn({ guildId: c.guildId, targetId: target.id, moderatorId: c.interaction.user.id, reason, source: 'BOT' });
+  const row = await service.warn({
+    guildId: c.guildId,
+    targetId: target.id,
+    moderatorId: c.interaction.user.id,
+    reason,
+    source: 'BOT',
+  });
   await replyCase(c, row);
 }
 
@@ -254,8 +405,13 @@ async function handleWarnings(c: CommandContext): Promise<void> {
   assertStaffLevel(c.staffLevel, 'helper', c.t);
   const user = c.interaction.options.getUser('user');
   const service = moderationService(c.ctx);
-  const rows = await service.listWarnings(user ? { guildId: c.guildId, userId: user.id } : { guildId: c.guildId, activeOnly: true });
-  const lines = rows.map((w) => `${w.active ? '🟡' : '⚪'} \`${w.id}\` <@${w.userId}> — ${w.reason ? w.reason : '_No reason_'} (${w.active ? 'active' : 'cleared'})`);
+  const rows = await service.listWarnings(
+    user ? { guildId: c.guildId, userId: user.id } : { guildId: c.guildId, activeOnly: true },
+  );
+  const lines = rows.map(
+    (w) =>
+      `${w.active ? '🟡' : '⚪'} \`${w.id}\` <@${w.userId}> — ${w.reason ? w.reason : '_No reason_'} (${w.active ? 'active' : 'cleared'})`,
+  );
   await c.interaction.reply({
     embeds: [listEmbed(user ? `Warnings — <@${user.id}>` : 'Active warnings', lines)],
     ephemeral: true,
@@ -269,7 +425,10 @@ async function handleClearwarns(c: CommandContext): Promise<void> {
   const warningId = c.interaction.options.getString('id') ?? undefined;
   const service = moderationService(c.ctx);
   const count = await service.clearWarnings(c.guildId, user.id, c.interaction.user.id, warningId);
-  await c.interaction.reply({ embeds: [successEmbed(c.t('mod.clearwarns.success', { count }))], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [successEmbed(c.t('clearwarns.success', { count }))],
+    ephemeral: true,
+  });
 }
 
 async function handleTimeout(c: CommandContext): Promise<void> {
@@ -284,7 +443,14 @@ async function handleTimeout(c: CommandContext): Promise<void> {
   const reason = c.interaction.options.getString('reason') ?? undefined;
 
   const service = moderationService(c.ctx);
-  const row = await service.timeout({ guildId: c.guildId, targetId: target.id, moderatorId: c.interaction.user.id, durationMs: parsed.ms, reason, source: 'BOT' });
+  const row = await service.timeout({
+    guildId: c.guildId,
+    targetId: target.id,
+    moderatorId: c.interaction.user.id,
+    durationMs: parsed.ms,
+    reason,
+    source: 'BOT',
+  });
   await replyCase(c, row);
 }
 
@@ -296,7 +462,13 @@ async function handleUntimeout(c: CommandContext): Promise<void> {
   const reason = c.interaction.options.getString('reason') ?? undefined;
 
   const service = moderationService(c.ctx);
-  const row = await service.untimeout({ guildId: c.guildId, targetId: target.id, moderatorId: c.interaction.user.id, reason, source: 'BOT' });
+  const row = await service.untimeout({
+    guildId: c.guildId,
+    targetId: target.id,
+    moderatorId: c.interaction.user.id,
+    reason,
+    source: 'BOT',
+  });
   await replyCase(c, row);
 }
 
@@ -319,14 +491,19 @@ async function handleKick(c: CommandContext): Promise<void> {
     pluginId: 'moderation',
     action: 'kick',
     ownerId: c.interaction.user.id,
-    embed: infoEmbed(c.t('mod.confirm.title'), c.t('mod.confirm.kick', { user: `<@${target.id}>` })),
+    embed: infoEmbed(c.t('confirm.title'), c.t('confirm.kick', { user: `<@${target.id}>` })),
     payload,
     fastActions: await getFastActions(c.ctx, c.guildId),
   });
   if (!confirmed.confirmed) return;
 
   const service = moderationService(c.ctx);
-  const row = await service.kick({ guildId: c.guildId, moderatorId: c.interaction.user.id, source: 'BOT', ...payload });
+  const row = await service.kick({
+    guildId: c.guildId,
+    moderatorId: c.interaction.user.id,
+    source: 'BOT',
+    ...payload,
+  });
   await replyCase(c, row);
 }
 
@@ -348,40 +525,57 @@ async function handleBan(c: CommandContext): Promise<void> {
   let durationMs: number | undefined;
   if (durationInput) {
     if (!config.tempBanEnabled) {
-      throw new ValidationError(c.t('mod.errors.tempBanDisabled'));
+      throw new ValidationError(c.t('errors.tempBanDisabled'));
     }
     const parsed = parseTempBanDuration(durationInput);
     if (!parsed.ok) throw new ValidationError(parsed.error);
     durationMs = parsed.ms;
   }
 
-  const payload = { targetId: target.id, reason: reason ?? undefined, evidenceUrls: evidence.urls, deleteMessageSeconds: deleteDays * 86400, durationMs };
+  const payload = {
+    targetId: target.id,
+    reason: reason ?? undefined,
+    evidenceUrls: evidence.urls,
+    deleteMessageSeconds: deleteDays * 86400,
+    durationMs,
+  };
   const confirmed = await requestConfirmation({
     interaction: c.interaction,
     ctx: c.ctx,
     pluginId: 'moderation',
     action: 'ban',
     ownerId: c.interaction.user.id,
-    embed: infoEmbed(c.t('mod.confirm.title'), c.t('mod.confirm.ban', { user: `<@${target.id}>` })),
+    embed: infoEmbed(c.t('confirm.title'), c.t('confirm.ban', { user: `<@${target.id}>` })),
     payload,
     fastActions: await getFastActions(c.ctx, c.guildId),
   });
   if (!confirmed.confirmed) return;
 
   const service = moderationService(c.ctx);
-  const row = await service.ban({ guildId: c.guildId, moderatorId: c.interaction.user.id, source: 'BOT', ...payload });
+  const row = await service.ban({
+    guildId: c.guildId,
+    moderatorId: c.interaction.user.id,
+    source: 'BOT',
+    ...payload,
+  });
   await replyCase(c, row);
 }
 
 async function handleUnban(c: CommandContext): Promise<void> {
   assertStaffLevel(c.staffLevel, 'moderator', c.t);
   const userId = c.interaction.options.getString('user-id', true);
-  if (!isSnowflake(userId)) throw new ValidationError(c.t('mod.errors.invalidUserId'));
+  if (!isSnowflake(userId)) throw new ValidationError(c.t('errors.invalidUserId'));
   assertBotPermissions(c.interaction.guild, [PermissionFlagsBits.BanMembers], c.t);
   const reason = c.interaction.options.getString('reason') ?? undefined;
 
   const service = moderationService(c.ctx);
-  const row = await service.unban({ guildId: c.guildId, targetId: userId, moderatorId: c.interaction.user.id, reason, source: 'BOT' });
+  const row = await service.unban({
+    guildId: c.guildId,
+    targetId: userId,
+    moderatorId: c.interaction.user.id,
+    reason,
+    source: 'BOT',
+  });
   await replyCase(c, row);
 }
 
@@ -399,27 +593,41 @@ async function handleSoftban(c: CommandContext): Promise<void> {
   if (!evidence.ok) throw new ValidationError(evidence.error);
   const deleteDays = c.interaction.options.getInteger('delete-days') ?? 1;
 
-  const payload = { targetId: target.id, reason: reason ?? undefined, evidenceUrls: evidence.urls, deleteMessageSeconds: deleteDays * 86400 };
+  const payload = {
+    targetId: target.id,
+    reason: reason ?? undefined,
+    evidenceUrls: evidence.urls,
+    deleteMessageSeconds: deleteDays * 86400,
+  };
   const confirmed = await requestConfirmation({
     interaction: c.interaction,
     ctx: c.ctx,
     pluginId: 'moderation',
     action: 'softban',
     ownerId: c.interaction.user.id,
-    embed: infoEmbed(c.t('mod.confirm.title'), c.t('mod.confirm.softban', { user: `<@${target.id}>` })),
+    embed: infoEmbed(c.t('confirm.title'), c.t('confirm.softban', { user: `<@${target.id}>` })),
     payload,
     fastActions: await getFastActions(c.ctx, c.guildId),
   });
   if (!confirmed.confirmed) return;
 
   const service = moderationService(c.ctx);
-  const row = await service.softban({ guildId: c.guildId, moderatorId: c.interaction.user.id, source: 'BOT', ...payload });
+  const row = await service.softban({
+    guildId: c.guildId,
+    moderatorId: c.interaction.user.id,
+    source: 'BOT',
+    ...payload,
+  });
   await replyCase(c, row);
 }
 
 async function handlePurge(c: CommandContext): Promise<void> {
   assertStaffLevel(c.staffLevel, 'moderator', c.t);
-  assertBotPermissions(c.interaction.channel ?? c.interaction.guild, [PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ReadMessageHistory], c.t);
+  assertBotPermissions(
+    c.interaction.channel ?? c.interaction.guild,
+    [PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ReadMessageHistory],
+    c.t,
+  );
 
   const config = await c.config<ModerationConfig>();
   const requestedCount = c.interaction.options.getInteger('count', true);
@@ -429,7 +637,10 @@ async function handlePurge(c: CommandContext): Promise<void> {
   const user = c.interaction.options.getUser('user');
   const contains = c.interaction.options.getString('contains') ?? undefined;
   if (contains && !c.ctx.intentsEnabled.messageContent) {
-    await c.interaction.reply({ embeds: [errorEmbed(c.t('mod.errors.messageContentDisabled'))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('errors.messageContentDisabled'))],
+      ephemeral: true,
+    });
     return;
   }
   const reason = c.interaction.options.getString('reason') ?? undefined;
@@ -442,46 +653,78 @@ async function handlePurge(c: CommandContext): Promise<void> {
     pluginId: 'moderation',
     action: 'purge',
     ownerId: c.interaction.user.id,
-    embed: infoEmbed(c.t('mod.confirm.title'), c.t('mod.confirm.purge', { count: validated.count })),
+    embed: infoEmbed(c.t('confirm.title'), c.t('confirm.purge', { count: validated.count })),
     payload,
     fastActions: await getFastActions(c.ctx, c.guildId),
   });
   if (!confirmed.confirmed) return;
 
   const service = moderationService(c.ctx);
-  const result = await service.purge({ guildId: c.guildId, moderatorId: c.interaction.user.id, source: 'BOT', ...payload });
-  await c.interaction.followUp({ embeds: [successEmbed(c.t('mod.purge.success', { count: result.deletedCount }))], ephemeral: true });
+  const result = await service.purge({
+    guildId: c.guildId,
+    moderatorId: c.interaction.user.id,
+    source: 'BOT',
+    ...payload,
+  });
+  await c.interaction.followUp({
+    embeds: [successEmbed(c.t('purge.success', { count: result.deletedCount }))],
+    ephemeral: true,
+  });
 }
 
 async function handleLock(c: CommandContext): Promise<void> {
   assertStaffLevel(c.staffLevel, 'moderator', c.t);
   const channel = c.interaction.options.getChannel('channel') ?? c.interaction.channel;
-  if (!channel) throw new ValidationError(c.t('mod.errors.noChannel'));
-  assertBotPermissions(c.interaction.guild.channels.resolve(channel.id) ?? c.interaction.guild, [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles], c.t);
+  if (!channel) throw new ValidationError(c.t('errors.noChannel'));
+  assertBotPermissions(
+    c.interaction.guild.channels.resolve(channel.id) ?? c.interaction.guild,
+    [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
+    c.t,
+  );
   const reason = c.interaction.options.getString('reason') ?? undefined;
 
   const service = moderationService(c.ctx);
-  const row = await service.lock({ guildId: c.guildId, channelId: channel.id, moderatorId: c.interaction.user.id, reason, source: 'BOT' });
+  const row = await service.lock({
+    guildId: c.guildId,
+    channelId: channel.id,
+    moderatorId: c.interaction.user.id,
+    reason,
+    source: 'BOT',
+  });
   await replyCase(c, row);
 }
 
 async function handleUnlock(c: CommandContext): Promise<void> {
   assertStaffLevel(c.staffLevel, 'moderator', c.t);
   const channel = c.interaction.options.getChannel('channel') ?? c.interaction.channel;
-  if (!channel) throw new ValidationError(c.t('mod.errors.noChannel'));
-  assertBotPermissions(c.interaction.guild.channels.resolve(channel.id) ?? c.interaction.guild, [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles], c.t);
+  if (!channel) throw new ValidationError(c.t('errors.noChannel'));
+  assertBotPermissions(
+    c.interaction.guild.channels.resolve(channel.id) ?? c.interaction.guild,
+    [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
+    c.t,
+  );
   const reason = c.interaction.options.getString('reason') ?? undefined;
 
   const service = moderationService(c.ctx);
-  const row = await service.unlock({ guildId: c.guildId, channelId: channel.id, moderatorId: c.interaction.user.id, reason, source: 'BOT' });
+  const row = await service.unlock({
+    guildId: c.guildId,
+    channelId: channel.id,
+    moderatorId: c.interaction.user.id,
+    reason,
+    source: 'BOT',
+  });
   await replyCase(c, row);
 }
 
 async function handleSlowmode(c: CommandContext): Promise<void> {
   assertStaffLevel(c.staffLevel, 'moderator', c.t);
   const channel = c.interaction.options.getChannel('channel') ?? c.interaction.channel;
-  if (!channel) throw new ValidationError(c.t('mod.errors.noChannel'));
-  assertBotPermissions(c.interaction.guild.channels.resolve(channel.id) ?? c.interaction.guild, [PermissionFlagsBits.ManageChannels], c.t);
+  if (!channel) throw new ValidationError(c.t('errors.noChannel'));
+  assertBotPermissions(
+    c.interaction.guild.channels.resolve(channel.id) ?? c.interaction.guild,
+    [PermissionFlagsBits.ManageChannels],
+    c.t,
+  );
 
   const raw = c.interaction.options.getString('seconds', true).trim().toLowerCase();
   let seconds: number | null;
@@ -490,14 +733,20 @@ async function handleSlowmode(c: CommandContext): Promise<void> {
   } else {
     const parsed = Number(raw);
     if (!Number.isInteger(parsed) || parsed < 0 || parsed > 21600) {
-      throw new ValidationError(c.t('mod.errors.invalidSlowmode'));
+      throw new ValidationError(c.t('errors.invalidSlowmode'));
     }
     seconds = parsed;
   }
 
   const service = moderationService(c.ctx);
-  const row = await service.slowmode({ guildId: c.guildId, channelId: channel.id, moderatorId: c.interaction.user.id, seconds, source: 'BOT' });
-  await replyCase(c, row, c.t('mod.slowmode.success', { seconds: String(seconds) }));
+  const row = await service.slowmode({
+    guildId: c.guildId,
+    channelId: channel.id,
+    moderatorId: c.interaction.user.id,
+    seconds,
+    source: 'BOT',
+  });
+  await replyCase(c, row, c.t('slowmode.success', { seconds: String(seconds) }));
 }
 
 async function handleNick(c: CommandContext): Promise<void> {
@@ -510,7 +759,13 @@ async function handleNick(c: CommandContext): Promise<void> {
   const nickname = raw.trim().toLowerCase() === 'reset' ? null : raw.trim();
 
   const service = moderationService(c.ctx);
-  const row = await service.nick({ guildId: c.guildId, targetId: target.id, moderatorId: c.interaction.user.id, nickname, source: 'BOT' });
+  const row = await service.nick({
+    guildId: c.guildId,
+    targetId: target.id,
+    moderatorId: c.interaction.user.id,
+    nickname,
+    source: 'BOT',
+  });
   await replyCase(c, row);
 }
 
@@ -520,8 +775,13 @@ async function handleNote(c: CommandContext): Promise<void> {
   const text = c.interaction.options.getString('text', true);
 
   const service = moderationService(c.ctx);
-  await service.addNote({ guildId: c.guildId, userId: user.id, authorId: c.interaction.user.id, content: text });
-  await c.interaction.reply({ embeds: [successEmbed(c.t('mod.note.success'))], ephemeral: true });
+  await service.addNote({
+    guildId: c.guildId,
+    userId: user.id,
+    authorId: c.interaction.user.id,
+    content: text,
+  });
+  await c.interaction.reply({ embeds: [successEmbed(c.t('note.success'))], ephemeral: true });
 }
 
 async function handleCase(c: CommandContext): Promise<void> {
@@ -530,7 +790,10 @@ async function handleCase(c: CommandContext): Promise<void> {
   const service = moderationService(c.ctx);
   const row = await service.getCase(c.guildId, number);
   if (!row) {
-    await c.interaction.reply({ embeds: [errorEmbed(c.t('mod.errors.caseNotFound', { number }))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('errors.caseNotFound', { number }))],
+      ephemeral: true,
+    });
     return;
   }
   await replyCase(c, row);
@@ -545,25 +808,46 @@ async function handleCases(c: CommandContext): Promise<void> {
   const pages: EmbedBuilder[] = [];
   let cursor: string | null = null;
   do {
-    const page = await service.listCases({ guildId: c.guildId, targetId: user?.id, type: type ?? undefined, cursor, limit: 10 });
+    const page = await service.listCases({
+      guildId: c.guildId,
+      targetId: user?.id,
+      type: type ?? undefined,
+      cursor,
+      limit: 10,
+    });
     if (page.items.length === 0 && pages.length === 0) break;
     pages.push(
       listEmbed(
         'Cases',
-        page.items.map((row) => `#${row.caseNumber} — ${caseTypeLabel(row.type)} — <@${row.targetId}> — ${row.reason ?? '_No reason_'}`),
+        page.items.map(
+          (row) =>
+            `#${row.caseNumber} — ${caseTypeLabel(row.type)} — <@${row.targetId}> — ${row.reason ?? '_No reason_'}`,
+        ),
       ),
     );
     cursor = page.nextCursor;
   } while (cursor && pages.length < 10);
 
-  await paginatedReply({ interaction: c.interaction, pages, ownerId: c.interaction.user.id, pluginId: 'moderation' });
+  await paginatedReply({
+    interaction: c.interaction,
+    pages,
+    ownerId: c.interaction.user.id,
+    pluginId: 'moderation',
+  });
 }
 
 async function handleAppealSetup(c: CommandContext): Promise<void> {
   assertStaffLevel(c.staffLevel, 'admin', c.t);
   const channel = c.interaction.options.getChannel('channel', true);
-  await c.ctx.setConfig<ModerationConfig>(c.guildId, { appealsChannelId: channel.id }, { id: c.interaction.user.id, source: 'bot' });
-  await c.interaction.reply({ embeds: [successEmbed(c.t('mod.appealSetup.success', { channel: `<#${channel.id}>` }))], ephemeral: true });
+  await c.ctx.setConfig<ModerationConfig>(
+    c.guildId,
+    { appealsChannelId: channel.id },
+    { id: c.interaction.user.id, source: 'bot' },
+  );
+  await c.interaction.reply({
+    embeds: [successEmbed(c.t('appealSetup.success', { channel: `<#${channel.id}>` }))],
+    ephemeral: true,
+  });
 }
 
 async function handleRole(c: CommandContext, remove: boolean): Promise<void> {
@@ -575,7 +859,7 @@ async function handleRole(c: CommandContext, remove: boolean): Promise<void> {
 
   const botHighest = c.interaction.guild.members.me?.roles.highest;
   if (botHighest && role.position >= botHighest.position) {
-    throw new ValidationError(c.t('mod.errors.roleTooHigh'));
+    throw new ValidationError(c.t('errors.roleTooHigh'));
   }
 
   const reason = c.interaction.options.getString('reason') ?? undefined;
@@ -590,7 +874,13 @@ async function handleRole(c: CommandContext, remove: boolean): Promise<void> {
       pluginId: 'moderation',
       action: 'role',
       ownerId: c.interaction.user.id,
-      embed: infoEmbed(c.t('mod.confirm.title'), c.t(remove ? 'mod.confirm.roleRemove' : 'mod.confirm.roleAdd', { user: `<@${target.id}>`, role: `<@&${role.id}>` })),
+      embed: infoEmbed(
+        c.t('confirm.title'),
+        c.t(remove ? 'confirm.roleRemove' : 'confirm.roleAdd', {
+          user: `<@${target.id}>`,
+          role: `<@&${role.id}>`,
+        }),
+      ),
       payload,
       fastActions: await getFastActions(c.ctx, c.guildId),
     });
@@ -598,7 +888,12 @@ async function handleRole(c: CommandContext, remove: boolean): Promise<void> {
   }
 
   const service = moderationService(c.ctx);
-  const row = await service.roleAction({ guildId: c.guildId, moderatorId: c.interaction.user.id, source: 'BOT', ...payload });
+  const row = await service.roleAction({
+    guildId: c.guildId,
+    moderatorId: c.interaction.user.id,
+    source: 'BOT',
+    ...payload,
+  });
   await replyCase(c, row);
 }
 
@@ -652,7 +947,10 @@ export const command: PluginCommand = {
       case 'appeal-setup':
         return handleAppealSetup(c);
       default:
-        await c.interaction.reply({ embeds: [errorEmbed(c.t('errors.not_found', { thing: 'Subcommand' }))], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [errorEmbed(c.t('errors.not_found', { thing: 'Subcommand' }))],
+          ephemeral: true,
+        });
     }
   },
 };

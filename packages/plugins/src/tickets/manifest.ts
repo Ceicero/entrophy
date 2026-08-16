@@ -41,7 +41,8 @@ export type TicketIntakeField = z.infer<typeof intakeFieldSchema>;
 export const manifest = defineManifest({
   id: 'tickets',
   name: 'Tickets',
-  description: 'Button-driven support tickets with categories, staff assignment, tags, and HTML/JSON transcripts.',
+  description:
+    'Button-driven support tickets with categories, staff assignment, tags, and HTML/JSON transcripts.',
   category: 'community',
   version: '0.1.0',
   defaultEnabled: false,
@@ -50,25 +51,29 @@ export const manifest = defineManifest({
       permission: PermissionFlagsBits.ManageChannels,
       feature: 'creating and deleting ticket channels (channel mode)',
       optional: true,
-      fallback: 'Channel-mode tickets fail with a clear ephemeral error when opened; thread-mode tickets still work.',
+      fallback:
+        'Channel-mode tickets fail with a clear ephemeral error when opened; thread-mode tickets still work.',
     },
     {
       permission: PermissionFlagsBits.ManageRoles,
       feature: 'setting per-user/per-role permission overwrites on a new ticket channel',
       optional: true,
-      fallback: 'Channel-mode tickets fail with a clear ephemeral error when opened; thread-mode tickets still work.',
+      fallback:
+        'Channel-mode tickets fail with a clear ephemeral error when opened; thread-mode tickets still work.',
     },
     {
       permission: PermissionFlagsBits.CreatePrivateThreads,
       feature: 'creating private ticket threads (thread mode)',
       optional: true,
-      fallback: 'Thread-mode tickets fail with a clear ephemeral error when opened; channel-mode tickets still work.',
+      fallback:
+        'Thread-mode tickets fail with a clear ephemeral error when opened; channel-mode tickets still work.',
     },
     {
       permission: PermissionFlagsBits.ManageThreads,
       feature: 'archiving and locking ticket threads on close, and adding participants to a thread',
       optional: true,
-      fallback: 'Thread-mode tickets close but the thread is left unarchived/unlocked for staff to close manually.',
+      fallback:
+        'Thread-mode tickets close but the thread is left unarchived/unlocked for staff to close manually.',
     },
     {
       permission: PermissionFlagsBits.SendMessages,
@@ -86,7 +91,8 @@ export const manifest = defineManifest({
       permission: PermissionFlagsBits.AttachFiles,
       feature: 'delivering the HTML transcript file to the transcript channel/DM',
       optional: true,
-      fallback: 'The transcript is still saved and downloadable from the dashboard, just not attached in Discord.',
+      fallback:
+        'The transcript is still saved and downloadable from the dashboard, just not attached in Discord.',
     },
     {
       permission: PermissionFlagsBits.ReadMessageHistory,

@@ -654,10 +654,7 @@
       "description": "Configurable automated moderation rules — spam, mentions, invites, scam links, word/regex filters, caps, raid detection — with per-rule dry-run, exemptions, and a false-positive review queue.",
       "category": "moderation",
       "defaultEnabled": true,
-      "privilegedIntents": [
-        "MessageContent",
-        "GuildMembers"
-      ],
+      "privilegedIntents": ["MessageContent", "GuildMembers"],
       "commands": [
         {
           "name": "automod",
@@ -909,9 +906,7 @@
       "description": "Policy-driven, hands-off moderation: the bot flags possible violations from a server policy and a moderator decides — everything is bookkept in a read-only ledger and the database. Moderators never DM or confront the suspect directly; the bot mediates every action.",
       "category": "moderation",
       "defaultEnabled": false,
-      "privilegedIntents": [
-        "MessageContent"
-      ],
+      "privilegedIntents": ["MessageContent"],
       "commands": [
         {
           "name": "enforcer",
@@ -1339,10 +1334,7 @@
       "description": "Routes member, message, role, channel, moderation, voice, and platform events to configured log channels, with redaction, retention, and a searchable dashboard audit log.",
       "category": "moderation",
       "defaultEnabled": true,
-      "privilegedIntents": [
-        "GuildMembers",
-        "MessageContent"
-      ],
+      "privilegedIntents": ["GuildMembers", "MessageContent"],
       "commands": [
         {
           "name": "logs",
@@ -1483,9 +1475,7 @@
       "description": "Button-driven support tickets with categories, staff assignment, tags, and HTML/JSON transcripts.",
       "category": "community",
       "defaultEnabled": false,
-      "privilegedIntents": [
-        "MessageContent"
-      ],
+      "privilegedIntents": ["MessageContent"],
       "commands": [
         {
           "name": "ticket",
@@ -1688,9 +1678,7 @@
       "description": "Self-assignable role panels, welcome/goodbye messages, onboarding checklists, rules acknowledgement, and member verification (button, staff-approved modal, or CAPTCHA).",
       "category": "community",
       "defaultEnabled": false,
-      "privilegedIntents": [
-        "GuildMembers"
-      ],
+      "privilegedIntents": ["GuildMembers"],
       "commands": [
         {
           "name": "roles",
@@ -2341,9 +2329,7 @@
       "description": "Leveling/XP with anti-farming controls, leaderboards, a reputation system, a starboard, and temporary voice channels.",
       "category": "community",
       "defaultEnabled": true,
-      "privilegedIntents": [
-        "MessageContent"
-      ],
+      "privilegedIntents": ["MessageContent"],
       "commands": [
         {
           "name": "level",
@@ -3714,9 +3700,7 @@
           "fullName": "/embed",
           "type": "slash",
           "description": "Build a rich embed and preview it before sending.",
-          "discordPermissions": [
-            "ManageMessages"
-          ],
+          "discordPermissions": ["ManageMessages"],
           "options": [],
           "subcommands": [
             {
@@ -3896,9 +3880,7 @@
           "type": "slash",
           "description": "Connect external services: stream alerts, GitHub, webhooks, and more.",
           "staffLevel": "admin",
-          "discordPermissions": [
-            "ManageGuild"
-          ],
+          "discordPermissions": ["ManageGuild"],
           "options": [],
           "subcommands": [
             {

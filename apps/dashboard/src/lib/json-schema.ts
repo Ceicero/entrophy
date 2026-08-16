@@ -18,6 +18,10 @@ export interface JsonSchemaNode {
   nullable?: boolean;
   properties?: Record<string, JsonSchemaNode>;
   required?: string[];
+  /** Record<string, T> shape (zod `.record()`) — the value schema for every key. */
+  additionalProperties?: JsonSchemaNode | boolean;
+  /** Union shape (zod `.union()`/`.discriminatedUnion()`) — rendered as raw JSON, not one control per branch. */
+  anyOf?: JsonSchemaNode[];
 }
 
 export type JsonSchema = JsonSchemaNode;

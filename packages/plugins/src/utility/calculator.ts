@@ -62,7 +62,7 @@ function tokenize(input: string): Token[] {
     const rest = input.slice(i);
 
     const numberMatch = NUMBER_PATTERN.exec(rest);
-    if (numberMatch && (ch >= '0' && ch <= '9')) {
+    if (numberMatch && ch >= '0' && ch <= '9') {
       tokens.push({ type: 'number', value: numberMatch[0] });
       i += numberMatch[0].length;
       continue;
@@ -247,7 +247,10 @@ class Parser {
           throw new CalculatorError(`Unknown function "${name}".`);
         }
         if (args.length < fn.minArgs || args.length > fn.maxArgs) {
-          const expected = fn.minArgs === fn.maxArgs ? `${fn.minArgs}` : `${fn.minArgs}-${fn.maxArgs === Infinity ? '∞' : fn.maxArgs}`;
+          const expected =
+            fn.minArgs === fn.maxArgs
+              ? `${fn.minArgs}`
+              : `${fn.minArgs}-${fn.maxArgs === Infinity ? '∞' : fn.maxArgs}`;
           throw new CalculatorError(`"${name}" expects ${expected} argument(s), got ${args.length}.`);
         }
         return fn.apply(args);
@@ -257,7 +260,9 @@ class Parser {
         return CONSTANTS.get(name) as number;
       }
 
-      throw new CalculatorError(`Unknown identifier "${name}". Only known constants (pi, e) and function names are allowed.`);
+      throw new CalculatorError(
+        `Unknown identifier "${name}". Only known constants (pi, e) and function names are allowed.`,
+      );
     }
 
     throw new CalculatorError(`Unexpected token "${token.value}" in the expression.`);

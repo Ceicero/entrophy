@@ -18,14 +18,20 @@ function summarizeConfig(rule: AutomodRule): string {
   const parsed = automodRuleConfigSchema.safeParse(rule.config);
   if (!parsed.success) return '_invalid stored config_';
   const { type: _type, ...rest } = parsed.data;
-  const entries = Object.entries(rest).map(([k, v]) => `${k}=${Array.isArray(v) ? `[${v.length}]` : String(v)}`);
+  const entries = Object.entries(rest).map(
+    ([k, v]) => `${k}=${Array.isArray(v) ? `[${v.length}]` : String(v)}`,
+  );
   return entries.length > 0 ? entries.join(', ') : '_no fields_';
 }
 
 function summarizeActions(rule: AutomodRule): string {
   const parsed = automodActionsSchema.safeParse(rule.actions);
   if (!parsed.success) return '_invalid stored actions_';
-  return parsed.data.map((a) => (a.type === 'timeout' && a.timeoutMs ? `timeout (${Math.round(a.timeoutMs / 60000)}m)` : a.type)).join(', ');
+  return parsed.data
+    .map((a) =>
+      a.type === 'timeout' && a.timeoutMs ? `timeout (${Math.round(a.timeoutMs / 60000)}m)` : a.type,
+    )
+    .join(', ');
 }
 
 /** Builds the detail embed used by `/automod rule view` and (as a list) `/automod rule list`. */
@@ -51,6 +57,8 @@ export function ruleListLine(rule: AutomodRule, intentsEnabled: IntentsEnabledLi
 
 /** Detail line for `/automod review`'s event picker and `/automod status`'s recent-events summary. */
 export function eventSummaryLine(event: AutomodEvent, ruleName: string): string {
-  const excerpt = event.matched ? ` — "${event.matched.slice(0, 60)}${event.matched.length > 60 ? '…' : ''}"` : '';
+  const excerpt = event.matched
+    ? ` — "${event.matched.slice(0, 60)}${event.matched.length > 60 ? '…' : ''}"`
+    : '';
   return `#${event.id.slice(0, 8)} · ${ruleName} · <@${event.userId}>${event.dryRun ? ' · [dry run]' : ''}${excerpt}`;
 }

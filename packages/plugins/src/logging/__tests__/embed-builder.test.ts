@@ -9,7 +9,12 @@ describe('buildLogEmbed', () => {
     const embed = buildLogEmbed({
       kind: 'member.join',
       guildId: GUILD_ID,
-      payload: { actorId: '222222222222222222', targetId: '333333333333333333', channelId: '444444444444444444', description: 'hello' },
+      payload: {
+        actorId: '222222222222222222',
+        targetId: '333333333333333333',
+        channelId: '444444444444444444',
+        description: 'hello',
+      },
     });
     const json = embed.toJSON();
 
@@ -22,7 +27,11 @@ describe('buildLogEmbed', () => {
   });
 
   it('uses payload.title when given, over the kind default', () => {
-    const embed = buildLogEmbed({ kind: 'role.update', guildId: GUILD_ID, payload: { title: 'Role deleted' } });
+    const embed = buildLogEmbed({
+      kind: 'role.update',
+      guildId: GUILD_ID,
+      payload: { title: 'Role deleted' },
+    });
     expect(embed.toJSON().title).toBe('Role deleted');
   });
 
@@ -33,7 +42,9 @@ describe('buildLogEmbed', () => {
       payload: { channelId: '444444444444444444', messageId: '555555555555555555' },
     });
     const messageField = embed.toJSON().fields?.find((f) => f.name === 'Message');
-    expect(messageField?.value).toContain(`https://discord.com/channels/${GUILD_ID}/444444444444444444/555555555555555555`);
+    expect(messageField?.value).toContain(
+      `https://discord.com/channels/${GUILD_ID}/444444444444444444/555555555555555555`,
+    );
   });
 
   it('omits the Target field when target equals actor (avoids a redundant duplicate field)', () => {
@@ -51,7 +62,10 @@ describe('buildLogEmbed', () => {
     const embed = buildLogEmbed({
       kind: 'guild.update',
       guildId: GUILD_ID,
-      payload: { title: 'x'.repeat(EMBED_LIMITS.title + 50), description: 'y'.repeat(EMBED_LIMITS.description + 50) },
+      payload: {
+        title: 'x'.repeat(EMBED_LIMITS.title + 50),
+        description: 'y'.repeat(EMBED_LIMITS.description + 50),
+      },
     });
     const json = embed.toJSON();
     expect(json.title!.length).toBeLessThanOrEqual(EMBED_LIMITS.title);
@@ -59,7 +73,10 @@ describe('buildLogEmbed', () => {
   });
 
   it('caps the number of fields at the Discord embed limit', () => {
-    const fields = Array.from({ length: EMBED_LIMITS.fields + 10 }, (_, i) => ({ name: `f${i}`, value: 'v' }));
+    const fields = Array.from({ length: EMBED_LIMITS.fields + 10 }, (_, i) => ({
+      name: `f${i}`,
+      value: 'v',
+    }));
     const embed = buildLogEmbed({ kind: 'automod.trigger', guildId: GUILD_ID, payload: { fields } });
     expect(embed.toJSON().fields!.length).toBeLessThanOrEqual(EMBED_LIMITS.fields);
   });

@@ -11,7 +11,11 @@ const NOTION_VERSION = '2022-06-28';
 export const notionConfigSchema = z.object({
   target: z.string().trim().min(1).max(100), // Notion database id
   channelId: z.string().regex(/^\d{17,20}$/),
-  roleId: z.string().regex(/^\d{17,20}$/).nullable().optional(),
+  roleId: z
+    .string()
+    .regex(/^\d{17,20}$/)
+    .nullable()
+    .optional(),
   template: z.string().max(300).nullable().optional(),
 });
 
@@ -58,7 +62,11 @@ export const notionProvider: IntegrationProviderDef = {
   async poll(ctx, connection) {
     const accessToken = await getValidAccessToken(ctx, 'notion', connection);
     if (!accessToken) {
-      await markConnectionError(ctx, connection.id, 'Notion is not authorized (connect again from the dashboard).');
+      await markConnectionError(
+        ctx,
+        connection.id,
+        'Notion is not authorized (connect again from the dashboard).',
+      );
       return;
     }
 

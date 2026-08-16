@@ -154,7 +154,12 @@ describe('MediaQueueManager', () => {
 
     expect(state.tracks[0].id).toBe('a'); // history untouched
     expect(state.tracks[1].id).toBe('b'); // current untouched
-    expect(state.tracks.slice(2).map((t) => t.id).sort()).toEqual(['c', 'd', 'e']); // same set, upcoming section only
+    expect(
+      state.tracks
+        .slice(2)
+        .map((t) => t.id)
+        .sort(),
+    ).toEqual(['c', 'd', 'e']); // same set, upcoming section only
   });
 
   it('shuffle is deterministic for a given rng sequence', async () => {

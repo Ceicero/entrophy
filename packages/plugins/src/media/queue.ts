@@ -58,7 +58,9 @@ export class MediaQueueManager {
   async removeAt(guildId: string, index: number): Promise<QueueState> {
     const state = await this.getState(guildId);
     if (index < 0 || index >= state.tracks.length) {
-      throw new RangeError(`removeAt: index ${index} is out of range (queue has ${state.tracks.length} tracks).`);
+      throw new RangeError(
+        `removeAt: index ${index} is out of range (queue has ${state.tracks.length} tracks).`,
+      );
     }
     state.tracks.splice(index, 1);
     if (index < state.currentIndex) {

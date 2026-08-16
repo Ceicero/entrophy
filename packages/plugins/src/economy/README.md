@@ -8,15 +8,15 @@ Stripe or any payment processor, and no feature converts the currency to or from
 
 ## Commands
 
-| Command | Description | Who |
-|---|---|---|
-| `/economy balance [user]` | Check a balance (default: your own) | Everyone |
-| `/economy daily` | Claim your daily reward (20h cooldown, streak bonus for claiming within 48h of the last claim) | Everyone |
-| `/economy give <user> <amount>` | Give some of your balance to another member | Everyone |
-| `/economy leaderboard` | Show the top 10 balances | Everyone |
-| `/economy config [...]` | View or change the currency name/symbol and reward amounts | Moderator+ |
-| `/economy admin add <user> <amount> [reason]` | Add to a member's balance | Moderator+ |
-| `/economy admin remove <user> <amount> [reason]` | Remove from a member's balance (never below zero) | Moderator+ |
+| Command                                          | Description                                                                                    | Who        |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ---------- |
+| `/economy balance [user]`                        | Check a balance (default: your own)                                                            | Everyone   |
+| `/economy daily`                                 | Claim your daily reward (20h cooldown, streak bonus for claiming within 48h of the last claim) | Everyone   |
+| `/economy give <user> <amount>`                  | Give some of your balance to another member                                                    | Everyone   |
+| `/economy leaderboard`                           | Show the top 10 balances                                                                       | Everyone   |
+| `/economy config [...]`                          | View or change the currency name/symbol and reward amounts                                     | Moderator+ |
+| `/economy admin add <user> <amount> [reason]`    | Add to a member's balance                                                                      | Moderator+ |
+| `/economy admin remove <user> <amount> [reason]` | Remove from a member's balance (never below zero)                                              | Moderator+ |
 
 ## Config keys (`configSchema`)
 

@@ -8,7 +8,8 @@ import { pluginCopy } from '../../content/plugins';
 
 export const metadata: Metadata = {
   title: 'Features & commands',
-  description: 'Every Entrophy plugin, why gaming communities use it, and the full command reference — generated straight from the plugin registry.',
+  description:
+    'Every Entrophy plugin, why gaming communities use it, and the full command reference — generated straight from the plugin registry.',
 };
 
 export default function FeaturesPage() {
@@ -46,7 +47,9 @@ export default function FeaturesPage() {
                     <p className="mt-2 max-w-2xl text-sm leading-relaxed text-grey-3">{copy.headline}</p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    <Badge tone={plugin.defaultEnabled ? 'solid' : 'outline'}>{plugin.defaultEnabled ? 'On by default' : 'Opt-in'}</Badge>
+                    <Badge tone={plugin.defaultEnabled ? 'solid' : 'outline'}>
+                      {plugin.defaultEnabled ? 'On by default' : 'Opt-in'}
+                    </Badge>
                     {plugin.privilegedIntents.map((intent) => (
                       <Badge key={intent} tone="outline">
                         Needs {intent} intent
@@ -55,7 +58,9 @@ export default function FeaturesPage() {
                   </div>
                 </div>
 
-                <h3 className="mt-8 text-sm font-semibold uppercase tracking-wider text-grey-2">Why gaming communities love it</h3>
+                <h3 className="mt-8 text-sm font-semibold uppercase tracking-wider text-grey-2">
+                  Why gaming communities love it
+                </h3>
                 <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {copy.whyGaming.map((reason) => (
                     <li key={reason} className="flex gap-2 text-sm leading-relaxed text-grey-3">
@@ -67,11 +72,16 @@ export default function FeaturesPage() {
                   ))}
                 </ul>
 
-                <h3 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wider text-grey-2">Commands</h3>
+                <h3 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wider text-grey-2">
+                  Commands
+                </h3>
                 <CommandTable commands={plugin.commands} />
 
                 <div className="mt-6">
-                  <a href={`/features/${plugin.id}`} className="text-sm text-grey-4 underline decoration-white/20 underline-offset-4 hover:text-grey-7">
+                  <a
+                    href={`/features/${plugin.id}`}
+                    className="text-sm text-grey-4 underline decoration-white/20 underline-offset-4 hover:text-grey-7"
+                  >
                     Full detail page for {plugin.name} →
                   </a>
                 </div>

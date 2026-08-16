@@ -22,11 +22,20 @@ export interface PollOptionTally {
 }
 
 /** Tallies votes per option, ordered by option position. Omits `voterIds` for anonymous polls. */
-export function tallyPoll(options: PollOptionLike[], votes: PollVoteLike[], anonymous: boolean): PollOptionTally[] {
+export function tallyPoll(
+  options: PollOptionLike[],
+  votes: PollVoteLike[],
+  anonymous: boolean,
+): PollOptionTally[] {
   const sorted = [...options].sort((a, b) => a.position - b.position);
   return sorted.map((option) => {
     const optionVotes = votes.filter((v) => v.optionId === option.id);
-    const tally: PollOptionTally = { optionId: option.id, label: option.label, position: option.position, votes: optionVotes.length };
+    const tally: PollOptionTally = {
+      optionId: option.id,
+      label: option.label,
+      position: option.position,
+      votes: optionVotes.length,
+    };
     if (!anonymous) {
       tally.voterIds = optionVotes.map((v) => v.userId);
     }
@@ -45,7 +54,11 @@ export interface PollVoteDecision {
   add: boolean;
 }
 
-export function decidePollVote(optionId: string, existingVotedOptionIds: string[], multiSelect: boolean): PollVoteDecision {
+export function decidePollVote(
+  optionId: string,
+  existingVotedOptionIds: string[],
+  multiSelect: boolean,
+): PollVoteDecision {
   const alreadyVotedThisOption = existingVotedOptionIds.includes(optionId);
 
   if (multiSelect) {
@@ -72,7 +85,11 @@ export interface GiveawayEntryLike {
  * random index in `[0, maxExclusive)` each step (inject `crypto.randomInt` in production, a fixed sequence in
  * tests for determinism).
  */
-export function pickWinners<T extends GiveawayEntryLike>(entries: T[], n: number, rng: (maxExclusive: number) => number): T[] {
+export function pickWinners<T extends GiveawayEntryLike>(
+  entries: T[],
+  n: number,
+  rng: (maxExclusive: number) => number,
+): T[] {
   const pool = [...entries];
   const winners: T[] = [];
   const count = Math.max(0, Math.min(n, pool.length));
@@ -113,7 +130,10 @@ export function checkGiveawayEligibility(input: GiveawayEligibilityInput): Givea
     return { ok: false, reason: 'ended' };
   }
 
-  if (giveaway.requiredRoleIds.length > 0 && !giveaway.requiredRoleIds.some((id) => member.roleIds.includes(id))) {
+  if (
+    giveaway.requiredRoleIds.length > 0 &&
+    !giveaway.requiredRoleIds.some((id) => member.roleIds.includes(id))
+  ) {
     return { ok: false, reason: 'missing_role' };
   }
 
@@ -145,14 +165,25 @@ export interface SuggestionVoteChange {
 }
 
 /** Computes the vote-row and counter changes for a suggestion up/down vote click, with toggle-off and switch support. */
-export function toggleSuggestionVote(existing: SuggestionVoteDirection | null, direction: SuggestionVoteDirection): SuggestionVoteChange {
+export function toggleSuggestionVote(
+  existing: SuggestionVoteDirection | null,
+  direction: SuggestionVoteDirection,
+): SuggestionVoteChange {
   if (existing === direction) {
     // Clicking the same direction again removes the vote.
-    return { newValue: null, upvoteDelta: direction === 1 ? -1 : 0, downvoteDelta: direction === -1 ? -1 : 0 };
+    return {
+      newValue: null,
+      upvoteDelta: direction === 1 ? -1 : 0,
+      downvoteDelta: direction === -1 ? -1 : 0,
+    };
   }
 
   if (existing === null) {
-    return { newValue: direction, upvoteDelta: direction === 1 ? 1 : 0, downvoteDelta: direction === -1 ? 1 : 0 };
+    return {
+      newValue: direction,
+      upvoteDelta: direction === 1 ? 1 : 0,
+      downvoteDelta: direction === -1 ? 1 : 0,
+    };
   }
 
   // Switching from the opposite direction: remove the old vote's count and add the new one's.

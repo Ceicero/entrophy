@@ -22,14 +22,14 @@ export function privacyPolicy(operator: string, contactEmail: string): LegalSect
       title: '2. Data collected by the bot',
       paragraphs: [
         'By default, Entrophy stores only what a feature needs to function: Discord IDs (server, user, channel, role, message) tied to the feature that used them — for example a moderation case, a ticket, or a level profile.',
-        'Message content is never stored unless a specific feature explicitly requires it and a server administrator turns that feature on (for example, the Enforcer plugin\'s context capture, which can be disabled per server). Deleted-message and edited-message logging captures that an event happened, not the message text, unless a server enables content capture.',
-        'Server administrators control which plugins are enabled and can review, export, or request deletion of their server\'s data at any time from the dashboard\'s privacy settings.',
+        "Message content is never stored unless a specific feature explicitly requires it and a server administrator turns that feature on (for example, the Enforcer plugin's context capture, which can be disabled per server). Deleted-message and edited-message logging captures that an event happened, not the message text, unless a server enables content capture.",
+        "Server administrators control which plugins are enabled and can review, export, or request deletion of their server's data at any time from the dashboard's privacy settings.",
       ],
     },
     {
       title: '3. Data collected by the dashboard',
       paragraphs: [
-        'Signing into the dashboard uses Discord OAuth. We receive your Discord user id, username, avatar, and the list of servers you manage, only to determine which servers you\'re allowed to configure.',
+        "Signing into the dashboard uses Discord OAuth. We receive your Discord user id, username, avatar, and the list of servers you manage, only to determine which servers you're allowed to configure.",
         'A session cookie keeps you signed in; it is httpOnly, cannot be read by page scripts, and expires automatically. OAuth tokens are encrypted at rest and used only to call the Discord API on your behalf.',
       ],
     },
@@ -48,7 +48,7 @@ export function privacyPolicy(operator: string, contactEmail: string): LegalSect
     {
       title: '6. Data retention & deletion',
       paragraphs: [
-        'Retention periods for moderation cases, logs, tickets, and Enforcer records are configurable per server, with sensible defaults. A server administrator can request an export or deletion of their server\'s data from the dashboard at any time; deletion removes the associated database records.',
+        "Retention periods for moderation cases, logs, tickets, and Enforcer records are configurable per server, with sensible defaults. A server administrator can request an export or deletion of their server's data from the dashboard at any time; deletion removes the associated database records.",
       ],
     },
     {
@@ -99,7 +99,7 @@ export function termsOfService(operator: string, contactEmail: string): LegalSec
     {
       title: '3. Acceptable use',
       paragraphs: [
-        'You may not use Entrophy to violate Discord\'s Terms of Service or Developer Policy, to harass or dox others, to evade a ban or moderation action, to spam, or for any unlawful purpose. Server administrators are responsible for how they configure moderation and automation features on their own server.',
+        "You may not use Entrophy to violate Discord's Terms of Service or Developer Policy, to harass or dox others, to evade a ban or moderation action, to spam, or for any unlawful purpose. Server administrators are responsible for how they configure moderation and automation features on their own server.",
       ],
     },
     {
@@ -117,7 +117,7 @@ export function termsOfService(operator: string, contactEmail: string): LegalSec
     {
       title: '6. Moderation actions',
       paragraphs: [
-        'Moderation decisions (warnings, timeouts, kicks, bans) are made and executed by the server\'s own moderators using the bot as a tool. ' +
+        "Moderation decisions (warnings, timeouts, kicks, bans) are made and executed by the server's own moderators using the bot as a tool. " +
           `${operator} does not review or arbitrate individual server moderation decisions.`,
       ],
     },
@@ -141,7 +141,9 @@ export function termsOfService(operator: string, contactEmail: string): LegalSec
     },
     {
       title: '10. Changes to these terms',
-      paragraphs: ['These Terms may be updated as the service changes. Continued use after a change constitutes acceptance of the update.'],
+      paragraphs: [
+        'These Terms may be updated as the service changes. Continued use after a change constitutes acceptance of the update.',
+      ],
     },
     {
       title: '11. Contact',

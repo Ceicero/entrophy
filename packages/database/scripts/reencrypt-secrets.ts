@@ -43,7 +43,12 @@ function mergeInto(total: Summary, part: Summary): void {
 
 /** Re-encrypts one nullable `*Enc` string value. Returns the new ciphertext, or `undefined` if there was
  * nothing to do (null/empty) or decryption failed (logged; original value is left untouched). */
-function reencryptValue(label: string, id: string, value: string | null | undefined, summary: Summary): string | undefined {
+function reencryptValue(
+  label: string,
+  id: string,
+  value: string | null | undefined,
+  summary: Summary,
+): string | undefined {
   if (!value) {
     summary.skippedEmpty += 1;
     return undefined;
@@ -54,7 +59,10 @@ function reencryptValue(label: string, id: string, value: string | null | undefi
     return encryptSecret(plain);
   } catch (err) {
     summary.failed += 1;
-    logger.error({ table: label, id, err: err instanceof Error ? err.message : String(err) }, 'failed to decrypt value — left unchanged (neither ENCRYPTION_KEY nor ENCRYPTION_KEY_PREVIOUS could open it)');
+    logger.error(
+      { table: label, id, err: err instanceof Error ? err.message : String(err) },
+      'failed to decrypt value — left unchanged (neither ENCRYPTION_KEY nor ENCRYPTION_KEY_PREVIOUS could open it)',
+    );
     return undefined;
   }
 }

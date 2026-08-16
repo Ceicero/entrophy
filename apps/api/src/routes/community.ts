@@ -2,8 +2,23 @@ import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
 import { NotFoundError, buildPaginated, paginate } from '@entrophy/core';
 import type { Paginated } from '@entrophy/types';
-import type { AnnouncementDto, CommunityEventDto, EconomySettingsDto, GiveawayDto, PollDto, PollResultsDto, SuggestionDto } from '@entrophy/types/community';
-import { toAnnouncementDto, toCommunityEventDto, toGiveawayDto, toPollDto, toPollResultsDto, toSuggestionDto } from '../lib/community/dto';
+import type {
+  AnnouncementDto,
+  CommunityEventDto,
+  EconomySettingsDto,
+  GiveawayDto,
+  PollDto,
+  PollResultsDto,
+  SuggestionDto,
+} from '@entrophy/types/community';
+import {
+  toAnnouncementDto,
+  toCommunityEventDto,
+  toGiveawayDto,
+  toPollDto,
+  toPollResultsDto,
+  toSuggestionDto,
+} from '../lib/community/dto';
 import { cancelAnnouncementJob } from '../lib/community/queue';
 import { writeDashboardAudit } from '../lib/audit';
 import { requireGuildAccess } from '../lib/guild-access';
@@ -41,7 +56,10 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
 
   app.get(
     '/:guildId/community/giveaways',
-    { schema: { params: guildIdParamSchema, querystring: paginationQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: paginationQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<Paginated<GiveawayDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit } = request.query;
@@ -64,7 +82,10 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
 
   app.get(
     '/:guildId/community/polls',
-    { schema: { params: guildIdParamSchema, querystring: paginationQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: paginationQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<Paginated<PollDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit } = request.query;
@@ -105,7 +126,9 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
     {
       schema: {
         params: guildIdParamSchema,
-        querystring: paginationQuerySchema.extend({ status: z.enum(['PENDING', 'APPROVED', 'DENIED', 'IMPLEMENTED', 'CONSIDERING']).optional() }),
+        querystring: paginationQuerySchema.extend({
+          status: z.enum(['PENDING', 'APPROVED', 'DENIED', 'IMPLEMENTED', 'CONSIDERING']).optional(),
+        }),
       },
       preHandler: requireGuildAccess(),
     },
@@ -125,12 +148,17 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
 
   app.patch(
     '/:guildId/community/suggestions/:suggestionId',
-    { schema: { params: suggestionParamSchema, body: suggestionStatusSchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: suggestionParamSchema, body: suggestionStatusSchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<SuggestionDto> => {
       const guildId = request.guildId!;
       const session = request.session!;
       const { suggestionId } = request.params as { suggestionId: string };
-      const existing = await app.prisma.suggestion.findFirst({ where: { id: suggestionId, guildId, deletedAt: null } });
+      const existing = await app.prisma.suggestion.findFirst({
+        where: { id: suggestionId, guildId, deletedAt: null },
+      });
       if (!existing) throw new NotFoundError('Suggestion not found.');
 
       const updated = await app.prisma.suggestion.update({
@@ -160,7 +188,10 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
 
   app.get(
     '/:guildId/community/announcements',
-    { schema: { params: guildIdParamSchema, querystring: paginationQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: paginationQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<Paginated<AnnouncementDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit } = request.query;
@@ -182,10 +213,15 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
       const guildId = request.guildId!;
       const session = request.session!;
       const { announcementId } = request.params as { announcementId: string };
-      const existing = await app.prisma.scheduledAnnouncement.findFirst({ where: { id: announcementId, guildId } });
+      const existing = await app.prisma.scheduledAnnouncement.findFirst({
+        where: { id: announcementId, guildId },
+      });
       if (!existing) throw new NotFoundError('Scheduled announcement not found.');
 
-      const updated = await app.prisma.scheduledAnnouncement.update({ where: { id: announcementId }, data: { enabled: false } });
+      const updated = await app.prisma.scheduledAnnouncement.update({
+        where: { id: announcementId },
+        data: { enabled: false },
+      });
       await cancelAnnouncementJob(app.redis, announcementId, existing.cron);
 
       await writeDashboardAudit(app.prisma, {
@@ -206,7 +242,10 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
 
   app.get(
     '/:guildId/community/events',
-    { schema: { params: guildIdParamSchema, querystring: paginationQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: paginationQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<Paginated<CommunityEventDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit } = request.query;
@@ -238,13 +277,21 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
 
   app.put(
     '/:guildId/economy/config',
-    { schema: { params: guildIdParamSchema, body: economySettingsBodySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, body: economySettingsBodySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<EconomySettingsDto> => {
       const session = request.session!;
-      return app.configStore.setConfig<EconomySettingsDto>(request.guildId!, ECONOMY_PLUGIN_ID, request.body, {
-        id: session.userId,
-        source: 'dashboard',
-      });
+      return app.configStore.setConfig<EconomySettingsDto>(
+        request.guildId!,
+        ECONOMY_PLUGIN_ID,
+        request.body,
+        {
+          id: session.userId,
+          source: 'dashboard',
+        },
+      );
     },
   );
 }

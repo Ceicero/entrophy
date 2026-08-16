@@ -27,7 +27,12 @@ import {
   Textarea,
   useToast,
 } from '@entrophy/ui';
-import { useDecideVerification, useUpdateVerificationSettings, useVerificationQueue, useVerificationSettings } from '../../lib/roles-queries';
+import {
+  useDecideVerification,
+  useUpdateVerificationSettings,
+  useVerificationQueue,
+  useVerificationSettings,
+} from '../../lib/roles-queries';
 import { DiscordChannelSelect, DiscordRoleSelect } from '../discord-selects';
 import { ErrorState } from '../error-state';
 import { ApiClientError } from '../../lib/api';
@@ -62,7 +67,12 @@ export function VerificationTab({ guildId }: { guildId: string }) {
   function saveSettings() {
     updateSettings.mutate(draft!, {
       onSuccess: () => toast({ title: 'Verification settings saved', variant: 'success' }),
-      onError: (err) => toast({ title: 'Could not save', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not save',
+          description: err instanceof ApiClientError ? err.message : undefined,
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -75,7 +85,12 @@ export function VerificationTab({ guildId }: { guildId: string }) {
           setDenyNoteFor(null);
           setDenyNote('');
         },
-        onError: (err) => toast({ title: 'Could not decide', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }),
+        onError: (err) =>
+          toast({
+            title: 'Could not decide',
+            description: err instanceof ApiClientError ? err.message : undefined,
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -89,7 +104,10 @@ export function VerificationTab({ guildId }: { guildId: string }) {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Mode">
-              <Select value={draft.mode} onValueChange={(v) => setDraft((p) => ({ ...p!, mode: v as typeof draft.mode }))}>
+              <Select
+                value={draft.mode}
+                onValueChange={(v) => setDraft((p) => ({ ...p!, mode: v as typeof draft.mode }))}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -101,13 +119,21 @@ export function VerificationTab({ guildId }: { guildId: string }) {
               </Select>
             </FormField>
             <FormField label="Verified role">
-              <DiscordRoleSelect guildId={guildId} value={draft.verifiedRoleId} onChange={(v) => setDraft((p) => ({ ...p!, verifiedRoleId: v }))} />
+              <DiscordRoleSelect
+                guildId={guildId}
+                value={draft.verifiedRoleId}
+                onChange={(v) => setDraft((p) => ({ ...p!, verifiedRoleId: v }))}
+              />
             </FormField>
           </div>
 
           {draft.mode === 'modal' ? (
             <FormField label="Staff review channel">
-              <DiscordChannelSelect guildId={guildId} value={draft.staffChannelId} onChange={(v) => setDraft((p) => ({ ...p!, staffChannelId: v }))} />
+              <DiscordChannelSelect
+                guildId={guildId}
+                value={draft.staffChannelId}
+                onChange={(v) => setDraft((p) => ({ ...p!, staffChannelId: v }))}
+              />
             </FormField>
           ) : null}
 
@@ -119,15 +145,30 @@ export function VerificationTab({ guildId }: { guildId: string }) {
                   <Input
                     value={q}
                     maxLength={300}
-                    onChange={(e) => setDraft((p) => ({ ...p!, questions: p!.questions.map((x, xi) => (xi === i ? e.target.value : x)) }))}
+                    onChange={(e) =>
+                      setDraft((p) => ({
+                        ...p!,
+                        questions: p!.questions.map((x, xi) => (xi === i ? e.target.value : x)),
+                      }))
+                    }
                   />
-                  <Button variant="outline" size="icon" onClick={() => setDraft((p) => ({ ...p!, questions: p!.questions.filter((_, xi) => xi !== i) }))}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      setDraft((p) => ({ ...p!, questions: p!.questions.filter((_, xi) => xi !== i) }))
+                    }
+                  >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ))}
               {draft.questions.length < 5 ? (
-                <Button variant="outline" size="sm" onClick={() => setDraft((p) => ({ ...p!, questions: [...p!.questions, ''] }))}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDraft((p) => ({ ...p!, questions: [...p!.questions, ''] }))}
+                >
                   <Plus className="mr-1 h-3.5 w-3.5" /> Add question
                 </Button>
               ) : null}
@@ -136,10 +177,21 @@ export function VerificationTab({ guildId }: { guildId: string }) {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <FormField label="Min account age (days)">
-              <Input type="number" min={0} max={3650} value={draft.minAccountAgeDays} onChange={(e) => setDraft((p) => ({ ...p!, minAccountAgeDays: Number(e.target.value) }))} />
+              <Input
+                type="number"
+                min={0}
+                max={3650}
+                value={draft.minAccountAgeDays}
+                onChange={(e) => setDraft((p) => ({ ...p!, minAccountAgeDays: Number(e.target.value) }))}
+              />
             </FormField>
             <FormField label="Underage action">
-              <Select value={draft.underageAction} onValueChange={(v) => setDraft((p) => ({ ...p!, underageAction: v as typeof draft.underageAction }))}>
+              <Select
+                value={draft.underageAction}
+                onValueChange={(v) =>
+                  setDraft((p) => ({ ...p!, underageAction: v as typeof draft.underageAction }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -152,7 +204,11 @@ export function VerificationTab({ guildId }: { guildId: string }) {
             </FormField>
             {draft.underageAction === 'quarantine' ? (
               <FormField label="Quarantine role">
-                <DiscordRoleSelect guildId={guildId} value={draft.quarantineRoleId} onChange={(v) => setDraft((p) => ({ ...p!, quarantineRoleId: v }))} />
+                <DiscordRoleSelect
+                  guildId={guildId}
+                  value={draft.quarantineRoleId}
+                  onChange={(v) => setDraft((p) => ({ ...p!, quarantineRoleId: v }))}
+                />
               </FormField>
             ) : null}
           </div>
@@ -175,7 +231,10 @@ export function VerificationTab({ guildId }: { guildId: string }) {
           ) : queue.isLoading ? (
             <Skeleton className="h-32 w-full" />
           ) : !queue.data || queue.data.length === 0 ? (
-            <EmptyState title="Nothing pending" description="Modal-mode verification requests waiting on staff review will show up here." />
+            <EmptyState
+              title="Nothing pending"
+              description="Modal-mode verification requests waiting on staff review will show up here."
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -196,13 +255,24 @@ export function VerificationTab({ guildId }: { guildId: string }) {
                       <TableCell>
                         <Badge variant="outline">{request.method.toLowerCase()}</Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{new Date(request.createdAt).toLocaleString()}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(request.createdAt).toLocaleString()}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="outline" onClick={() => handleDecide(request.id, true)} disabled={decide.isPending}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDecide(request.id, true)}
+                            disabled={decide.isPending}
+                          >
                             <Check className="mr-1 h-3.5 w-3.5" /> Approve
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => setDenyNoteFor(denyNoteFor === request.id ? null : request.id)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setDenyNoteFor(denyNoteFor === request.id ? null : request.id)}
+                          >
                             <X className="mr-1 h-3.5 w-3.5" /> Deny
                           </Button>
                         </div>
@@ -213,9 +283,19 @@ export function VerificationTab({ guildId }: { guildId: string }) {
                         <TableCell colSpan={4}>
                           <div className="flex items-end gap-2">
                             <FormField label="Denial note (optional, sent to the member)" className="flex-1">
-                              <Textarea value={denyNote} onChange={(e) => setDenyNote(e.target.value)} rows={2} maxLength={500} />
+                              <Textarea
+                                value={denyNote}
+                                onChange={(e) => setDenyNote(e.target.value)}
+                                rows={2}
+                                maxLength={500}
+                              />
                             </FormField>
-                            <Button size="sm" variant="destructive" onClick={() => handleDecide(request.id, false, denyNote || undefined)} disabled={decide.isPending}>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDecide(request.id, false, denyNote || undefined)}
+                              disabled={decide.isPending}
+                            >
                               Confirm deny
                             </Button>
                           </div>

@@ -16,7 +16,14 @@ describe('buildRecordSearchWhere', () => {
       status: 'PENDING',
       policyId: 'p1',
     });
-    expect(where).toMatchObject({ guildId: 'g1', userId: 'u1', kind: 'FLAG', decision: 'WARN', status: 'PENDING', policyId: 'p1' });
+    expect(where).toMatchObject({
+      guildId: 'g1',
+      userId: 'u1',
+      kind: 'FLAG',
+      decision: 'WARN',
+      status: 'PENDING',
+      policyId: 'p1',
+    });
   });
 
   it('parses a duration string for "since" into a createdAt.gte lower bound', () => {

@@ -4,7 +4,12 @@ import { errorEmbed, type ComponentHandler } from '../../sdk';
 import { refreshPollMessage } from '../actions';
 import { decidePollVote } from '../service';
 
-async function applyVote(pollId: string, optionId: string, userId: string, ctxPrisma: PrismaClient): Promise<{ ok: true } | { ok: false; message: string }> {
+async function applyVote(
+  pollId: string,
+  optionId: string,
+  userId: string,
+  ctxPrisma: PrismaClient,
+): Promise<{ ok: true } | { ok: false; message: string }> {
   const poll = await ctxPrisma.poll.findUnique({ where: { id: pollId } });
   if (!poll || poll.closed) {
     return { ok: false, message: 'This poll is no longer accepting votes.' };
@@ -15,10 +20,16 @@ async function applyVote(pollId: string, optionId: string, userId: string, ctxPr
   }
 
   const existingVotes = await ctxPrisma.pollVote.findMany({ where: { pollId, userId } });
-  const decision = decidePollVote(optionId, existingVotes.map((v) => v.optionId), poll.multiSelect);
+  const decision = decidePollVote(
+    optionId,
+    existingVotes.map((v) => v.optionId),
+    poll.multiSelect,
+  );
 
   if (decision.removeOptionIds.length > 0) {
-    await ctxPrisma.pollVote.deleteMany({ where: { pollId, userId, optionId: { in: decision.removeOptionIds } } });
+    await ctxPrisma.pollVote.deleteMany({
+      where: { pollId, userId, optionId: { in: decision.removeOptionIds } },
+    });
   }
   if (decision.add) {
     await ctxPrisma.pollVote.upsert({

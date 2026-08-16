@@ -48,49 +48,81 @@ function buildLogWhere(guildId: string, filters: z.infer<typeof logsQuerySchema>
 
 /** `/guilds/:guildId/logging` — log channel settings (via the config store) and searchable log export (ARCHITECTURE.md §10). */
 export default async function loggingRoutes(app: ZodFastifyInstance): Promise<void> {
-  app.get('/:guildId/logging/settings', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    return app.configStore.getConfig(request.guildId!, LOGGING_PLUGIN_ID);
-  });
+  app.get(
+    '/:guildId/logging/settings',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      return app.configStore.getConfig(request.guildId!, LOGGING_PLUGIN_ID);
+    },
+  );
 
   app.put(
     '/:guildId/logging/settings',
-    { schema: { params: guildIdParamSchema, body: z.record(z.string(), z.unknown()) }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, body: z.record(z.string(), z.unknown()) },
+      preHandler: requireGuildAccess(),
+    },
     async (request) => {
       const session = request.session!;
-      return app.configStore.setConfig(request.guildId!, LOGGING_PLUGIN_ID, request.body, { id: session.userId, source: 'dashboard' });
+      return app.configStore.setConfig(request.guildId!, LOGGING_PLUGIN_ID, request.body, {
+        id: session.userId,
+        source: 'dashboard',
+      });
     },
   );
 
   app.get(
     '/:guildId/logging/logs',
-    { schema: { params: guildIdParamSchema, querystring: logsQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: logsQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<Paginated<LogEventDto>> => {
       const guildId = request.guildId!;
       const limit = Math.min(Math.max(request.query.limit ?? 25, 1), 100);
-      const offset = request.query.cursor ? Number(Buffer.from(request.query.cursor, 'base64url').toString('utf8')) || 0 : 0;
+      const offset = request.query.cursor
+        ? Number(Buffer.from(request.query.cursor, 'base64url').toString('utf8')) || 0
+        : 0;
       const where = buildLogWhere(guildId, request.query);
 
       const rows = await app.prisma.$queryRaw<
         { id: string; guildId: string; kind: string; payload: unknown; createdAt: Date }[]
-      >(Prisma.sql`SELECT "id", "guildId", "kind", "payload", "createdAt" FROM "LogEvent" WHERE ${where} ORDER BY "createdAt" DESC OFFSET ${offset} LIMIT ${limit + 1}`);
+      >(
+        Prisma.sql`SELECT "id", "guildId", "kind", "payload", "createdAt" FROM "LogEvent" WHERE ${where} ORDER BY "createdAt" DESC OFFSET ${offset} LIMIT ${limit + 1}`,
+      );
 
       const hasMore = rows.length > limit;
       const items = (hasMore ? rows.slice(0, limit) : rows).map((row) =>
         toLogEventDto({ ...row, payload: row.payload } as Parameters<typeof toLogEventDto>[0]),
       );
-      return { items, nextCursor: hasMore ? Buffer.from(String(offset + limit), 'utf8').toString('base64url') : null };
+      return {
+        items,
+        nextCursor: hasMore ? Buffer.from(String(offset + limit), 'utf8').toString('base64url') : null,
+      };
     },
   );
 
   app.get(
     '/:guildId/logging/logs/export.csv',
-    { schema: { params: guildIdParamSchema, querystring: logsQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: logsQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request, reply) => {
       const guildId = request.guildId!;
       const where = buildLogWhere(guildId, request.query);
       const rows = await app.prisma.$queryRaw<
-        { id: string; kind: string; actorId: string | null; targetId: string | null; payload: unknown; createdAt: Date }[]
-      >(Prisma.sql`SELECT "id", "kind", "actorId", "targetId", "payload", "createdAt" FROM "LogEvent" WHERE ${where} ORDER BY "createdAt" DESC LIMIT 10000`);
+        {
+          id: string;
+          kind: string;
+          actorId: string | null;
+          targetId: string | null;
+          payload: unknown;
+          createdAt: Date;
+        }[]
+      >(
+        Prisma.sql`SELECT "id", "kind", "actorId", "targetId", "payload", "createdAt" FROM "LogEvent" WHERE ${where} ORDER BY "createdAt" DESC LIMIT 10000`,
+      );
 
       const csv = toCsv(
         rows.map((row) => ({
@@ -111,11 +143,17 @@ export default async function loggingRoutes(app: ZodFastifyInstance): Promise<vo
 
   app.post(
     '/:guildId/logging/redaction/test',
-    { schema: { params: guildIdParamSchema, body: redactionTestBodySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, body: redactionTestBodySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<RedactionTestResponseDto> => {
       const guildId = request.guildId!;
       const body: RedactionTestRequestDto = request.body;
-      const config = await app.configStore.getConfig<{ redactionPatterns: string[] }>(guildId, LOGGING_PLUGIN_ID);
+      const config = await app.configStore.getConfig<{ redactionPatterns: string[] }>(
+        guildId,
+        LOGGING_PLUGIN_ID,
+      );
       return testRedactionPatterns(body.text, config.redactionPatterns);
     },
   );

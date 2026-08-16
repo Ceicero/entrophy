@@ -5,10 +5,17 @@ const GUILD_ID = '111111111111111111';
 const USER_ID = '222222222222222222';
 
 async function authedApp(overrides: Parameters<typeof buildTestApp>[0] = {}) {
-  const built = await buildTestApp({ guild: { findUnique: async () => ({ id: GUILD_ID, botPresent: true }) }, ...overrides });
+  const built = await buildTestApp({
+    guild: { findUnique: async () => ({ id: GUILD_ID, botPresent: true }) },
+    ...overrides,
+  });
   const { cookieHeader, session } = await loginAs(built.app, built.redis, { userId: USER_ID });
   await seedUserGuilds(built.redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-  const mutHeaders = { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken };
+  const mutHeaders = {
+    cookie: cookieHeader,
+    origin: 'http://localhost:3000',
+    'x-csrf-token': session.csrfToken,
+  };
   return { ...built, cookieHeader, mutHeaders };
 }
 
@@ -34,7 +41,11 @@ describe('community giveaways', () => {
     };
     const { app, cookieHeader } = await authedApp({ giveaway: { findMany: async () => [row] } });
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/community/giveaways`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/giveaways`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().items[0]).toMatchObject({ id: 'gw1', prize: 'Nitro', entryCount: 7 });
 
@@ -73,7 +84,11 @@ describe('community poll results', () => {
       pollVote: { findMany: async () => votes },
     });
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/community/polls/poll1/results`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/polls/poll1/results`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.totalVotes).toBe(2);
@@ -90,7 +105,11 @@ describe('community poll results', () => {
       pollVote: { findMany: async () => votes },
     });
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/community/polls/poll1/results`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/polls/poll1/results`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.json().options[0]).not.toHaveProperty('voterIds');
 
     await app.close();
@@ -98,7 +117,11 @@ describe('community poll results', () => {
 
   it('404s for a poll that does not exist in the guild', async () => {
     const { app, cookieHeader } = await authedApp({ poll: { findFirst: async () => null } });
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/community/polls/nope/results`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/polls/nope/results`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(404);
     await app.close();
   });
@@ -121,21 +144,43 @@ describe('community announcements', () => {
     };
     const { app, cookieHeader } = await authedApp({ scheduledAnnouncement: { findMany: async () => [row] } });
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/community/announcements`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/announcements`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
-    expect(res.json().items[0]).toMatchObject({ id: 'ann1', cron: '0 12 * * *', content: { content: 'Hello!' } });
+    expect(res.json().items[0]).toMatchObject({
+      id: 'ann1',
+      cron: '0 12 * * *',
+      content: { content: 'Hello!' },
+    });
 
     await app.close();
   });
 
   it('cancels an announcement: disables it and returns the updated DTO', async () => {
     const existing = { id: 'ann1', guildId: GUILD_ID, cron: null };
-    const updated = { ...existing, channelId: 'c1', content: { content: 'Hi' }, runAt: new Date(), enabled: false, lastRunAt: null, createdBy: 'staff1', createdAt: new Date(), updatedAt: new Date() };
+    const updated = {
+      ...existing,
+      channelId: 'c1',
+      content: { content: 'Hi' },
+      runAt: new Date(),
+      enabled: false,
+      lastRunAt: null,
+      createdBy: 'staff1',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
     const { app, mutHeaders } = await authedApp({
       scheduledAnnouncement: { findFirst: async () => existing, update: async () => updated },
     });
 
-    const res = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/community/announcements/ann1/cancel`, headers: mutHeaders });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/community/announcements/ann1/cancel`,
+      headers: mutHeaders,
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({ id: 'ann1', enabled: false });
 
@@ -144,7 +189,11 @@ describe('community announcements', () => {
 
   it('404s cancelling an announcement that does not belong to the guild', async () => {
     const { app, mutHeaders } = await authedApp({ scheduledAnnouncement: { findFirst: async () => null } });
-    const res = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/community/announcements/nope/cancel`, headers: mutHeaders });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/community/announcements/nope/cancel`,
+      headers: mutHeaders,
+    });
     expect(res.statusCode).toBe(404);
     await app.close();
   });
@@ -167,16 +216,45 @@ describe('community events', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       rsvps: [
-        { id: 'r1', eventId: 'ev1', userId: 'u1', status: 'GOING', createdAt: new Date(), updatedAt: new Date() },
-        { id: 'r2', eventId: 'ev1', userId: 'u2', status: 'MAYBE', createdAt: new Date(), updatedAt: new Date() },
-        { id: 'r3', eventId: 'ev1', userId: 'u3', status: 'DECLINED', createdAt: new Date(), updatedAt: new Date() },
+        {
+          id: 'r1',
+          eventId: 'ev1',
+          userId: 'u1',
+          status: 'GOING',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'r2',
+          eventId: 'ev1',
+          userId: 'u2',
+          status: 'MAYBE',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'r3',
+          eventId: 'ev1',
+          userId: 'u3',
+          status: 'DECLINED',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       ],
     };
     const { app, cookieHeader } = await authedApp({ communityEvent: { findMany: async () => [row] } });
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/community/events`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/events`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
-    expect(res.json().items[0]).toMatchObject({ id: 'ev1', title: 'Movie night', rsvps: { going: 1, maybe: 1, declined: 1 } });
+    expect(res.json().items[0]).toMatchObject({
+      id: 'ev1',
+      title: 'Movie night',
+      rsvps: { going: 1, maybe: 1, declined: 1 },
+    });
 
     await app.close();
   });
@@ -188,7 +266,10 @@ describe('economy settings', () => {
     const { app, cookieHeader, mutHeaders } = await authedApp({
       pluginConfig: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake, args shape mirrors Prisma's generated types
-        findUnique: async (args: any) => (store.has(args.where.guildId_pluginId.pluginId) ? { config: store.get(args.where.guildId_pluginId.pluginId) } : null),
+        findUnique: async (args: any) =>
+          store.has(args.where.guildId_pluginId.pluginId)
+            ? { config: store.get(args.where.guildId_pluginId.pluginId) }
+            : null,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake
         upsert: async (args: any) => {
           store.set(args.where.guildId_pluginId.pluginId, args.create.config);
@@ -197,7 +278,11 @@ describe('economy settings', () => {
       },
     });
 
-    const before = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/economy/config`, headers: { cookie: cookieHeader } });
+    const before = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/economy/config`,
+      headers: { cookie: cookieHeader },
+    });
     expect(before.statusCode).toBe(200);
     expect(before.json().currencyName).toBe('Coins');
     expect(before.json().dailyMinAmount).toBe(50);
@@ -228,7 +313,21 @@ describe('economy settings', () => {
 describe('community suggestions status', () => {
   it('updates status and writes an audit entry', async () => {
     const existing = { id: 's1', guildId: GUILD_ID, deletedAt: null, status: 'PENDING' };
-    const updated = { ...existing, status: 'APPROVED', number: 1, authorId: 'a1', channelId: 'c1', messageId: 'm1', content: 'Add dark mode', staffNote: null, threadId: null, upvotes: 0, downvotes: 0, createdAt: new Date(), updatedAt: new Date() };
+    const updated = {
+      ...existing,
+      status: 'APPROVED',
+      number: 1,
+      authorId: 'a1',
+      channelId: 'c1',
+      messageId: 'm1',
+      content: 'Add dark mode',
+      staffNote: null,
+      threadId: null,
+      upvotes: 0,
+      downvotes: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
     const { app, mutHeaders } = await authedApp({
       suggestion: { findFirst: async () => existing, update: async () => updated },
     });

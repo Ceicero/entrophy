@@ -11,7 +11,13 @@ import {
 import type Redis from 'ioredis';
 import { redisKey } from '@entrophy/core';
 import type { PluginId } from '@entrophy/types';
-import { brandEmbed, buildCustomId, type GuildConfigData, type HostService, type PluginManifest } from '../sdk';
+import {
+  brandEmbed,
+  buildCustomId,
+  type GuildConfigData,
+  type HostService,
+  type PluginManifest,
+} from '../sdk';
 
 export const WIZARD_STEP_IDS = ['roles', 'channels', 'locale-timezone', 'plugins'] as const;
 export type WizardStepId = (typeof WIZARD_STEP_IDS)[number];
@@ -50,7 +56,12 @@ export class WizardSessionStore {
   }
 
   async save(session: WizardSession): Promise<void> {
-    await this.redis.set(this.key(session.guildId, session.userId), JSON.stringify(session), 'EX', WIZARD_TTL_SECONDS);
+    await this.redis.set(
+      this.key(session.guildId, session.userId),
+      JSON.stringify(session),
+      'EX',
+      WIZARD_TTL_SECONDS,
+    );
   }
 
   async clear(guildId: string, userId: string): Promise<void> {
@@ -112,7 +123,10 @@ export interface RenderedStep {
   components: WizardComponentRow[];
 }
 
-function navRow(userId: string, options: { back: boolean; next: boolean; finish: boolean }): ActionRowBuilder<ButtonBuilder> {
+function navRow(
+  userId: string,
+  options: { back: boolean; next: boolean; finish: boolean },
+): ActionRowBuilder<ButtonBuilder> {
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(buildCustomId('admin', 'wizard-back', userId))
@@ -123,7 +137,10 @@ function navRow(userId: string, options: { back: boolean; next: boolean; finish:
 
   if (options.finish) {
     row.addComponents(
-      new ButtonBuilder().setCustomId(buildCustomId('admin', 'wizard-finish', userId)).setLabel('Finish ✅').setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('admin', 'wizard-finish', userId))
+        .setLabel('Finish ✅')
+        .setStyle(ButtonStyle.Success),
     );
   } else {
     row.addComponents(
@@ -135,14 +152,19 @@ function navRow(userId: string, options: { back: boolean; next: boolean; finish:
     );
   }
 
-  row.addComponents(new ButtonBuilder().setCustomId(buildCustomId('admin', 'wizard-cancel', userId)).setLabel('Cancel').setStyle(ButtonStyle.Danger));
+  row.addComponents(
+    new ButtonBuilder()
+      .setCustomId(buildCustomId('admin', 'wizard-cancel', userId))
+      .setLabel('Cancel')
+      .setStyle(ButtonStyle.Danger),
+  );
   return row;
 }
 
 function stepDescription(stepId: WizardStepId): string {
   switch (stepId) {
     case 'roles':
-      return "Pick the roles that should count as staff. Anyone with a matching Discord permission (Manage Server, Ban Members, etc.) is recognized automatically too, even without a role picked here.";
+      return 'Pick the roles that should count as staff. Anyone with a matching Discord permission (Manage Server, Ban Members, etc.) is recognized automatically too, even without a role picked here.';
     case 'channels':
       return 'Pick where moderation case logs and staff-only discussion should go. Both are optional and can be changed later.';
     case 'locale-timezone':
@@ -260,7 +282,9 @@ export function renderWizardStep(session: WizardSession, manifests: PluginManife
         .setPlaceholder('Timezone (set a precise one anytime with /config set guild.timezone)')
         .setMinValues(1)
         .setMaxValues(1)
-        .addOptions(TIMEZONE_OPTIONS.map((option) => ({ ...option, default: option.value === data.timezone })));
+        .addOptions(
+          TIMEZONE_OPTIONS.map((option) => ({ ...option, default: option.value === data.timezone })),
+        );
 
       embed.addFields({ name: 'Locale', value: data.locale }, { name: 'Timezone', value: data.timezone });
 
@@ -276,7 +300,10 @@ export function renderWizardStep(session: WizardSession, manifests: PluginManife
 
     case 'plugins': {
       const togglable = manifests.filter((manifest) => !manifest.alwaysEnabled);
-      embed.addFields({ name: 'Plugins to enable', value: formatPluginList(data.enabledPluginIds, manifests) });
+      embed.addFields({
+        name: 'Plugins to enable',
+        value: formatPluginList(data.enabledPluginIds, manifests),
+      });
 
       const components: WizardComponentRow[] = [];
       if (togglable.length > 0) {
@@ -312,7 +339,11 @@ export function renderWizardStep(session: WizardSession, manifests: PluginManife
  * diffs `enabledPluginIds` against current plugin enablement and enables/disables accordingly, and mirrors the
  * relevant fields into admin's own `PluginConfig`. Returns the resulting `GuildConfig`.
  */
-export async function finishWizard(session: WizardSession, host: HostService, actor: { id: string; source: 'bot' }): Promise<GuildConfigData> {
+export async function finishWizard(
+  session: WizardSession,
+  host: HostService,
+  actor: { id: string; source: 'bot' },
+): Promise<GuildConfigData> {
   const updated = await host.updateGuildConfig(
     session.guildId,
     {

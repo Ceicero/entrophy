@@ -29,16 +29,41 @@ export function AnnouncementsTab({ guildId }: { guildId: string }) {
         toast({ title: 'Announcement cancelled', variant: 'success' });
         setCancelling(null);
       },
-      onError: (err) => toast({ title: 'Could not cancel', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not cancel',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
   const columns: DataTableColumn<AnnouncementDto>[] = [
-    { key: 'content', header: 'Message', render: (a) => <span>{a.content.content.length > 60 ? `${a.content.content.slice(0, 60)}…` : a.content.content || '(empty)'}</span> },
+    {
+      key: 'content',
+      header: 'Message',
+      render: (a) => (
+        <span>
+          {a.content.content.length > 60
+            ? `${a.content.content.slice(0, 60)}…`
+            : a.content.content || '(empty)'}
+        </span>
+      ),
+    },
     { key: 'channel', header: 'Channel', render: (a) => <code className="text-xs">#{a.channelId}</code> },
     { key: 'schedule', header: 'Schedule', render: (a) => formatSchedule(a) },
-    { key: 'status', header: 'Status', render: (a) => <Badge variant={a.enabled ? 'success' : 'secondary'}>{a.enabled ? 'Scheduled' : 'Cancelled'}</Badge> },
-    { key: 'lastRun', header: 'Last sent', render: (a) => (a.lastRunAt ? new Date(a.lastRunAt).toLocaleString() : 'Never') },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (a) => (
+        <Badge variant={a.enabled ? 'success' : 'secondary'}>{a.enabled ? 'Scheduled' : 'Cancelled'}</Badge>
+      ),
+    },
+    {
+      key: 'lastRun',
+      header: 'Last sent',
+      render: (a) => (a.lastRunAt ? new Date(a.lastRunAt).toLocaleString() : 'Never'),
+    },
     {
       key: 'actions',
       header: '',

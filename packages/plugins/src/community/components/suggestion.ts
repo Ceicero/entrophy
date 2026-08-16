@@ -22,11 +22,18 @@ const voteButton: ComponentHandler = {
     }
 
     const direction: SuggestionVoteDirection = dir === 'up' ? 1 : -1;
-    const existing = await c.ctx.prisma.suggestionVote.findUnique({ where: { suggestionId_userId: { suggestionId, userId: interaction.user.id } } });
-    const change = toggleSuggestionVote((existing?.value as SuggestionVoteDirection | undefined) ?? null, direction);
+    const existing = await c.ctx.prisma.suggestionVote.findUnique({
+      where: { suggestionId_userId: { suggestionId, userId: interaction.user.id } },
+    });
+    const change = toggleSuggestionVote(
+      (existing?.value as SuggestionVoteDirection | undefined) ?? null,
+      direction,
+    );
 
     if (change.newValue === null) {
-      await c.ctx.prisma.suggestionVote.delete({ where: { suggestionId_userId: { suggestionId, userId: interaction.user.id } } });
+      await c.ctx.prisma.suggestionVote.delete({
+        where: { suggestionId_userId: { suggestionId, userId: interaction.user.id } },
+      });
     } else {
       await c.ctx.prisma.suggestionVote.upsert({
         where: { suggestionId_userId: { suggestionId, userId: interaction.user.id } },

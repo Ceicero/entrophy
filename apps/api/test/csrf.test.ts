@@ -34,7 +34,11 @@ describe('csrf protection', () => {
     const res = await app.inject({
       method: 'PATCH',
       url: `/guilds/${GUILD_ID}/config`,
-      headers: { cookie: cookieHeader, origin: 'https://evil.example.com', 'x-csrf-token': session.csrfToken },
+      headers: {
+        cookie: cookieHeader,
+        origin: 'https://evil.example.com',
+        'x-csrf-token': session.csrfToken,
+      },
       payload: { fastActions: true },
     });
 
@@ -69,7 +73,11 @@ describe('csrf protection', () => {
     const { cookieHeader } = await loginAs(app, redis, { userId: '222222222222222225' });
     await seedUserGuilds(redis, '222222222222222225', [{ id: GUILD_ID, owner: true, permissions: '8' }]);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/config`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/config`,
+      headers: { cookie: cookieHeader },
+    });
 
     expect(res.statusCode).toBe(200);
 

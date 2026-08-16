@@ -1,0 +1,113 @@
+import { describe, expect, it, vi } from 'vitest';
+import type { Job } from 'bullmq';
+import { createTestContext } from '../../../sdk/testing';
+import { expireJob } from '../expire';
+
+const GUILD_ID = '111111111111111111';
+const TARGET_ID = '222222222222222222';
+const ROLE_ID = '333333333333333333';
+const CASE_ID = 'case-1';
+
+/** Enforcer's timed MUTE creates a `ROLE_ADD` moderation case with `metadata: { enforcerMute: true, roleId }`. */
+function enforcerMuteCase(overrides: Record<string, unknown> = {}) {
+  return {
+    id: CASE_ID,
+    guildId: GUILD_ID,
+    targetId: TARGET_ID,
+    caseNumber: 7,
+    type: 'ROLE_ADD',
+    metadata: { enforcerMute: true, roleId: ROLE_ID },
+    expiredAt: null,
+    deletedAt: null,
+    ...overrides,
+  };
+}
+
+function fakeJob(caseId: string): Job<{ caseId: string }> {
+  return { data: { caseId } } as unknown as Job<{ caseId: string }>;
+}
+
+describe('expireJob — enforcer timed MUTE (ROLE_ADD) expiry', () => {
+  it('removes the mute role from the member and marks the case expired', async () => {
+    const updateCalls: unknown[] = [];
+    const removeRole = vi.fn().mockResolvedValue(undefined);
+
+    const { ctx } = createTestContext({
+      prismaOverrides: {
+        moderationCase: {
+          findUnique: async () => enforcerMuteCase(),
+          update: async (args: any) => {
+            updateCalls.push(args);
+            return { ...enforcerMuteCase(), ...args.data };
+          },
+        },
+      },
+      overrides: {
+        client: {
+          guilds: {
+            fetch: async () => ({
+              members: {
+                fetch: async () => ({
+                  roles: { cache: new Map([[ROLE_ID, true]]), remove: removeRole },
+                }),
+              },
+            }),
+          },
+        } as any,
+      },
+    });
+
+    await expireJob.processor(ctx, fakeJob(CASE_ID));
+
+    expect(removeRole).toHaveBeenCalledWith(ROLE_ID, expect.stringContaining('Mute expired'));
+    expect(updateCalls).toHaveLength(1);
+    expect((updateCalls[0] as any).data.expiredAt).toBeInstanceOf(Date);
+  });
+
+  it('does not touch roles for a ROLE_ADD case that is not an enforcer mute, but still marks it expired', async () => {
+    const updateCalls: unknown[] = [];
+    const removeRole = vi.fn();
+
+    const { ctx } = createTestContext({
+      prismaOverrides: {
+        moderationCase: {
+          findUnique: async () => enforcerMuteCase({ metadata: { someOtherThing: true } }),
+          update: async (args: any) => {
+            updateCalls.push(args);
+            return {};
+          },
+        },
+      },
+      overrides: {
+        client: {
+          guilds: {
+            fetch: async () => ({
+              members: { fetch: async () => ({ roles: { cache: new Map(), remove: removeRole } }) as any },
+            }),
+          },
+        } as any,
+      },
+    });
+
+    await expireJob.processor(ctx, fakeJob(CASE_ID));
+
+    expect(removeRole).not.toHaveBeenCalled();
+    expect(updateCalls).toHaveLength(1);
+  });
+
+  it('is a no-op when the case is already expired', async () => {
+    const update = vi.fn();
+    const { ctx } = createTestContext({
+      prismaOverrides: {
+        moderationCase: {
+          findUnique: async () => enforcerMuteCase({ expiredAt: new Date() }),
+          update,
+        },
+      },
+    });
+
+    await expireJob.processor(ctx, fakeJob(CASE_ID));
+
+    expect(update).not.toHaveBeenCalled();
+  });
+});

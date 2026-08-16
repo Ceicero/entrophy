@@ -129,7 +129,11 @@ export interface GroupSelectionResult {
  * (`exclusive: true`) behave as max-1; otherwise `maxSelections` (if set) caps how many of the group's roles a
  * member may hold at once, keeping the earliest-requested selections and dropping the rest.
  */
-export function resolveGroupSelection(group: RoleGroupLike, requestedRoleIds: string[], currentGroupRoleIds: string[]): GroupSelectionResult {
+export function resolveGroupSelection(
+  group: RoleGroupLike,
+  requestedRoleIds: string[],
+  currentGroupRoleIds: string[],
+): GroupSelectionResult {
   const groupRoleSet = new Set(group.roleIds);
   const requested = requestedRoleIds.filter((id) => groupRoleSet.has(id));
   const cap = group.exclusive ? 1 : (group.maxSelections ?? requested.length);
@@ -151,7 +155,11 @@ export function resolveGroupSelection(group: RoleGroupLike, requestedRoleIds: st
 const MS_PER_DAY = 86_400_000;
 
 /** True if `accountCreatedAt` is old enough to satisfy `minAccountAgeDays` as of `now` (0 = gate disabled, always passes). */
-export function passesAccountAgeGate(accountCreatedAt: Date, minAccountAgeDays: number, now: Date = new Date()): boolean {
+export function passesAccountAgeGate(
+  accountCreatedAt: Date,
+  minAccountAgeDays: number,
+  now: Date = new Date(),
+): boolean {
   if (minAccountAgeDays <= 0) return true;
   const ageMs = now.getTime() - accountCreatedAt.getTime();
   return ageMs >= minAccountAgeDays * MS_PER_DAY;
@@ -220,7 +228,10 @@ export function emptyOnboardingProgress(): OnboardingProgressData {
 export function parseOnboardingProgress(raw: unknown): OnboardingProgressData {
   if (!raw || typeof raw !== 'object') return emptyOnboardingProgress();
   const obj = raw as Record<string, unknown>;
-  const customSteps = obj.customSteps && typeof obj.customSteps === 'object' ? (obj.customSteps as Record<string, boolean>) : {};
+  const customSteps =
+    obj.customSteps && typeof obj.customSteps === 'object'
+      ? (obj.customSteps as Record<string, boolean>)
+      : {};
   return {
     customSteps,
     verifiedAt: typeof obj.verifiedAt === 'string' ? obj.verifiedAt : undefined,
@@ -249,7 +260,11 @@ export function buildOnboardingChecklist(input: {
   if (input.verificationEnabled) {
     items.push({ id: '__verified__', label: 'Verified', done: Boolean(input.progress.verifiedAt) });
   }
-  items.push({ id: '__roles__', label: 'Picked self-assignable roles', done: Boolean(input.progress.rolesPickedAt) });
+  items.push({
+    id: '__roles__',
+    label: 'Picked self-assignable roles',
+    done: Boolean(input.progress.rolesPickedAt),
+  });
   for (const step of input.customStepDefs) {
     items.push({ id: step.id, label: step.label, done: Boolean(input.progress.customSteps[step.id]) });
   }

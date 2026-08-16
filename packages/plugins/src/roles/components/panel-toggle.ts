@@ -11,10 +11,16 @@ export const panelToggleHandler: ComponentHandler = {
     const [panelId, optionId] = c.args;
     const interaction = c.interaction as ButtonInteraction<'cached'>;
 
-    const panel = await c.ctx.prisma.rolePanel.findFirst({ where: { id: panelId, guildId: c.guildId, deletedAt: null }, include: { options: true } });
+    const panel = await c.ctx.prisma.rolePanel.findFirst({
+      where: { id: panelId, guildId: c.guildId, deletedAt: null },
+      include: { options: true },
+    });
     const option = panel?.options.find((o) => o.id === optionId);
     if (!panel || !option) {
-      await interaction.reply({ embeds: [errorEmbed('This panel option no longer exists.')], ephemeral: true });
+      await interaction.reply({
+        embeds: [errorEmbed('This panel option no longer exists.')],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -25,7 +31,10 @@ export const panelToggleHandler: ComponentHandler = {
     const botTopRolePosition = guild.members.me?.roles.highest.position ?? 0;
 
     if (!role) {
-      await interaction.reply({ embeds: [errorEmbed('That role no longer exists in this server.')], ephemeral: true });
+      await interaction.reply({
+        embeds: [errorEmbed('That role no longer exists in this server.')],
+        ephemeral: true,
+      });
       return;
     }
     const assignable = checkRoleAssignable({
@@ -36,7 +45,14 @@ export const panelToggleHandler: ComponentHandler = {
       allowElevatedRoles: config.allowElevatedRoles,
     });
     if (!assignable.ok) {
-      await interaction.reply({ embeds: [errorEmbed("I can't assign that role right now — please tell staff (it may have become elevated, managed, or above my top role).")], ephemeral: true });
+      await interaction.reply({
+        embeds: [
+          errorEmbed(
+            "I can't assign that role right now — please tell staff (it may have become elevated, managed, or above my top role).",
+          ),
+        ],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -53,11 +69,19 @@ export const panelToggleHandler: ComponentHandler = {
       const group = await c.ctx.prisma.roleGroup.findUnique({ where: { id: panel.groupId } });
       if (group) {
         const currentGroupRoles = group.roleIds.filter((id) => member.roles.cache.has(id));
-        const { toAdd, toRemove } = resolveGroupSelection(group, [...currentGroupRoles, option.roleId], currentGroupRoles);
+        const { toAdd, toRemove } = resolveGroupSelection(
+          group,
+          [...currentGroupRoles, option.roleId],
+          currentGroupRoles,
+        );
         if (toRemove.length > 0) await member.roles.remove(toRemove, `Role panel group: ${group.name}`);
         if (toAdd.length > 0) await member.roles.add(toAdd, `Role panel: ${panel.title}`);
         await interaction.reply({
-          embeds: [successEmbed(`Added <@&${option.roleId}>.${toRemove.length > 0 ? ` Removed: ${toRemove.map((id) => `<@&${id}>`).join(', ')}` : ''}`)],
+          embeds: [
+            successEmbed(
+              `Added <@&${option.roleId}>.${toRemove.length > 0 ? ` Removed: ${toRemove.map((id) => `<@&${id}>`).join(', ')}` : ''}`,
+            ),
+          ],
           ephemeral: true,
         });
         await markRolesPicked(c);
@@ -72,8 +96,14 @@ export const panelToggleHandler: ComponentHandler = {
 };
 
 /** Records `rolesPickedAt` on `OnboardingProgress` the first time a member self-assigns a role from a panel. */
-export async function markRolesPicked(c: { ctx: { prisma: import('@entrophy/database').PrismaClient }; guildId: string; interaction: { user: { id: string } } }): Promise<void> {
-  const existing = await c.ctx.prisma.onboardingProgress.findUnique({ where: { guildId_userId: { guildId: c.guildId, userId: c.interaction.user.id } } });
+export async function markRolesPicked(c: {
+  ctx: { prisma: import('@entrophy/database').PrismaClient };
+  guildId: string;
+  interaction: { user: { id: string } };
+}): Promise<void> {
+  const existing = await c.ctx.prisma.onboardingProgress.findUnique({
+    where: { guildId_userId: { guildId: c.guildId, userId: c.interaction.user.id } },
+  });
   const progress = parseOnboardingProgress(existing?.steps);
   if (progress.rolesPickedAt) return;
   progress.rolesPickedAt = new Date().toISOString();

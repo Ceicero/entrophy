@@ -4,17 +4,24 @@ import { createTestContext } from '../../sdk/testing';
 import { nextTicketNumber, withNextTicketNumber } from '../number';
 
 function p2002(): Prisma.PrismaClientKnownRequestError {
-  return new Prisma.PrismaClientKnownRequestError('Unique constraint failed', { code: 'P2002', clientVersion: '5.0.0' });
+  return new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+    code: 'P2002',
+    clientVersion: '5.0.0',
+  });
 }
 
 describe('nextTicketNumber', () => {
   it('returns 1 for a guild with no tickets yet', async () => {
-    const { ctx } = createTestContext({ prismaOverrides: { ticket: { aggregate: () => Promise.resolve({ _max: { number: null } }) } } });
+    const { ctx } = createTestContext({
+      prismaOverrides: { ticket: { aggregate: () => Promise.resolve({ _max: { number: null } }) } },
+    });
     await expect(nextTicketNumber(ctx.prisma, 'g1')).resolves.toBe(1);
   });
 
   it('returns MAX(number) + 1', async () => {
-    const { ctx } = createTestContext({ prismaOverrides: { ticket: { aggregate: () => Promise.resolve({ _max: { number: 7 } }) } } });
+    const { ctx } = createTestContext({
+      prismaOverrides: { ticket: { aggregate: () => Promise.resolve({ _max: { number: 7 } }) } },
+    });
     await expect(nextTicketNumber(ctx.prisma, 'g1')).resolves.toBe(8);
   });
 });
@@ -30,7 +37,9 @@ describe('withNextTicketNumber', () => {
       },
     });
 
-    const result = await withNextTicketNumber(ctx.prisma, 'g1', (number) => ctx.prisma.ticket.create({ data: { number, guildId: 'g1', openerId: 'u1', mode: 'CHANNEL' } }));
+    const result = await withNextTicketNumber(ctx.prisma, 'g1', (number) =>
+      ctx.prisma.ticket.create({ data: { number, guildId: 'g1', openerId: 'u1', mode: 'CHANNEL' } }),
+    );
     expect(result).toMatchObject({ number: 5 });
   });
 
@@ -49,7 +58,9 @@ describe('withNextTicketNumber', () => {
       },
     });
 
-    const result = await withNextTicketNumber(ctx.prisma, 'g1', (number) => ctx.prisma.ticket.create({ data: { number, guildId: 'g1', openerId: 'u1', mode: 'CHANNEL' } }));
+    const result = await withNextTicketNumber(ctx.prisma, 'g1', (number) =>
+      ctx.prisma.ticket.create({ data: { number, guildId: 'g1', openerId: 'u1', mode: 'CHANNEL' } }),
+    );
     expect(attempts).toBe(2);
     expect(result).toMatchObject({ number: 2 });
   });
@@ -64,7 +75,11 @@ describe('withNextTicketNumber', () => {
       },
     });
 
-    await expect(withNextTicketNumber(ctx.prisma, 'g1', (number) => ctx.prisma.ticket.create({ data: { number, guildId: 'g1', openerId: 'u1', mode: 'CHANNEL' } }))).rejects.toThrow();
+    await expect(
+      withNextTicketNumber(ctx.prisma, 'g1', (number) =>
+        ctx.prisma.ticket.create({ data: { number, guildId: 'g1', openerId: 'u1', mode: 'CHANNEL' } }),
+      ),
+    ).rejects.toThrow();
   });
 
   it('does not retry on a non-P2002 error', async () => {
@@ -81,7 +96,11 @@ describe('withNextTicketNumber', () => {
       },
     });
 
-    await expect(withNextTicketNumber(ctx.prisma, 'g1', (number) => ctx.prisma.ticket.create({ data: { number, guildId: 'g1', openerId: 'u1', mode: 'CHANNEL' } }))).rejects.toThrow('database is down');
+    await expect(
+      withNextTicketNumber(ctx.prisma, 'g1', (number) =>
+        ctx.prisma.ticket.create({ data: { number, guildId: 'g1', openerId: 'u1', mode: 'CHANNEL' } }),
+      ),
+    ).rejects.toThrow('database is down');
     expect(attempts).toBe(1);
   });
 });

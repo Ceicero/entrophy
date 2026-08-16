@@ -46,10 +46,25 @@ describe('resolveApiKey', () => {
     expect(resolveApiKey(config, {})).toBeNull();
   });
 
-  it('compatible provider falls back to OPENAI_API_KEY', () => {
-    const config = baseConfig({ provider: 'compatible', baseUrl: 'https://llm.example.com', allowEnvKeys: true });
+  it('never falls back to the env key for the compatible provider, even with allowEnvKeys true (would leak the operator key to a guild-controlled base URL)', () => {
+    const config = baseConfig({
+      provider: 'compatible',
+      baseUrl: 'https://llm.example.com',
+      allowEnvKeys: true,
+    });
     const resolved = resolveApiKey(config, { OPENAI_API_KEY: 'env-compat' });
-    expect(resolved).toEqual({ apiKey: 'env-compat', source: 'env' });
+    expect(resolved).toBeNull();
+  });
+
+  it('still uses the guild key for the compatible provider when one is configured', () => {
+    const config = baseConfig({
+      provider: 'compatible',
+      baseUrl: 'https://llm.example.com',
+      apiKeyEnc: encryptSecret('guild-compat-secret'),
+      allowEnvKeys: true,
+    });
+    const resolved = resolveApiKey(config, { OPENAI_API_KEY: 'env-compat' });
+    expect(resolved).toEqual({ apiKey: 'guild-compat-secret', source: 'guild' });
   });
 });
 

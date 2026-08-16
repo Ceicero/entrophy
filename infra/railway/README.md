@@ -13,12 +13,12 @@ its build and deploy behavior without you having to click through every setting 
 service in this repo's Railway project should have its **Config File Path** (in the service's
 **Settings → Config-as-code**) pointed at the matching file here:
 
-| Service | Config file | Dockerfile it builds |
-|---|---|---|
-| `api` | `infra/railway/api.railway.json` | `infra/docker/Dockerfile.api` |
+| Service     | Config file                            | Dockerfile it builds                |
+| ----------- | -------------------------------------- | ----------------------------------- |
+| `api`       | `infra/railway/api.railway.json`       | `infra/docker/Dockerfile.api`       |
 | `dashboard` | `infra/railway/dashboard.railway.json` | `infra/docker/Dockerfile.dashboard` |
-| `web` | `infra/railway/web.railway.json` | `infra/docker/Dockerfile.web` |
-| `bot` | `infra/railway/bot.railway.json` | `infra/docker/Dockerfile.bot` |
+| `web`       | `infra/railway/web.railway.json`       | `infra/docker/Dockerfile.web`       |
+| `bot`       | `infra/railway/bot.railway.json`       | `infra/docker/Dockerfile.bot`       |
 
 Setting the config file path is optional — Railway also lets you set Root Directory / Dockerfile
 Path / healthcheck by hand in the Settings UI, and the click-path in `infra/DEPLOYMENT.md` §2.1 does

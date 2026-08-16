@@ -21,6 +21,7 @@
     "commands:register": "pnpm --filter @entrophy/bot register",
     "commands:export": "pnpm --filter @entrophy/plugins export:commands",
     "docs:permissions": "pnpm --filter @entrophy/plugins export:permissions",
+    "check:i18n": "pnpm --filter @entrophy/plugins check:i18n",
     "brand:sync": "node scripts/sync-brand.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

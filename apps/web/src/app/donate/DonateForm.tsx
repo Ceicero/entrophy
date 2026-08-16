@@ -29,7 +29,8 @@ export function DonateForm({ presets }: DonateFormProps) {
   }, [customValue]);
 
   const amountCents = customValue.trim() !== '' ? customCents : selected;
-  const amountValid = amountCents !== null && amountCents >= presets.minCents && amountCents <= presets.maxCents;
+  const amountValid =
+    amountCents !== null && amountCents >= presets.minCents && amountCents <= presets.maxCents;
 
   async function handleDonate() {
     if (!amountValid || amountCents === null) return;
@@ -39,7 +40,9 @@ export function DonateForm({ presets }: DonateFormProps) {
       const { url } = await startDonationCheckout({ amountCents, currency: 'usd' });
       window.location.assign(url);
     } catch (err) {
-      setError(err instanceof DonationsApiError ? err.message : 'Something went wrong. Please try again shortly.');
+      setError(
+        err instanceof DonationsApiError ? err.message : 'Something went wrong. Please try again shortly.',
+      );
       setSubmitting(false);
     }
   }
@@ -47,7 +50,9 @@ export function DonateForm({ presets }: DonateFormProps) {
   return (
     <Glass className="p-6 sm:p-8">
       <fieldset>
-        <legend className="text-sm font-semibold uppercase tracking-wider text-grey-2">Choose an amount</legend>
+        <legend className="text-sm font-semibold uppercase tracking-wider text-grey-2">
+          Choose an amount
+        </legend>
         <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
           {presets.presetsCents.map((cents) => {
             const active = customValue.trim() === '' && selected === cents;
@@ -61,7 +66,9 @@ export function DonateForm({ presets }: DonateFormProps) {
                 }}
                 aria-pressed={active}
                 className={`rounded-xl border px-3 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grey-5 ${
-                  active ? 'border-transparent bg-paper text-ink-0' : 'border-white/15 text-grey-4 hover:border-white/30 hover:text-grey-7'
+                  active
+                    ? 'border-transparent bg-paper text-ink-0'
+                    : 'border-white/15 text-grey-4 hover:border-white/30 hover:text-grey-7'
                 }`}
               >
                 {centsToDollarLabel(cents)}
@@ -109,12 +116,17 @@ export function DonateForm({ presets }: DonateFormProps) {
         disabled={!amountValid || submitting}
         onClick={handleDonate}
       >
-        {submitting ? 'Redirecting to Stripe…' : amountCents ? `Donate ${centsToDollarLabel(amountCents)}` : 'Donate'}
+        {submitting
+          ? 'Redirecting to Stripe…'
+          : amountCents
+            ? `Donate ${centsToDollarLabel(amountCents)}`
+            : 'Donate'}
       </Button>
 
       <p className="mt-4 text-xs leading-relaxed text-grey-2">
-        Donations are processed by Stripe Checkout — your card details never touch Entrophy's servers. Donations are one-time,
-        non-refundable, grant no perks or in-game advantages, and are not tax-deductible unless stated otherwise.
+        Donations are processed by Stripe Checkout — your card details never touch Entrophy's servers.
+        Donations are one-time, non-refundable, grant no perks or in-game advantages, and are not
+        tax-deductible unless stated otherwise.
       </p>
     </Glass>
   );

@@ -1,11 +1,22 @@
-import { ZodArray, ZodBoolean, ZodDefault, ZodNullable, ZodNumber, ZodObject, ZodOptional, ZodString, type ZodTypeAny } from 'zod';
+import {
+  ZodArray,
+  ZodBoolean,
+  ZodDefault,
+  ZodNullable,
+  ZodNumber,
+  ZodObject,
+  ZodOptional,
+  ZodString,
+  type ZodTypeAny,
+} from 'zod';
 import { ValidationError } from '@entrophy/core';
 import type { PluginId } from '@entrophy/types';
 import { isSnowflake } from '../sdk';
 import type { PluginManifest } from '../sdk';
 import type { GuildConfigPatch } from '../sdk';
 
-export type ConfigValueKind = 'boolean' | 'string' | 'number' | 'channel' | 'role' | 'role-list' | 'channel-list' | 'locale' | 'unknown';
+export type ConfigValueKind =
+  'boolean' | 'string' | 'number' | 'channel' | 'role' | 'role-list' | 'channel-list' | 'locale' | 'unknown';
 
 export interface ConfigKeyDescriptor {
   /** Full dotted key as used by `/config set <key> <value>`, e.g. `guild.locale` or `moderation.someField`. */
@@ -26,18 +37,73 @@ interface GuildKeyDef {
 
 /** The core `GuildConfig` fields `/config set guild.<field>` is allowed to touch. */
 const GUILD_CONFIG_KEY_DEFS: GuildKeyDef[] = [
-  { field: 'locale', kind: 'locale', nullable: false, description: 'Server locale (only "en" is supported today).' },
-  { field: 'timezone', kind: 'string', nullable: false, description: 'IANA timezone name, e.g. "America/New_York".' },
-  { field: 'fastActions', kind: 'boolean', nullable: false, description: 'Skip confirmation prompts for destructive moderation actions.' },
-  { field: 'modLogChannelId', kind: 'channel', nullable: true, description: 'Channel moderation case logs are posted to.' },
+  {
+    field: 'locale',
+    kind: 'locale',
+    nullable: false,
+    description: 'Server locale (only "en" is supported today).',
+  },
+  {
+    field: 'timezone',
+    kind: 'string',
+    nullable: false,
+    description: 'IANA timezone name, e.g. "America/New_York".',
+  },
+  {
+    field: 'fastActions',
+    kind: 'boolean',
+    nullable: false,
+    description: 'Skip confirmation prompts for destructive moderation actions.',
+  },
+  {
+    field: 'modLogChannelId',
+    kind: 'channel',
+    nullable: true,
+    description: 'Channel moderation case logs are posted to.',
+  },
   { field: 'staffChannelId', kind: 'channel', nullable: true, description: 'General staff-only channel.' },
-  { field: 'appealsChannelId', kind: 'channel', nullable: true, description: 'Private channel where moderation appeals are reviewed.' },
-  { field: 'adminRoleIds', kind: 'role-list', nullable: false, description: 'Roles treated as admin staff level.' },
-  { field: 'modRoleIds', kind: 'role-list', nullable: false, description: 'Roles treated as moderator staff level.' },
-  { field: 'helperRoleIds', kind: 'role-list', nullable: false, description: 'Roles treated as helper staff level.' },
-  { field: 'dataCollectionEnabled', kind: 'boolean', nullable: false, description: 'Enable analytics data collection for this server.' },
-  { field: 'logMessageContent', kind: 'boolean', nullable: false, description: 'Allow capturing message content in edit/delete logs.' },
-  { field: 'dmOnModeration', kind: 'boolean', nullable: false, description: 'DM users when a moderation action is taken against them.' },
+  {
+    field: 'appealsChannelId',
+    kind: 'channel',
+    nullable: true,
+    description: 'Private channel where moderation appeals are reviewed.',
+  },
+  {
+    field: 'adminRoleIds',
+    kind: 'role-list',
+    nullable: false,
+    description: 'Roles treated as admin staff level.',
+  },
+  {
+    field: 'modRoleIds',
+    kind: 'role-list',
+    nullable: false,
+    description: 'Roles treated as moderator staff level.',
+  },
+  {
+    field: 'helperRoleIds',
+    kind: 'role-list',
+    nullable: false,
+    description: 'Roles treated as helper staff level.',
+  },
+  {
+    field: 'dataCollectionEnabled',
+    kind: 'boolean',
+    nullable: false,
+    description: 'Enable analytics data collection for this server.',
+  },
+  {
+    field: 'logMessageContent',
+    kind: 'boolean',
+    nullable: false,
+    description: 'Allow capturing message content in edit/delete logs.',
+  },
+  {
+    field: 'dmOnModeration',
+    kind: 'boolean',
+    nullable: false,
+    description: 'DM users when a moderation action is taken against them.',
+  },
 ];
 
 /** Descriptors for every settable `guild.<field>` key. */
@@ -178,7 +244,8 @@ export function parseConfigValue(descriptor: ConfigKeyDescriptor, raw: string): 
         });
     }
     case 'locale': {
-      if (trimmed !== 'en') throw new ValidationError(`"${raw}" isn't a supported locale. Only "en" is available today.`);
+      if (trimmed !== 'en')
+        throw new ValidationError(`"${raw}" isn't a supported locale. Only "en" is available today.`);
       return trimmed;
     }
     case 'string':

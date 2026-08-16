@@ -2,13 +2,25 @@ import { z } from 'zod';
 import { validateUserRegex } from '@entrophy/core';
 
 /** Per-rule action taken when a rule matches (SPEC.md §C: "warn, delete, timeout, quarantine, alert staff, or ignore"). */
-export const automodActionTypeSchema = z.enum(['warn', 'delete', 'timeout', 'quarantine', 'alert_staff', 'ignore']);
+export const automodActionTypeSchema = z.enum([
+  'warn',
+  'delete',
+  'timeout',
+  'quarantine',
+  'alert_staff',
+  'ignore',
+]);
 export type AutomodActionType = z.infer<typeof automodActionTypeSchema>;
 
 export const automodActionSchema = z.object({
   type: automodActionTypeSchema,
   /** Only meaningful for `type: 'timeout'`. Falls back to the guild's `defaultTimeoutMs` when omitted. */
-  timeoutMs: z.number().int().positive().max(28 * 24 * 60 * 60 * 1000).optional(),
+  timeoutMs: z
+    .number()
+    .int()
+    .positive()
+    .max(28 * 24 * 60 * 60 * 1000)
+    .optional(),
 });
 export type AutomodAction = z.infer<typeof automodActionSchema>;
 
@@ -77,7 +89,10 @@ export const repeatedCharsConfigSchema = z.object({
 
 export const attachmentsConfigSchema = z.object({
   type: z.literal('ATTACHMENTS'),
-  blockedExtensions: z.array(z.string().min(1).max(10)).max(100).default(['exe', 'bat', 'scr', 'msi', 'jar', 'cmd']),
+  blockedExtensions: z
+    .array(z.string().min(1).max(10))
+    .max(100)
+    .default(['exe', 'bat', 'scr', 'msi', 'jar', 'cmd']),
   maxAttachments: z.number().int().min(0).max(20).optional(),
 });
 
@@ -88,7 +103,12 @@ export const nsfwEnforcementConfigSchema = z.object({
 
 export const accountAgeConfigSchema = z.object({
   type: z.literal('ACCOUNT_AGE'),
-  minAccountAgeHours: z.number().int().min(0).max(24 * 365).default(24),
+  minAccountAgeHours: z
+    .number()
+    .int()
+    .min(0)
+    .max(24 * 365)
+    .default(24),
 });
 
 export const raidDetectionConfigSchema = z.object({
@@ -121,7 +141,11 @@ export const automodRuleConfigSchema = z
     if (value.type !== 'REGEX_FILTER') return;
     const result = validateUserRegex(value.pattern, value.flags);
     if (!result.ok) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pattern'], message: result.error ?? 'Unsafe pattern.' });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['pattern'],
+        message: result.error ?? 'Unsafe pattern.',
+      });
     }
   });
 
@@ -159,7 +183,10 @@ export const CONTENT_DEPENDENT_RULE_TYPES: ReadonlySet<AutomodRuleTypeValue> = n
 ]);
 
 /** Rule types whose evaluator needs the Guild Members privileged intent (for join events / account age). */
-export const MEMBER_DEPENDENT_RULE_TYPES: ReadonlySet<AutomodRuleTypeValue> = new Set(['ACCOUNT_AGE', 'RAID_DETECTION']);
+export const MEMBER_DEPENDENT_RULE_TYPES: ReadonlySet<AutomodRuleTypeValue> = new Set([
+  'ACCOUNT_AGE',
+  'RAID_DETECTION',
+]);
 
 /** Per-rule-type config schema map, keyed by `AutomodRuleType` — used to build/parse the create/edit modals. */
 export const automodRuleConfigSchemaByType = {

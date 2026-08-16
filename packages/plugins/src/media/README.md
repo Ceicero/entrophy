@@ -11,19 +11,19 @@ replies with the same compliance explanation instead of doing anything, and `/pl
 
 ## Commands (`/music`)
 
-| Subcommand | Notes |
-|---|---|
-| `play <query>` | Searches the configured provider and queues the first result. Public reply. |
-| `queue` | Shows now playing + up to 10 upcoming tracks. Ephemeral. |
-| `skip` / `pause` / `resume` / `stop` | Queue-state transitions. DJ-gated. Ephemeral. |
-| `volume <level>` | 0-150. DJ-gated. |
-| `loop <mode>` | `off` \| `track` \| `queue`. DJ-gated. |
-| `shuffle` | Shuffles the *upcoming* tracks only (history + current track stay put). DJ-gated, deterministic via an injectable RNG in `queue.ts` for tests. |
-| `nowplaying` | Read-only, no DJ gate. |
-| `playlist save <name>` | Saves the current queue as a named playlist in this guild's config. DJ-gated. |
-| `playlist load <name>` | Queues every track from a saved playlist (autocompleted). DJ-gated. |
-| `playlist list` | Read-only. |
-| `playlist delete <name>` | DJ-gated. |
+| Subcommand                           | Notes                                                                                                                                          |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `play <query>`                       | Searches the configured provider and queues the first result. Public reply.                                                                    |
+| `queue`                              | Shows now playing + up to 10 upcoming tracks. Ephemeral.                                                                                       |
+| `skip` / `pause` / `resume` / `stop` | Queue-state transitions. DJ-gated. Ephemeral.                                                                                                  |
+| `volume <level>`                     | 0-150. DJ-gated.                                                                                                                               |
+| `loop <mode>`                        | `off` \| `track` \| `queue`. DJ-gated.                                                                                                         |
+| `shuffle`                            | Shuffles the _upcoming_ tracks only (history + current track stay put). DJ-gated, deterministic via an injectable RNG in `queue.ts` for tests. |
+| `nowplaying`                         | Read-only, no DJ gate.                                                                                                                         |
+| `playlist save <name>`               | Saves the current queue as a named playlist in this guild's config. DJ-gated.                                                                  |
+| `playlist load <name>`               | Queues every track from a saved playlist (autocompleted). DJ-gated.                                                                            |
+| `playlist list`                      | Read-only.                                                                                                                                     |
+| `playlist delete <name>`             | DJ-gated.                                                                                                                                      |
 
 ### DJ role gate (`dj-gate.ts`)
 
@@ -33,7 +33,7 @@ replies with the same compliance explanation instead of doing anything, and `/pl
 ## What "queue management" means here
 
 **Voice playback (`@discordjs/voice`) is intentionally not wired up.** `/music play` and friends manage an
-abstract, Redis-backed queue of track *references* — they do not join a voice channel or produce audio. The
+abstract, Redis-backed queue of track _references_ — they do not join a voice channel or produce audio. The
 `MediaProvider` interface exposes an optional `createStream(track)` hook specifically so a future, compliant
 voice adapter can be added without changing any command code; no shipped provider implements it.
 
@@ -56,11 +56,11 @@ integration, showing exactly what a real, compliant adapter needs (a licensed AP
 
 ## Config keys (`PluginConfig` for `media`)
 
-| Key | Default | Notes |
-|---|---|---|
-| `djRoleId` | `null` | See DJ gate above |
-| `defaultVolume` | `100` | 0-150, used when starting a fresh queue |
-| `playlists` | `{}` | `Record<lowercasedName, { name, tracks, createdBy, createdAt }>` |
+| Key             | Default | Notes                                                            |
+| --------------- | ------- | ---------------------------------------------------------------- |
+| `djRoleId`      | `null`  | See DJ gate above                                                |
+| `defaultVolume` | `100`   | 0-150, used when starting a fresh queue                          |
+| `playlists`     | `{}`    | `Record<lowercasedName, { name, tracks, createdBy, createdAt }>` |
 
 ## Permissions & intents
 

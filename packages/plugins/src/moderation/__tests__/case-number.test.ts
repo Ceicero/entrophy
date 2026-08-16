@@ -22,10 +22,13 @@ function buildFakePrisma(opts: { failures: number; onCreateAttempt?: () => void 
       if (createAttempts <= opts.failures) {
         // Simulate a concurrent insert winning the race for this case number before this attempt commits.
         maxCaseNumber = Math.max(maxCaseNumber, data.caseNumber as number);
-        throw new Prisma.PrismaClientKnownRequestError('Unique constraint failed on the fields: (`guildId`,`caseNumber`)', {
-          code: 'P2002',
-          clientVersion: 'test',
-        });
+        throw new Prisma.PrismaClientKnownRequestError(
+          'Unique constraint failed on the fields: (`guildId`,`caseNumber`)',
+          {
+            code: 'P2002',
+            clientVersion: 'test',
+          },
+        );
       }
       maxCaseNumber = Math.max(maxCaseNumber, data.caseNumber as number);
       return {
@@ -66,7 +69,14 @@ describe('createCase — case number allocation retries on collision', () => {
     const { ctx } = createTestContext({ config: {}, overrides: { prisma } });
 
     const service = new ModerationServiceImpl(ctx);
-    const row = await service.createCase({ guildId: 'g1', type: 'NOTE', targetId: 'u1', moderatorId: 'm1', source: 'BOT', dmUser: false });
+    const row = await service.createCase({
+      guildId: 'g1',
+      type: 'NOTE',
+      targetId: 'u1',
+      moderatorId: 'm1',
+      source: 'BOT',
+      dmUser: false,
+    });
 
     expect(row.id).toBe('case-1');
     expect(attempts()).toBe(3); // 2 collisions + 1 success
@@ -78,7 +88,14 @@ describe('createCase — case number allocation retries on collision', () => {
 
     const service = new ModerationServiceImpl(ctx);
     await expect(
-      service.createCase({ guildId: 'g1', type: 'NOTE', targetId: 'u1', moderatorId: 'm1', source: 'BOT', dmUser: false }),
+      service.createCase({
+        guildId: 'g1',
+        type: 'NOTE',
+        targetId: 'u1',
+        moderatorId: 'm1',
+        source: 'BOT',
+        dmUser: false,
+      }),
     ).rejects.toThrow();
   });
 });

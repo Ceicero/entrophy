@@ -26,10 +26,28 @@ export function supportServerUrl(): string | null {
  * client id is configured at all (nothing to invite yet) so callers can disable/hide the CTA instead of linking
  * to a broken authorize URL.
  */
+const ADMINISTRATOR_BIT = 1n << 3n;
+
+/** Masks the Administrator bit out of a permissions bitfield string. Falls back to the checked-in default (also masked) if `raw` isn't a valid integer — a misconfigured env value must never widen to Administrator, let alone publish an invite that silently requests it. */
+function safePermissions(raw: string | undefined): string {
+  const fallback = inviteDefaults.permissions;
+  const source = raw && raw.trim().length > 0 ? raw : fallback;
+  try {
+    const bits = BigInt(source);
+    return (bits & ~ADMINISTRATOR_BIT).toString();
+  } catch {
+    try {
+      return (BigInt(fallback) & ~ADMINISTRATOR_BIT).toString();
+    } catch {
+      return '0';
+    }
+  }
+}
+
 export function inviteUrl(): string | null {
   const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
   if (!clientId || clientId === '0' || clientId.trim().length === 0) return null;
-  const permissions = process.env.NEXT_PUBLIC_INVITE_PERMISSIONS ?? inviteDefaults.permissions;
+  const permissions = safePermissions(process.env.NEXT_PUBLIC_INVITE_PERMISSIONS);
   const scope = inviteDefaults.scopes.join(' ');
   const params = new URLSearchParams({ client_id: clientId, permissions, scope });
   return `https://discord.com/oauth2/authorize?${params.toString()}`;

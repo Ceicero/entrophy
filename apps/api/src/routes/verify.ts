@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import type { ZodFastifyInstance } from '../lib/http';
 import { env, redisKey } from '@entrophy/core';
@@ -61,12 +62,12 @@ function resolveProvider(): ProviderConfig | null {
   return null;
 }
 
-function cspHeader(provider: ProviderConfig): string {
+function cspHeader(provider: ProviderConfig, nonce: string): string {
   const directives: Record<string, string[]> = {
     'default-src': ["'none'"],
     'base-uri': ["'none'"],
     'form-action': ["'self'"],
-    'script-src': ["'self'", ...provider.csp.script],
+    'script-src': ["'self'", `'nonce-${nonce}'`, ...provider.csp.script],
     'style-src': ["'self'", "'unsafe-inline'", ...provider.csp.style],
     'frame-src': [...provider.csp.frame],
     'connect-src': ["'self'", ...provider.csp.connect],
@@ -79,7 +80,12 @@ function cspHeader(provider: ProviderConfig): string {
 }
 
 function escapeHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function pageShell(body: string): string {
@@ -109,14 +115,18 @@ function pageShell(body: string): string {
 }
 
 function expiredPage(): string {
-  return pageShell(`<h1>Link expired</h1><p>This verification link is invalid or has expired. Go back to Discord and run <strong>/verify</strong> again to get a fresh link.</p>`);
+  return pageShell(
+    `<h1>Link expired</h1><p>This verification link is invalid or has expired. Go back to Discord and run <strong>/verify</strong> again to get a fresh link.</p>`,
+  );
 }
 
 function notConfiguredPage(): string {
-  return pageShell(`<h1>Verification unavailable</h1><p>CAPTCHA verification is not configured on this bot instance. Please contact the server's staff.</p>`);
+  return pageShell(
+    `<h1>Verification unavailable</h1><p>CAPTCHA verification is not configured on this bot instance. Please contact the server's staff.</p>`,
+  );
 }
 
-function widgetPage(provider: ProviderConfig, token: string): string {
+function widgetPage(provider: ProviderConfig, token: string, nonce: string): string {
   return pageShell(`
 <h1>You're almost in</h1>
 <p>Complete the challenge below to finish verifying.</p>
@@ -125,7 +135,7 @@ function widgetPage(provider: ProviderConfig, token: string): string {
 </div>
 <p class="status" id="status"></p>
 <script src="${provider.widgetScriptSrc}" async defer></script>
-<script>
+<script nonce="${nonce}">
   var token = ${JSON.stringify(token)};
   window.onVerify = function (captchaResponse) {
     var statusEl = document.getElementById('status');
@@ -159,7 +169,11 @@ function widgetPage(provider: ProviderConfig, token: string): string {
  * Never trusts the client's own claim of success — the human-solved-it signal only counts once this call
  * confirms it with the provider.
  */
-async function siteverify(provider: ProviderConfig, responseToken: string, remoteIp?: string): Promise<boolean> {
+async function siteverify(
+  provider: ProviderConfig,
+  responseToken: string,
+  remoteIp?: string,
+): Promise<boolean> {
   const body = new URLSearchParams({ secret: provider.secret, response: responseToken });
   if (remoteIp) body.set('remoteip', remoteIp);
 
@@ -184,31 +198,39 @@ async function siteverify(provider: ProviderConfig, responseToken: string, remot
  * serves JSON, not HTML).
  */
 export default async function verifyRoutes(app: ZodFastifyInstance): Promise<void> {
-  app.get('/:token', { schema: { params: tokenParamSchema }, config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (request, reply) => {
-    const provider = resolveProvider();
-    if (!provider) {
-      reply.status(404);
+  app.get(
+    '/:token',
+    { schema: { params: tokenParamSchema }, config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const provider = resolveProvider();
+      if (!provider) {
+        reply.status(404);
+        reply.type('text/html; charset=utf-8');
+        return notConfiguredPage();
+      }
+
+      const { token } = request.params;
+      const pending = await app.redis.get(redisKey('verify', 'pending', token));
+      const nonce = randomBytes(16).toString('base64');
+      reply.header('Content-Security-Policy', cspHeader(provider, nonce));
+      reply.header('X-Frame-Options', 'DENY');
       reply.type('text/html; charset=utf-8');
-      return notConfiguredPage();
-    }
 
-    const { token } = request.params;
-    const pending = await app.redis.get(redisKey('verify', 'pending', token));
-    reply.header('Content-Security-Policy', cspHeader(provider));
-    reply.header('X-Frame-Options', 'DENY');
-    reply.type('text/html; charset=utf-8');
+      if (!pending) {
+        reply.status(410);
+        return expiredPage();
+      }
 
-    if (!pending) {
-      reply.status(410);
-      return expiredPage();
-    }
-
-    return widgetPage(provider, token);
-  });
+      return widgetPage(provider, token, nonce);
+    },
+  );
 
   app.post(
     '/:token',
-    { schema: { params: tokenParamSchema, body: verifyBodySchema }, config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    {
+      schema: { params: tokenParamSchema, body: verifyBodySchema },
+      config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+    },
     async (request, reply): Promise<{ ok: boolean; error?: string }> => {
       const provider = resolveProvider();
       if (!provider) {

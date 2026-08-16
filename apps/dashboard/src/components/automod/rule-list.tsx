@@ -5,7 +5,12 @@ import { useParams } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import type { AutomodRuleDto } from '@entrophy/types';
 import { Badge, Button, PageHeader, Switch, useToast } from '@entrophy/ui';
-import { useAutomodRules, useDeleteAutomodRule, useSetRuleDryRun, useUpdateAutomodRule } from '../../lib/automod-queries';
+import {
+  useAutomodRules,
+  useDeleteAutomodRule,
+  useSetRuleDryRun,
+  useUpdateAutomodRule,
+} from '../../lib/automod-queries';
 import { ApiClientError } from '../../lib/api';
 import { ConfirmDialog } from '../confirm-dialog';
 import { DataTable } from '../data-table';
@@ -36,14 +41,28 @@ export function RuleListTab() {
   function toggleEnabled(rule: AutomodRuleDto) {
     updateRule.mutate(
       { ruleId: rule.id, patch: { enabled: !rule.enabled } },
-      { onError: (err) => toast({ title: 'Could not update the rule', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }) },
+      {
+        onError: (err) =>
+          toast({
+            title: 'Could not update the rule',
+            description: err instanceof ApiClientError ? err.message : undefined,
+            variant: 'destructive',
+          }),
+      },
     );
   }
 
   function toggleDryRun(rule: AutomodRuleDto) {
     setDryRun.mutate(
       { ruleId: rule.id, dryRun: !rule.dryRun },
-      { onError: (err) => toast({ title: 'Could not update dry-run', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }) },
+      {
+        onError: (err) =>
+          toast({
+            title: 'Could not update dry-run',
+            description: err instanceof ApiClientError ? err.message : undefined,
+            variant: 'destructive',
+          }),
+      },
     );
   }
 
@@ -54,7 +73,12 @@ export function RuleListTab() {
         toast({ title: `Deleted "${deleting.name}"`, variant: 'success' });
         setDeleting(null);
       },
-      onError: (err) => toast({ title: 'Could not delete the rule', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not delete the rule',
+          description: err instanceof ApiClientError ? err.message : undefined,
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -76,21 +100,47 @@ export function RuleListTab() {
             key: 'name',
             header: 'Rule',
             render: (rule: AutomodRuleDto) => (
-              <button type="button" className="font-medium text-foreground hover:underline" onClick={() => openEdit(rule)}>
+              <button
+                type="button"
+                className="font-medium text-foreground hover:underline"
+                onClick={() => openEdit(rule)}
+              >
                 {rule.name}
               </button>
             ),
           },
-          { key: 'type', header: 'Type', render: (rule: AutomodRuleDto) => <Badge variant="outline">{RULE_TYPE_LABELS[rule.type as keyof typeof RULE_TYPE_LABELS] ?? rule.type}</Badge> },
+          {
+            key: 'type',
+            header: 'Type',
+            render: (rule: AutomodRuleDto) => (
+              <Badge variant="outline">
+                {RULE_TYPE_LABELS[rule.type as keyof typeof RULE_TYPE_LABELS] ?? rule.type}
+              </Badge>
+            ),
+          },
           {
             key: 'enabled',
             header: 'Enabled',
-            render: (rule: AutomodRuleDto) => <Switch checked={rule.enabled} onCheckedChange={() => toggleEnabled(rule)} disabled={updateRule.isPending} aria-label="Toggle enabled" />,
+            render: (rule: AutomodRuleDto) => (
+              <Switch
+                checked={rule.enabled}
+                onCheckedChange={() => toggleEnabled(rule)}
+                disabled={updateRule.isPending}
+                aria-label="Toggle enabled"
+              />
+            ),
           },
           {
             key: 'dryRun',
             header: 'Dry-run',
-            render: (rule: AutomodRuleDto) => <Switch checked={rule.dryRun} onCheckedChange={() => toggleDryRun(rule)} disabled={setDryRun.isPending} aria-label="Toggle dry-run" />,
+            render: (rule: AutomodRuleDto) => (
+              <Switch
+                checked={rule.dryRun}
+                onCheckedChange={() => toggleDryRun(rule)}
+                disabled={setDryRun.isPending}
+                aria-label="Toggle dry-run"
+              />
+            ),
           },
           {
             key: 'actions',
@@ -101,7 +151,12 @@ export function RuleListTab() {
                 <Button variant="ghost" size="sm" onClick={() => openEdit(rule)}>
                   Edit
                 </Button>
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleting(rule)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive"
+                  onClick={() => setDeleting(rule)}
+                >
                   Delete
                 </Button>
               </div>

@@ -16,7 +16,11 @@ function buildManifestOnlyRegistry(): PluginRegistry {
 }
 
 /** Builds a `GuildConfigStore` (and the `PluginRegistry` it needs) bound to `prisma`/`redis`, optionally emitting platform events. */
-export function createGuildConfigStore(prisma: PrismaClient, redis: Redis, events?: PlatformEvents): { store: GuildConfigStore; registry: PluginRegistry } {
+export function createGuildConfigStore(
+  prisma: PrismaClient,
+  redis: Redis,
+  events?: PlatformEvents,
+): { store: GuildConfigStore; registry: PluginRegistry } {
   const registry = buildManifestOnlyRegistry();
   const store = new GuildConfigStore(prisma, redis, registry, events);
   return { store, registry };

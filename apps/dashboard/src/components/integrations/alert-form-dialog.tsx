@@ -22,7 +22,10 @@ import { ApiClientError } from '../../lib/api';
 import { useCreateAlertConnection } from '../../lib/integrations-queries';
 import { DiscordChannelSelect, DiscordRoleSelect } from '../discord-selects';
 
-const PROVIDER_LABELS: Record<AlertProviderId, { label: string; targetLabel: string; targetPlaceholder: string }> = {
+const PROVIDER_LABELS: Record<
+  AlertProviderId,
+  { label: string; targetLabel: string; targetPlaceholder: string }
+> = {
   twitch: { label: 'Twitch', targetLabel: 'Twitch login', targetPlaceholder: 'shroud' },
   youtube: { label: 'YouTube', targetLabel: 'Channel ID', targetPlaceholder: 'UCxxxxxxxxxxxxxxxxxxxxxx' },
   reddit: { label: 'Reddit', targetLabel: 'Subreddit', targetPlaceholder: 'gaming' },
@@ -61,13 +64,24 @@ export function AlertFormDialog({ guildId, open, onOpenChange, provider }: Alert
   function handleSubmit() {
     if (!valid || !channelId) return;
     create.mutate(
-      { provider: selectedProvider, target: target.trim(), channelId, roleId, template: template.trim() || null },
+      {
+        provider: selectedProvider,
+        target: target.trim(),
+        channelId,
+        roleId,
+        template: template.trim() || null,
+      },
       {
         onSuccess: () => {
           toast({ title: 'Alert watch added', variant: 'success' });
           onOpenChange(false);
         },
-        onError: (err) => toast({ title: 'Could not add alert watch', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+        onError: (err) =>
+          toast({
+            title: 'Could not add alert watch',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -81,7 +95,11 @@ export function AlertFormDialog({ guildId, open, onOpenChange, provider }: Alert
 
         <div className="space-y-4">
           <FormField label="Provider" required>
-            <Select value={selectedProvider} onValueChange={(v) => setSelectedProvider(v as AlertProviderId)} disabled={create.isPending || Boolean(provider)}>
+            <Select
+              value={selectedProvider}
+              onValueChange={(v) => setSelectedProvider(v as AlertProviderId)}
+              disabled={create.isPending || Boolean(provider)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -96,19 +114,39 @@ export function AlertFormDialog({ guildId, open, onOpenChange, provider }: Alert
           </FormField>
 
           <FormField label={meta.targetLabel} required>
-            <Input value={target} placeholder={meta.targetPlaceholder} onChange={(e) => setTarget(e.target.value)} disabled={create.isPending} />
+            <Input
+              value={target}
+              placeholder={meta.targetPlaceholder}
+              onChange={(e) => setTarget(e.target.value)}
+              disabled={create.isPending}
+            />
           </FormField>
 
           <FormField label="Alert channel" required>
-            <DiscordChannelSelect guildId={guildId} value={channelId} onChange={setChannelId} disabled={create.isPending} />
+            <DiscordChannelSelect
+              guildId={guildId}
+              value={channelId}
+              onChange={setChannelId}
+              disabled={create.isPending}
+            />
           </FormField>
 
           <FormField label="Mention role" hint="Optional — pinged in the alert message.">
-            <DiscordRoleSelect guildId={guildId} value={roleId} onChange={setRoleId} disabled={create.isPending} />
+            <DiscordRoleSelect
+              guildId={guildId}
+              value={roleId}
+              onChange={setRoleId}
+              disabled={create.isPending}
+            />
           </FormField>
 
           <FormField label="Custom message" hint="Optional. Leave blank for the default wording.">
-            <Input value={template} maxLength={300} onChange={(e) => setTemplate(e.target.value)} disabled={create.isPending} />
+            <Input
+              value={template}
+              maxLength={300}
+              onChange={(e) => setTemplate(e.target.value)}
+              disabled={create.isPending}
+            />
           </FormField>
         </div>
 

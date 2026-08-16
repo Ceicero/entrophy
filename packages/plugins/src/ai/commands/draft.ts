@@ -16,8 +16,16 @@ const data = new SlashCommandBuilder()
   .setName('draft')
   .setDescription('Draft a piece of server text with the AI assistant (staff only).')
   .setDMPermission(false)
-  .addStringOption((opt) => opt.setName('type').setDescription('What to draft').setRequired(true).addChoices(...DRAFT_TYPES))
-  .addStringOption((opt) => opt.setName('notes').setDescription('Notes / key points to include').setRequired(true).setMaxLength(1500));
+  .addStringOption((opt) =>
+    opt
+      .setName('type')
+      .setDescription('What to draft')
+      .setRequired(true)
+      .addChoices(...DRAFT_TYPES),
+  )
+  .addStringOption((opt) =>
+    opt.setName('notes').setDescription('Notes / key points to include').setRequired(true).setMaxLength(1500),
+  );
 
 export const command: PluginCommand = {
   data,
@@ -45,7 +53,10 @@ export const command: PluginCommand = {
       prompt: buildDraftPrompt(type, notes),
     });
 
-    const embed = infoEmbed(c.t('draft.replyTitle'), truncate(result.text, EMBED_LIMITS.description)).setFooter({ text: AI_DISCLOSURE });
+    const embed = infoEmbed(
+      c.t('draft.replyTitle'),
+      truncate(result.text, EMBED_LIMITS.description),
+    ).setFooter({ text: AI_DISCLOSURE });
     await c.interaction.editReply({ embeds: [embed] });
   },
 };

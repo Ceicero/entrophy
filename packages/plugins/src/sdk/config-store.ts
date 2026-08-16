@@ -1,6 +1,12 @@
 import type Redis from 'ioredis';
 import { AuditAction, redisKey, type PlatformEvents } from '@entrophy/core';
-import { writeAudit, redactForAudit, type GuildConfig, type Prisma, type PrismaClient } from '@entrophy/database';
+import {
+  writeAudit,
+  redactForAudit,
+  type GuildConfig,
+  type Prisma,
+  type PrismaClient,
+} from '@entrophy/database';
 import type { PluginId } from '@entrophy/types';
 import type { PluginRegistry } from './registry';
 
@@ -134,7 +140,12 @@ export class GuildConfigStore {
    * `configSchema`, persists it, invalidates the cache, writes an audit entry (before/after redacted), and
    * emits `guild.configChanged` if an event bus was provided.
    */
-  async setConfig<T = unknown>(guildId: string, pluginId: PluginId, patch: Partial<T>, actor: ConfigActor): Promise<T> {
+  async setConfig<T = unknown>(
+    guildId: string,
+    pluginId: PluginId,
+    patch: Partial<T>,
+    actor: ConfigActor,
+  ): Promise<T> {
     const plugin = this.requirePlugin(pluginId);
     const defaults = plugin.manifest.defaultConfig as Record<string, unknown>;
 
@@ -215,7 +226,11 @@ export class GuildConfigStore {
       source: actor.source,
     });
 
-    this.events?.emit(enabled ? 'plugin.enabled' : 'plugin.disabled', { guildId, pluginId, actorId: actor.id });
+    this.events?.emit(enabled ? 'plugin.enabled' : 'plugin.disabled', {
+      guildId,
+      pluginId,
+      actorId: actor.id,
+    });
   }
 
   /** Deletes cached entries for one plugin in a guild, or (when `pluginId` is omitted) every plugin + the core guild config cache. */
@@ -227,7 +242,10 @@ export class GuildConfigStore {
 
     const keys = [this.guildConfigCacheKey(guildId)];
     for (const plugin of this.registry.list()) {
-      keys.push(this.configCacheKey(guildId, plugin.manifest.id), this.stateCacheKey(guildId, plugin.manifest.id));
+      keys.push(
+        this.configCacheKey(guildId, plugin.manifest.id),
+        this.stateCacheKey(guildId, plugin.manifest.id),
+      );
     }
     await this.redis.del(...keys);
   }
@@ -247,7 +265,11 @@ export class GuildConfigStore {
   }
 
   /** Upserts `GuildConfig` with `patch`, invalidates the cache, and writes an audit entry. */
-  async updateGuildConfig(guildId: string, patch: GuildConfigPatch, actor: ConfigActor): Promise<GuildConfigData> {
+  async updateGuildConfig(
+    guildId: string,
+    patch: GuildConfigPatch,
+    actor: ConfigActor,
+  ): Promise<GuildConfigData> {
     const before = await this.getGuildConfig(guildId);
 
     const scalarData: Prisma.GuildConfigUncheckedUpdateInput = {};
@@ -260,7 +282,8 @@ export class GuildConfigStore {
     if (patch.staffChannelId !== undefined) scalarData.staffChannelId = patch.staffChannelId;
     if (patch.appealsChannelId !== undefined) scalarData.appealsChannelId = patch.appealsChannelId;
     if (patch.fastActions !== undefined) scalarData.fastActions = patch.fastActions;
-    if (patch.dataCollectionEnabled !== undefined) scalarData.dataCollectionEnabled = patch.dataCollectionEnabled;
+    if (patch.dataCollectionEnabled !== undefined)
+      scalarData.dataCollectionEnabled = patch.dataCollectionEnabled;
     if (patch.logMessageContent !== undefined) scalarData.logMessageContent = patch.logMessageContent;
     if (patch.dmOnModeration !== undefined) scalarData.dmOnModeration = patch.dmOnModeration;
     if (patch.setupCompletedAt !== undefined) {
@@ -291,7 +314,12 @@ export class GuildConfigStore {
     });
 
     // 'admin' owns core GuildConfig; there's no plugin-specific pluginId for this change.
-    this.events?.emit('guild.configChanged', { guildId, pluginId: 'admin', actorId: actor.id, source: actor.source });
+    this.events?.emit('guild.configChanged', {
+      guildId,
+      pluginId: 'admin',
+      actorId: actor.id,
+      source: actor.source,
+    });
 
     return after;
   }

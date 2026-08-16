@@ -36,22 +36,44 @@ export const slaJob: PluginJob<Record<string, never>> = {
         const guild = await ctx.client.guilds.fetch(ticket.guildId).catch(() => null);
         if (!guild) continue;
 
-        const mentionContent = supportRoleIds.length > 0 ? supportRoleIds.map((id) => `<@&${id}>`).join(' ') : undefined;
-        const embed = infoEmbed('SLA breached', `Ticket #${ticket.number} has had no staff response since it opened.`);
-        const payload = { content: mentionContent, embeds: [embed], allowedMentions: { roles: supportRoleIds } };
+        const mentionContent =
+          supportRoleIds.length > 0 ? supportRoleIds.map((id) => `<@&${id}>`).join(' ') : undefined;
+        const embed = infoEmbed(
+          'SLA breached',
+          `Ticket #${ticket.number} has had no staff response since it opened.`,
+        );
+        const payload = {
+          content: mentionContent,
+          embeds: [embed],
+          allowedMentions: { roles: supportRoleIds },
+        };
 
         const ticketChannelId = ticket.threadId ?? ticket.channelId;
         if (ticketChannelId) {
           const channel = await guild.channels.fetch(ticketChannelId).catch(() => null);
           if (channel?.isTextBased()) {
-            await channel.send(payload).catch((err) => ctx.logger.warn({ err, ticketId: ticket.id }, 'tickets: sla alert failed to post in ticket channel'));
+            await channel
+              .send(payload)
+              .catch((err) =>
+                ctx.logger.warn(
+                  { err, ticketId: ticket.id },
+                  'tickets: sla alert failed to post in ticket channel',
+                ),
+              );
           }
         }
 
         if (config.alertChannelId) {
           const alertChannel = await resolveTextChannel(guild, config.alertChannelId);
           if (alertChannel) {
-            await alertChannel.send(payload).catch((err) => ctx.logger.warn({ err, ticketId: ticket.id }, 'tickets: sla alert failed to post in alert channel'));
+            await alertChannel
+              .send(payload)
+              .catch((err) =>
+                ctx.logger.warn(
+                  { err, ticketId: ticket.id },
+                  'tickets: sla alert failed to post in alert channel',
+                ),
+              );
           }
         }
       } catch (err) {

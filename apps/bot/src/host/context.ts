@@ -64,9 +64,13 @@ export function buildPluginContext(plugin: Plugin, deps: BuildContextDeps): Plug
     rateLimiter,
     queue: (jobName: string) => getOrCreateQueue(deps, pluginId, jobName),
     getConfig: <T>(guildId: string) => deps.configStore.getConfig<T>(guildId, pluginId),
-    setConfig: <T>(guildId: string, patch: Partial<T>, actor: { id: string; source: 'bot' | 'dashboard' | 'system' }) =>
-      deps.configStore.setConfig<T>(guildId, pluginId, patch, actor),
-    isEnabled: (guildId: string, targetPluginId?: PluginId) => deps.configStore.isEnabled(guildId, targetPluginId ?? pluginId),
+    setConfig: <T>(
+      guildId: string,
+      patch: Partial<T>,
+      actor: { id: string; source: 'bot' | 'dashboard' | 'system' },
+    ) => deps.configStore.setConfig<T>(guildId, pluginId, patch, actor),
+    isEnabled: (guildId: string, targetPluginId?: PluginId) =>
+      deps.configStore.isEnabled(guildId, targetPluginId ?? pluginId),
     services: deps.services,
     audit: (entry) => writeAudit(deps.prisma, entry).then(() => undefined),
     t: boundT,

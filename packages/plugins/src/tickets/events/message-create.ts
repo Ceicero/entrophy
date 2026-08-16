@@ -27,7 +27,9 @@ export const messageCreateHandler: PluginEventHandler<'messageCreate'> = {
     if (!member && message.guild) {
       member = await fetchMemberSafe(message.guild, message.author.id);
     }
-    const isSupport = member ? member.roles.cache.some((role) => config.supportRoleIds.includes(role.id)) : false;
+    const isSupport = member
+      ? member.roles.cache.some((role) => config.supportRoleIds.includes(role.id))
+      : false;
     if (!isSupport) return;
 
     await ctx.prisma.ticket.update({ where: { id: ticket.id }, data: { firstResponseAt: new Date() } });

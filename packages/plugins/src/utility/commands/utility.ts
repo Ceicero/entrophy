@@ -11,11 +11,23 @@ import {
   type User,
 } from 'discord.js';
 import { discordTimestamp, redisKey } from '@entrophy/core';
-import { brandEmbed, errorEmbed, infoEmbed, successEmbed, type CommandContext, type PluginCommand } from '../../sdk';
+import {
+  brandEmbed,
+  errorEmbed,
+  infoEmbed,
+  successEmbed,
+  type CommandContext,
+  type PluginCommand,
+} from '../../sdk';
 import type { UtilityConfig } from '../manifest';
 import { CalculatorError, evaluateExpression, formatCalculatorResult } from '../calculator';
 import { describeChannelType, formatRoleColor, summarizePermissions } from '../format';
-import { isValidIanaTimezone, listIanaTimezones, parseTimestampInput, TimestampParseError } from '../timestamp';
+import {
+  isValidIanaTimezone,
+  listIanaTimezones,
+  parseTimestampInput,
+  TimestampParseError,
+} from '../timestamp';
 import { getTranslateAdapter, TranslateAdapterError } from '../adapters/translate';
 import { getWeatherAdapter, WeatherAdapterError, type WeatherResult } from '../adapters/weather';
 
@@ -39,21 +51,32 @@ const data = new SlashCommandBuilder()
     sub
       .setName('userinfo')
       .setDescription('Show information about a member.')
-      .addUserOption((opt) => opt.setName('user').setDescription('The member to look up (defaults to you)').setRequired(false)),
+      .addUserOption((opt) =>
+        opt.setName('user').setDescription('The member to look up (defaults to you)').setRequired(false),
+      ),
   )
   .addSubcommand((sub) => sub.setName('serverinfo').setDescription('Show information about this server.'))
   .addSubcommand((sub) =>
     sub
       .setName('avatar')
       .setDescription("Show a member's avatar.")
-      .addUserOption((opt) => opt.setName('user').setDescription('The member to look up (defaults to you)').setRequired(false))
-      .addBooleanOption((opt) => opt.setName('server-avatar').setDescription("Show the server-specific avatar instead of the global one").setRequired(false)),
+      .addUserOption((opt) =>
+        opt.setName('user').setDescription('The member to look up (defaults to you)').setRequired(false),
+      )
+      .addBooleanOption((opt) =>
+        opt
+          .setName('server-avatar')
+          .setDescription('Show the server-specific avatar instead of the global one')
+          .setRequired(false),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('banner')
       .setDescription("Show a member's profile banner.")
-      .addUserOption((opt) => opt.setName('user').setDescription('The member to look up (defaults to you)').setRequired(false)),
+      .addUserOption((opt) =>
+        opt.setName('user').setDescription('The member to look up (defaults to you)').setRequired(false),
+      ),
   )
   .addSubcommand((sub) =>
     sub
@@ -65,14 +88,31 @@ const data = new SlashCommandBuilder()
     sub
       .setName('channelinfo')
       .setDescription('Show information about a channel.')
-      .addChannelOption((opt) => opt.setName('channel').setDescription('The channel to look up (defaults to this channel)').setRequired(false)),
+      .addChannelOption((opt) =>
+        opt
+          .setName('channel')
+          .setDescription('The channel to look up (defaults to this channel)')
+          .setRequired(false),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('timestamp')
       .setDescription('Parse a date/time and get Discord <t:...> tags for it.')
-      .addStringOption((opt) => opt.setName('text').setDescription('Date/time, e.g. "2027-03-05 15:00" or "March 5 2027 3pm"').setRequired(true).setMaxLength(100))
-      .addStringOption((opt) => opt.setName('timezone').setDescription('IANA timezone, e.g. America/New_York (defaults to your saved timezone, else UTC)').setRequired(false).setAutocomplete(true)),
+      .addStringOption((opt) =>
+        opt
+          .setName('text')
+          .setDescription('Date/time, e.g. "2027-03-05 15:00" or "March 5 2027 3pm"')
+          .setRequired(true)
+          .setMaxLength(100),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('timezone')
+          .setDescription('IANA timezone, e.g. America/New_York (defaults to your saved timezone, else UTC)')
+          .setRequired(false)
+          .setAutocomplete(true),
+      ),
   )
   .addSubcommandGroup((group) =>
     group
@@ -82,48 +122,84 @@ const data = new SlashCommandBuilder()
         sub
           .setName('set')
           .setDescription('Save your timezone (used by /utility timestamp).')
-          .addStringOption((opt) => opt.setName('timezone').setDescription('IANA timezone, e.g. Europe/London').setRequired(true).setAutocomplete(true)),
+          .addStringOption((opt) =>
+            opt
+              .setName('timezone')
+              .setDescription('IANA timezone, e.g. Europe/London')
+              .setRequired(true)
+              .setAutocomplete(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('get')
           .setDescription('Show a saved timezone.')
-          .addUserOption((opt) => opt.setName('user').setDescription('Whose timezone to show (defaults to you)').setRequired(false)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Whose timezone to show (defaults to you)').setRequired(false),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('list')
           .setDescription('Search IANA timezone names.')
-          .addStringOption((opt) => opt.setName('query').setDescription('Filter, e.g. "America" or "London"').setRequired(false)),
+          .addStringOption((opt) =>
+            opt.setName('query').setDescription('Filter, e.g. "America" or "London"').setRequired(false),
+          ),
       ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('calculator')
       .setDescription('Evaluate a math expression.')
-      .addStringOption((opt) => opt.setName('expression').setDescription('e.g. "2 * (3 + 4) ^ 2" or "sqrt(2)"').setRequired(true).setMaxLength(200)),
+      .addStringOption((opt) =>
+        opt
+          .setName('expression')
+          .setDescription('e.g. "2 * (3 + 4) ^ 2" or "sqrt(2)"')
+          .setRequired(true)
+          .setMaxLength(200),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('afk')
       .setDescription('Toggle AFK status. While AFK, the bot replies to your mentions with your message.')
-      .addStringOption((opt) => opt.setName('message').setDescription('Optional AFK message').setRequired(false).setMaxLength(200)),
+      .addStringOption((opt) =>
+        opt.setName('message').setDescription('Optional AFK message').setRequired(false).setMaxLength(200),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('translate')
       .setDescription('Translate text (requires a configured translation provider).')
-      .addStringOption((opt) => opt.setName('text').setDescription('Text to translate').setRequired(true).setMaxLength(1000))
-      .addStringOption((opt) => opt.setName('to').setDescription('Target language code, e.g. "en", "es", "fr"').setRequired(true).setMaxLength(10))
-      .addStringOption((opt) => opt.setName('from').setDescription('Source language code (auto-detected if omitted)').setRequired(false).setMaxLength(10)),
+      .addStringOption((opt) =>
+        opt.setName('text').setDescription('Text to translate').setRequired(true).setMaxLength(1000),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('to')
+          .setDescription('Target language code, e.g. "en", "es", "fr"')
+          .setRequired(true)
+          .setMaxLength(10),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('from')
+          .setDescription('Source language code (auto-detected if omitted)')
+          .setRequired(false)
+          .setMaxLength(10),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('weather')
       .setDescription('Show current weather (requires a configured weather provider).')
-      .addStringOption((opt) => opt.setName('location').setDescription('City or place name').setRequired(true).setMaxLength(200)),
+      .addStringOption((opt) =>
+        opt.setName('location').setDescription('City or place name').setRequired(true).setMaxLength(200),
+      ),
   )
-  .addSubcommand((sub) => sub.setName('status').setDescription("Show the bot's health and per-plugin status."));
+  .addSubcommand((sub) =>
+    sub.setName('status').setDescription("Show the bot's health and per-plugin status."),
+  );
 
 function resolveTargetUser(interaction: ChatInputCommandInteraction<'cached'>): User {
   return interaction.options.getUser('user') ?? interaction.user;
@@ -148,21 +224,39 @@ export function buildUserInfoEmbed(user: User, member: GuildMember | null): Embe
     return embed;
   }
 
-  const roles = member.roles.cache.filter((role) => role.id !== member.guild.id).sort((a, b) => b.position - a.position);
+  const roles = member.roles.cache
+    .filter((role) => role.id !== member.guild.id)
+    .sort((a, b) => b.position - a.position);
   const topRoles = roles.map((role) => `<@&${role.id}>`).slice(0, 10);
 
   embed.addFields(
-    { name: 'Joined server', value: member.joinedAt ? discordTimestamp(member.joinedAt, 'f') : 'Unknown', inline: false },
-    { name: `Roles (${roles.size})`, value: topRoles.length > 0 ? topRoles.join(', ') : '_None_', inline: false },
+    {
+      name: 'Joined server',
+      value: member.joinedAt ? discordTimestamp(member.joinedAt, 'f') : 'Unknown',
+      inline: false,
+    },
+    {
+      name: `Roles (${roles.size})`,
+      value: topRoles.length > 0 ? topRoles.join(', ') : '_None_',
+      inline: false,
+    },
     { name: 'Permissions', value: summarizePermissions(member.permissions), inline: false },
-    { name: 'Boosting since', value: member.premiumSince ? discordTimestamp(member.premiumSince, 'f') : 'Not boosting', inline: true },
+    {
+      name: 'Boosting since',
+      value: member.premiumSince ? discordTimestamp(member.premiumSince, 'f') : 'Not boosting',
+      inline: true,
+    },
   );
 
   if (member.nickname) {
     embed.addFields({ name: 'Nickname', value: member.nickname, inline: true });
   }
   if (member.communicationDisabledUntil && member.communicationDisabledUntil.getTime() > Date.now()) {
-    embed.addFields({ name: 'Timed out until', value: discordTimestamp(member.communicationDisabledUntil, 'f'), inline: true });
+    embed.addFields({
+      name: 'Timed out until',
+      value: discordTimestamp(member.communicationDisabledUntil, 'f'),
+      inline: true,
+    });
   }
 
   return embed;
@@ -170,7 +264,9 @@ export function buildUserInfoEmbed(user: User, member: GuildMember | null): Embe
 
 async function handleUserInfo(c: CommandContext): Promise<void> {
   const user = resolveTargetUser(c.interaction);
-  const member = c.interaction.options.getMember('user') ?? (user.id === c.interaction.user.id ? c.interaction.member : null);
+  const member =
+    c.interaction.options.getMember('user') ??
+    (user.id === c.interaction.user.id ? c.interaction.member : null);
   await c.interaction.reply({ embeds: [buildUserInfoEmbed(user, member)], ephemeral: false });
 }
 
@@ -212,7 +308,9 @@ async function handleServerInfo(c: CommandContext): Promise<void> {
 
 async function handleAvatar(c: CommandContext): Promise<void> {
   const user = resolveTargetUser(c.interaction);
-  const member = c.interaction.options.getMember('user') ?? (user.id === c.interaction.user.id ? c.interaction.member : null);
+  const member =
+    c.interaction.options.getMember('user') ??
+    (user.id === c.interaction.user.id ? c.interaction.member : null);
   const wantsServerAvatar = c.interaction.options.getBoolean('server-avatar') ?? false;
 
   const serverAvatarUrl = wantsServerAvatar ? (member?.avatarURL({ size: 4096 }) ?? null) : null;
@@ -223,7 +321,9 @@ async function handleAvatar(c: CommandContext): Promise<void> {
     .setImage(url);
 
   if (wantsServerAvatar && !serverAvatarUrl) {
-    embed.setFooter({ text: 'This user has no server-specific avatar; showing their global avatar instead.' });
+    embed.setFooter({
+      text: 'This user has no server-specific avatar; showing their global avatar instead.',
+    });
   }
 
   await c.interaction.reply({ embeds: [embed], ephemeral: false });
@@ -242,11 +342,17 @@ async function handleBanner(c: CommandContext): Promise<void> {
 
   const bannerUrl = fullUser.bannerURL({ size: 4096 });
   if (!bannerUrl) {
-    await c.interaction.reply({ embeds: [infoEmbed('No banner', `${fullUser.tag} does not have a profile banner set.`)], ephemeral: false });
+    await c.interaction.reply({
+      embeds: [infoEmbed('No banner', `${fullUser.tag} does not have a profile banner set.`)],
+      ephemeral: false,
+    });
     return;
   }
 
-  await c.interaction.reply({ embeds: [brandEmbed().setTitle(`Banner — ${fullUser.tag}`).setImage(bannerUrl)], ephemeral: false });
+  await c.interaction.reply({
+    embeds: [brandEmbed().setTitle(`Banner — ${fullUser.tag}`).setImage(bannerUrl)],
+    ephemeral: false,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -294,12 +400,20 @@ function buildChannelInfoEmbed(channel: GuildBasedChannel): EmbedBuilder {
     embed.addFields(
       { name: 'Topic', value: channel.topic ?? '_None_', inline: false },
       { name: 'NSFW', value: channel.nsfw ? 'Yes' : 'No', inline: true },
-      { name: 'Slowmode', value: channel.rateLimitPerUser ? `${channel.rateLimitPerUser}s` : 'Off', inline: true },
+      {
+        name: 'Slowmode',
+        value: channel.rateLimitPerUser ? `${channel.rateLimitPerUser}s` : 'Off',
+        inline: true,
+      },
     );
   } else if (channel.type === ChannelType.GuildVoice || channel.type === ChannelType.GuildStageVoice) {
     embed.addFields(
       { name: 'Bitrate', value: `${Math.round(channel.bitrate / 1000)} kbps`, inline: true },
-      { name: 'User limit', value: channel.userLimit > 0 ? String(channel.userLimit) : 'Unlimited', inline: true },
+      {
+        name: 'User limit',
+        value: channel.userLimit > 0 ? String(channel.userLimit) : 'Unlimited',
+        inline: true,
+      },
     );
   }
 
@@ -340,7 +454,10 @@ async function handleTimestamp(c: CommandContext): Promise<void> {
   }
 
   const unixSeconds = Math.floor(parsed.toMillis() / 1000);
-  const lines = TIMESTAMP_STYLES.map(({ style, label }) => `**${label}**: \`<t:${unixSeconds}:${style}>\` → ${discordTimestamp(parsed.toJSDate(), style)}`);
+  const lines = TIMESTAMP_STYLES.map(
+    ({ style, label }) =>
+      `**${label}**: \`<t:${unixSeconds}:${style}>\` → ${discordTimestamp(parsed.toJSDate(), style)}`,
+  );
 
   await c.interaction.reply({
     embeds: [infoEmbed(`Timestamp — ${zone}`, lines.join('\n'))],
@@ -365,7 +482,10 @@ async function handleTimezoneSet(c: CommandContext): Promise<void> {
     update: { timezone: zone },
   });
 
-  await c.interaction.reply({ embeds: [successEmbed(`Your timezone is now set to **${zone}**.`)], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [successEmbed(`Your timezone is now set to **${zone}**.`)],
+    ephemeral: true,
+  });
 }
 
 async function handleTimezoneGet(c: CommandContext): Promise<void> {
@@ -386,7 +506,12 @@ async function handleTimezoneList(c: CommandContext): Promise<void> {
     .slice(0, 25);
 
   await c.interaction.reply({
-    embeds: [infoEmbed('IANA timezones', matches.length > 0 ? matches.map((z) => `\`${z}\``).join(', ') : 'No matching timezones found.')],
+    embeds: [
+      infoEmbed(
+        'IANA timezones',
+        matches.length > 0 ? matches.map((z) => `\`${z}\``).join(', ') : 'No matching timezones found.',
+      ),
+    ],
     ephemeral: true,
   });
 }
@@ -400,7 +525,14 @@ async function handleCalculator(c: CommandContext): Promise<void> {
   try {
     const result = evaluateExpression(expression);
     await c.interaction.reply({
-      embeds: [brandEmbed().setTitle('Calculator').addFields({ name: 'Expression', value: `\`${expression}\`` }, { name: 'Result', value: `\`${formatCalculatorResult(result)}\`` })],
+      embeds: [
+        brandEmbed()
+          .setTitle('Calculator')
+          .addFields(
+            { name: 'Expression', value: `\`${expression}\`` },
+            { name: 'Result', value: `\`${formatCalculatorResult(result)}\`` },
+          ),
+      ],
       ephemeral: true,
     });
   } catch (err) {
@@ -425,7 +557,9 @@ async function handleAfk(c: CommandContext): Promise<void> {
   });
 
   if (existing) {
-    await c.ctx.prisma.afkStatus.delete({ where: { guildId_userId: { guildId: c.guildId, userId: c.interaction.user.id } } });
+    await c.ctx.prisma.afkStatus.delete({
+      where: { guildId_userId: { guildId: c.guildId, userId: c.interaction.user.id } },
+    });
     await c.interaction.reply({ embeds: [successEmbed(c.t('afk.welcomeBack'))], ephemeral: true });
     return;
   }
@@ -467,7 +601,10 @@ async function handleTranslate(c: CommandContext): Promise<void> {
     const embed = brandEmbed()
       .setTitle('Translation')
       .addFields(
-        { name: `Original${result.detectedSourceLanguage ? ` (${result.detectedSourceLanguage})` : from ? ` (${from})` : ''}`, value: text.slice(0, 1024) },
+        {
+          name: `Original${result.detectedSourceLanguage ? ` (${result.detectedSourceLanguage})` : from ? ` (${from})` : ''}`,
+          value: text.slice(0, 1024),
+        },
         { name: `Translated (${to})`, value: result.translatedText.slice(0, 1024) },
       )
       .setFooter({ text: `via ${result.provider}` });
@@ -486,11 +623,24 @@ function buildWeatherEmbed(result: WeatherResult): EmbedBuilder {
   const tempUnit = result.units === 'imperial' ? '°F' : '°C';
   const windUnit = result.units === 'imperial' ? 'mph' : 'km/h';
 
-  const embed = brandEmbed().setTitle(`Weather — ${result.locationName}`).setDescription(result.conditionDescription);
-  embed.addFields({ name: 'Temperature', value: `${Math.round(result.temperature)}${tempUnit}`, inline: true });
-  if (result.feelsLike !== undefined) embed.addFields({ name: 'Feels like', value: `${Math.round(result.feelsLike)}${tempUnit}`, inline: true });
-  if (result.humidityPercent !== undefined) embed.addFields({ name: 'Humidity', value: `${result.humidityPercent}%`, inline: true });
-  if (result.windSpeed !== undefined) embed.addFields({ name: 'Wind', value: `${Math.round(result.windSpeed)} ${windUnit}`, inline: true });
+  const embed = brandEmbed()
+    .setTitle(`Weather — ${result.locationName}`)
+    .setDescription(result.conditionDescription);
+  embed.addFields({
+    name: 'Temperature',
+    value: `${Math.round(result.temperature)}${tempUnit}`,
+    inline: true,
+  });
+  if (result.feelsLike !== undefined)
+    embed.addFields({
+      name: 'Feels like',
+      value: `${Math.round(result.feelsLike)}${tempUnit}`,
+      inline: true,
+    });
+  if (result.humidityPercent !== undefined)
+    embed.addFields({ name: 'Humidity', value: `${result.humidityPercent}%`, inline: true });
+  if (result.windSpeed !== undefined)
+    embed.addFields({ name: 'Wind', value: `${Math.round(result.windSpeed)} ${windUnit}`, inline: true });
   embed.setFooter({ text: `via ${result.provider}` });
   return embed;
 }
@@ -508,7 +658,10 @@ async function handleWeather(c: CommandContext): Promise<void> {
 
   const cached = await c.ctx.redis.get(cacheKey);
   if (cached) {
-    await c.interaction.reply({ embeds: [buildWeatherEmbed(JSON.parse(cached) as WeatherResult)], ephemeral: false });
+    await c.interaction.reply({
+      embeds: [buildWeatherEmbed(JSON.parse(cached) as WeatherResult)],
+      ephemeral: false,
+    });
     return;
   }
 
@@ -548,7 +701,10 @@ function healthEmoji(status: 'ok' | 'degraded' | 'unavailable' | 'disabled'): st
 async function handleStatus(c: CommandContext): Promise<void> {
   const host = c.ctx.services.get('host');
   if (!host) {
-    await c.interaction.reply({ embeds: [errorEmbed('Status is not available right now.')], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [errorEmbed('Status is not available right now.')],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -562,7 +718,9 @@ async function handleStatus(c: CommandContext): Promise<void> {
     }
     const health = await host.getPluginHealth(manifest.id);
     const status = health?.status ?? 'ok';
-    lines.push(`${healthEmoji(status)} **${manifest.name}** — ${status}${health?.details ? ` — ${health.details}` : ''}`);
+    lines.push(
+      `${healthEmoji(status)} **${manifest.name}** — ${status}${health?.details ? ` — ${health.details}` : ''}`,
+    );
   }
 
   const stats = host.getBotStats();

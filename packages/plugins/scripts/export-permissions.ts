@@ -27,7 +27,8 @@ const INTENT_DEGRADATION: Partial<Record<string, Partial<Record<PrivilegedIntent
   automod: {
     MessageContent:
       'Content-dependent rules (duplicate messages, invite links, scam links, regex/word filters, caps, repeated characters, attachments) show as inactive instead of evaluating; join-based rules are unaffected.',
-    GuildMembers: 'The account-age gate and raid (join-burst) detection rules cannot evaluate and show as inactive.',
+    GuildMembers:
+      'The account-age gate and raid (join-burst) detection rules cannot evaluate and show as inactive.',
   },
   enforcer: {
     MessageContent:
@@ -35,7 +36,8 @@ const INTENT_DEGRADATION: Partial<Record<string, Partial<Record<PrivilegedIntent
   },
   logging: {
     GuildMembers: 'Member join/leave logs and invite-use attribution on join are unavailable.',
-    MessageContent: 'Message edit/delete logs still fire, but record metadata (author, channel, time) only — never the before/after text.',
+    MessageContent:
+      'Message edit/delete logs still fire, but record metadata (author, channel, time) only — never the before/after text.',
   },
   tickets: {
     MessageContent: 'Transcripts still record who said something and when, but not the message text itself.',
@@ -46,7 +48,7 @@ const INTENT_DEGRADATION: Partial<Record<string, Partial<Record<PrivilegedIntent
   },
   engagement: {
     MessageContent:
-      'Leveling, XP, and reputation are unaffected (message events fire regardless of content). Only the starboard\'s message-content preview in its embed is unavailable and falls back to a jump link.',
+      "Leveling, XP, and reputation are unaffected (message events fire regardless of content). Only the starboard's message-content preview in its embed is unavailable and falls back to a jump link.",
   },
 };
 
@@ -71,7 +73,10 @@ function renderPluginPermissionsTable(manifest: PluginManifest): string {
     (p) =>
       `| ${escapeCell(permissionName(p.permission))} | ${escapeCell(p.feature)} | ${p.optional ? 'Optional' : 'Required'} | ${escapeCell(p.fallback)} |`,
   );
-  return ['| Permission | Feature | Required? | Fallback if missing |', '|---|---|---|---|', ...rows].join('\n') + '\n';
+  return (
+    ['| Permission | Feature | Required? | Fallback if missing |', '|---|---|---|---|', ...rows].join('\n') +
+    '\n'
+  );
 }
 
 function renderIntentsSection(manifests: PluginManifest[]): string {
@@ -80,17 +85,13 @@ function renderIntentsSection(manifests: PluginManifest[]): string {
     const needing = manifests.filter((m) => m.privilegedIntents?.includes(intent));
     if (needing.length === 0) continue;
     const rows = needing.map((m) => {
-      const degradation = INTENT_DEGRADATION[m.id]?.[intent] ?? '_(see the plugin README for what degrades without this intent)_';
+      const degradation =
+        INTENT_DEGRADATION[m.id]?.[intent] ??
+        '_(see the plugin README for what degrades without this intent)_';
       return `| ${m.name} (\`${m.id}\`) | ${escapeCell(degradation)} |`;
     });
     sections.push(
-      [
-        `### ${intent}`,
-        '',
-        '| Plugin | What degrades without it |',
-        '|---|---|',
-        ...rows,
-      ].join('\n'),
+      [`### ${intent}`, '', '| Plugin | What degrades without it |', '|---|---|', ...rows].join('\n'),
     );
   }
   return sections.join('\n\n');

@@ -93,7 +93,11 @@ function boolField(id: string, label: string, fallback: boolean): RuleFieldSpec 
   };
 }
 
-function csvField(id: string, label: string, opts: { required?: boolean; placeholder?: string } = {}): RuleFieldSpec {
+function csvField(
+  id: string,
+  label: string,
+  opts: { required?: boolean; placeholder?: string } = {},
+): RuleFieldSpec {
   return {
     id,
     label,
@@ -109,7 +113,11 @@ function csvField(id: string, label: string, opts: { required?: boolean; placeho
   };
 }
 
-function textField(id: string, label: string, opts: { required?: boolean; maxLength?: number; placeholder?: string } = {}): RuleFieldSpec {
+function textField(
+  id: string,
+  label: string,
+  opts: { required?: boolean; maxLength?: number; placeholder?: string } = {},
+): RuleFieldSpec {
   return {
     id,
     label,
@@ -129,13 +137,32 @@ function textField(id: string, label: string, opts: { required?: boolean; maxLen
 
 /** Per-rule-type modal field lists (max 5 per Discord modal — every entry here stays at or under that). */
 export const RULE_FIELD_SPECS: Record<AutomodRuleTypeValue, RuleFieldSpec[]> = {
-  MESSAGE_FREQUENCY: [intField('maxMessages', 'Max messages', 1, 50, 5), intField('windowSeconds', 'Window (seconds)', 1, 300, 10)],
-  DUPLICATE_MESSAGES: [intField('maxDuplicates', 'Max duplicates', 2, 20, 3), intField('windowSeconds', 'Window (seconds)', 1, 600, 60)],
-  MENTION_SPAM: [intField('maxMentions', 'Max mentions', 1, 50, 5), boolField('includeRoleMentions', 'Count role mentions too', true)],
-  INVITE_LINKS: [boolField('allowOwnServerInvites', 'Allow this server\'s own invites', true), csvField('allowedInviteCodes', 'Additional allowed invite codes')],
-  SCAM_LINKS: [boolField('useBuiltInList', 'Use the built-in scam/phishing list', true), csvField('blockedDomains', 'Additional blocked domains')],
+  MESSAGE_FREQUENCY: [
+    intField('maxMessages', 'Max messages', 1, 50, 5),
+    intField('windowSeconds', 'Window (seconds)', 1, 300, 10),
+  ],
+  DUPLICATE_MESSAGES: [
+    intField('maxDuplicates', 'Max duplicates', 2, 20, 3),
+    intField('windowSeconds', 'Window (seconds)', 1, 600, 60),
+  ],
+  MENTION_SPAM: [
+    intField('maxMentions', 'Max mentions', 1, 50, 5),
+    boolField('includeRoleMentions', 'Count role mentions too', true),
+  ],
+  INVITE_LINKS: [
+    boolField('allowOwnServerInvites', "Allow this server's own invites", true),
+    csvField('allowedInviteCodes', 'Additional allowed invite codes'),
+  ],
+  SCAM_LINKS: [
+    boolField('useBuiltInList', 'Use the built-in scam/phishing list', true),
+    csvField('blockedDomains', 'Additional blocked domains'),
+  ],
   REGEX_FILTER: [
-    textField('pattern', 'Regex pattern', { required: true, maxLength: 256, placeholder: 'e.g. \\bfree\\s?nitro\\b' }),
+    textField('pattern', 'Regex pattern', {
+      required: true,
+      maxLength: 256,
+      placeholder: 'e.g. \\bfree\\s?nitro\\b',
+    }),
     textField('flags', 'Regex flags', { required: false, maxLength: 5, placeholder: 'i (default)' }),
   ],
   WORD_FILTER: [
@@ -143,19 +170,32 @@ export const RULE_FIELD_SPECS: Record<AutomodRuleTypeValue, RuleFieldSpec[]> = {
     boolField('wholeWord', 'Whole-word match only', true),
     boolField('caseSensitive', 'Case sensitive', false),
   ],
-  CAPS: [intField('minLength', 'Minimum message length to check', 1, 2000, 10), intField('maxCapsPercent', 'Max uppercase %', 1, 100, 70)],
+  CAPS: [
+    intField('minLength', 'Minimum message length to check', 1, 2000, 10),
+    intField('maxCapsPercent', 'Max uppercase %', 1, 100, 70),
+  ],
   REPEATED_CHARS: [intField('maxRepeats', 'Max repeated characters in a row', 2, 50, 6)],
   ATTACHMENTS: [
-    csvField('blockedExtensions', 'Blocked file extensions (comma-separated)', { placeholder: 'exe, bat, scr, msi, jar, cmd' }),
+    csvField('blockedExtensions', 'Blocked file extensions (comma-separated)', {
+      placeholder: 'exe, bat, scr, msi, jar, cmd',
+    }),
     optionalIntField('maxAttachments', 'Max attachments per message', 0, 20),
   ],
-  NSFW_ENFORCEMENT: [csvField('requireNsfwChannelForKeywords', 'Keywords requiring an NSFW channel', { required: true })],
+  NSFW_ENFORCEMENT: [
+    csvField('requireNsfwChannelForKeywords', 'Keywords requiring an NSFW channel', { required: true }),
+  ],
   ACCOUNT_AGE: [intField('minAccountAgeHours', 'Minimum account age (hours)', 0, 24 * 365, 24)],
-  RAID_DETECTION: [intField('joinBurstCount', 'Joins to trigger', 2, 200, 10), intField('joinBurstWindowSeconds', 'Within (seconds)', 1, 3600, 30)],
+  RAID_DETECTION: [
+    intField('joinBurstCount', 'Joins to trigger', 2, 200, 10),
+    intField('joinBurstWindowSeconds', 'Within (seconds)', 1, 3600, 30),
+  ],
 };
 
 /** Parses raw modal field values into a validated `AutomodRuleConfig` for `type`. Throws `ValidationError` (with a user-facing message) on bad input, including the catastrophic-regex safety check for `REGEX_FILTER`. */
-export function parseRuleFieldValues(type: AutomodRuleTypeValue, raw: Record<string, string>): AutomodRuleConfig {
+export function parseRuleFieldValues(
+  type: AutomodRuleTypeValue,
+  raw: Record<string, string>,
+): AutomodRuleConfig {
   const specs = RULE_FIELD_SPECS[type];
   const parsed: Record<string, unknown> = { type };
   for (const spec of specs) {

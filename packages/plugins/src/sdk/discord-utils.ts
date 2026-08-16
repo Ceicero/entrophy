@@ -20,7 +20,10 @@ export interface SafeDmResult {
 }
 
 /** Attempts to DM `user`. Never throws — DMs routinely fail (blocked bot, closed DMs, shared server left) and that must never break the calling flow. */
-export async function safeDm(user: User, payload: string | MessagePayload | MessageCreateOptions): Promise<SafeDmResult> {
+export async function safeDm(
+  user: User,
+  payload: string | MessagePayload | MessageCreateOptions,
+): Promise<SafeDmResult> {
   try {
     await user.send(payload);
     return { sent: true };
@@ -38,13 +41,19 @@ export async function fetchMemberSafe(guild: Guild, userId: string): Promise<Gui
   }
 }
 
-const SEND_REQUIRED_PERMISSIONS = [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] as const;
+const SEND_REQUIRED_PERMISSIONS = [
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.SendMessages,
+] as const;
 
 /**
  * Resolves a text-capable channel by id in `guild`, returning it only if it's actually a channel the bot can
  * send messages in (right type, and has View Channel + Send Messages there). Returns `null` otherwise.
  */
-export async function resolveTextChannel(guild: Guild, channelId: string): Promise<GuildTextBasedChannel | null> {
+export async function resolveTextChannel(
+  guild: Guild,
+  channelId: string,
+): Promise<GuildTextBasedChannel | null> {
   let channel;
   try {
     channel = await guild.channels.fetch(channelId);

@@ -1,6 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Cooldowns, MemoryRateLimiter, createPlatformEvents } from '@entrophy/core';
-import { DEFAULT_GUILD_CONFIG, ServiceRegistry, type ComponentContext, type ComponentHandler, type GuildConfigData, type Plugin, type PluginContext, type PluginManifest, type PluginRegistry } from '@entrophy/plugins';
+import {
+  DEFAULT_GUILD_CONFIG,
+  ServiceRegistry,
+  type ComponentContext,
+  type ComponentHandler,
+  type GuildConfigData,
+  type Plugin,
+  type PluginContext,
+  type PluginManifest,
+  type PluginRegistry,
+} from '@entrophy/plugins';
 import type { PluginId } from '@entrophy/types';
 import { routeInteraction } from '../router';
 import type { LoadedHost } from '../loader';
@@ -130,7 +140,11 @@ describe('routeInteraction — component (custom-id) routing', () => {
   });
 
   it('rejects when the interaction kind does not match the registered handler kind', async () => {
-    const handler: ComponentHandler = { action: 'do-thing', kind: 'select', handler: vi.fn(async () => undefined) };
+    const handler: ComponentHandler = {
+      action: 'do-thing',
+      kind: 'select',
+      handler: vi.fn(async () => undefined),
+    };
     const plugin = fakePlugin(fakeManifest(), handler);
     const host = fakeHost({ components: new Map([['utility:do-thing', { plugin, handler }]]) });
     const interaction = fakeButtonInteraction({ customId: 'utility:do-thing:' + OWNER_ID }); // isButton() -> true, but handler.kind is 'select'
@@ -142,10 +156,17 @@ describe('routeInteraction — component (custom-id) routing', () => {
   });
 
   it('rejects a non-owner when the handler is ownerOnly (default true), without invoking the handler', async () => {
-    const handler: ComponentHandler = { action: 'do-thing', kind: 'button', handler: vi.fn(async () => undefined) };
+    const handler: ComponentHandler = {
+      action: 'do-thing',
+      kind: 'button',
+      handler: vi.fn(async () => undefined),
+    };
     const plugin = fakePlugin(fakeManifest(), handler);
     const host = fakeHost({ components: new Map([['utility:do-thing', { plugin, handler }]]) });
-    const interaction = fakeButtonInteraction({ customId: `utility:do-thing:${OWNER_ID}`, userId: 'someone-else' });
+    const interaction = fakeButtonInteraction({
+      customId: `utility:do-thing:${OWNER_ID}`,
+      userId: 'someone-else',
+    });
 
     await routeInteraction(interaction as never, host, logger);
 
@@ -158,7 +179,10 @@ describe('routeInteraction — component (custom-id) routing', () => {
     const handler: ComponentHandler = { action: 'do-thing', kind: 'button', handler: handlerFn };
     const plugin = fakePlugin(fakeManifest(), handler);
     const host = fakeHost({ components: new Map([['utility:do-thing', { plugin, handler }]]) });
-    const interaction = fakeButtonInteraction({ customId: `utility:do-thing:${OWNER_ID}:extra-arg`, userId: OWNER_ID });
+    const interaction = fakeButtonInteraction({
+      customId: `utility:do-thing:${OWNER_ID}:extra-arg`,
+      userId: OWNER_ID,
+    });
 
     await routeInteraction(interaction as never, host, logger);
 
@@ -172,8 +196,16 @@ describe('routeInteraction — component (custom-id) routing', () => {
   it('does not route to a different plugin/action than the one encoded in the custom id', async () => {
     const rightHandlerFn = vi.fn(async () => undefined);
     const wrongHandlerFn = vi.fn(async () => undefined);
-    const rightHandler: ComponentHandler = { action: 'right-action', kind: 'button', handler: rightHandlerFn };
-    const wrongHandler: ComponentHandler = { action: 'wrong-action', kind: 'button', handler: wrongHandlerFn };
+    const rightHandler: ComponentHandler = {
+      action: 'right-action',
+      kind: 'button',
+      handler: rightHandlerFn,
+    };
+    const wrongHandler: ComponentHandler = {
+      action: 'wrong-action',
+      kind: 'button',
+      handler: wrongHandlerFn,
+    };
     const plugin = fakePlugin(fakeManifest());
 
     const host = fakeHost({

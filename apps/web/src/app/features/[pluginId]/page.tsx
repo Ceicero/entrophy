@@ -34,13 +34,11 @@ export default async function PluginDetailPage({ params }: PageProps) {
   const copy = pluginCopy[plugin.id];
 
   return (
-    <Section
-      eyebrow={plugin.category}
-      title={plugin.name}
-      subtitle={plugin.description}
-    >
+    <Section eyebrow={plugin.category} title={plugin.name} subtitle={plugin.description}>
       <div className="flex flex-wrap gap-1.5">
-        <Badge tone={plugin.defaultEnabled ? 'solid' : 'outline'}>{plugin.defaultEnabled ? 'Enabled by default' : 'Disabled by default (opt-in)'}</Badge>
+        <Badge tone={plugin.defaultEnabled ? 'solid' : 'outline'}>
+          {plugin.defaultEnabled ? 'Enabled by default' : 'Disabled by default (opt-in)'}
+        </Badge>
         {plugin.privilegedIntents.length > 0 ? (
           plugin.privilegedIntents.map((intent) => (
             <Badge key={intent} tone="outline">
@@ -54,7 +52,9 @@ export default async function PluginDetailPage({ params }: PageProps) {
 
       <Glass className="mt-8 p-6 sm:p-8">
         <h3 className="text-lg font-semibold text-grey-7">{copy.headline}</h3>
-        <h3 className="mt-6 text-sm font-semibold uppercase tracking-wider text-grey-2">Why gaming communities love it</h3>
+        <h3 className="mt-6 text-sm font-semibold uppercase tracking-wider text-grey-2">
+          Why gaming communities love it
+        </h3>
         <ul className="mt-3 space-y-2">
           {copy.whyGaming.map((reason) => (
             <li key={reason} className="flex gap-2 text-sm leading-relaxed text-grey-3">
@@ -67,7 +67,9 @@ export default async function PluginDetailPage({ params }: PageProps) {
         </ul>
       </Glass>
 
-      <h3 className="mb-3 mt-10 text-sm font-semibold uppercase tracking-wider text-grey-2">Full command reference</h3>
+      <h3 className="mb-3 mt-10 text-sm font-semibold uppercase tracking-wider text-grey-2">
+        Full command reference
+      </h3>
       <CommandTable commands={plugin.commands} />
 
       <div className="mt-10 flex flex-wrap gap-3">

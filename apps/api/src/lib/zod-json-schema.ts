@@ -99,7 +99,11 @@ export function zodToJsonSchema(schema: z.ZodTypeAny): JsonSchemaLike {
   }
 
   if (schema instanceof z.ZodNativeEnum) {
-    return { type: 'string', enum: Object.values(schema._def.values as Record<string, unknown>), ...description };
+    return {
+      type: 'string',
+      enum: Object.values(schema._def.values as Record<string, unknown>),
+      ...description,
+    };
   }
 
   if (schema instanceof z.ZodLiteral) {
@@ -111,7 +115,11 @@ export function zodToJsonSchema(schema: z.ZodTypeAny): JsonSchemaLike {
   }
 
   if (schema instanceof z.ZodRecord) {
-    return { type: 'object', additionalProperties: zodToJsonSchema(schema._def.valueType as z.ZodTypeAny), ...description };
+    return {
+      type: 'object',
+      additionalProperties: zodToJsonSchema(schema._def.valueType as z.ZodTypeAny),
+      ...description,
+    };
   }
 
   if (schema instanceof z.ZodUnion || schema instanceof z.ZodDiscriminatedUnion) {

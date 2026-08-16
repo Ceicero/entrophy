@@ -61,7 +61,9 @@ function moderationOverrides() {
       moderationCase: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         findMany: async (args: any) => {
-          let list = [...cases.values()].filter((c) => c.guildId === args?.where?.guildId && c.deletedAt === null);
+          let list = [...cases.values()].filter(
+            (c) => c.guildId === args?.where?.guildId && c.deletedAt === null,
+          );
           if (args?.where?.type) list = list.filter((c) => c.type === args.where.type);
           if (args?.where?.targetId) list = list.filter((c) => c.targetId === args.where.targetId);
           list = list.sort((a, b) => b.caseNumber - a.caseNumber);
@@ -70,7 +72,11 @@ function moderationOverrides() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         findUnique: async (args: any) => {
           const key = args?.where?.guildId_caseNumber;
-          if (key) return [...cases.values()].find((c) => c.guildId === key.guildId && c.caseNumber === key.caseNumber) ?? null;
+          if (key)
+            return (
+              [...cases.values()].find((c) => c.guildId === key.guildId && c.caseNumber === key.caseNumber) ??
+              null
+            );
           return cases.get(args?.where?.id) ?? null;
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,7 +94,9 @@ function moderationOverrides() {
       moderationNote: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         findMany: async (args: any) => {
-          let list = [...notes.values()].filter((n) => n.guildId === args?.where?.guildId && n.deletedAt === null);
+          let list = [...notes.values()].filter(
+            (n) => n.guildId === args?.where?.guildId && n.deletedAt === null,
+          );
           if (args?.where?.userId) list = list.filter((n) => n.userId === args.where.userId);
           return list;
         },
@@ -141,14 +149,26 @@ function moderationOverrides() {
         findUnique: async (args: any) => {
           const key = `${args.where.guildId_pluginId.guildId}:${args.where.guildId_pluginId.pluginId}`;
           const config = pluginConfig.get(key);
-          return config ? { guildId: args.where.guildId_pluginId.guildId, pluginId: args.where.guildId_pluginId.pluginId, config, version: 1 } : null;
+          return config
+            ? {
+                guildId: args.where.guildId_pluginId.guildId,
+                pluginId: args.where.guildId_pluginId.pluginId,
+                config,
+                version: 1,
+              }
+            : null;
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         upsert: async (args: any) => {
           const key = `${args.where.guildId_pluginId.guildId}:${args.where.guildId_pluginId.pluginId}`;
           const config = (args.create?.config ?? args.update?.config) as Record<string, unknown>;
           pluginConfig.set(key, config);
-          return { guildId: args.where.guildId_pluginId.guildId, pluginId: args.where.guildId_pluginId.pluginId, config, version: 1 };
+          return {
+            guildId: args.where.guildId_pluginId.guildId,
+            pluginId: args.where.guildId_pluginId.pluginId,
+            config,
+            version: 1,
+          };
         },
       },
     },
@@ -163,11 +183,18 @@ async function authedContext() {
   });
   const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
   await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-  const mutHeaders = { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken };
+  const mutHeaders = {
+    cookie: cookieHeader,
+    origin: 'http://localhost:3000',
+    'x-csrf-token': session.csrfToken,
+  };
   return { app, cookieHeader, mutHeaders, store };
 }
 
-function seedCase(store: ReturnType<typeof moderationOverrides>['store'], overrides: Partial<FakeCase> = {}): FakeCase {
+function seedCase(
+  store: ReturnType<typeof moderationOverrides>['store'],
+  overrides: Partial<FakeCase> = {},
+): FakeCase {
   const row: FakeCase = {
     id: randomUUID(),
     guildId: GUILD_ID,
@@ -198,7 +225,11 @@ describe('moderation cases', () => {
     seedCase(store, { caseNumber: 1 });
     seedCase(store, { caseNumber: 2 });
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/moderation/cases`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/moderation/cases`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.items.map((c: { caseNumber: number }) => c.caseNumber)).toEqual([2, 1]);
@@ -207,7 +238,11 @@ describe('moderation cases', () => {
 
   it('GET /:caseNumber 404s for an unknown case', async () => {
     const { app, cookieHeader } = await authedContext();
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/moderation/cases/999`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/moderation/cases/999`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(404);
     await app.close();
   });
@@ -231,10 +266,16 @@ describe('moderation cases', () => {
     const { app, cookieHeader, store } = await authedContext();
     seedCase(store, { caseNumber: 1 });
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/moderation/cases/export.csv`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/moderation/cases/export.csv`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('text/csv');
-    expect(res.body.split('\r\n')[0]).toBe('caseNumber,type,targetId,moderatorId,reason,durationMs,source,createdAt');
+    expect(res.body.split('\r\n')[0]).toBe(
+      'caseNumber,type,targetId,moderatorId,reason,durationMs,source,createdAt',
+    );
     await app.close();
   });
 });
@@ -252,13 +293,25 @@ describe('moderation notes', () => {
     expect(created.statusCode).toBe(201);
     const noteId = created.json().id;
 
-    const list = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/moderation/notes`, headers: { cookie: cookieHeader } });
+    const list = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/moderation/notes`,
+      headers: { cookie: cookieHeader },
+    });
     expect(list.json().items).toHaveLength(1);
 
-    const del = await app.inject({ method: 'DELETE', url: `/guilds/${GUILD_ID}/moderation/notes/${noteId}`, headers: mutHeaders });
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/moderation/notes/${noteId}`,
+      headers: mutHeaders,
+    });
     expect(del.statusCode).toBe(204);
 
-    const listAfter = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/moderation/notes`, headers: { cookie: cookieHeader } });
+    const listAfter = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/moderation/notes`,
+      headers: { cookie: cookieHeader },
+    });
     expect(listAfter.json().items).toHaveLength(0);
     await app.close();
   });
@@ -317,9 +370,18 @@ describe('moderation settings', () => {
   it('GET returns defaults, PUT persists a change and GET reflects it', async () => {
     const { app, mutHeaders, cookieHeader } = await authedContext();
 
-    const initial = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/moderation/settings`, headers: { cookie: cookieHeader } });
+    const initial = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/moderation/settings`,
+      headers: { cookie: cookieHeader },
+    });
     expect(initial.statusCode).toBe(200);
-    expect(initial.json()).toMatchObject({ purgeMax: 100, tempBanEnabled: true, dmOnAction: true, requireReasonFor: [] });
+    expect(initial.json()).toMatchObject({
+      purgeMax: 100,
+      tempBanEnabled: true,
+      dmOnAction: true,
+      requireReasonFor: [],
+    });
 
     const updated = await app.inject({
       method: 'PUT',
@@ -331,7 +393,11 @@ describe('moderation settings', () => {
     expect(updated.json().purgeMax).toBe(25);
     expect(updated.json().requireReasonFor).toEqual(['ban']);
 
-    const after = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/moderation/settings`, headers: { cookie: cookieHeader } });
+    const after = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/moderation/settings`,
+      headers: { cookie: cookieHeader },
+    });
     expect(after.json().purgeMax).toBe(25);
     await app.close();
   });

@@ -28,17 +28,34 @@ import {
 } from '../sdk';
 import { toCsv } from './csv';
 import { evaluateEscalation } from './escalation';
-import { buildAppealDecisionEmbed, buildAppealEmbed, buildCaseDmEmbed, buildCaseLogEmbed, caseTypeLabel } from './embeds';
+import {
+  buildAppealDecisionEmbed,
+  buildAppealEmbed,
+  buildCaseDmEmbed,
+  buildCaseLogEmbed,
+  caseTypeLabel,
+} from './embeds';
 import type { EscalationRule, ModerationConfig } from './manifest';
 import { filterMessagesForPurge, type PurgeCandidateMessage } from './purge';
 
-const APPEAL_APPLIED_TTL_SEC = 60 * 60 * 24 * 30; // 30 days — long enough that the once-a-minute sync job never re-applies a real decision.
+// In-flight lock only (not the "already applied" record — that's the durable `effectsAppliedAt` DB column) —
+// just long enough to keep two overlapping `appeal-sync` ticks from racing on the same appeal.
+const APPEAL_SYNC_LOCK_TTL_MS = 30_000;
 
 /** Minimal shape used to build a DM before a kick/ban/softban actually happens (see `sendCaseDmToUser` callers). */
 type PreDmCase = Pick<ModerationCase, 'type' | 'reason' | 'caseNumber'>;
 
 /** Case types whose affected user is worth DMing (excludes channel-level/administrative/self-explanatory types). */
-const DM_ELIGIBLE_TYPES = new Set<ModerationCaseType>(['WARN', 'TIMEOUT', 'UNTIMEOUT', 'KICK', 'BAN', 'UNBAN', 'SOFTBAN', 'QUARANTINE']);
+const DM_ELIGIBLE_TYPES = new Set<ModerationCaseType>([
+  'WARN',
+  'TIMEOUT',
+  'UNTIMEOUT',
+  'KICK',
+  'BAN',
+  'UNBAN',
+  'SOFTBAN',
+  'QUARANTINE',
+]);
 
 export interface KickInput {
   guildId: string;
@@ -154,24 +171,38 @@ export class ModerationServiceImpl implements ModerationService {
   private async getCoreGuildConfig(guildId: string) {
     const host = this.ctx.services.get('host');
     if (!host) {
-      return { modLogChannelId: null as string | null, appealsChannelId: null as string | null, staffChannelId: null as string | null, dmOnModeration: true };
+      return {
+        modLogChannelId: null as string | null,
+        appealsChannelId: null as string | null,
+        staffChannelId: null as string | null,
+        dmOnModeration: true,
+      };
     }
     return host.getGuildConfig(guildId);
   }
 
   private async resolveModLogChannelId(guildId: string): Promise<string | null> {
-    const [config, guildConfig] = await Promise.all([this.getModConfig(guildId), this.getCoreGuildConfig(guildId)]);
+    const [config, guildConfig] = await Promise.all([
+      this.getModConfig(guildId),
+      this.getCoreGuildConfig(guildId),
+    ]);
     return config.modLogChannelId ?? guildConfig.modLogChannelId;
   }
 
   private async resolveAppealsChannelId(guildId: string): Promise<string | null> {
-    const [config, guildConfig] = await Promise.all([this.getModConfig(guildId), this.getCoreGuildConfig(guildId)]);
+    const [config, guildConfig] = await Promise.all([
+      this.getModConfig(guildId),
+      this.getCoreGuildConfig(guildId),
+    ]);
     return config.appealsChannelId ?? guildConfig.appealsChannelId ?? guildConfig.staffChannelId;
   }
 
   /** DM gating per ARCHITECTURE.md §7.5: both the core "DM on moderation" toggle and this plugin's own toggle must allow it. */
   private async dmAllowed(guildId: string): Promise<boolean> {
-    const [config, guildConfig] = await Promise.all([this.getModConfig(guildId), this.getCoreGuildConfig(guildId)]);
+    const [config, guildConfig] = await Promise.all([
+      this.getModConfig(guildId),
+      this.getCoreGuildConfig(guildId),
+    ]);
     return config.dmOnAction && guildConfig.dmOnModeration;
   }
 
@@ -216,7 +247,10 @@ export class ModerationServiceImpl implements ModerationService {
   private async sendCaseDmToUser(user: User, row: PreDmCase, guildName: string): Promise<boolean> {
     const result = await safeDm(user, { embeds: [buildCaseDmEmbed(row, guildName)] });
     if (!result.sent) {
-      this.ctx.logger.info({ userId: user.id, caseNumber: row.caseNumber, error: result.error }, 'moderation: DM notification failed (not fatal)');
+      this.ctx.logger.info(
+        { userId: user.id, caseNumber: row.caseNumber, error: result.error },
+        'moderation: DM notification failed (not fatal)',
+      );
     }
     return result.sent;
   }
@@ -255,6 +289,14 @@ export class ModerationServiceImpl implements ModerationService {
       }),
     );
 
+    // ROLE_ADD cases with a duration (e.g. the `enforcer` plugin's timed MUTE) are not otherwise scheduled by
+    // any caller — `timeout()`/`ban()` schedule their own expiry explicitly, but a generic `createCase` caller
+    // has no other way to get a timed role removed automatically. `scheduleExpiry` is a no-op when
+    // `durationMs` is unset, and BullMQ dedupes on `jobId: case:<id>` so this can never double-schedule.
+    if (row.type === 'ROLE_ADD' && row.durationMs) {
+      await this.scheduleExpiry(row);
+    }
+
     await this.postModLog(row).catch((err: unknown) =>
       this.ctx.logger.warn({ err: String(err), caseId: row.id }, 'moderation: failed to post mod-log embed'),
     );
@@ -269,7 +311,9 @@ export class ModerationServiceImpl implements ModerationService {
           description: row.reason ?? undefined,
           fields: [{ name: 'Type', value: row.type, inline: true }],
         })
-        .catch((err: unknown) => this.ctx.logger.warn({ err: String(err) }, 'moderation: logging.log failed'));
+        .catch((err: unknown) =>
+          this.ctx.logger.warn({ err: String(err) }, 'moderation: logging.log failed'),
+        );
     }
 
     this.ctx.events.emit('moderation.caseCreated', {
@@ -287,7 +331,9 @@ export class ModerationServiceImpl implements ModerationService {
       dmSent = await this.maybeDmForCase(row);
     }
     if (dmSent !== row.dmSent) {
-      await this.ctx.prisma.moderationCase.update({ where: { id: row.id }, data: { dmSent } }).catch(() => undefined);
+      await this.ctx.prisma.moderationCase
+        .update({ where: { id: row.id }, data: { dmSent } })
+        .catch(() => undefined);
     }
 
     await this.ctx.audit({
@@ -299,7 +345,12 @@ export class ModerationServiceImpl implements ModerationService {
       targetId: row.id,
       after: { type: row.type, targetId: row.targetId, caseNumber: row.caseNumber },
       reason: row.reason ?? undefined,
-      source: input.source === 'DASHBOARD' ? 'dashboard' : input.source === 'AUTOMOD' || input.source === 'SYSTEM' ? 'system' : 'bot',
+      source:
+        input.source === 'DASHBOARD'
+          ? 'dashboard'
+          : input.source === 'AUTOMOD' || input.source === 'SYSTEM'
+            ? 'system'
+            : 'bot',
     });
 
     return { ...row, dmSent };
@@ -317,7 +368,13 @@ export class ModerationServiceImpl implements ModerationService {
     });
 
     await this.ctx.prisma.moderationWarning.create({
-      data: { guildId: input.guildId, userId: input.targetId, caseId: row.id, moderatorId: input.moderatorId, reason: input.reason?.trim() || null },
+      data: {
+        guildId: input.guildId,
+        userId: input.targetId,
+        caseId: row.id,
+        moderatorId: input.moderatorId,
+        reason: input.reason?.trim() || null,
+      },
     });
 
     await this.runEscalation(input.guildId, input.targetId, input.moderatorId, input.source);
@@ -326,8 +383,15 @@ export class ModerationServiceImpl implements ModerationService {
   }
 
   /** Checks the guild's escalation ladder after a new warning lands, and auto-executes the matching rule (if any). */
-  private async runEscalation(guildId: string, targetId: string, moderatorId: string, source: CreateModerationCaseInput['source']): Promise<void> {
-    const activeCount = await this.ctx.prisma.moderationWarning.count({ where: { guildId, userId: targetId, active: true } });
+  private async runEscalation(
+    guildId: string,
+    targetId: string,
+    moderatorId: string,
+    source: CreateModerationCaseInput['source'],
+  ): Promise<void> {
+    const activeCount = await this.ctx.prisma.moderationWarning.count({
+      where: { guildId, userId: targetId, active: true },
+    });
     const config = await this.getModConfig(guildId);
     const rule = evaluateEscalation(activeCount, config.escalations as EscalationRule[]);
     if (!rule) return;
@@ -342,7 +406,10 @@ export class ModerationServiceImpl implements ModerationService {
         await this.ban({ guildId, targetId, moderatorId, reason, source, durationMs: rule.durationMs });
       }
     } catch (err) {
-      this.ctx.logger.error({ err: String(err), guildId, targetId, rule }, 'moderation: automatic escalation action failed');
+      this.ctx.logger.error(
+        { err: String(err), guildId, targetId, rule },
+        'moderation: automatic escalation action failed',
+      );
     }
   }
 
@@ -366,7 +433,14 @@ export class ModerationServiceImpl implements ModerationService {
     return row;
   }
 
-  async untimeout(input: { guildId: string; targetId: string; moderatorId: string; reason?: string; source: CreateModerationCaseInput['source']; dmUser?: boolean }): Promise<ModerationCase> {
+  async untimeout(input: {
+    guildId: string;
+    targetId: string;
+    moderatorId: string;
+    reason?: string;
+    source: CreateModerationCaseInput['source'];
+    dmUser?: boolean;
+  }): Promise<ModerationCase> {
     const guild = await this.fetchGuild(input.guildId);
     const member = await this.fetchMember(guild, input.targetId);
     await member.timeout(null, input.reason);
@@ -393,14 +467,21 @@ export class ModerationServiceImpl implements ModerationService {
   private async scheduleExpiry(row: ModerationCase): Promise<void> {
     if (!row.durationMs) return;
     try {
-      await this.ctx.queue('expire').add('expire', { caseId: row.id }, { jobId: `case:${row.id}`, delay: row.durationMs });
+      await this.ctx
+        .queue('expire')
+        .add('expire', { caseId: row.id }, { jobId: `case:${row.id}`, delay: row.durationMs });
     } catch (err) {
-      this.ctx.logger.error({ err: String(err), caseId: row.id }, 'moderation: failed to schedule expiry job');
+      this.ctx.logger.error(
+        { err: String(err), caseId: row.id },
+        'moderation: failed to schedule expiry job',
+      );
     }
   }
 
   getCase(guildId: string, caseNumber: number): Promise<ModerationCase | null> {
-    return this.ctx.prisma.moderationCase.findUnique({ where: { guildId_caseNumber: { guildId, caseNumber } } });
+    return this.ctx.prisma.moderationCase.findUnique({
+      where: { guildId_caseNumber: { guildId, caseNumber } },
+    });
   }
 
   getCaseByNumber(guildId: string, caseNumber: number): Promise<ModerationCase | null> {
@@ -465,7 +546,11 @@ export class ModerationServiceImpl implements ModerationService {
     let dmSent = false;
     if (input.dmUser !== false && (await this.dmAllowed(input.guildId))) {
       const hintedCaseNumber = await nextCaseNumber(this.ctx.prisma, input.guildId);
-      dmSent = await this.sendCaseDmToUser(user, { type: 'KICK', caseNumber: hintedCaseNumber, reason: input.reason ?? null }, guild.name);
+      dmSent = await this.sendCaseDmToUser(
+        user,
+        { type: 'KICK', caseNumber: hintedCaseNumber, reason: input.reason ?? null },
+        guild.name,
+      );
     }
 
     await member.kick(input.reason);
@@ -485,7 +570,9 @@ export class ModerationServiceImpl implements ModerationService {
   }
 
   private async markDmSent(row: ModerationCase): Promise<ModerationCase> {
-    await this.ctx.prisma.moderationCase.update({ where: { id: row.id }, data: { dmSent: true } }).catch(() => undefined);
+    await this.ctx.prisma.moderationCase
+      .update({ where: { id: row.id }, data: { dmSent: true } })
+      .catch(() => undefined);
     return { ...row, dmSent: true };
   }
 
@@ -496,10 +583,17 @@ export class ModerationServiceImpl implements ModerationService {
     let dmSent = false;
     if (user && input.dmUser !== false && (await this.dmAllowed(input.guildId))) {
       const hintedCaseNumber = await nextCaseNumber(this.ctx.prisma, input.guildId);
-      dmSent = await this.sendCaseDmToUser(user, { type: 'BAN', caseNumber: hintedCaseNumber, reason: input.reason ?? null }, guild.name);
+      dmSent = await this.sendCaseDmToUser(
+        user,
+        { type: 'BAN', caseNumber: hintedCaseNumber, reason: input.reason ?? null },
+        guild.name,
+      );
     }
 
-    await guild.bans.create(input.targetId, { reason: input.reason, deleteMessageSeconds: input.deleteMessageSeconds ?? 0 });
+    await guild.bans.create(input.targetId, {
+      reason: input.reason,
+      deleteMessageSeconds: input.deleteMessageSeconds ?? 0,
+    });
 
     const row = await this.createCase({
       guildId: input.guildId,
@@ -527,10 +621,17 @@ export class ModerationServiceImpl implements ModerationService {
     let dmSent = false;
     if (user && input.dmUser !== false && (await this.dmAllowed(input.guildId))) {
       const hintedCaseNumber = await nextCaseNumber(this.ctx.prisma, input.guildId);
-      dmSent = await this.sendCaseDmToUser(user, { type: 'SOFTBAN', caseNumber: hintedCaseNumber, reason: input.reason ?? null }, guild.name);
+      dmSent = await this.sendCaseDmToUser(
+        user,
+        { type: 'SOFTBAN', caseNumber: hintedCaseNumber, reason: input.reason ?? null },
+        guild.name,
+      );
     }
 
-    await guild.bans.create(input.targetId, { reason: input.reason ?? 'Softban', deleteMessageSeconds: input.deleteMessageSeconds ?? 86400 });
+    await guild.bans.create(input.targetId, {
+      reason: input.reason ?? 'Softban',
+      deleteMessageSeconds: input.deleteMessageSeconds ?? 86400,
+    });
     await guild.bans.remove(input.targetId, 'Softban cleanup — automatic unban after message purge.');
 
     const row = await this.createCase({
@@ -591,8 +692,14 @@ export class ModerationServiceImpl implements ModerationService {
       content: m.content,
       ageMs: now - m.createdTimestamp,
     }));
-    const selected = filterMessagesForPurge(candidates, { userId: input.userId, contains: input.contains, limit: input.count });
-    const toDelete = selected.map((m) => byId.get(m.id)).filter((m): m is NonNullable<typeof m> => Boolean(m));
+    const selected = filterMessagesForPurge(candidates, {
+      userId: input.userId,
+      contains: input.contains,
+      limit: input.count,
+    });
+    const toDelete = selected
+      .map((m) => byId.get(m.id))
+      .filter((m): m is NonNullable<typeof m> => Boolean(m));
 
     let deletedCount = 0;
     if (toDelete.length > 0) {
@@ -608,7 +715,12 @@ export class ModerationServiceImpl implements ModerationService {
       reason: input.reason,
       source: input.source,
       dmUser: false,
-      metadata: { count: deletedCount, channelId: input.channelId, filteredByUser: Boolean(input.userId), filteredByContent: Boolean(input.contains) },
+      metadata: {
+        count: deletedCount,
+        channelId: input.channelId,
+        filteredByUser: Boolean(input.userId),
+        filteredByContent: Boolean(input.contains),
+      },
     });
 
     return { case: row, deletedCount };
@@ -617,8 +729,13 @@ export class ModerationServiceImpl implements ModerationService {
   async lock(input: ChannelActionInput): Promise<ModerationCase> {
     const guild = await this.fetchGuild(input.guildId);
     const channel = await resolveTextChannel(guild, input.channelId);
-    if (!channel || !('permissionOverwrites' in channel)) throw new ValidationError('That channel cannot be locked.');
-    await channel.permissionOverwrites.edit(guild.roles.everyone, { SendMessages: false, SendMessagesInThreads: false }, { reason: input.reason });
+    if (!channel || !('permissionOverwrites' in channel))
+      throw new ValidationError('That channel cannot be locked.');
+    await channel.permissionOverwrites.edit(
+      guild.roles.everyone,
+      { SendMessages: false, SendMessagesInThreads: false },
+      { reason: input.reason },
+    );
 
     return this.createCase({
       guildId: input.guildId,
@@ -635,8 +752,13 @@ export class ModerationServiceImpl implements ModerationService {
   async unlock(input: ChannelActionInput): Promise<ModerationCase> {
     const guild = await this.fetchGuild(input.guildId);
     const channel = await resolveTextChannel(guild, input.channelId);
-    if (!channel || !('permissionOverwrites' in channel)) throw new ValidationError('That channel cannot be unlocked.');
-    await channel.permissionOverwrites.edit(guild.roles.everyone, { SendMessages: null, SendMessagesInThreads: null }, { reason: input.reason });
+    if (!channel || !('permissionOverwrites' in channel))
+      throw new ValidationError('That channel cannot be unlocked.');
+    await channel.permissionOverwrites.edit(
+      guild.roles.everyone,
+      { SendMessages: null, SendMessagesInThreads: null },
+      { reason: input.reason },
+    );
 
     return this.createCase({
       guildId: input.guildId,
@@ -653,7 +775,8 @@ export class ModerationServiceImpl implements ModerationService {
   async slowmode(input: SlowmodeInput): Promise<ModerationCase> {
     const guild = await this.fetchGuild(input.guildId);
     const channel = await resolveTextChannel(guild, input.channelId);
-    if (!channel || !('setRateLimitPerUser' in channel)) throw new ValidationError('Slowmode cannot be set on that channel.');
+    if (!channel || !('setRateLimitPerUser' in channel))
+      throw new ValidationError('Slowmode cannot be set on that channel.');
     await channel.setRateLimitPerUser(input.seconds ?? 0, input.reason);
 
     return this.createCase({
@@ -712,24 +835,41 @@ export class ModerationServiceImpl implements ModerationService {
 
   addNote(input: AddNoteInput): Promise<ModerationNote> {
     return this.ctx.prisma.moderationNote.create({
-      data: { guildId: input.guildId, userId: input.userId, authorId: input.authorId, content: input.content.trim() },
+      data: {
+        guildId: input.guildId,
+        userId: input.userId,
+        authorId: input.authorId,
+        content: input.content.trim(),
+      },
     });
   }
 
   listNotes(guildId: string, userId: string): Promise<ModerationNote[]> {
-    return this.ctx.prisma.moderationNote.findMany({ where: { guildId, userId, deletedAt: null }, orderBy: { createdAt: 'desc' } });
+    return this.ctx.prisma.moderationNote.findMany({
+      where: { guildId, userId, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   listWarnings(input: ListWarningsInput): Promise<ModerationWarning[]> {
     return this.ctx.prisma.moderationWarning.findMany({
-      where: { guildId: input.guildId, ...(input.userId ? { userId: input.userId } : {}), ...(input.activeOnly ? { active: true } : {}) },
+      where: {
+        guildId: input.guildId,
+        ...(input.userId ? { userId: input.userId } : {}),
+        ...(input.activeOnly ? { active: true } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
   }
 
   /** Clears one active warning (or, if `warningId` is omitted, every active warning for the user). */
-  async clearWarnings(guildId: string, userId: string, clearedBy: string, warningId?: string): Promise<number> {
+  async clearWarnings(
+    guildId: string,
+    userId: string,
+    clearedBy: string,
+    warningId?: string,
+  ): Promise<number> {
     const result = await this.ctx.prisma.moderationWarning.updateMany({
       where: { guildId, userId, active: true, ...(warningId ? { id: warningId } : {}) },
       data: { active: false, clearedAt: new Date(), clearedBy },
@@ -758,10 +898,19 @@ export class ModerationServiceImpl implements ModerationService {
     });
 
     await this.postAppealPrompt(appeal, caseNumber).catch((err: unknown) =>
-      this.ctx.logger.warn({ err: String(err), appealId: appeal.id }, 'moderation: failed to post appeal prompt'),
+      this.ctx.logger.warn(
+        { err: String(err), appealId: appeal.id },
+        'moderation: failed to post appeal prompt',
+      ),
     );
 
-    this.ctx.events.emit('moderation.appealOpened', { guildId: input.guildId, appealId: appeal.id, caseId: caseId ?? '', caseNumber: caseNumber ?? 0, userId: input.userId });
+    this.ctx.events.emit('moderation.appealOpened', {
+      guildId: input.guildId,
+      appealId: appeal.id,
+      caseId: caseId ?? '',
+      caseNumber: caseNumber ?? 0,
+      userId: input.userId,
+    });
 
     return { appealId: appeal.id };
   }
@@ -779,14 +928,26 @@ export class ModerationServiceImpl implements ModerationService {
         {
           type: 1,
           components: [
-            { type: 2, style: 3, label: 'Accept', custom_id: buildCustomId('moderation', 'appeal-accept', appeal.id) },
-            { type: 2, style: 4, label: 'Deny', custom_id: buildCustomId('moderation', 'appeal-deny', appeal.id) },
+            {
+              type: 2,
+              style: 3,
+              label: 'Accept',
+              custom_id: buildCustomId('moderation', 'appeal-accept', appeal.id),
+            },
+            {
+              type: 2,
+              style: 4,
+              label: 'Deny',
+              custom_id: buildCustomId('moderation', 'appeal-deny', appeal.id),
+            },
           ],
         },
       ],
     });
 
-    await this.ctx.prisma.moderationAppeal.update({ where: { id: appeal.id }, data: { staffMessageId: message.id } }).catch(() => undefined);
+    await this.ctx.prisma.moderationAppeal
+      .update({ where: { id: appeal.id }, data: { staffMessageId: message.id } })
+      .catch(() => undefined);
   }
 
   /** Bot-path decision (Accept/Deny buttons on the appeal prompt). Dashboard decisions write the DB directly and are picked up by the `appeal-sync` job. */
@@ -802,7 +963,7 @@ export class ModerationServiceImpl implements ModerationService {
     });
 
     await this.applyAppealDecisionEffects(updated);
-    await this.markAppealApplied(updated.id);
+    await this.markAppealEffectsApplied(updated.id);
 
     await this.ctx.audit({
       guildId: input.guildId,
@@ -820,12 +981,16 @@ export class ModerationServiceImpl implements ModerationService {
 
   /** DMs the appellant and, on acceptance, reverses a still-active TIMEOUT automatically (offers an "Unban now" button for BAN). Shared by the bot's own Accept/Deny buttons and the `appeal-sync` job (dashboard decisions). */
   async applyAppealDecisionEffects(appeal: ModerationAppeal): Promise<void> {
-    const caseRow = appeal.caseId ? await this.ctx.prisma.moderationCase.findUnique({ where: { id: appeal.caseId } }) : null;
+    const caseRow = appeal.caseId
+      ? await this.ctx.prisma.moderationCase.findUnique({ where: { id: appeal.caseId } })
+      : null;
     const accepted = appeal.status === 'ACCEPTED';
 
     const user = await this.fetchUser(appeal.userId);
     if (user) {
-      await safeDm(user, { embeds: [buildAppealDecisionEmbed(accepted, caseRow?.caseNumber ?? null, appeal.decisionNote)] }).catch(() => undefined);
+      await safeDm(user, {
+        embeds: [buildAppealDecisionEmbed(accepted, caseRow?.caseNumber ?? null, appeal.decisionNote)],
+      }).catch(() => undefined);
     }
 
     if (!accepted || !caseRow) {
@@ -848,11 +1013,17 @@ export class ModerationServiceImpl implements ModerationService {
         await member.timeout(null, `Appeal accepted for case #${caseRow.caseNumber}`);
         await this.markExpiredForActiveTimeout(appeal.guildId, appeal.userId);
       } catch (err) {
-        this.ctx.logger.warn({ err: String(err), appealId: appeal.id }, 'moderation: could not auto-remove timeout after accepted appeal');
+        this.ctx.logger.warn(
+          { err: String(err), appealId: appeal.id },
+          'moderation: could not auto-remove timeout after accepted appeal',
+        );
       }
     } else if (caseRow.type === 'BAN') {
       await this.postUnbanOfferButton(appeal, caseRow.caseNumber).catch((err: unknown) =>
-        this.ctx.logger.warn({ err: String(err), appealId: appeal.id }, 'moderation: failed to post unban-now offer'),
+        this.ctx.logger.warn(
+          { err: String(err), appealId: appeal.id },
+          'moderation: failed to post unban-now offer',
+        ),
       );
     }
 
@@ -879,42 +1050,60 @@ export class ModerationServiceImpl implements ModerationService {
       components: [
         {
           type: 1,
-          components: [{ type: 2, style: 3, label: 'Unban now', custom_id: buildCustomId('moderation', 'appeal-unban', appeal.id) }],
+          components: [
+            {
+              type: 2,
+              style: 3,
+              label: 'Unban now',
+              custom_id: buildCustomId('moderation', 'appeal-unban', appeal.id),
+            },
+          ],
         },
       ],
       allowedMentions: { parse: [] },
     });
   }
 
-  private appealAppliedKey(appealId: string): string {
-    return redisKey('moderation', 'appeal-applied', appealId);
+  private appealSyncLockKey(appealId: string): string {
+    return redisKey('moderation', 'appeal-sync-lock', appealId);
   }
 
-  private async markAppealApplied(appealId: string): Promise<void> {
-    await this.ctx.redis.set(this.appealAppliedKey(appealId), '1', 'EX', APPEAL_APPLIED_TTL_SEC);
+  /** Durably marks `applyAppealDecisionEffects` as done for this appeal — the source of truth `syncDashboardDecidedAppeals`
+   * skips on, so it can never re-fire after a TTL cache expires or a Redis flush. */
+  private async markAppealEffectsApplied(appealId: string): Promise<void> {
+    await this.ctx.prisma.moderationAppeal
+      .update({ where: { id: appealId }, data: { effectsAppliedAt: new Date() } })
+      .catch(() => undefined);
   }
 
-  private async isAppealApplied(appealId: string): Promise<boolean> {
-    return (await this.ctx.redis.get(this.appealAppliedKey(appealId))) !== null;
-  }
-
-  /** Called by the `appeal-sync` repeatable job: applies Discord-side effects for appeals decided from the dashboard. */
+  /** Called by the `appeal-sync` repeatable job: applies Discord-side effects for appeals decided from the dashboard.
+   * Only ever considers appeals reviewed in the last 24h with `effectsAppliedAt` still null — `effectsAppliedAt`
+   * is a permanent DB marker (never re-applies once set, unlike the old 30-day Redis TTL cache), and a short-lived
+   * Redis key is used only as an in-flight lock to avoid two overlapping sync ticks racing on the same appeal. */
   async syncDashboardDecidedAppeals(): Promise<number> {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const pending = await this.ctx.prisma.moderationAppeal.findMany({
-      where: { status: { in: ['ACCEPTED', 'DENIED'] } },
+      where: { status: { in: ['ACCEPTED', 'DENIED'] }, effectsAppliedAt: null, reviewedAt: { gte: since } },
       orderBy: { reviewedAt: 'desc' },
       take: 200,
     });
 
     let applied = 0;
     for (const appeal of pending) {
-      if (await this.isAppealApplied(appeal.id)) continue;
+      const lockKey = this.appealSyncLockKey(appeal.id);
+      const acquired = await this.ctx.redis.set(lockKey, '1', 'PX', APPEAL_SYNC_LOCK_TTL_MS, 'NX');
+      if (acquired !== 'OK') continue;
       try {
         await this.applyAppealDecisionEffects(appeal);
-        await this.markAppealApplied(appeal.id);
+        await this.markAppealEffectsApplied(appeal.id);
         applied += 1;
       } catch (err) {
-        this.ctx.logger.error({ err: String(err), appealId: appeal.id }, 'moderation: appeal-sync failed to apply a decision');
+        this.ctx.logger.error(
+          { err: String(err), appealId: appeal.id },
+          'moderation: appeal-sync failed to apply a decision',
+        );
+      } finally {
+        await this.ctx.redis.del(lockKey);
       }
     }
     return applied;

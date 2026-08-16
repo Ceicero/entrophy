@@ -1,4 +1,10 @@
-import { PermissionsBitField, type Guild, type GuildBasedChannel, type GuildMember, type PermissionResolvable } from 'discord.js';
+import {
+  PermissionsBitField,
+  type Guild,
+  type GuildBasedChannel,
+  type GuildMember,
+  type PermissionResolvable,
+} from 'discord.js';
 import {
   PermissionError,
   hasStaffLevel,
@@ -27,16 +33,24 @@ function isGuildBasedChannel(target: Guild | GuildBasedChannel): target is Guild
  * Throws `PermissionError` if the bot lacks any of `required` permissions in `target` (a `Guild` for
  * guild-level permissions, or a `GuildBasedChannel` for channel-level overwrites).
  */
-export function assertBotPermissions(target: Guild | GuildBasedChannel, required: PermissionResolvable[], t: TFunction): void {
+export function assertBotPermissions(
+  target: Guild | GuildBasedChannel,
+  required: PermissionResolvable[],
+  t: TFunction,
+): void {
   const guild = isGuildBasedChannel(target) ? target.guild : target;
   const botMember = guild.members.me;
   const requiredBits = required.map((perm) => PermissionsBitField.resolve(perm));
 
   if (!botMember) {
-    throw new PermissionError(t('errors.bot_missing_permission', { permission: requiredBits.map(describePermission).join(', ') }));
+    throw new PermissionError(
+      t('errors.bot_missing_permission', { permission: requiredBits.map(describePermission).join(', ') }),
+    );
   }
 
-  const have = isGuildBasedChannel(target) ? (target.permissionsFor(botMember) ?? new PermissionsBitField(0n)) : botMember.permissions;
+  const have = isGuildBasedChannel(target)
+    ? (target.permissionsFor(botMember) ?? new PermissionsBitField(0n))
+    : botMember.permissions;
   const missing = missingPermissions(have.bitfield, requiredBits);
 
   if (missing.length > 0) {

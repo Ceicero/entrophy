@@ -30,7 +30,14 @@ registerPluginLocales('roles', { en });
 
 export const plugin = definePlugin({
   manifest,
-  commands: [rolesCommand, welcomeCommand, goodbyeCommand, verifyCommand, verificationCommand, onboardingCommand],
+  commands: [
+    rolesCommand,
+    welcomeCommand,
+    goodbyeCommand,
+    verifyCommand,
+    verificationCommand,
+    onboardingCommand,
+  ],
   components: [
     panelCreateModalHandler,
     panelToggleHandler,
@@ -42,14 +49,24 @@ export const plugin = definePlugin({
     welcomeEmbedModalHandler,
     goodbyeEmbedModalHandler,
   ],
-  events: [memberJoinHandler, memberLeaveHandler, memberUpdateHandler, reactionAddHandler, reactionRemoveHandler],
+  events: [
+    memberJoinHandler,
+    memberLeaveHandler,
+    memberUpdateHandler,
+    reactionAddHandler,
+    reactionRemoveHandler,
+  ],
   jobs: [captchaPollJob],
   async onLoad(ctx) {
     ctx.services.register('roles', createRolesService(ctx));
   },
   async health(ctx) {
     if (!ctx.intentsEnabled.guildMembers) {
-      return { status: 'degraded', details: 'GuildMembers intent is off — welcome/goodbye, role persistence, and the account-age gate are unavailable until it is enabled.' };
+      return {
+        status: 'degraded',
+        details:
+          'GuildMembers intent is off — welcome/goodbye, role persistence, and the account-age gate are unavailable until it is enabled.',
+      };
     }
     return { status: 'ok' };
   },

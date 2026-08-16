@@ -20,7 +20,9 @@ describe('getWeatherAdapter (provider selection)', () => {
 
   it('returns null for openweathermap without a key, an adapter with one', () => {
     expect(getWeatherAdapter({ WEATHER_PROVIDER: 'openweathermap' })).toBeNull();
-    expect(getWeatherAdapter({ WEATHER_PROVIDER: 'openweathermap', OPENWEATHERMAP_API_KEY: 'k' })).toBeInstanceOf(OpenWeatherMapAdapter);
+    expect(
+      getWeatherAdapter({ WEATHER_PROVIDER: 'openweathermap', OPENWEATHERMAP_API_KEY: 'k' }),
+    ).toBeInstanceOf(OpenWeatherMapAdapter);
   });
 });
 
@@ -28,9 +30,21 @@ describe('OpenMeteoWeatherAdapter', () => {
   it('geocodes then fetches the forecast, mapping the WMO weather code to a description', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse({ results: [{ name: 'Berlin', country: 'Germany', latitude: 52.52, longitude: 13.405 }] }))
       .mockResolvedValueOnce(
-        jsonResponse({ current: { temperature_2m: 18, apparent_temperature: 17, relative_humidity_2m: 60, wind_speed_10m: 10, weather_code: 3 } }),
+        jsonResponse({
+          results: [{ name: 'Berlin', country: 'Germany', latitude: 52.52, longitude: 13.405 }],
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          current: {
+            temperature_2m: 18,
+            apparent_temperature: 17,
+            relative_humidity_2m: 60,
+            wind_speed_10m: 10,
+            weather_code: 3,
+          },
+        }),
       );
 
     const adapter = new OpenMeteoWeatherAdapter(fetchMock);
@@ -46,7 +60,13 @@ describe('OpenMeteoWeatherAdapter', () => {
     expect(forecastUrl.searchParams.get('latitude')).toBe('52.52');
     expect(forecastUrl.searchParams.get('temperature_unit')).toBe('celsius');
 
-    expect(result).toMatchObject({ locationName: 'Berlin, Germany', temperature: 18, conditionDescription: 'Overcast', units: 'metric', provider: 'open-meteo' });
+    expect(result).toMatchObject({
+      locationName: 'Berlin, Germany',
+      temperature: 18,
+      conditionDescription: 'Overcast',
+      units: 'metric',
+      provider: 'open-meteo',
+    });
   });
 
   it('uses fahrenheit/mph for imperial units', async () => {
@@ -72,9 +92,17 @@ describe('OpenMeteoWeatherAdapter', () => {
 
 describe('OpenWeatherMapAdapter', () => {
   it('fetches with the API key and units, mapping the response', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ name: 'Paris', sys: { country: 'FR' }, main: { temp: 15, feels_like: 14, humidity: 55 }, wind: { speed: 5 }, weather: [{ description: 'clear sky' }] }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({
+          name: 'Paris',
+          sys: { country: 'FR' },
+          main: { temp: 15, feels_like: 14, humidity: 55 },
+          wind: { speed: 5 },
+          weather: [{ description: 'clear sky' }],
+        }),
+      );
     const adapter = new OpenWeatherMapAdapter('test-key', fetchMock);
 
     const result = await adapter.getWeather('Paris', 'metric');
@@ -82,11 +110,18 @@ describe('OpenWeatherMapAdapter', () => {
     const url = new URL((fetchMock.mock.calls[0] as [string])[0]);
     expect(url.searchParams.get('appid')).toBe('test-key');
     expect(url.searchParams.get('units')).toBe('metric');
-    expect(result).toMatchObject({ locationName: 'Paris, FR', temperature: 15, conditionDescription: 'clear sky', provider: 'openweathermap' });
+    expect(result).toMatchObject({
+      locationName: 'Paris, FR',
+      temperature: 15,
+      conditionDescription: 'clear sky',
+      provider: 'openweathermap',
+    });
   });
 
   it('throws a "not found" WeatherAdapterError on a 404', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ cod: '404', message: 'city not found' }, false, 404));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ cod: '404', message: 'city not found' }, false, 404));
     const adapter = new OpenWeatherMapAdapter('test-key', fetchMock);
     await expect(adapter.getWeather('Nowhereville', 'metric')).rejects.toThrow(/could not find/i);
   });

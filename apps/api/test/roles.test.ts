@@ -48,7 +48,8 @@ function roleGroupOverrides() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         findMany: async (args: any) => [...rows.values()].filter((r) => r.guildId === args?.where?.guildId),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        findFirst: async (args: any) => [...rows.values()].find((r) => r.id === args.where.id && r.guildId === args.where.guildId) ?? null,
+        findFirst: async (args: any) =>
+          [...rows.values()].find((r) => r.id === args.where.id && r.guildId === args.where.guildId) ?? null,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         update: async (args: any) => {
           const existing = rows.get(args.where.id)!;
@@ -73,7 +74,11 @@ async function authedContext(overrides: PrismaStubOverrides = {}) {
   const { app, redis, queues } = await buildTestApp(overrides);
   const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
   await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-  const mutHeaders = { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken };
+  const mutHeaders = {
+    cookie: cookieHeader,
+    origin: 'http://localhost:3000',
+    'x-csrf-token': session.csrfToken,
+  };
   return { app, queues, cookieHeader, mutHeaders };
 }
 
@@ -82,16 +87,30 @@ describe('roles: welcome config', () => {
     const { overrides } = pluginConfigOverrides();
     const { app, cookieHeader, mutHeaders } = await authedContext(overrides);
 
-    const setChannel = await app.inject({ method: 'PUT', url: `/guilds/${GUILD_ID}/roles/welcome`, headers: mutHeaders, payload: { channelId: '111', enabled: true } });
+    const setChannel = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/welcome`,
+      headers: mutHeaders,
+      payload: { channelId: '111', enabled: true },
+    });
     expect(setChannel.statusCode).toBe(200);
     expect(setChannel.json()).toMatchObject({ enabled: true, channelId: '111', message: null });
 
-    const setMessage = await app.inject({ method: 'PUT', url: `/guilds/${GUILD_ID}/roles/welcome`, headers: mutHeaders, payload: { message: 'Welcome {user}!' } });
+    const setMessage = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/welcome`,
+      headers: mutHeaders,
+      payload: { message: 'Welcome {user}!' },
+    });
     expect(setMessage.statusCode).toBe(200);
     // channelId from the first PUT must still be present — proves the merge, not a replace.
     expect(setMessage.json()).toMatchObject({ enabled: true, channelId: '111', message: 'Welcome {user}!' });
 
-    const get = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/roles/welcome`, headers: { cookie: cookieHeader } });
+    const get = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/roles/welcome`,
+      headers: { cookie: cookieHeader },
+    });
     expect(get.statusCode).toBe(200);
     expect(get.json()).toMatchObject({ enabled: true, channelId: '111', message: 'Welcome {user}!' });
 
@@ -102,13 +121,22 @@ describe('roles: welcome config', () => {
     const { overrides } = pluginConfigOverrides();
     const { app, queues, mutHeaders } = await authedContext(overrides);
 
-    const res = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/roles/welcome/test`, headers: mutHeaders, payload: { channelId: '222' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/roles/welcome/test`,
+      headers: mutHeaders,
+      payload: { channelId: '222' },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true, queued: true });
 
     const job = queues.calls.find((c) => c.queue === 'bot-actions');
     expect(job).toBeDefined();
-    expect(job!.data).toMatchObject({ type: 'roles.testWelcome', guildId: GUILD_ID, payload: { channelId: '222', section: 'welcome' } });
+    expect(job!.data).toMatchObject({
+      type: 'roles.testWelcome',
+      guildId: GUILD_ID,
+      payload: { channelId: '222', section: 'welcome' },
+    });
 
     await app.close();
   });
@@ -127,20 +155,42 @@ describe('roles: groups', () => {
     });
     expect(create.statusCode).toBe(201);
     const created = create.json();
-    expect(created).toMatchObject({ name: 'Region', roleIds: ['1', '2'], exclusive: true, maxSelections: null });
+    expect(created).toMatchObject({
+      name: 'Region',
+      roleIds: ['1', '2'],
+      exclusive: true,
+      maxSelections: null,
+    });
 
-    const list = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/roles/groups`, headers: { cookie: cookieHeader } });
+    const list = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/roles/groups`,
+      headers: { cookie: cookieHeader },
+    });
     expect(list.statusCode).toBe(200);
     expect(list.json()).toHaveLength(1);
 
-    const update = await app.inject({ method: 'PUT', url: `/guilds/${GUILD_ID}/roles/groups/${created.id}`, headers: mutHeaders, payload: { exclusive: false, maxSelections: 2 } });
+    const update = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/groups/${created.id}`,
+      headers: mutHeaders,
+      payload: { exclusive: false, maxSelections: 2 },
+    });
     expect(update.statusCode).toBe(200);
     expect(update.json()).toMatchObject({ exclusive: false, maxSelections: 2, roleIds: ['1', '2'] });
 
-    const del = await app.inject({ method: 'DELETE', url: `/guilds/${GUILD_ID}/roles/groups/${created.id}`, headers: mutHeaders });
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/roles/groups/${created.id}`,
+      headers: mutHeaders,
+    });
     expect(del.statusCode).toBe(204);
 
-    const listAfter = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/roles/groups`, headers: { cookie: cookieHeader } });
+    const listAfter = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/roles/groups`,
+      headers: { cookie: cookieHeader },
+    });
     expect(listAfter.json()).toHaveLength(0);
 
     await app.close();
@@ -149,7 +199,12 @@ describe('roles: groups', () => {
   it('404s updating a group that does not exist', async () => {
     const { overrides } = roleGroupOverrides();
     const { app, mutHeaders } = await authedContext(overrides);
-    const res = await app.inject({ method: 'PUT', url: `/guilds/${GUILD_ID}/roles/groups/does-not-exist`, headers: mutHeaders, payload: { name: 'x' } });
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/groups/does-not-exist`,
+      headers: mutHeaders,
+      payload: { name: 'x' },
+    });
     expect(res.statusCode).toBe(404);
     await app.close();
   });
@@ -158,7 +213,9 @@ describe('roles: groups', () => {
 describe('roles: verification decide', () => {
   it('enqueues a bot-action job with the requestId/approve/note payload shape', async () => {
     const { app, queues, mutHeaders } = await authedContext({
-      verificationRequest: { findFirst: async () => ({ id: 'req1', guildId: GUILD_ID, userId: 'u1', status: 'PENDING' }) },
+      verificationRequest: {
+        findFirst: async () => ({ id: 'req1', guildId: GUILD_ID, userId: 'u1', status: 'PENDING' }),
+      },
       guild: { findUnique: async () => ({ id: GUILD_ID, botPresent: true }) },
     });
 
@@ -171,7 +228,11 @@ describe('roles: verification decide', () => {
     expect(res.statusCode).toBe(200);
 
     const job = queues.calls.find((c) => c.queue === 'bot-actions');
-    expect(job!.data).toMatchObject({ type: 'roles.verificationDecision', guildId: GUILD_ID, payload: { requestId: 'req1', approve: true, note: 'looks good' } });
+    expect(job!.data).toMatchObject({
+      type: 'roles.verificationDecision',
+      guildId: GUILD_ID,
+      payload: { requestId: 'req1', approve: true, note: 'looks good' },
+    });
 
     await app.close();
   });
@@ -181,7 +242,12 @@ describe('roles: verification decide', () => {
       verificationRequest: { findFirst: async () => null },
       guild: { findUnique: async () => ({ id: GUILD_ID, botPresent: true }) },
     });
-    const res = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/roles/verification/missing/decide`, headers: mutHeaders, payload: { approve: true } });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/roles/verification/missing/decide`,
+      headers: mutHeaders,
+      payload: { approve: true },
+    });
     expect(res.statusCode).toBe(404);
     await app.close();
   });
@@ -192,16 +258,30 @@ describe('roles: persistence', () => {
     const { overrides } = pluginConfigOverrides();
     const { app, cookieHeader, mutHeaders } = await authedContext(overrides);
 
-    const get = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/roles/persistence`, headers: { cookie: cookieHeader } });
+    const get = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/roles/persistence`,
+      headers: { cookie: cookieHeader },
+    });
     expect(get.statusCode).toBe(200);
     expect(get.json()).toMatchObject({ enabled: false, maxDays: 30 });
     expect(get.json().disclosure).toMatch(/snapshot/i);
 
-    const on = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/roles/persistence`, headers: mutHeaders, payload: { enabled: true, maxDays: 45 } });
+    const on = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/roles/persistence`,
+      headers: mutHeaders,
+      payload: { enabled: true, maxDays: 45 },
+    });
     expect(on.statusCode).toBe(200);
     expect(on.json()).toMatchObject({ enabled: true, maxDays: 45 });
 
-    const toggleOnly = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/roles/persistence`, headers: mutHeaders, payload: { enabled: false } });
+    const toggleOnly = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/roles/persistence`,
+      headers: mutHeaders,
+      payload: { enabled: false },
+    });
     expect(toggleOnly.statusCode).toBe(200);
     expect(toggleOnly.json()).toMatchObject({ enabled: false, maxDays: 45 }); // maxDays preserved from the previous write
 

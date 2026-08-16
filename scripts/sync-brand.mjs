@@ -11,7 +11,10 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_DIR = join(REPO_ROOT, 'assets', 'brand');
 // PNG (lossless) takes precedence over JPG if both exist, per ARCHITECTURE.md §22.
 const CANDIDATES = ['entrophy-skull.png', 'entrophy-skull.jpg'];
-const TARGET_DIRS = [join(REPO_ROOT, 'apps', 'web', 'public', 'brand'), join(REPO_ROOT, 'apps', 'dashboard', 'public', 'brand')];
+const TARGET_DIRS = [
+  join(REPO_ROOT, 'apps', 'web', 'public', 'brand'),
+  join(REPO_ROOT, 'apps', 'dashboard', 'public', 'brand'),
+];
 // The web app's `Logo` component statically imports this copy of the manifest (same pattern as the generated
 // `src/data/commands.json` / `src/data/invite.json`) so the logo path is known at build time in every
 // environment, including the Docker standalone runner where `public/` isn't readable via relative fs paths from
@@ -50,7 +53,11 @@ async function syncToTarget(targetDir, source) {
     return;
   }
   await copyFile(source.path, join(targetDir, source.name));
-  await writeFile(join(targetDir, 'manifest.json'), JSON.stringify({ logo: `/brand/${source.name}` }, null, 2) + '\n', 'utf8');
+  await writeFile(
+    join(targetDir, 'manifest.json'),
+    JSON.stringify({ logo: `/brand/${source.name}` }, null, 2) + '\n',
+    'utf8',
+  );
 }
 
 async function syncAppleIcon(source) {
@@ -70,7 +77,9 @@ async function main() {
   try {
     const source = await findSourceFile();
     if (!source) {
-      console.warn(`[sync-brand] No brand logo found in ${SOURCE_DIR} (looked for ${CANDIDATES.join(', ')}). Skipping — this is not an error.`);
+      console.warn(
+        `[sync-brand] No brand logo found in ${SOURCE_DIR} (looked for ${CANDIDATES.join(', ')}). Skipping — this is not an error.`,
+      );
     }
     for (const targetDir of TARGET_DIRS) {
       await syncToTarget(targetDir, source);
@@ -87,7 +96,10 @@ async function main() {
     }
   } catch (err) {
     // Never fail a build over this — log and exit 0.
-    console.warn('[sync-brand] Non-fatal error while syncing brand assets:', err instanceof Error ? err.message : err);
+    console.warn(
+      '[sync-brand] Non-fatal error while syncing brand assets:',
+      err instanceof Error ? err.message : err,
+    );
   }
 }
 

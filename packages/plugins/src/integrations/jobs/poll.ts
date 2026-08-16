@@ -17,7 +17,11 @@ function makePollJob(name: string, providerId: IntegrationProviderId, cronPatter
       if (!isProviderEnvSatisfied(provider.requiredEnv, ctx.env)) return;
 
       const connections = await ctx.prisma.integrationConnection.findMany({
-        where: { provider: PROVIDER_ENUM_MAP[providerId], status: { in: ['CONNECTED', 'ERROR'] }, deletedAt: null },
+        where: {
+          provider: PROVIDER_ENUM_MAP[providerId],
+          status: { in: ['CONNECTED', 'ERROR'] },
+          deletedAt: null,
+        },
       });
 
       for (const connection of connections) {
@@ -25,7 +29,10 @@ function makePollJob(name: string, providerId: IntegrationProviderId, cronPatter
           await provider.poll(ctx, connection);
         } catch (err) {
           await markConnectionError(ctx, connection.id, err);
-          ctx.logger.warn({ err, connectionId: connection.id, provider: providerId }, `integrations: ${providerId} poll failed`);
+          ctx.logger.warn(
+            { err, connectionId: connection.id, provider: providerId },
+            `integrations: ${providerId} poll failed`,
+          );
         }
       }
     },
@@ -37,5 +44,9 @@ export const pollYoutubeJob = makePollJob('poll-youtube', 'youtube', '*/10 * * *
 export const pollRedditJob = makePollJob('poll-reddit', 'reddit', '*/5 * * * *');
 export const pollSteamJob = makePollJob('poll-steam', 'steam', '*/30 * * * *');
 export const pollGoogleCalendarJob = makePollJob('poll-google-calendar', 'google_calendar', '*/15 * * * *');
-export const pollMicrosoftCalendarJob = makePollJob('poll-microsoft-calendar', 'microsoft_calendar', '*/15 * * * *');
+export const pollMicrosoftCalendarJob = makePollJob(
+  'poll-microsoft-calendar',
+  'microsoft_calendar',
+  '*/15 * * * *',
+);
 export const pollNotionJob = makePollJob('poll-notion', 'notion', '*/10 * * * *');

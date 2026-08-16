@@ -6,7 +6,7 @@ import { fetchDonationPresets } from '../../lib/donations';
 
 export const metadata: Metadata = {
   title: 'Donate',
-  description: 'Support Entrophy\'s hosting and development with a one-time donation via Stripe Checkout.',
+  description: "Support Entrophy's hosting and development with a one-time donation via Stripe Checkout.",
 };
 
 // Fetched at request time (never at build time) — donations availability depends on whether the API has
@@ -29,8 +29,9 @@ export default async function DonatePage() {
           <Glass className="p-8 text-center">
             <h2 className="text-lg font-semibold text-grey-7">Donations aren&apos;t set up yet</h2>
             <p className="mt-3 text-sm leading-relaxed text-grey-3">
-              This deployment of Entrophy hasn&apos;t configured Stripe yet, so donations aren&apos;t available right now. Check back later,
-              or reach out through the support server if you&apos;d like to help another way.
+              This deployment of Entrophy hasn&apos;t configured Stripe yet, so donations aren&apos;t
+              available right now. Check back later, or reach out through the support server if you&apos;d
+              like to help another way.
             </p>
           </Glass>
         )}

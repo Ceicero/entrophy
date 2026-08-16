@@ -1,4 +1,4 @@
-import { ExternalServiceError } from '@entrophy/core';
+import { assertPublicHttpUrl, ExternalServiceError, SsrfError } from '@entrophy/core';
 import { fetchWithTimeout } from './fetch-with-timeout';
 import type { AiCompleteRequest, AiCompleteResponse, AiProvider } from './types';
 
@@ -24,11 +24,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** OpenAI Chat Completions API (also used for any OpenAI-compatible `baseUrl` override — same request/response shape). */
 export function createOpenAiProvider(options: OpenAiProviderOptions): AiProvider {
-  const baseUrl = (options.baseUrl && options.baseUrl.trim().length > 0 ? options.baseUrl : DEFAULT_BASE_URL).replace(/\/+$/, '');
+  const isCustomBaseUrl = Boolean(options.baseUrl && options.baseUrl.trim().length > 0);
+  const baseUrl = (isCustomBaseUrl ? options.baseUrl! : DEFAULT_BASE_URL).replace(/\/+$/, '');
 
   return {
     id: 'openai',
     async complete(request: AiCompleteRequest): Promise<AiCompleteResponse> {
+      // Re-validate a custom (`compatible` provider) base URL right before every request — it may have been
+      // saved before SSRF validation existed, or DNS may have been re-pointed since. The default OpenAI base
+      // URL never needs this (fixed, trusted host).
+      if (isCustomBaseUrl) {
+        try {
+          await assertPublicHttpUrl(baseUrl);
+        } catch (err) {
+          throw new ExternalServiceError(
+            err instanceof SsrfError
+              ? `AI provider base URL is not allowed: ${err.message}`
+              : 'AI provider base URL failed validation.',
+          );
+        }
+      }
+
       const body = {
         model: options.model,
         messages: [{ role: 'system', content: request.system }, ...request.messages],

@@ -11,7 +11,9 @@ export const evaluateWordFilter: MessageEvaluator<Config> = async ({ message }, 
 
   for (const word of config.words) {
     const needle = config.caseSensitive ? word : word.toLowerCase();
-    const found = config.wholeWord ? new RegExp(`\\b${escapeRegExp(needle)}\\b`, config.caseSensitive ? '' : 'i').test(content) : content.includes(needle);
+    const found = config.wholeWord
+      ? new RegExp(`\\b${escapeRegExp(needle)}\\b`, config.caseSensitive ? '' : 'i').test(content)
+      : content.includes(needle);
 
     if (found) {
       return {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildDecidedFlagQueueComponents, buildFlagQueueComponents, buildFlagQueueEmbed, buildLedgerEmbed } from '../embeds';
+import {
+  buildDecidedFlagQueueComponents,
+  buildFlagQueueComponents,
+  buildFlagQueueEmbed,
+  buildLedgerEmbed,
+} from '../embeds';
 
 describe('buildLedgerEmbed', () => {
   it('includes the required fields (record, user, when) and never puts raw @everyone/@here in a field', () => {

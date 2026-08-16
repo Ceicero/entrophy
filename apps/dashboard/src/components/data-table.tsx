@@ -1,5 +1,14 @@
 import * as React from 'react';
-import { EmptyState, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@entrophy/ui';
+import {
+  EmptyState,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@entrophy/ui';
 import { ErrorState } from './error-state';
 
 export interface DataTableColumn<T> {

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import type { PluginSummary } from '@entrophy/types';
 import {
   Button,
@@ -35,8 +35,20 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 export default function PluginsPage() {
   const { guildId } = useParams<{ guildId: string }>();
+  const router = useRouter();
   const { data: plugins, isLoading, error, refetch } = usePlugins(guildId);
   const [configuring, setConfiguring] = React.useState<PluginSummary | null>(null);
+
+  // Plugins with a dedicated dashboard page (most non-trivial config shapes: nested objects, arrays of
+  // objects, etc.) get routed there instead of the generic auto-form drawer, which is meant for simpler
+  // plugins without one.
+  function handleConfigure(plugin: PluginSummary) {
+    if (plugin.dashboardPath) {
+      router.push(plugin.dashboardPath.replace('[guildId]', guildId));
+      return;
+    }
+    setConfiguring(plugin);
+  }
 
   const grouped = React.useMemo(() => {
     const map = new Map<string, PluginSummary[]>();
@@ -46,13 +58,18 @@ export default function PluginsPage() {
       map.set(plugin.category, list);
     }
     return [...map.entries()].sort(
-      (a, b) => (CATEGORY_ORDER.indexOf(a[0]) === -1 ? 99 : CATEGORY_ORDER.indexOf(a[0])) - (CATEGORY_ORDER.indexOf(b[0]) === -1 ? 99 : CATEGORY_ORDER.indexOf(b[0])),
+      (a, b) =>
+        (CATEGORY_ORDER.indexOf(a[0]) === -1 ? 99 : CATEGORY_ORDER.indexOf(a[0])) -
+        (CATEGORY_ORDER.indexOf(b[0]) === -1 ? 99 : CATEGORY_ORDER.indexOf(b[0])),
     );
   }, [plugins]);
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Plugins" description="Enable exactly what your server needs. Nothing here runs until you turn it on." />
+      <PageHeader
+        title="Plugins"
+        description="Enable exactly what your server needs. Nothing here runs until you turn it on."
+      />
 
       {error ? <ErrorState error={error} onRetry={() => refetch()} /> : null}
 
@@ -65,15 +82,25 @@ export default function PluginsPage() {
       ) : null}
 
       {!isLoading && !error && (!plugins || plugins.length === 0) ? (
-        <EmptyState title="No plugins available" description="The plugin registry did not return any plugins." />
+        <EmptyState
+          title="No plugins available"
+          description="The plugin registry did not return any plugins."
+        />
       ) : null}
 
       {grouped.map(([category, list]) => (
         <section key={category} className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{CATEGORY_LABEL[category] ?? category}</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            {CATEGORY_LABEL[category] ?? category}
+          </h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {list.map((plugin) => (
-              <PluginCard key={plugin.id} plugin={plugin} guildId={guildId} onConfigure={() => setConfiguring(plugin)} />
+              <PluginCard
+                key={plugin.id}
+                plugin={plugin}
+                guildId={guildId}
+                onConfigure={() => handleConfigure(plugin)}
+              />
             ))}
           </div>
         </section>
@@ -81,14 +108,28 @@ export default function PluginsPage() {
 
       <Sheet open={configuring !== null} onOpenChange={(open) => !open && setConfiguring(null)}>
         <SheetContent side="right" className="w-full sm:max-w-lg">
-          {configuring ? <PluginConfigSheetBody guildId={guildId} plugin={configuring} onClose={() => setConfiguring(null)} /> : null}
+          {configuring ? (
+            <PluginConfigSheetBody
+              guildId={guildId}
+              plugin={configuring}
+              onClose={() => setConfiguring(null)}
+            />
+          ) : null}
         </SheetContent>
       </Sheet>
     </div>
   );
 }
 
-function PluginConfigSheetBody({ guildId, plugin, onClose }: { guildId: string; plugin: PluginSummary; onClose: () => void }) {
+function PluginConfigSheetBody({
+  guildId,
+  plugin,
+  onClose,
+}: {
+  guildId: string;
+  plugin: PluginSummary;
+  onClose: () => void;
+}) {
   const { data, isLoading, error, refetch } = usePluginConfig<Record<string, unknown>>(guildId, plugin.id);
   const update = useUpdatePluginConfig<Record<string, unknown>>(guildId, plugin.id);
   const { toast } = useToast();
@@ -130,7 +171,13 @@ function PluginConfigSheetBody({ guildId, plugin, onClose }: { guildId: string; 
             ))}
           </div>
         ) : data ? (
-          <JsonSchemaForm schema={data.schema} value={draft} onChange={setDraft} guildId={guildId} disabled={update.isPending} />
+          <JsonSchemaForm
+            schema={data.schema}
+            value={draft}
+            onChange={setDraft}
+            guildId={guildId}
+            disabled={update.isPending}
+          />
         ) : null}
       </div>
 

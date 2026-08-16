@@ -62,3 +62,41 @@ Environment variables (see root `.env.example`):
 - `pnpm --filter @entrophy/dashboard build` (needs `NEXT_PUBLIC_API_URL` set; falls back to the local default)
 - `pnpm --filter @entrophy/dashboard test:e2e` — Playwright specs in `e2e/`. They self-skip unless `E2E_API_URL` is
   set to a running API instance with `E2E_TEST_MODE=true` (never enable that in production).
+
+### Running e2e tests locally
+
+The dashboard's own `test:e2e` (like the root `pnpm test:e2e`) is safe to run on any machine — with no API
+running it just prints "skipped" for every test in `e2e/`. To actually exercise `login.spec.ts` and
+`config.spec.ts`, start Postgres/Redis and a real API in test mode first:
+
+1. **Start Postgres + Redis** (from the repo root, needs Docker Desktop running):
+   ```bash
+   docker compose up -d postgres redis
+   ```
+2. **Point the API at them and enable test mode**, then run migrations and start the API (in a separate terminal,
+   also from the repo root):
+   ```bash
+   export DATABASE_URL=postgresql://entrophy:entrophy@localhost:5432/entrophy
+   export REDIS_URL=redis://localhost:6379
+   export E2E_TEST_MODE=true
+   export SESSION_SECRET=local-e2e-session-secret
+   export ENCRYPTION_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))")
+   pnpm db:migrate
+   pnpm --filter @entrophy/api dev
+   ```
+   (PowerShell: use `$env:NAME = "value"` instead of `export NAME=value`.) Wait for `GET http://localhost:3001/health`
+   to respond before continuing — `E2E_TEST_MODE=true` is what registers the `/auth/test-login` route the specs use
+   to sign in without real Discord OAuth, and it's refused outright in production regardless of the flag.
+3. **Run the dashboard e2e suite** against it (third terminal):
+   ```bash
+   export E2E_API_URL=http://localhost:3001
+   pnpm --filter @entrophy/dashboard test:e2e
+   ```
+   This also boots the dashboard itself via the Playwright `webServer` config (`next dev` on port 3000), so you
+   don't need to start it separately.
+4. When done, stop the compose services with `docker compose down` (add `-v` to also drop the seeded Postgres
+   volume).
+
+CI runs this same flow automatically in the `e2e` job of `.github/workflows/ci.yml` (Postgres/Redis as GitHub
+Actions services instead of `docker compose`), gated with `continue-on-error: true` so a flaky browser test never
+blocks a merge.

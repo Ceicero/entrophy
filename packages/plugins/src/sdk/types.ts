@@ -24,7 +24,8 @@ import type { PluginId, StaffLevel } from '@entrophy/types';
 import type { PlatformEvents, RateLimiterLike, AuditEntry, env as coreEnv } from '@entrophy/core';
 import type { ServiceRegistry } from './services';
 
-export type PluginCategory = 'admin' | 'moderation' | 'community' | 'utility' | 'integrations' | 'ai' | 'media';
+export type PluginCategory =
+  'admin' | 'moderation' | 'community' | 'utility' | 'integrations' | 'ai' | 'media';
 export type PrivilegedIntent = 'MessageContent' | 'GuildMembers' | 'GuildPresences';
 
 export interface PluginPermissionDoc {
@@ -138,7 +139,11 @@ export interface PluginContext {
   rateLimiter: RateLimiterLike;
   queue: (jobName: string) => Queue; // returns/creates queue `${pluginId}:${jobName}`
   getConfig: <T>(guildId: string) => Promise<T>; // this plugin's guild config with defaults applied
-  setConfig: <T>(guildId: string, patch: Partial<T>, actor: { id: string; source: 'bot' | 'dashboard' | 'system' }) => Promise<T>;
+  setConfig: <T>(
+    guildId: string,
+    patch: Partial<T>,
+    actor: { id: string; source: 'bot' | 'dashboard' | 'system' },
+  ) => Promise<T>;
   isEnabled: (guildId: string, pluginId?: PluginId) => Promise<boolean>;
   services: ServiceRegistry; // cross-plugin services (see §7.5)
   audit: (entry: Omit<AuditEntry, 'id' | 'createdAt'>) => Promise<void>;

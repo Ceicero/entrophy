@@ -11,7 +11,11 @@ export function ComingSoonPage({ title, description }: ComingSoonPageProps) {
   return (
     <div className="space-y-6">
       <PageHeader title={title} description={description} />
-      <EmptyState icon={<Construction />} title="This section is built in the next stage" description="Check back soon — this page will get its full dashboard experience in an upcoming build." />
+      <EmptyState
+        icon={<Construction />}
+        title="This section is built in the next stage"
+        description="Check back soon — this page will get its full dashboard experience in an upcoming build."
+      />
     </div>
   );
 }

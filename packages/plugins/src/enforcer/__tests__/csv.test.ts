@@ -62,6 +62,23 @@ describe('recordsToCsv', () => {
     const csv = recordsToCsv([row()]);
     const dataLine = csv.split('\r\n')[1];
     // recordNumber, kind, status, userId, source are non-null; every other column is null in the fixture.
-    expect(dataLine.split(',')).toEqual(['1', 'FLAG', 'PENDING', 'u1', '', '', '', '', 'AUTO', '', '', '', '', '', '', '2026-01-01T00:00:00.000Z']);
+    expect(dataLine.split(',')).toEqual([
+      '1',
+      'FLAG',
+      'PENDING',
+      'u1',
+      '',
+      '',
+      '',
+      '',
+      'AUTO',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '2026-01-01T00:00:00.000Z',
+    ]);
   });
 });

@@ -9,7 +9,14 @@ import type { Prisma, Ticket, TicketPanel } from '@entrophy/database';
 import type { CreateTicketInput, PluginContext, TicketsService } from '../sdk';
 import { assertBotPermissions, fetchMemberSafe, resolveTextChannel, safeDm } from '../sdk';
 import { ticketChannelName } from './channel-name';
-import { buildClosingSummaryEmbed, buildOpeningButtons, buildOpeningEmbed, buildPanelButtons, buildPanelEmbed, buildReopenButton } from './embeds';
+import {
+  buildClosingSummaryEmbed,
+  buildOpeningButtons,
+  buildOpeningEmbed,
+  buildPanelButtons,
+  buildPanelEmbed,
+  buildReopenButton,
+} from './embeds';
 import { validateIntakeAnswers } from './intake';
 import type { TicketIntakeField, TicketsConfig } from './manifest';
 import { withNextTicketNumber } from './number';
@@ -28,11 +35,16 @@ function intakeFormOf(panel: Pick<TicketPanel, 'intakeForm'> | null | undefined)
 }
 
 function authorTagOf(user: { username: string; discriminator: string }): string {
-  return user.discriminator && user.discriminator !== '0' ? `${user.username}#${user.discriminator}` : user.username;
+  return user.discriminator && user.discriminator !== '0'
+    ? `${user.username}#${user.discriminator}`
+    : user.username;
 }
 
 /** Fetches up to `MAX_TRANSCRIPT_MESSAGES` messages from a ticket's channel/thread, oldest last (Discord's default), for transcript building. */
-async function fetchTicketMessages(guild: Guild, ticket: Pick<Ticket, 'channelId' | 'threadId'>): Promise<TranscriptMessage[]> {
+async function fetchTicketMessages(
+  guild: Guild,
+  ticket: Pick<Ticket, 'channelId' | 'threadId'>,
+): Promise<TranscriptMessage[]> {
   const channelId = ticket.threadId ?? ticket.channelId;
   if (!channelId) return [];
 
@@ -80,7 +92,9 @@ export interface OpenTicketParams {
 export async function openTicket(ctx: PluginContext, params: OpenTicketParams): Promise<Ticket> {
   const config = await ctx.getConfig<TicketsConfig>(params.guildId);
 
-  const openCount = await ctx.prisma.ticket.count({ where: { guildId: params.guildId, openerId: params.openerId, status: 'OPEN' } });
+  const openCount = await ctx.prisma.ticket.count({
+    where: { guildId: params.guildId, openerId: params.openerId, status: 'OPEN' },
+  });
   if (openCount >= config.maxOpenPerUser) {
     throw new ValidationError(
       config.maxOpenPerUser === 1
@@ -94,7 +108,11 @@ export async function openTicket(ctx: PluginContext, params: OpenTicketParams): 
     validateIntakeAnswers(intakeFields, params.intake);
   }
 
-  const mode: Ticket['mode'] = params.panel ? params.panel.mode : config.mode === 'thread' ? 'THREAD' : 'CHANNEL';
+  const mode: Ticket['mode'] = params.panel
+    ? params.panel.mode
+    : config.mode === 'thread'
+      ? 'THREAD'
+      : 'CHANNEL';
   const supportRoleIds = params.panel ? params.panel.supportRoleIds : config.supportRoleIds;
   const categoryId = params.panel ? params.panel.categoryId : config.categoryId;
   const slaMinutes = params.panel ? (params.panel.slaMinutes ?? config.slaMinutes) : config.slaMinutes;
@@ -125,7 +143,11 @@ export async function openTicket(ctx: PluginContext, params: OpenTicketParams): 
 
   try {
     if (mode === 'CHANNEL') {
-      assertBotPermissions(guild, [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles], ctx.t);
+      assertBotPermissions(
+        guild,
+        [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageRoles],
+        ctx.t,
+      );
       const name = ticketChannelName(created.number, openerUser.username);
       const overwrites = buildTicketChannelOverwrites({
         everyoneRoleId: guild.roles.everyone.id,
@@ -144,18 +166,28 @@ export async function openTicket(ctx: PluginContext, params: OpenTicketParams): 
     } else {
       const parentChannelId = params.panel ? params.panel.channelId : params.parentChannelId;
       if (!parentChannelId) {
-        throw new ValidationError('Thread-mode tickets need a parent text channel. Run `/ticket open` in a text channel, or use a ticket panel.');
+        throw new ValidationError(
+          'Thread-mode tickets need a parent text channel. Run `/ticket open` in a text channel, or use a ticket panel.',
+        );
       }
-      assertBotPermissions(guild, [PermissionFlagsBits.CreatePrivateThreads, PermissionFlagsBits.ManageThreads], ctx.t);
+      assertBotPermissions(
+        guild,
+        [PermissionFlagsBits.CreatePrivateThreads, PermissionFlagsBits.ManageThreads],
+        ctx.t,
+      );
       const parent = await guild.channels.fetch(parentChannelId).catch(() => null);
       // Private threads are a GUILD_TEXT-only feature (Discord does not support them in announcement channels),
       // so the parent must be a plain text channel regardless of what channel types the panel-creation command
       // let staff pick for its `channel` option.
       if (!parent || parent.type !== ChannelType.GuildText) {
-        throw new AppError('ticket_thread_parent_invalid', 'The configured parent channel for thread-mode tickets is missing or is not a text channel.', {
-          status: 422,
-          expose: true,
-        });
+        throw new AppError(
+          'ticket_thread_parent_invalid',
+          'The configured parent channel for thread-mode tickets is missing or is not a text channel.',
+          {
+            status: 422,
+            expose: true,
+          },
+        );
       }
       const thread = await parent.threads.create({
         name: ticketChannelName(created.number, openerUser.username),
@@ -171,11 +203,22 @@ export async function openTicket(ctx: PluginContext, params: OpenTicketParams): 
     throw err;
   }
 
-  const updated = await ctx.prisma.ticket.update({ where: { id: created.id }, data: { channelId, threadId } });
-  const targetChannel = channelId ? await resolveTextChannel(guild, channelId) : threadId ? await guild.channels.fetch(threadId).catch(() => null) : null;
+  const updated = await ctx.prisma.ticket.update({
+    where: { id: created.id },
+    data: { channelId, threadId },
+  });
+  const targetChannel = channelId
+    ? await resolveTextChannel(guild, channelId)
+    : threadId
+      ? await guild.channels.fetch(threadId).catch(() => null)
+      : null;
 
   if (targetChannel && targetChannel.isTextBased()) {
-    const embed = buildOpeningEmbed(updated, updated.subject, (params.intake as Record<string, string> | null) ?? null);
+    const embed = buildOpeningEmbed(
+      updated,
+      updated.subject,
+      (params.intake as Record<string, string> | null) ?? null,
+    );
     const row = buildOpeningButtons(updated.id);
     const mentionRoleIds = mode === 'THREAD' ? supportRoleIds : [];
     const mentionText = [`<@${params.openerId}>`, ...mentionRoleIds.map((id) => `<@&${id}>`)].join(' ');
@@ -186,7 +229,9 @@ export async function openTicket(ctx: PluginContext, params: OpenTicketParams): 
         components: [row],
         allowedMentions: { users: [params.openerId], roles: mentionRoleIds },
       })
-      .catch((err) => ctx.logger.warn({ err, ticketId: updated.id }, 'tickets: failed to post opening embed'));
+      .catch((err) =>
+        ctx.logger.warn({ err, ticketId: updated.id }, 'tickets: failed to post opening embed'),
+      );
   }
 
   await ctx.audit({
@@ -199,7 +244,11 @@ export async function openTicket(ctx: PluginContext, params: OpenTicketParams): 
     after: { number: updated.number, mode: updated.mode, panelId: updated.panelId },
     source: 'bot',
   });
-  ctx.events.emit('ticket.opened', { guildId: params.guildId, ticketId: updated.id, userId: params.openerId });
+  ctx.events.emit('ticket.opened', {
+    guildId: params.guildId,
+    ticketId: updated.id,
+    userId: params.openerId,
+  });
 
   return updated;
 }
@@ -214,7 +263,9 @@ export interface CloseTicketParams {
 
 /** Closes a ticket: generates transcripts, delivers them, locks the channel/thread, and schedules deletion. */
 export async function closeTicketCore(ctx: PluginContext, params: CloseTicketParams): Promise<Ticket> {
-  const ticket = await ctx.prisma.ticket.findFirst({ where: { id: params.ticketId, guildId: params.guildId } });
+  const ticket = await ctx.prisma.ticket.findFirst({
+    where: { id: params.ticketId, guildId: params.guildId },
+  });
   if (!ticket) throw new NotFoundError('Ticket not found.');
   if (ticket.status === 'CLOSED') throw new ValidationError('This ticket is already closed.');
 
@@ -238,7 +289,9 @@ export async function closeTicketCore(ctx: PluginContext, params: CloseTicketPar
   };
   const jsonTranscript = buildJsonTranscript(meta, messages);
   const htmlTranscript = buildHtmlTranscript(meta, messages);
-  const expiresAt = config.transcriptRetentionDays ? new Date(Date.now() + config.transcriptRetentionDays * 86_400_000) : null;
+  const expiresAt = config.transcriptRetentionDays
+    ? new Date(Date.now() + config.transcriptRetentionDays * 86_400_000)
+    : null;
 
   await ctx.prisma.ticketTranscript.upsert({
     where: { ticketId: ticket.id },
@@ -260,7 +313,12 @@ export async function closeTicketCore(ctx: PluginContext, params: CloseTicketPar
 
   const updated = await ctx.prisma.ticket.update({
     where: { id: ticket.id },
-    data: { status: 'CLOSED', closedAt: new Date(), closedBy: params.closedBy, closeReason: params.reason ?? null },
+    data: {
+      status: 'CLOSED',
+      closedAt: new Date(),
+      closedBy: params.closedBy,
+      closeReason: params.reason ?? null,
+    },
   });
 
   const filename = `${sanitizeFilename(`ticket-${updated.number}-transcript`)}.html`;
@@ -269,8 +327,13 @@ export async function closeTicketCore(ctx: PluginContext, params: CloseTicketPar
     const channel = await resolveTextChannel(guild, config.transcriptChannelId);
     if (channel) {
       await channel
-        .send({ embeds: [buildClosingSummaryEmbed(updated, params.reason)], files: [new AttachmentBuilder(Buffer.from(htmlTranscript, 'utf8'), { name: filename })] })
-        .catch((err) => ctx.logger.warn({ err, ticketId: updated.id }, 'tickets: failed to post closing summary'));
+        .send({
+          embeds: [buildClosingSummaryEmbed(updated, params.reason)],
+          files: [new AttachmentBuilder(Buffer.from(htmlTranscript, 'utf8'), { name: filename })],
+        })
+        .catch((err) =>
+          ctx.logger.warn({ err, ticketId: updated.id }, 'tickets: failed to post closing summary'),
+        );
     }
   }
 
@@ -287,21 +350,31 @@ export async function closeTicketCore(ctx: PluginContext, params: CloseTicketPar
   if (ticket.threadId) {
     const thread = await guild.channels.fetch(ticket.threadId).catch(() => null);
     if (thread?.isThread()) {
-      await thread.send({ components: [buildReopenButton(ticket.id)], content: 'This ticket is now closed.' }).catch(() => undefined);
+      await thread
+        .send({ components: [buildReopenButton(ticket.id)], content: 'This ticket is now closed.' })
+        .catch(() => undefined);
       await thread.setLocked(true, params.reason).catch(() => undefined);
       await thread.setArchived(true, params.reason).catch(() => undefined);
     }
   } else if (ticket.channelId) {
     const channel = await guild.channels.fetch(ticket.channelId).catch(() => null);
     if (channel && channel.type === ChannelType.GuildText) {
-      await channel.send({ components: [buildReopenButton(ticket.id)], content: 'This ticket is now closed.' }).catch(() => undefined);
+      await channel
+        .send({ components: [buildReopenButton(ticket.id)], content: 'This ticket is now closed.' })
+        .catch(() => undefined);
       await channel.permissionOverwrites.delete(ticket.openerId, params.reason).catch(() => undefined);
       if (!config.keepClosedChannels) {
         const delaySeconds = Math.max(0, config.deleteAfterCloseSeconds);
         await ctx
           .queue('delete-channel')
-          .add('delete-channel', { guildId: params.guildId, ticketId: ticket.id, channelId: ticket.channelId }, { delay: delaySeconds * 1000, jobId: `delete-${ticket.id}` })
-          .catch((err) => ctx.logger.warn({ err, ticketId: updated.id }, 'tickets: failed to schedule channel deletion'));
+          .add(
+            'delete-channel',
+            { guildId: params.guildId, ticketId: ticket.id, channelId: ticket.channelId },
+            { delay: delaySeconds * 1000, jobId: `delete-${ticket.id}` },
+          )
+          .catch((err) =>
+            ctx.logger.warn({ err, ticketId: updated.id }, 'tickets: failed to schedule channel deletion'),
+          );
       }
     }
   }
@@ -329,13 +402,17 @@ export interface ReopenTicketParams {
 
 /** Reopens a recently-closed ticket within its guild's configured window: restores perms/unarchives, sets status OPEN. */
 export async function reopenTicketCore(ctx: PluginContext, params: ReopenTicketParams): Promise<Ticket> {
-  const ticket = await ctx.prisma.ticket.findFirst({ where: { id: params.ticketId, guildId: params.guildId } });
+  const ticket = await ctx.prisma.ticket.findFirst({
+    where: { id: params.ticketId, guildId: params.guildId },
+  });
   if (!ticket) throw new NotFoundError('Ticket not found.');
   if (ticket.status !== 'CLOSED' || !ticket.closedAt) throw new ValidationError('This ticket is not closed.');
 
   const config = await ctx.getConfig<TicketsConfig>(params.guildId);
   if (!isWithinReopenWindow(ticket.closedAt, config.reopenWindowHours)) {
-    throw new ValidationError(`This ticket's reopen window (${config.reopenWindowHours}h after close) has passed. Open a new ticket instead.`);
+    throw new ValidationError(
+      `This ticket's reopen window (${config.reopenWindowHours}h after close) has passed. Open a new ticket instead.`,
+    );
   }
 
   const guild = await ctx.client.guilds.fetch(params.guildId);
@@ -387,29 +464,60 @@ export async function reopenTicketCore(ctx: PluginContext, params: ReopenTicketP
 }
 
 /** Posts (or re-posts) a ticket panel's embed + Open button to its configured channel. */
-export async function postPanelMessage(ctx: PluginContext, panel: TicketPanel): Promise<{ messageId: string }> {
+export async function postPanelMessage(
+  ctx: PluginContext,
+  panel: TicketPanel,
+): Promise<{ messageId: string }> {
   const guild = await ctx.client.guilds.fetch(panel.guildId);
   const channel = await resolveTextChannel(guild, panel.channelId);
   if (!channel) {
-    throw new AppError('ticket_panel_channel_unavailable', 'The panel channel no longer exists, or I lack permission to post there.', { status: 422, expose: true });
+    throw new AppError(
+      'ticket_panel_channel_unavailable',
+      'The panel channel no longer exists, or I lack permission to post there.',
+      { status: 422, expose: true },
+    );
   }
 
-  const message = await channel.send({ embeds: [buildPanelEmbed(panel)], components: [buildPanelButtons(panel.id, panel.buttonLabel)] });
+  const message = await channel.send({
+    embeds: [buildPanelEmbed(panel)],
+    components: [buildPanelButtons(panel.id, panel.buttonLabel)],
+  });
   await ctx.prisma.ticketPanel.update({ where: { id: panel.id }, data: { messageId: message.id } });
   return { messageId: message.id };
 }
 
 /** Assigns (or clears, when `assigneeId` is null) a ticket's staff assignee. */
-export async function assignTicket(ctx: PluginContext, guildId: string, ticketId: string, assigneeId: string | null, actorId: string): Promise<Ticket> {
+export async function assignTicket(
+  ctx: PluginContext,
+  guildId: string,
+  ticketId: string,
+  assigneeId: string | null,
+  actorId: string,
+): Promise<Ticket> {
   const ticket = await ctx.prisma.ticket.findFirst({ where: { id: ticketId, guildId } });
   if (!ticket) throw new NotFoundError('Ticket not found.');
   const updated = await ctx.prisma.ticket.update({ where: { id: ticketId }, data: { assigneeId } });
-  await ctx.audit({ guildId, actorId, actorType: 'user', action: 'ticket.assign', targetType: 'ticket', targetId: ticketId, after: { assigneeId }, source: 'bot' });
+  await ctx.audit({
+    guildId,
+    actorId,
+    actorType: 'user',
+    action: 'ticket.assign',
+    targetType: 'ticket',
+    targetId: ticketId,
+    after: { assigneeId },
+    source: 'bot',
+  });
   return updated;
 }
 
 /** Adds a participant to a ticket (channel-permission overwrite or thread member) and records `TicketParticipant`. */
-export async function addTicketParticipant(ctx: PluginContext, guildId: string, ticketId: string, userId: string, addedBy: string): Promise<void> {
+export async function addTicketParticipant(
+  ctx: PluginContext,
+  guildId: string,
+  ticketId: string,
+  userId: string,
+  addedBy: string,
+): Promise<void> {
   const ticket = await ctx.prisma.ticket.findFirst({ where: { id: ticketId, guildId } });
   if (!ticket) throw new NotFoundError('Ticket not found.');
   if (ticket.status !== 'OPEN') throw new ValidationError('This ticket is closed.');
@@ -421,7 +529,13 @@ export async function addTicketParticipant(ctx: PluginContext, guildId: string, 
   } else if (ticket.channelId) {
     const channel = await guild.channels.fetch(ticket.channelId).catch(() => null);
     if (channel && channel.type === ChannelType.GuildText) {
-      await channel.permissionOverwrites.edit(userId, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true, AttachFiles: true, EmbedLinks: true });
+      await channel.permissionOverwrites.edit(userId, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
+        AttachFiles: true,
+        EmbedLinks: true,
+      });
     }
   }
 
@@ -430,11 +544,26 @@ export async function addTicketParticipant(ctx: PluginContext, guildId: string, 
     create: { ticketId, userId, addedBy },
     update: {},
   });
-  await ctx.audit({ guildId, actorId: addedBy, actorType: 'user', action: 'ticket.participant.add', targetType: 'ticket', targetId: ticketId, after: { userId }, source: 'bot' });
+  await ctx.audit({
+    guildId,
+    actorId: addedBy,
+    actorType: 'user',
+    action: 'ticket.participant.add',
+    targetType: 'ticket',
+    targetId: ticketId,
+    after: { userId },
+    source: 'bot',
+  });
 }
 
 /** Removes a participant from a ticket. */
-export async function removeTicketParticipant(ctx: PluginContext, guildId: string, ticketId: string, userId: string, removedBy: string): Promise<void> {
+export async function removeTicketParticipant(
+  ctx: PluginContext,
+  guildId: string,
+  ticketId: string,
+  userId: string,
+  removedBy: string,
+): Promise<void> {
   const ticket = await ctx.prisma.ticket.findFirst({ where: { id: ticketId, guildId } });
   if (!ticket) throw new NotFoundError('Ticket not found.');
   if (userId === ticket.openerId) throw new ValidationError("You can't remove the ticket opener.");
@@ -451,11 +580,26 @@ export async function removeTicketParticipant(ctx: PluginContext, guildId: strin
   }
 
   await ctx.prisma.ticketParticipant.deleteMany({ where: { ticketId, userId } });
-  await ctx.audit({ guildId, actorId: removedBy, actorType: 'user', action: 'ticket.participant.remove', targetType: 'ticket', targetId: ticketId, after: { userId }, source: 'bot' });
+  await ctx.audit({
+    guildId,
+    actorId: removedBy,
+    actorType: 'user',
+    action: 'ticket.participant.remove',
+    targetType: 'ticket',
+    targetId: ticketId,
+    after: { userId },
+    source: 'bot',
+  });
 }
 
 /** Adds a tag to a ticket (no-op if already present), capped at 10 tags. */
-export async function addTicketTag(ctx: PluginContext, guildId: string, ticketId: string, tag: string, actorId: string): Promise<Ticket> {
+export async function addTicketTag(
+  ctx: PluginContext,
+  guildId: string,
+  ticketId: string,
+  tag: string,
+  actorId: string,
+): Promise<Ticket> {
   const ticket = await ctx.prisma.ticket.findFirst({ where: { id: ticketId, guildId } });
   if (!ticket) throw new NotFoundError('Ticket not found.');
   const normalized = tag.trim().toLowerCase().slice(0, 32);
@@ -463,24 +607,61 @@ export async function addTicketTag(ctx: PluginContext, guildId: string, ticketId
   if (ticket.tags.includes(normalized)) return ticket;
   if (ticket.tags.length >= 10) throw new ValidationError('This ticket already has the maximum of 10 tags.');
 
-  const updated = await ctx.prisma.ticket.update({ where: { id: ticketId }, data: { tags: { push: normalized } } });
-  await ctx.audit({ guildId, actorId, actorType: 'user', action: 'ticket.tag.add', targetType: 'ticket', targetId: ticketId, after: { tag: normalized }, source: 'bot' });
+  const updated = await ctx.prisma.ticket.update({
+    where: { id: ticketId },
+    data: { tags: { push: normalized } },
+  });
+  await ctx.audit({
+    guildId,
+    actorId,
+    actorType: 'user',
+    action: 'ticket.tag.add',
+    targetType: 'ticket',
+    targetId: ticketId,
+    after: { tag: normalized },
+    source: 'bot',
+  });
   return updated;
 }
 
 /** Removes a tag from a ticket. */
-export async function removeTicketTag(ctx: PluginContext, guildId: string, ticketId: string, tag: string, actorId: string): Promise<Ticket> {
+export async function removeTicketTag(
+  ctx: PluginContext,
+  guildId: string,
+  ticketId: string,
+  tag: string,
+  actorId: string,
+): Promise<Ticket> {
   const ticket = await ctx.prisma.ticket.findFirst({ where: { id: ticketId, guildId } });
   if (!ticket) throw new NotFoundError('Ticket not found.');
   const normalized = tag.trim().toLowerCase();
-  const updated = await ctx.prisma.ticket.update({ where: { id: ticketId }, data: { tags: ticket.tags.filter((t) => t !== normalized) } });
-  await ctx.audit({ guildId, actorId, actorType: 'user', action: 'ticket.tag.remove', targetType: 'ticket', targetId: ticketId, after: { tag: normalized }, source: 'bot' });
+  const updated = await ctx.prisma.ticket.update({
+    where: { id: ticketId },
+    data: { tags: ticket.tags.filter((t) => t !== normalized) },
+  });
+  await ctx.audit({
+    guildId,
+    actorId,
+    actorType: 'user',
+    action: 'ticket.tag.remove',
+    targetType: 'ticket',
+    targetId: ticketId,
+    after: { tag: normalized },
+    source: 'bot',
+  });
   return updated;
 }
 
 /** Finds the ticket (any status) whose channel or thread is `channelId`, most-recent first. */
-export async function findTicketForChannel(ctx: PluginContext, guildId: string, channelId: string): Promise<Ticket | null> {
-  return ctx.prisma.ticket.findFirst({ where: { guildId, OR: [{ channelId }, { threadId: channelId }] }, orderBy: { createdAt: 'desc' } });
+export async function findTicketForChannel(
+  ctx: PluginContext,
+  guildId: string,
+  channelId: string,
+): Promise<Ticket | null> {
+  return ctx.prisma.ticket.findFirst({
+    where: { guildId, OR: [{ channelId }, { threadId: channelId }] },
+    orderBy: { createdAt: 'desc' },
+  });
 }
 
 async function postPanelCore(ctx: PluginContext, guildId: string, panelId: string): Promise<void> {
@@ -495,8 +676,12 @@ async function postPanelCore(ctx: PluginContext, guildId: string, panelId: strin
 // arguments `TicketsService` declares. In-process callers (other plugins holding a real `TicketsService`
 // reference) still call positionally per the declared type. Both shapes are supported here, matching the
 // pattern already established in roles/service.ts, ai/service.ts, integrations/service.ts, and enforcer/service.ts.
-function isBotActionObjectCall(args: unknown[]): args is [{ guildId: string; payload?: unknown; requestedBy?: string }] {
-  return args.length === 1 && typeof args[0] === 'object' && args[0] !== null && 'guildId' in (args[0] as object);
+function isBotActionObjectCall(
+  args: unknown[],
+): args is [{ guildId: string; payload?: unknown; requestedBy?: string }] {
+  return (
+    args.length === 1 && typeof args[0] === 'object' && args[0] !== null && 'guildId' in (args[0] as object)
+  );
 }
 
 /** Builds the `TicketsService` (ARCHITECTURE.md §7.5) — the narrow cross-plugin/bot-action-facing surface. Richer flows (panel-aware opening, assign, tags, participants) are called directly by this plugin's own commands/components. */
@@ -515,7 +700,13 @@ export function createTicketsService(ctx: PluginContext): TicketsService {
     if (isBotActionObjectCall(args)) {
       const { guildId, payload } = args[0];
       const p = payload as { ticketId: string; closedBy?: string; reason?: string };
-      return closeTicketCore(ctx, { guildId, ticketId: p.ticketId, closedBy: p.closedBy ?? 'system', reason: p.reason, source: 'dashboard' });
+      return closeTicketCore(ctx, {
+        guildId,
+        ticketId: p.ticketId,
+        closedBy: p.closedBy ?? 'system',
+        reason: p.reason,
+        source: 'dashboard',
+      });
     }
     const [guildId, ticketId, closedBy, reason] = args as [string, string, string, string?];
     return closeTicketCore(ctx, { guildId, ticketId, closedBy, reason, source: 'dashboard' });

@@ -24,7 +24,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** Anthropic Messages API. */
 export function createAnthropicProvider(options: AnthropicProviderOptions): AiProvider {
-  const baseUrl = (options.baseUrl && options.baseUrl.trim().length > 0 ? options.baseUrl : DEFAULT_BASE_URL).replace(/\/+$/, '');
+  const baseUrl = (
+    options.baseUrl && options.baseUrl.trim().length > 0 ? options.baseUrl : DEFAULT_BASE_URL
+  ).replace(/\/+$/, '');
 
   return {
     id: 'anthropic',

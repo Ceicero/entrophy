@@ -4,23 +4,23 @@ Polls, giveaways, a suggestion box, scheduled announcements, reminders, and even
 
 ## Commands
 
-| Command | Description | Who |
-|---|---|---|
-| `/poll create` | Start a poll (2-10 options, optional duration/anonymous/multi-select) | Everyone |
-| `/poll end <id>` | End a poll early | Poll creator or moderator+ |
-| `/poll results <id>` | Show a poll's current results | Everyone |
-| `/giveaway start` | Start a giveaway (prize, duration, winners, optional eligibility rules) | Moderator+ |
-| `/giveaway end \| reroll \| list \| cancel` | Manage giveaways | Moderator+ |
-| `/suggest <text>` | Submit a suggestion | Everyone |
-| `/suggestions setup` | Choose the suggestions channel | Moderator+ |
-| `/suggestions status <number> <status> [note]` | Change a suggestion's status | Moderator+ |
-| `/suggestions list [status]` | List suggestions | Moderator+ |
-| `/announce schedule <channel> <when> <message>` | Schedule an announcement (cron, ISO date/time, or duration) | Moderator+ |
-| `/announce list \| cancel \| preview` | Manage scheduled announcements | Moderator+ |
-| `/remind set <when> <message> [channel] [recurring]` | Set a reminder (DM by default, or post in a channel) | Everyone |
-| `/remind list \| cancel` | Manage your reminders | Owner, or moderator+ to cancel others' |
-| `/event create` | Create an event with RSVP, optionally as a native Discord scheduled event | Helper+ |
-| `/event list \| cancel \| rsvps` | Manage events | Helper+ |
+| Command                                              | Description                                                               | Who                                    |
+| ---------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------- |
+| `/poll create`                                       | Start a poll (2-10 options, optional duration/anonymous/multi-select)     | Everyone                               |
+| `/poll end <id>`                                     | End a poll early                                                          | Poll creator or moderator+             |
+| `/poll results <id>`                                 | Show a poll's current results                                             | Everyone                               |
+| `/giveaway start`                                    | Start a giveaway (prize, duration, winners, optional eligibility rules)   | Moderator+                             |
+| `/giveaway end \| reroll \| list \| cancel`          | Manage giveaways                                                          | Moderator+                             |
+| `/suggest <text>`                                    | Submit a suggestion                                                       | Everyone                               |
+| `/suggestions setup`                                 | Choose the suggestions channel                                            | Moderator+                             |
+| `/suggestions status <number> <status> [note]`       | Change a suggestion's status                                              | Moderator+                             |
+| `/suggestions list [status]`                         | List suggestions                                                          | Moderator+                             |
+| `/announce schedule <channel> <when> <message>`      | Schedule an announcement (cron, ISO date/time, or duration)               | Moderator+                             |
+| `/announce list \| cancel \| preview`                | Manage scheduled announcements                                            | Moderator+                             |
+| `/remind set <when> <message> [channel] [recurring]` | Set a reminder (DM by default, or post in a channel)                      | Everyone                               |
+| `/remind list \| cancel`                             | Manage your reminders                                                     | Owner, or moderator+ to cancel others' |
+| `/event create`                                      | Create an event with RSVP, optionally as a native Discord scheduled event | Helper+                                |
+| `/event list \| cancel \| rsvps`                     | Manage events                                                             | Helper+                                |
 
 ## Config keys (`configSchema`)
 
@@ -35,12 +35,12 @@ polls.maxOptions             number        Maximum options per poll, 2-10 (defau
 
 ## Permissions
 
-| Permission | Feature | Optional | Fallback |
-|---|---|---|---|
-| Send Messages | Posting polls/giveaways/suggestions/announcements/events | No | Command replies with an error |
-| Embed Links | Result/status embeds | No | N/A |
-| Manage Threads / Create Public Threads | Auto-threading suggestions | Yes | Suggestion still posts, no thread |
-| Manage Events | Native Discord scheduled event for `/event create` | Yes | Event is still tracked and announced in-channel |
+| Permission                             | Feature                                                  | Optional | Fallback                                        |
+| -------------------------------------- | -------------------------------------------------------- | -------- | ----------------------------------------------- |
+| Send Messages                          | Posting polls/giveaways/suggestions/announcements/events | No       | Command replies with an error                   |
+| Embed Links                            | Result/status embeds                                     | No       | N/A                                             |
+| Manage Threads / Create Public Threads | Auto-threading suggestions                               | Yes      | Suggestion still posts, no thread               |
+| Manage Events                          | Native Discord scheduled event for `/event create`       | Yes      | Event is still tracked and announced in-channel |
 
 No privileged intents are required.
 

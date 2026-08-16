@@ -13,7 +13,10 @@ export function Nav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-ink-0/70 backdrop-blur-xl">
-      <nav aria-label="Primary" className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+      <nav
+        aria-label="Primary"
+        className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4"
+      >
         <Logo />
         <ul className="hidden items-center gap-6 md:flex">
           {LINKS.map((link) => (
@@ -28,7 +31,13 @@ export function Nav() {
           ))}
         </ul>
         <div className="flex items-center gap-2">
-          <ButtonLink href={dashboardUrl()} external variant="ghost" size="md" className="hidden sm:inline-flex">
+          <ButtonLink
+            href={dashboardUrl()}
+            external
+            variant="ghost"
+            size="md"
+            className="hidden sm:inline-flex"
+          >
             Open dashboard
           </ButtonLink>
           {invite ? (

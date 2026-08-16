@@ -1,6 +1,13 @@
 import { ChannelType, SlashCommandBuilder } from 'discord.js';
 import { hasStaffLevel } from '@entrophy/core';
-import { errorEmbed, listEmbed, resolveTextChannel, successEmbed, type CommandContext, type PluginCommand } from '../../sdk';
+import {
+  errorEmbed,
+  listEmbed,
+  resolveTextChannel,
+  successEmbed,
+  type CommandContext,
+  type PluginCommand,
+} from '../../sdk';
 import { cancelReminder } from '../actions';
 import { parseAt, validateCron } from '../schedule';
 
@@ -12,14 +19,37 @@ const data = new SlashCommandBuilder()
     sub
       .setName('set')
       .setDescription('Set a reminder.')
-      .addStringOption((opt) => opt.setName('when').setDescription('When: an ISO date/time or a duration like "10m"/"2h"').setRequired(true))
-      .addStringOption((opt) => opt.setName('message').setDescription('What to remind you about').setRequired(true).setMaxLength(500))
-      .addChannelOption((opt) => opt.setName('channel').setDescription('Post in this channel instead of DMing you').setRequired(false).addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
-      .addStringOption((opt) => opt.setName('recurring').setDescription('Repeat on this cron schedule instead of a one-off reminder').setRequired(false)),
+      .addStringOption((opt) =>
+        opt
+          .setName('when')
+          .setDescription('When: an ISO date/time or a duration like "10m"/"2h"')
+          .setRequired(true),
+      )
+      .addStringOption((opt) =>
+        opt.setName('message').setDescription('What to remind you about').setRequired(true).setMaxLength(500),
+      )
+      .addChannelOption((opt) =>
+        opt
+          .setName('channel')
+          .setDescription('Post in this channel instead of DMing you')
+          .setRequired(false)
+          .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('recurring')
+          .setDescription('Repeat on this cron schedule instead of a one-off reminder')
+          .setRequired(false),
+      ),
   )
   .addSubcommand((sub) => sub.setName('list').setDescription('List your upcoming reminders.'))
   .addSubcommand((sub) =>
-    sub.setName('cancel').setDescription('Cancel a reminder.').addStringOption((opt) => opt.setName('id').setDescription('Reminder id').setRequired(true).setAutocomplete(true)),
+    sub
+      .setName('cancel')
+      .setDescription('Cancel a reminder.')
+      .addStringOption((opt) =>
+        opt.setName('id').setDescription('Reminder id').setRequired(true).setAutocomplete(true),
+      ),
   );
 
 async function handleSet(c: CommandContext): Promise<void> {
@@ -41,7 +71,10 @@ async function handleSet(c: CommandContext): Promise<void> {
   if (recurring) {
     const cronCheck = validateCron(recurring, timezone);
     if (!cronCheck.ok) {
-      await interaction.reply({ embeds: [errorEmbed(t('remind.badCron', { reason: cronCheck.reason }))], ephemeral: true });
+      await interaction.reply({
+        embeds: [errorEmbed(t('remind.badCron', { reason: cronCheck.reason }))],
+        ephemeral: true,
+      });
       return;
     }
   }
@@ -67,12 +100,23 @@ async function handleSet(c: CommandContext): Promise<void> {
 
   const queue = ctx.queue('reminder-deliver');
   if (recurring) {
-    await queue.upsertJobScheduler(`rem:${reminder.id}`, { pattern: recurring, tz: timezone }, { name: 'reminder-deliver', data: { reminderId: reminder.id } });
+    await queue.upsertJobScheduler(
+      `rem:${reminder.id}`,
+      { pattern: recurring, tz: timezone },
+      { name: 'reminder-deliver', data: { reminderId: reminder.id } },
+    );
   } else {
-    await queue.add('reminder-deliver', { reminderId: reminder.id }, { jobId: `rem:${reminder.id}`, delay: Math.max(0, parsedAt.date.getTime() - Date.now()) });
+    await queue.add(
+      'reminder-deliver',
+      { reminderId: reminder.id },
+      { jobId: `rem:${reminder.id}`, delay: Math.max(0, parsedAt.date.getTime() - Date.now()) },
+    );
   }
 
-  await interaction.reply({ embeds: [successEmbed(t('remind.set', { time: parsedAt.date.toISOString() }))], ephemeral: true });
+  await interaction.reply({
+    embeds: [successEmbed(t('remind.set', { time: parsedAt.date.toISOString() }))],
+    ephemeral: true,
+  });
 }
 
 async function handleList(c: CommandContext): Promise<void> {
@@ -82,7 +126,10 @@ async function handleList(c: CommandContext): Promise<void> {
     orderBy: { remindAt: 'asc' },
     take: 25,
   });
-  const lines = reminders.map((r) => `**${r.content.slice(0, 60)}${r.content.length > 60 ? '…' : ''}** — ${r.remindAt.toISOString()}${r.recurring ? ` (recurring: \`${r.recurring}\`)` : ''} · \`${r.id}\``);
+  const lines = reminders.map(
+    (r) =>
+      `**${r.content.slice(0, 60)}${r.content.length > 60 ? '…' : ''}** — ${r.remindAt.toISOString()}${r.recurring ? ` (recurring: \`${r.recurring}\`)` : ''} · \`${r.id}\``,
+  );
   await interaction.reply({ embeds: [listEmbed(t('remind.listTitle'), lines)], ephemeral: true });
 }
 
@@ -114,7 +161,11 @@ export const command: PluginCommand = {
   async autocomplete(c) {
     const focused = c.interaction.options.getFocused(true);
     const query = String(focused.value).toLowerCase();
-    const reminders = await c.ctx.prisma.reminder.findMany({ where: { userId: c.interaction.user.id, guildId: c.guildId, delivered: false }, orderBy: { remindAt: 'asc' }, take: 25 });
+    const reminders = await c.ctx.prisma.reminder.findMany({
+      where: { userId: c.interaction.user.id, guildId: c.guildId, delivered: false },
+      orderBy: { remindAt: 'asc' },
+      take: 25,
+    });
     const matches = reminders.filter((r) => r.content.toLowerCase().includes(query) || r.id.includes(query));
     await c.interaction.respond(matches.map((r) => ({ name: r.content.slice(0, 100), value: r.id })));
   },

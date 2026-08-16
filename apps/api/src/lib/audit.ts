@@ -13,7 +13,10 @@ export interface DashboardAuditInput {
 }
 
 /** Thin wrapper over `@entrophy/database`'s `writeAudit`, fixing `source: 'dashboard'` and `actorType: 'user'` — every dashboard write goes through this (ARCHITECTURE.md §10). */
-export async function writeDashboardAudit(prisma: PrismaClient, entry: DashboardAuditInput): Promise<AuditLog> {
+export async function writeDashboardAudit(
+  prisma: PrismaClient,
+  entry: DashboardAuditInput,
+): Promise<AuditLog> {
   return writeAuditRow(prisma, {
     ...entry,
     actorType: 'user',

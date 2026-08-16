@@ -58,7 +58,9 @@ export async function writeAudit(prisma: PrismaClient, entry: WriteAuditInput): 
       action: entry.action,
       targetType: entry.targetType,
       targetId: entry.targetId,
-      before: (entry.before !== undefined ? redactForAudit(entry.before) : undefined) as Prisma.InputJsonValue,
+      before: (entry.before !== undefined
+        ? redactForAudit(entry.before)
+        : undefined) as Prisma.InputJsonValue,
       after: (entry.after !== undefined ? redactForAudit(entry.after) : undefined) as Prisma.InputJsonValue,
       reason: entry.reason,
       source: AUDIT_SOURCE_MAP[entry.source],

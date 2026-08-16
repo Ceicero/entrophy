@@ -17,10 +17,25 @@ export function GiveawaysTab({ guildId }: { guildId: string }) {
 
   const columns: DataTableColumn<GiveawayDto>[] = [
     { key: 'prize', header: 'Prize', render: (g) => <span className="font-medium">{g.prize}</span> },
-    { key: 'status', header: 'Status', render: (g) => <Badge variant={g.ended ? 'secondary' : 'success'}>{g.ended ? 'Ended' : 'Active'}</Badge> },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (g) => (
+        <Badge variant={g.ended ? 'secondary' : 'success'}>{g.ended ? 'Ended' : 'Active'}</Badge>
+      ),
+    },
     { key: 'winnerCount', header: 'Winner count', render: (g) => g.winnerCount },
     { key: 'entries', header: 'Entries', render: (g) => g.entryCount },
-    { key: 'timing', header: 'Ends / result', render: (g) => (g.ended ? (g.winnerIds.length > 0 ? `Drawn: ${g.winnerIds.length} winner(s)` : 'No eligible entries') : formatDate(g.endsAt)) },
+    {
+      key: 'timing',
+      header: 'Ends / result',
+      render: (g) =>
+        g.ended
+          ? g.winnerIds.length > 0
+            ? `Drawn: ${g.winnerIds.length} winner(s)`
+            : 'No eligible entries'
+          : formatDate(g.endsAt),
+    },
   ];
 
   return (

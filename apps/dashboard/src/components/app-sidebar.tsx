@@ -43,7 +43,13 @@ export function AppSidebar({ guildId, mobileOpen, onMobileOpenChange }: AppSideb
               asChild
               active={active}
               icon={<item.icon />}
-              suffix={disabled ? <Badge variant="outline" className="text-[10px]">Off</Badge> : undefined}
+              suffix={
+                disabled ? (
+                  <Badge variant="outline" className="text-[10px]">
+                    Off
+                  </Badge>
+                ) : undefined
+              }
             >
               <Link href={href} onClick={() => onMobileOpenChange(false)}>
                 {item.label}

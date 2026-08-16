@@ -7,13 +7,13 @@ in a grey box, and every click is spelled out. If a step ever produces an error 
 
 ## 1. Accounts you need before you start
 
-| Account | What it's for | Cost |
-|---|---|---|
-| **Discord Developer Portal** (discord.com/developers) — sign in with your normal Discord account | Creates the bot application itself | Free |
-| **Railway** (railway.app) — sign in with GitHub | Hosts the bot, API, dashboard, and website, plus the database | Paid — see [What costs money](#5-what-costs-money) |
-| **Stripe** (stripe.com) — optional, only if you want donations | Processes donation payments | Free to sign up; they take a small cut per donation |
-| **Domain registrar** — wherever you bought `entrophybot.com` | Points the domain at Railway | Whatever you already pay for the domain |
-| **GitHub** — you already have this since the code lives there | Railway deploys straight from your GitHub repo | Free |
+| Account                                                                                          | What it's for                                                 | Cost                                                |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | --------------------------------------------------- |
+| **Discord Developer Portal** (discord.com/developers) — sign in with your normal Discord account | Creates the bot application itself                            | Free                                                |
+| **Railway** (railway.app) — sign in with GitHub                                                  | Hosts the bot, API, dashboard, and website, plus the database | Paid — see [What costs money](#5-what-costs-money)  |
+| **Stripe** (stripe.com) — optional, only if you want donations                                   | Processes donation payments                                   | Free to sign up; they take a small cut per donation |
+| **Domain registrar** — wherever you bought `entrophybot.com`                                     | Points the domain at Railway                                  | Whatever you already pay for the domain             |
+| **GitHub** — you already have this since the code lives there                                    | Railway deploys straight from your GitHub repo                | Free                                                |
 
 You do not need a code editor, a terminal, or to install anything on your computer for the
 production setup below — that's all done through the Railway and Discord websites. (A developer
@@ -62,8 +62,8 @@ Secret**. Keep them private — anyone with the bot token can control your bot.
    - Service named `dashboard` — Root Directory `/`, Dockerfile Path
      `infra/docker/Dockerfile.dashboard`
    - Service named `web` — Root Directory `/`, Dockerfile Path `infra/docker/Dockerfile.web`
-   (Each service's settings page has a **Root Directory** and **Dockerfile Path** field under
-   **Settings → Build**.)
+     (Each service's settings page has a **Root Directory** and **Dockerfile Path** field under
+     **Settings → Build**.)
 4. In the same project, click **New → Database → Add PostgreSQL**, then **New → Database → Add
    Redis**. Railway provisions both automatically.
 5. For each of the four services, open **Variables** and paste in the values from
@@ -77,11 +77,14 @@ Secret**. Keep them private — anyone with the bot token can control your bot.
 
    To generate `ENCRYPTION_KEY` and `SESSION_SECRET`, you need two random strings. If you have a
    developer helping, they can run this once each and send you the output:
+
    ```
    openssl rand -base64 32
    ```
+
    Run it twice — once for `ENCRYPTION_KEY`, once for `SESSION_SECRET`. Each one only needs to be
    generated once, ever, then reused everywhere.
+
 6. For `api`, `dashboard`, and `web`: open **Settings → Networking → Generate Domain**, or (better)
    attach your real domain — see step 4 below.
 7. On the `api` service, open **Settings → Deploy** and set a **Pre-Deploy Command**:
@@ -99,7 +102,7 @@ Secret**. Keep them private — anyone with the bot token can control your bot.
    - `api` → `api.entrophybot.com`
    - `dashboard` → `app.entrophybot.com`
    - `web` → `entrophybot.com` (and `www.entrophybot.com`)
-   Railway will show you a target value (a CNAME, or an A/ALIAS record for the bare domain).
+     Railway will show you a target value (a CNAME, or an A/ALIAS record for the bare domain).
 2. Log into your domain registrar (wherever `entrophybot.com` is registered) and add the DNS
    records Railway showed you:
    - `CNAME app` → Railway's target for `dashboard`
@@ -155,12 +158,12 @@ Once it's live, updating is simple:
 These are ballpark figures, not quotes. **Always check the provider's current pricing page before
 committing** — hosting prices change.
 
-| Thing | Rough monthly cost |
-|---|---|
-| Railway (4 services + Postgres + Redis, low traffic) | Roughly $15–30/month depending on usage; Railway bills by actual resource use on top of a small base plan |
-| Domain registration (`entrophybot.com`) | Usually $10–20/**year**, already a sunk cost if you own it |
-| Stripe | No monthly fee — they take a small percentage + fixed fee per donation processed (check stripe.com/pricing) |
-| Discord Developer Portal | Free |
+| Thing                                                | Rough monthly cost                                                                                          |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Railway (4 services + Postgres + Redis, low traffic) | Roughly $15–30/month depending on usage; Railway bills by actual resource use on top of a small base plan   |
+| Domain registration (`entrophybot.com`)              | Usually $10–20/**year**, already a sunk cost if you own it                                                  |
+| Stripe                                               | No monthly fee — they take a small percentage + fixed fee per donation processed (check stripe.com/pricing) |
+| Discord Developer Portal                             | Free                                                                                                        |
 
 Donations collected through the Stripe-powered **Donate** page on the website fund hosting costs
 directly — that's the intended purpose stated on the page itself.

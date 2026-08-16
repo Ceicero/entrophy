@@ -51,7 +51,10 @@ export const guildMemberUpdate: PluginEventHandler<'guildMemberUpdate'> = {
       });
     }
 
-    const timeoutNote = describeTimeout(oldMember.communicationDisabledUntil ?? null, newMember.communicationDisabledUntil ?? null);
+    const timeoutNote = describeTimeout(
+      oldMember.communicationDisabledUntil ?? null,
+      newMember.communicationDisabledUntil ?? null,
+    );
     if (timeoutNote) {
       await logging.log(newMember.guild.id, 'moderation.action', {
         targetId: newMember.id,

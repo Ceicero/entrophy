@@ -33,7 +33,9 @@ export const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
             <p className="text-xs text-muted-foreground">{hint}</p>
           ) : null}
         </div>
-        {icon ? <div className="rounded-md bg-muted p-2 text-muted-foreground [&_svg]:h-5 [&_svg]:w-5">{icon}</div> : null}
+        {icon ? (
+          <div className="rounded-md bg-muted p-2 text-muted-foreground [&_svg]:h-5 [&_svg]:w-5">{icon}</div>
+        ) : null}
       </CardContent>
     </Card>
   ),

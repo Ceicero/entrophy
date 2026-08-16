@@ -36,7 +36,11 @@ export interface IntegrationProviderDef {
   poll?(ctx: PluginContext, connection: IntegrationConnection): Promise<void>;
   /** `connection` is `null` when the event can't be resolved to one connection ahead of time (twitch, stripe — the
    * provider itself looks up the right connection(s) from `event.payload`). */
-  handleInbound?(ctx: PluginContext, connection: IntegrationConnection | null, event: InboundWebhookEvent): Promise<void>;
+  handleInbound?(
+    ctx: PluginContext,
+    connection: IntegrationConnection | null,
+    event: InboundWebhookEvent,
+  ): Promise<void>;
   health?(ctx: PluginContext, connection: IntegrationConnection): Promise<ProviderHealthResult>;
 }
 

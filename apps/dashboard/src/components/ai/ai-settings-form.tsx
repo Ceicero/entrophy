@@ -82,16 +82,29 @@ export function AiSettingsForm({ guildId, settings }: AiSettingsFormProps) {
       {
         onSuccess: () => toast({ title: 'API key removed', variant: 'success' }),
         onError: (err) =>
-          toast({ title: 'Could not remove key', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+          toast({
+            title: 'Could not remove key',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
 
   function handleTest() {
     test.mutate(undefined, {
-      onSuccess: (result) => toast({ title: result.ok ? 'Connection queued' : 'Test failed', description: result.detail, variant: result.ok ? 'success' : 'destructive' }),
+      onSuccess: (result) =>
+        toast({
+          title: result.ok ? 'Connection queued' : 'Test failed',
+          description: result.detail,
+          variant: result.ok ? 'success' : 'destructive',
+        }),
       onError: (err) =>
-        toast({ title: 'Could not run test', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+        toast({
+          title: 'Could not run test',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -99,7 +112,11 @@ export function AiSettingsForm({ guildId, settings }: AiSettingsFormProps) {
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label="Provider" htmlFor="ai-provider">
-          <Select value={draft.provider} onValueChange={(v) => set('provider', v as AiProviderId)} disabled={update.isPending}>
+          <Select
+            value={draft.provider}
+            onValueChange={(v) => set('provider', v as AiProviderId)}
+            disabled={update.isPending}
+          >
             <SelectTrigger id="ai-provider">
               <SelectValue />
             </SelectTrigger>
@@ -113,12 +130,26 @@ export function AiSettingsForm({ guildId, settings }: AiSettingsFormProps) {
           </Select>
         </FormField>
 
-        <FormField label="Model" htmlFor="ai-model" hint="Passed through to the provider as-is, e.g. gpt-4o-mini or claude-3-5-sonnet-latest.">
-          <Input id="ai-model" value={draft.model} onChange={(e) => set('model', e.target.value)} disabled={update.isPending} />
+        <FormField
+          label="Model"
+          htmlFor="ai-model"
+          hint="Passed through to the provider as-is, e.g. gpt-4o-mini or claude-3-5-sonnet-latest."
+        >
+          <Input
+            id="ai-model"
+            value={draft.model}
+            onChange={(e) => set('model', e.target.value)}
+            disabled={update.isPending}
+          />
         </FormField>
 
         {draft.provider === 'compatible' ? (
-          <FormField label="Base URL" htmlFor="ai-base-url" hint="Any OpenAI-chat-completions-shaped API." className="sm:col-span-2">
+          <FormField
+            label="Base URL"
+            htmlFor="ai-base-url"
+            hint="Any OpenAI-chat-completions-shaped API."
+            className="sm:col-span-2"
+          >
             <Input
               id="ai-base-url"
               value={draft.baseUrl ?? ''}
@@ -129,7 +160,12 @@ export function AiSettingsForm({ guildId, settings }: AiSettingsFormProps) {
           </FormField>
         ) : null}
 
-        <FormField label="API key" htmlFor="ai-api-key" hint="Write-only — never shown again once saved." className="sm:col-span-2">
+        <FormField
+          label="API key"
+          htmlFor="ai-api-key"
+          hint="Write-only — never shown again once saved."
+          className="sm:col-span-2"
+        >
           <div className="flex items-center gap-2">
             <Input
               id="ai-api-key"
@@ -146,16 +182,31 @@ export function AiSettingsForm({ guildId, settings }: AiSettingsFormProps) {
               </Badge>
             ) : null}
             {settings.hasKey ? (
-              <Button type="button" variant="outline" size="sm" onClick={handleClearKey} disabled={update.isPending}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleClearKey}
+                disabled={update.isPending}
+              >
                 Remove
               </Button>
             ) : null}
           </div>
         </FormField>
 
-        <FormField label="Environment-key fallback" htmlFor="ai-allow-env" hint="Use OPENAI_API_KEY / ANTHROPIC_API_KEY from the server environment when no key is set above.">
+        <FormField
+          label="Environment-key fallback"
+          htmlFor="ai-allow-env"
+          hint="Use OPENAI_API_KEY / ANTHROPIC_API_KEY from the server environment when no key is set above."
+        >
           <div className="flex h-9 items-center">
-            <Switch id="ai-allow-env" checked={draft.allowEnvKeys} onCheckedChange={(v) => set('allowEnvKeys', v)} disabled={update.isPending} />
+            <Switch
+              id="ai-allow-env"
+              checked={draft.allowEnvKeys}
+              onCheckedChange={(v) => set('allowEnvKeys', v)}
+              disabled={update.isPending}
+            />
           </div>
         </FormField>
 
@@ -195,8 +246,17 @@ export function AiSettingsForm({ guildId, settings }: AiSettingsFormProps) {
           />
         </FormField>
 
-        <FormField label="Allowed channels (/ask, /summarize)" hint="Empty = both commands stay off. /draft and /mod-assist are staff-only and work anywhere." className="sm:col-span-2">
-          <ChannelAllowlistPicker guildId={guildId} value={draft.allowedChannelIds} onChange={(v) => set('allowedChannelIds', v)} disabled={update.isPending} />
+        <FormField
+          label="Allowed channels (/ask, /summarize)"
+          hint="Empty = both commands stay off. /draft and /mod-assist are staff-only and work anywhere."
+          className="sm:col-span-2"
+        >
+          <ChannelAllowlistPicker
+            guildId={guildId}
+            value={draft.allowedChannelIds}
+            onChange={(v) => set('allowedChannelIds', v)}
+            disabled={update.isPending}
+          />
         </FormField>
       </div>
 

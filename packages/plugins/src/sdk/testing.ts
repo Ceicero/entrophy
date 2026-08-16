@@ -33,7 +33,10 @@ function defaultResolutionFor(method: string): unknown {
  * resolves with `overrides[model][method](...)` if provided, else a reasonable default for that method name.
  * Not a real Prisma client — only good for unit-testing plugin logic that calls a handful of delegate methods.
  */
-export function createPrismaStub(overrides: PrismaStubOverrides = {}): { prisma: PluginContext['prisma']; calls: RecordedPrismaCall[] } {
+export function createPrismaStub(overrides: PrismaStubOverrides = {}): {
+  prisma: PluginContext['prisma'];
+  calls: RecordedPrismaCall[];
+} {
   const calls: RecordedPrismaCall[] = [];
   const modelProxies = new Map<string, unknown>();
 
@@ -115,9 +118,13 @@ export function createTestContext(overrides: TestContextOverrides = {}): TestCon
     events,
     rateLimiter,
     queue: (_jobName: string) => ({ add: async () => undefined }) as unknown as Queue,
-    getConfig: async <T>(guildId: string) => (guildId in configByGuild ? configByGuild[guildId] : fallbackConfig) as T,
+    getConfig: async <T>(guildId: string) =>
+      (guildId in configByGuild ? configByGuild[guildId] : fallbackConfig) as T,
     setConfig: async <T>(guildId: string, patch: Partial<T>) =>
-      ({ ...((guildId in configByGuild ? configByGuild[guildId] : fallbackConfig) as object), ...patch }) as T,
+      ({
+        ...((guildId in configByGuild ? configByGuild[guildId] : fallbackConfig) as object),
+        ...patch,
+      }) as T,
     isEnabled: async () => enabled,
     services,
     audit: async () => undefined,

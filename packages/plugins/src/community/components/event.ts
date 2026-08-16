@@ -3,7 +3,11 @@ import { errorEmbed, successEmbed, type ComponentHandler } from '../../sdk';
 import { refreshEventMessage } from '../actions';
 import type { RsvpStatus } from '../service';
 
-const RSVP_ARG_TO_STATUS: Record<string, RsvpStatus> = { going: 'GOING', maybe: 'MAYBE', declined: 'DECLINED' };
+const RSVP_ARG_TO_STATUS: Record<string, RsvpStatus> = {
+  going: 'GOING',
+  maybe: 'MAYBE',
+  declined: 'DECLINED',
+};
 
 const rsvpButton: ComponentHandler = {
   action: 'rsvp',
@@ -34,7 +38,14 @@ const rsvpButton: ComponentHandler = {
       update: { status },
     });
 
-    await interaction.reply({ embeds: [successEmbed(`RSVP recorded: **${status === 'GOING' ? 'Going' : status === 'MAYBE' ? 'Maybe' : "Can't go"}**.`)], ephemeral: true });
+    await interaction.reply({
+      embeds: [
+        successEmbed(
+          `RSVP recorded: **${status === 'GOING' ? 'Going' : status === 'MAYBE' ? 'Maybe' : "Can't go"}**.`,
+        ),
+      ],
+      ephemeral: true,
+    });
     await refreshEventMessage(c.ctx, event);
   },
 };

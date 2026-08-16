@@ -32,7 +32,14 @@ type ButtonProps = CommonProps & ButtonHTMLAttributes<HTMLButtonElement> & { hre
 type LinkProps = CommonProps &
   Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & { href: string; external?: boolean };
 
-export function Button({ variant = 'primary', size = 'md', icon, className, children, ...rest }: ButtonProps) {
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  icon,
+  className,
+  children,
+  ...rest
+}: ButtonProps) {
   return (
     <button className={clsx(BASE, VARIANT_CLASSES[variant], SIZE_CLASSES[size], className)} {...rest}>
       {icon}
@@ -42,7 +49,16 @@ export function Button({ variant = 'primary', size = 'md', icon, className, chil
 }
 
 /** Same visual language as `Button`, but renders a link — internal via `next/link`, external via a plain `<a>`. */
-export function ButtonLink({ variant = 'primary', size = 'md', icon, className, children, href, external, ...rest }: LinkProps) {
+export function ButtonLink({
+  variant = 'primary',
+  size = 'md',
+  icon,
+  className,
+  children,
+  href,
+  external,
+  ...rest
+}: LinkProps) {
   const classes = clsx(BASE, VARIANT_CLASSES[variant], SIZE_CLASSES[size], className);
   if (external || href.startsWith('http')) {
     return (

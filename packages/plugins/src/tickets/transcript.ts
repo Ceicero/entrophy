@@ -42,7 +42,10 @@ export interface JsonTranscript {
 }
 
 /** Builds the JSON transcript payload — the full message list, stored/served as-is. */
-export function buildJsonTranscript(ticket: TranscriptTicketMeta, messages: TranscriptMessage[]): JsonTranscript {
+export function buildJsonTranscript(
+  ticket: TranscriptTicketMeta,
+  messages: TranscriptMessage[],
+): JsonTranscript {
   return { ticket, messageCount: messages.length, messages, generatedAt: new Date().toISOString() };
 }
 
@@ -58,13 +61,16 @@ function safeHref(url: string): string {
 }
 
 const CSP_META =
-  '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data: https:; script-src \'none\';">';
+  "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; img-src data: https:; script-src 'none';\">";
 
 function renderMessage(message: TranscriptMessage): string {
   const attachmentsHtml =
     message.attachments.length > 0
       ? `<div class="attachments">${message.attachments
-          .map((a) => `<a href="${escapeHtml(safeHref(a.url))}" rel="noopener noreferrer nofollow">${escapeHtml(a.name)}</a>`)
+          .map(
+            (a) =>
+              `<a href="${escapeHtml(safeHref(a.url))}" rel="noopener noreferrer nofollow">${escapeHtml(a.name)}</a>`,
+          )
           .join(' ')}</div>`
       : '';
 
@@ -82,11 +88,15 @@ export function buildHtmlTranscript(ticket: TranscriptTicketMeta, messages: Tran
   const intakeHtml =
     ticket.intake && Object.keys(ticket.intake).length > 0
       ? `<div class="intake"><h2>Intake form</h2>${Object.entries(ticket.intake)
-          .map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value).replace(/\n/g, '<br>')}</p>`)
+          .map(
+            ([label, value]) =>
+              `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value).replace(/\n/g, '<br>')}</p>`,
+          )
           .join('')}</div>`
       : '';
 
-  const rowsHtml = messages.length > 0 ? messages.map(renderMessage).join('\n') : '<p class="empty">No messages.</p>';
+  const rowsHtml =
+    messages.length > 0 ? messages.map(renderMessage).join('\n') : '<p class="empty">No messages.</p>';
 
   return `<!doctype html>
 <html lang="en">

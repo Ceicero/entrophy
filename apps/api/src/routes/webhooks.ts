@@ -50,7 +50,10 @@ async function claimEventOnce(app: ZodFastifyInstance, provider: string, eventId
 }
 
 function invalidSignature(): AppError {
-  return new AppError('invalid_signature', 'Webhook signature verification failed.', { status: 401, expose: true });
+  return new AppError('invalid_signature', 'Webhook signature verification failed.', {
+    status: 401,
+    expose: true,
+  });
 }
 
 /**
@@ -75,12 +78,17 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
       throw new ValidationError('Missing GitHub webhook headers.');
     }
 
-    const endpoint = await app.prisma.webhookEndpoint.findFirst({ where: { id: endpointId, direction: 'INBOUND', enabled: true, deletedAt: null } });
+    const endpoint = await app.prisma.webhookEndpoint.findFirst({
+      where: { id: endpointId, direction: 'INBOUND', enabled: true, deletedAt: null },
+    });
     if (!endpoint) throw new NotFoundError('Unknown webhook endpoint.');
 
     const secret = decryptSecret(endpoint.secretEnc);
     if (!verifyGithubSignature(raw, secret, signatureHeader)) {
-      await app.prisma.webhookEndpoint.update({ where: { id: endpointId }, data: { failureCount: { increment: 1 } } });
+      await app.prisma.webhookEndpoint.update({
+        where: { id: endpointId },
+        data: { failureCount: { increment: 1 } },
+      });
       throw invalidSignature();
     }
 
@@ -93,7 +101,10 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
         eventType: typeof eventType === 'string' ? eventType : 'unknown',
         payload: safeJsonParse(raw),
       });
-      await app.prisma.webhookEndpoint.update({ where: { id: endpointId }, data: { lastDeliveryAt: new Date(), failureCount: 0 } });
+      await app.prisma.webhookEndpoint.update({
+        where: { id: endpointId },
+        data: { lastDeliveryAt: new Date(), failureCount: 0 },
+      });
     }
 
     reply.status(202);
@@ -107,7 +118,10 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
       throw new ValidationError('Missing Stripe-Signature header.');
     }
     if (!env.STRIPE_WEBHOOK_SECRET) {
-      throw new AppError('stripe_not_configured', 'Stripe is not configured on this server.', { status: 503, expose: true });
+      throw new AppError('stripe_not_configured', 'Stripe is not configured on this server.', {
+        status: 503,
+        expose: true,
+      });
     }
     if (!verifyStripeSignature(raw, signatureHeader, env.STRIPE_WEBHOOK_SECRET)) {
       throw invalidSignature();
@@ -141,19 +155,37 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
     const signatureHeader = request.headers['twitch-eventsub-message-signature'];
     const messageType = request.headers['twitch-eventsub-message-type'];
 
-    if (typeof messageId !== 'string' || typeof timestamp !== 'string' || typeof signatureHeader !== 'string') {
+    if (
+      typeof messageId !== 'string' ||
+      typeof timestamp !== 'string' ||
+      typeof signatureHeader !== 'string'
+    ) {
       throw new ValidationError('Missing Twitch EventSub headers.');
     }
     if (!env.TWITCH_EVENTSUB_SECRET) {
-      throw new AppError('twitch_not_configured', 'Twitch EventSub is not configured on this server.', { status: 503, expose: true });
+      throw new AppError('twitch_not_configured', 'Twitch EventSub is not configured on this server.', {
+        status: 503,
+        expose: true,
+      });
     }
 
-    const valid = verifyTwitchEventSubSignature({ messageId, timestamp, body: raw, secret: env.TWITCH_EVENTSUB_SECRET, signatureHeader });
+    const valid = verifyTwitchEventSubSignature({
+      messageId,
+      timestamp,
+      body: raw,
+      secret: env.TWITCH_EVENTSUB_SECRET,
+      signatureHeader,
+    });
     if (!valid) throw invalidSignature();
 
     const payload = safeJsonParse(raw) as {
       challenge?: string;
-      subscription?: { id?: string; type?: string; status?: string; condition?: { broadcaster_user_id?: string } };
+      subscription?: {
+        id?: string;
+        type?: string;
+        status?: string;
+        condition?: { broadcaster_user_id?: string };
+      };
     };
 
     if (messageType === 'webhook_callback_verification') {
@@ -168,13 +200,21 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
       const subscriptionId = payload.subscription?.id;
       const reason = payload.subscription?.status ?? 'revoked';
       if (subscriptionId) {
-        const candidates = await app.prisma.integrationConnection.findMany({ where: { provider: 'TWITCH', deletedAt: null } });
-        const matches = candidates.filter((c) => (c.config as Record<string, unknown> | null)?.eventSubId === subscriptionId);
+        const candidates = await app.prisma.integrationConnection.findMany({
+          where: { provider: 'TWITCH', deletedAt: null },
+        });
+        const matches = candidates.filter(
+          (c) => (c.config as Record<string, unknown> | null)?.eventSubId === subscriptionId,
+        );
         for (const connection of matches) {
           const { eventSubId: _drop, ...rest } = (connection.config as Record<string, unknown>) ?? {};
           await app.prisma.integrationConnection.update({
             where: { id: connection.id },
-            data: { status: 'ERROR', lastError: `Twitch EventSub subscription revoked (${reason}).`, config: rest as Prisma.InputJsonValue },
+            data: {
+              status: 'ERROR',
+              lastError: `Twitch EventSub subscription revoked (${reason}).`,
+              config: rest as Prisma.InputJsonValue,
+            },
           });
         }
       }
@@ -206,16 +246,24 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
       throw new ValidationError('Missing X-Entrophy-Signature header.');
     }
 
-    const endpoint = await app.prisma.webhookEndpoint.findFirst({ where: { id: endpointId, direction: 'INBOUND', enabled: true, deletedAt: null } });
+    const endpoint = await app.prisma.webhookEndpoint.findFirst({
+      where: { id: endpointId, direction: 'INBOUND', enabled: true, deletedAt: null },
+    });
     if (!endpoint) throw new NotFoundError('Unknown webhook endpoint.');
 
     const secret = decryptSecret(endpoint.secretEnc);
     if (!verifyHmacSha256(raw, secret, signatureHeader)) {
-      await app.prisma.webhookEndpoint.update({ where: { id: endpointId }, data: { failureCount: { increment: 1 } } });
+      await app.prisma.webhookEndpoint.update({
+        where: { id: endpointId },
+        data: { failureCount: { increment: 1 } },
+      });
       throw invalidSignature();
     }
 
-    const eventId = typeof eventIdHeader === 'string' && eventIdHeader.length > 0 ? eventIdHeader : createHash('sha256').update(raw).digest('hex');
+    const eventId =
+      typeof eventIdHeader === 'string' && eventIdHeader.length > 0
+        ? eventIdHeader
+        : createHash('sha256').update(raw).digest('hex');
     const isNew = await claimEventOnce(app, `generic:${endpointId}`, eventId);
     if (isNew) {
       await app.queues.integrationsInbound().add('generic', {
@@ -225,7 +273,10 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
         eventType: typeof eventTypeHeader === 'string' ? eventTypeHeader : 'unknown',
         payload: safeJsonParse(raw),
       });
-      await app.prisma.webhookEndpoint.update({ where: { id: endpointId }, data: { lastDeliveryAt: new Date(), failureCount: 0 } });
+      await app.prisma.webhookEndpoint.update({
+        where: { id: endpointId },
+        data: { lastDeliveryAt: new Date(), failureCount: 0 },
+      });
     }
 
     reply.status(202);

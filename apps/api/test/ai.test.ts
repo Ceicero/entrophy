@@ -37,7 +37,11 @@ async function setUpAuthedApp() {
   const { app, redis, prisma, prismaCalls, queues } = await buildTestApp(overrides);
   const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
   await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-  const mutHeaders = { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken };
+  const mutHeaders = {
+    cookie: cookieHeader,
+    origin: 'http://localhost:3000',
+    'x-csrf-token': session.csrfToken,
+  };
   return { app, redis, prisma, prismaCalls, queues, cookieHeader, mutHeaders };
 }
 
@@ -45,7 +49,11 @@ describe('GET /guilds/:guildId/ai/settings', () => {
   it('returns platform defaults and hasKey:false when nothing has been configured yet', async () => {
     const { app, cookieHeader } = await setUpAuthedApp();
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/ai/settings`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/ai/settings`,
+      headers: { cookie: cookieHeader },
+    });
 
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -84,7 +92,9 @@ describe('PUT /guilds/:guildId/ai/settings', () => {
     expect(body.apiKeyEnc).toBeUndefined();
 
     // The stored config really does hold an encrypted (not plaintext) value that decrypts back correctly.
-    const stored = await prisma.pluginConfig.findUnique({ where: { guildId_pluginId: { guildId: GUILD_ID, pluginId: 'ai' } } });
+    const stored = await prisma.pluginConfig.findUnique({
+      where: { guildId_pluginId: { guildId: GUILD_ID, pluginId: 'ai' } },
+    });
     const storedConfig = stored!.config as { apiKeyEnc: string };
     expect(storedConfig.apiKeyEnc).not.toBe('sk-super-secret-value');
     expect(storedConfig.apiKeyEnc.startsWith('v1:')).toBe(true);
@@ -96,8 +106,18 @@ describe('PUT /guilds/:guildId/ai/settings', () => {
   it('clearKey removes a previously-set key', async () => {
     const { app, mutHeaders } = await setUpAuthedApp();
 
-    await app.inject({ method: 'PUT', url: `/guilds/${GUILD_ID}/ai/settings`, headers: mutHeaders, payload: { apiKey: 'sk-abc' } });
-    const cleared = await app.inject({ method: 'PUT', url: `/guilds/${GUILD_ID}/ai/settings`, headers: mutHeaders, payload: { clearKey: true } });
+    await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/ai/settings`,
+      headers: mutHeaders,
+      payload: { apiKey: 'sk-abc' },
+    });
+    const cleared = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/ai/settings`,
+      headers: mutHeaders,
+      payload: { clearKey: true },
+    });
 
     expect(cleared.statusCode).toBe(200);
     expect(cleared.json().hasKey).toBe(false);
@@ -135,6 +155,36 @@ describe('PUT /guilds/:guildId/ai/settings', () => {
     expect(res.statusCode).toBe(400);
     await app.close();
   });
+
+  it('rejects a compatible-provider baseUrl pointing at a private/internal address (SSRF guard)', async () => {
+    const { app, mutHeaders, prisma } = await setUpAuthedApp();
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/ai/settings`,
+      headers: mutHeaders,
+      payload: { provider: 'compatible', baseUrl: 'http://169.254.169.254/latest/meta-data' },
+    });
+    expect(res.statusCode).toBe(400);
+
+    const stored = await prisma.pluginConfig.findUnique({
+      where: { guildId_pluginId: { guildId: GUILD_ID, pluginId: 'ai' } },
+    });
+    expect(stored).toBeNull();
+
+    await app.close();
+  });
+
+  it('rejects a plain-http compatible-provider baseUrl', async () => {
+    const { app, mutHeaders } = await setUpAuthedApp();
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/ai/settings`,
+      headers: mutHeaders,
+      payload: { provider: 'compatible', baseUrl: 'http://llm.example.com' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
 });
 
 describe('GET /guilds/:guildId/ai/usage', () => {
@@ -156,7 +206,11 @@ describe('GET /guilds/:guildId/ai/usage', () => {
     const { cookieHeader } = await loginAs(app, redis, { userId: USER_ID });
     await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/ai/usage`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/ai/usage`,
+      headers: { cookie: cookieHeader },
+    });
 
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -176,9 +230,19 @@ describe('GET /guilds/:guildId/ai/usage', () => {
 
   it('returns zeroed totals with no rows', async () => {
     const { app, cookieHeader } = await setUpAuthedApp();
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/ai/usage`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/ai/usage`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toMatchObject({ totalRequests: 0, totalPromptTokens: 0, totalCompletionTokens: 0, daily: [], topCommands: [] });
+    expect(res.json()).toMatchObject({
+      totalRequests: 0,
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      daily: [],
+      topCommands: [],
+    });
     await app.close();
   });
 });

@@ -32,7 +32,10 @@ export function validateUserRegex(pattern: string, flags = 'i'): ValidateUserReg
     const compiled = new RegExp(pattern, flags);
     void compiled;
   } catch (err) {
-    return { ok: false, error: `Pattern failed to compile: ${err instanceof Error ? err.message : String(err)}` };
+    return {
+      ok: false,
+      error: `Pattern failed to compile: ${err instanceof Error ? err.message : String(err)}`,
+    };
   }
   return { ok: true };
 }

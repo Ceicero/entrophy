@@ -71,7 +71,9 @@ export class OpenMeteoWeatherAdapter implements WeatherAdapter {
     try {
       geocodeResponse = await this.fetchImpl(geocodeUrl.toString());
     } catch (err) {
-      throw new WeatherAdapterError(`Could not reach Open-Meteo geocoding: ${err instanceof Error ? err.message : String(err)}`);
+      throw new WeatherAdapterError(
+        `Could not reach Open-Meteo geocoding: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     if (!geocodeResponse.ok) {
       throw new WeatherAdapterError(`Open-Meteo geocoding returned an error (${geocodeResponse.status}).`);
@@ -85,7 +87,10 @@ export class OpenMeteoWeatherAdapter implements WeatherAdapter {
     const forecastUrl = new URL(FORECAST_URL);
     forecastUrl.searchParams.set('latitude', String(place.latitude));
     forecastUrl.searchParams.set('longitude', String(place.longitude));
-    forecastUrl.searchParams.set('current', 'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m');
+    forecastUrl.searchParams.set(
+      'current',
+      'temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m',
+    );
     forecastUrl.searchParams.set('temperature_unit', units === 'imperial' ? 'fahrenheit' : 'celsius');
     forecastUrl.searchParams.set('wind_speed_unit', units === 'imperial' ? 'mph' : 'kmh');
 
@@ -93,7 +98,9 @@ export class OpenMeteoWeatherAdapter implements WeatherAdapter {
     try {
       forecastResponse = await this.fetchImpl(forecastUrl.toString());
     } catch (err) {
-      throw new WeatherAdapterError(`Could not reach Open-Meteo forecast: ${err instanceof Error ? err.message : String(err)}`);
+      throw new WeatherAdapterError(
+        `Could not reach Open-Meteo forecast: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     if (!forecastResponse.ok) {
       throw new WeatherAdapterError(`Open-Meteo forecast returned an error (${forecastResponse.status}).`);

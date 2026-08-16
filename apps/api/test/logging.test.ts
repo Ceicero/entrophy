@@ -35,7 +35,11 @@ async function authedContext() {
   });
   const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
   await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-  const mutHeaders = { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken };
+  const mutHeaders = {
+    cookie: cookieHeader,
+    origin: 'http://localhost:3000',
+    'x-csrf-token': session.csrfToken,
+  };
   return { app, cookieHeader, mutHeaders, prisma };
 }
 
@@ -43,7 +47,11 @@ describe('logging settings', () => {
   it('GET returns the plugin defaults when nothing has been configured yet', async () => {
     const { app, cookieHeader } = await authedContext();
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/logging/settings`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/logging/settings`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.storeEvents).toBe(true);
@@ -67,7 +75,11 @@ describe('logging settings', () => {
     expect(put.json().retentionDays).toBe(30);
     expect(put.json().storeEvents).toBe(true); // unaffected default preserved
 
-    const get = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/logging/settings`, headers: { cookie: cookieHeader } });
+    const get = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/logging/settings`,
+      headers: { cookie: cookieHeader },
+    });
     expect(get.json().retentionDays).toBe(30);
 
     await app.close();

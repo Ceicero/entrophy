@@ -51,10 +51,9 @@ messages the user itself. Every flag and every decision is written to a read-onl
 ledger channel and to the database — searchable, exportable, and appealable. It's moderation that
 stays professional and consistent no matter which moderator is on duty, with a paper trail nobody has
 to trust blindly. That same philosophy — least-privilege permissions, no message content logged
-unless a feature explicitly needs it and an admin turns it on, free entry by default, no wagering
-ever, and a real publisher-rules check before a tournament-style event can go live — runs through
-every plugin in the platform, not just Enforcer. Compliance isn't a checkbox here; it's the product's
-moat.
+unless a feature explicitly needs it and an admin turns it on, a virtual-only economy with no real
+money involved, and a full audit trail of every config change — runs through every plugin in the
+platform, not just Enforcer. Compliance isn't a checkbox here; it's the product's moat.
 
 ## Feature overview
 
@@ -63,22 +62,22 @@ Discord features that must be explicitly turned on for the bot (see
 [Discord Developer Portal setup](#discord-developer-portal-setup)); plugins that need one and don't
 have it degrade gracefully instead of breaking — see `docs/PERMISSIONS.md` for exactly what changes.
 
-| Plugin | What it does | Default | Privileged intents |
-|---|---|---|---|
-| **Admin** | Guided server setup, core config, plugin enable/disable, permission auditing, bot health — the always-on control plane. | Enabled (always on) | — |
-| **Moderation** | Warnings, timeouts, kicks, bans, cases, and the moderator hierarchy — the core toolkit. | Enabled | — |
-| **Automod** | Configurable spam, mention, invite, scam-link, word/regex, caps, and raid-detection rules, dry-run by default. | Enabled (dry-run on) | Message Content, Server Members |
-| **Enforcer** | Policy-driven, hands-off moderation with a flag queue and a read-only ledger — the headline feature. | Disabled | Message Content |
-| **Logging** | Routes member/message/role/channel/moderation/voice events to log channels, with redaction and retention. | Enabled | Server Members, Message Content |
-| **Tickets** | Button-driven support tickets: categories, staff assignment, tags, HTML/JSON transcripts. | Disabled | Message Content |
-| **Roles & Onboarding** | Self-assignable role panels, welcome/goodbye, onboarding checklist, member verification. | Disabled | Server Members |
-| **Engagement** | Leveling/XP with anti-farming controls, leaderboards, reputation, starboard, temp voice channels. | Enabled | Message Content |
-| **Community** | Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs. | Enabled | — |
-| **Economy** | Optional virtual-currency balance/daily/give/leaderboard — no real money, ever. | Disabled | — |
-| **Utility** | `/help`, user/server info, timestamps, embed builder, AFK, translation, weather, bot health. | Enabled | — |
-| **Music & Media** | Playlist/queue management for a legal, user-authorized audio provider only. Unavailable until one is configured. | Disabled | — |
-| **Integrations** | Secure connector framework: Twitch, YouTube, GitHub, Reddit, Steam, Google/Microsoft Calendar, Notion, Stripe, webhooks. | Disabled | — |
-| **AI Assistant** | Optional `/ask`, `/summarize`, `/draft`, `/mod-assist` — per-server opt-in, cooldowns, token budgets. | Disabled | — |
+| Plugin                 | What it does                                                                                                             | Default              | Privileged intents              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------- | ------------------------------- |
+| **Admin**              | Guided server setup, core config, plugin enable/disable, permission auditing, bot health — the always-on control plane.  | Enabled (always on)  | —                               |
+| **Moderation**         | Warnings, timeouts, kicks, bans, cases, and the moderator hierarchy — the core toolkit.                                  | Enabled              | —                               |
+| **Automod**            | Configurable spam, mention, invite, scam-link, word/regex, caps, and raid-detection rules, dry-run by default.           | Enabled (dry-run on) | Message Content, Server Members |
+| **Enforcer**           | Policy-driven, hands-off moderation with a flag queue and a read-only ledger — the headline feature.                     | Disabled             | Message Content                 |
+| **Logging**            | Routes member/message/role/channel/moderation/voice events to log channels, with redaction and retention.                | Enabled              | Server Members, Message Content |
+| **Tickets**            | Button-driven support tickets: categories, staff assignment, tags, HTML/JSON transcripts.                                | Disabled             | Message Content                 |
+| **Roles & Onboarding** | Self-assignable role panels, welcome/goodbye, onboarding checklist, member verification.                                 | Disabled             | Server Members                  |
+| **Engagement**         | Leveling/XP with anti-farming controls, leaderboards, reputation, starboard, temp voice channels.                        | Enabled              | Message Content                 |
+| **Community**          | Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs.                                          | Enabled              | —                               |
+| **Economy**            | Optional virtual-currency balance/daily/give/leaderboard — no real money, ever.                                          | Disabled             | —                               |
+| **Utility**            | `/help`, user/server info, timestamps, embed builder, AFK, translation, weather, bot health.                             | Enabled              | —                               |
+| **Music & Media**      | Playlist/queue management for a legal, user-authorized audio provider only. Unavailable until one is configured.         | Disabled             | —                               |
+| **Integrations**       | Secure connector framework: Twitch, YouTube, GitHub, Reddit, Steam, Google/Microsoft Calendar, Notion, Stripe, webhooks. | Disabled             | —                               |
+| **AI Assistant**       | Optional `/ask`, `/summarize`, `/draft`, `/mod-assist` — per-server opt-in, cooldowns, token budgets.                    | Disabled             | —                               |
 
 Full command list per plugin: `docs/commands.json` (generated, always current) or the website's
 **Features & Commands** page.
@@ -252,15 +251,15 @@ duplicated in two places.
 
 Canonical production layout on `entrophybot.com`:
 
-| Surface | URL | Key env var(s) |
-|---|---|---|
-| Website | `https://entrophybot.com` (+ `www` redirects to apex) | `WEB_URL` |
-| Dashboard | `https://app.entrophybot.com` | `DASHBOARD_URL`, `NEXT_PUBLIC_DASHBOARD_URL` |
-| API | `https://api.entrophybot.com` | `API_BASE_URL`, `NEXT_PUBLIC_API_URL`, `PUBLIC_WEBHOOK_BASE_URL` |
-| Cookies | shared apex domain | `COOKIE_DOMAIN=.entrophybot.com`, `SESSION_COOKIE_SAMESITE=lax` |
-| Discord OAuth redirect | `https://api.entrophybot.com/auth/discord/callback` | `DISCORD_OAUTH_REDIRECT_URI` |
-| Stripe webhook | `https://api.entrophybot.com/webhooks/stripe` | `STRIPE_WEBHOOK_SECRET` |
-| Twitch/GitHub/generic webhooks | `https://api.entrophybot.com/webhooks/...` | — |
+| Surface                        | URL                                                   | Key env var(s)                                                   |
+| ------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------- |
+| Website                        | `https://entrophybot.com` (+ `www` redirects to apex) | `WEB_URL`                                                        |
+| Dashboard                      | `https://app.entrophybot.com`                         | `DASHBOARD_URL`, `NEXT_PUBLIC_DASHBOARD_URL`                     |
+| API                            | `https://api.entrophybot.com`                         | `API_BASE_URL`, `NEXT_PUBLIC_API_URL`, `PUBLIC_WEBHOOK_BASE_URL` |
+| Cookies                        | shared apex domain                                    | `COOKIE_DOMAIN=.entrophybot.com`, `SESSION_COOKIE_SAMESITE=lax`  |
+| Discord OAuth redirect         | `https://api.entrophybot.com/auth/discord/callback`   | `DISCORD_OAUTH_REDIRECT_URI`                                     |
+| Stripe webhook                 | `https://api.entrophybot.com/webhooks/stripe`         | `STRIPE_WEBHOOK_SECRET`                                          |
+| Twitch/GitHub/generic webhooks | `https://api.entrophybot.com/webhooks/...`            | —                                                                |
 
 `.env.production.example` is pre-filled with every one of these values for `entrophybot.com` —
 copy it and fill in only the blank secrets (`DATABASE_URL`, `REDIS_URL`, `DISCORD_TOKEN`,
@@ -329,23 +328,24 @@ of a broken checkout — donations are entirely optional infrastructure.
 
 Root scripts (`package.json`), run from the repo root:
 
-| Script | What it does |
-|---|---|
-| `pnpm dev` | Runs `bot`, `api`, `dashboard` together in watch mode |
-| `pnpm lint` | Lints every package/app |
-| `pnpm typecheck` | Type-checks every package/app (`tsc --noEmit`) |
-| `pnpm test` | Runs every package/app's Vitest suite |
-| `pnpm test:e2e` | Runs the dashboard's Playwright e2e specs |
-| `pnpm build` | Builds everything with a real build step (mainly `dashboard` and `web`) |
-| `pnpm db:generate` | Regenerates the Prisma client |
-| `pnpm db:migrate` | Applies committed migrations (`prisma migrate deploy`) — safe for production |
-| `pnpm db:migrate:dev` | Generates + applies a new migration from schema changes — dev only, never against prod |
-| `pnpm db:seed` | Seeds a clearly-labelled demo guild (`Entrophy Demo (seed)`) — never fake real-looking data |
-| `pnpm commands:register` | Registers slash/context-menu commands with Discord (`DEV_GUILD_ID` if set, else global) |
-| `pnpm commands:export` | Regenerates `docs/commands.json`, `docs/invite.json`, and the website's copies from the live plugin registry |
-| `pnpm docs:permissions` | Regenerates `docs/PERMISSIONS.md` from the live plugin registry |
-| `pnpm brand:sync` | Copies the brand logo from `assets/brand/` into each app's `public/` (no-op if the source file is missing) |
-| `pnpm format` / `format:check` | Prettier write / check |
+| Script                         | What it does                                                                                                                                                            |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                     | Runs `bot`, `api`, `dashboard` together in watch mode                                                                                                                   |
+| `pnpm lint`                    | Lints every package/app                                                                                                                                                 |
+| `pnpm typecheck`               | Type-checks every package/app (`tsc --noEmit`)                                                                                                                          |
+| `pnpm test`                    | Runs every package/app's Vitest suite                                                                                                                                   |
+| `pnpm test:e2e`                | Runs the website's Playwright smoke specs, then the dashboard's (dashboard specs self-skip without a running `E2E_TEST_MODE=true` API — see `apps/dashboard/README.md`) |
+| `pnpm build`                   | Builds everything with a real build step (mainly `dashboard` and `web`)                                                                                                 |
+| `pnpm db:generate`             | Regenerates the Prisma client                                                                                                                                           |
+| `pnpm db:migrate`              | Applies committed migrations (`prisma migrate deploy`) — safe for production                                                                                            |
+| `pnpm db:migrate:dev`          | Generates + applies a new migration from schema changes — dev only, never against prod                                                                                  |
+| `pnpm db:seed`                 | Seeds a clearly-labelled demo guild (`Entrophy Demo (seed)`) — never fake real-looking data                                                                             |
+| `pnpm commands:register`       | Registers slash/context-menu commands with Discord (`DEV_GUILD_ID` if set, else global)                                                                                 |
+| `pnpm commands:export`         | Regenerates `docs/commands.json`, `docs/invite.json`, and the website's copies from the live plugin registry                                                            |
+| `pnpm docs:permissions`        | Regenerates `docs/PERMISSIONS.md` from the live plugin registry                                                                                                         |
+| `pnpm check:i18n`              | Verifies every plugin registers `locales/en.json` and every `t('key')`/`c.t('key')` call site resolves to a real translation (not just a fallback to the raw key)       |
+| `pnpm brand:sync`              | Copies the brand logo from `assets/brand/` into each app's `public/` (no-op if the source file is missing)                                                              |
+| `pnpm format` / `format:check` | Prettier write / check                                                                                                                                                  |
 
 **Tests**: Vitest per package, focused on logic that doesn't need a live Discord gateway
 (permission checks, automod rule evaluators, moderation hierarchy, encryption, signature

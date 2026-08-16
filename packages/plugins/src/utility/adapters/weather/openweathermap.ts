@@ -30,7 +30,9 @@ export class OpenWeatherMapAdapter implements WeatherAdapter {
     try {
       response = await this.fetchImpl(url.toString());
     } catch (err) {
-      throw new WeatherAdapterError(`Could not reach OpenWeatherMap: ${err instanceof Error ? err.message : String(err)}`);
+      throw new WeatherAdapterError(
+        `Could not reach OpenWeatherMap: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     const data = (await response.json().catch(() => ({}))) as OpenWeatherMapResponse;

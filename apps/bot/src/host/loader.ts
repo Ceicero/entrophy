@@ -63,7 +63,12 @@ export interface LoadedHost {
 /** Best-effort extraction of a guild id from a heterogeneous `ClientEvents[K]` args tuple, for the platform error event. */
 function firstGuildIdArg(args: unknown[]): string | undefined {
   for (const arg of args) {
-    if (arg && typeof arg === 'object' && 'guildId' in arg && typeof (arg as { guildId: unknown }).guildId === 'string') {
+    if (
+      arg &&
+      typeof arg === 'object' &&
+      'guildId' in arg &&
+      typeof (arg as { guildId: unknown }).guildId === 'string'
+    ) {
       return (arg as { guildId: string }).guildId;
     }
     if (arg && typeof arg === 'object' && 'guild' in arg) {
@@ -84,7 +89,8 @@ function firstGuildIdArg(args: unknown[]): string | undefined {
  * module's Discord-event wiring.
  */
 export async function loadPlugins(deps: LoadPluginsDeps): Promise<LoadedHost> {
-  const { plugins, client, prisma, redis, env, botOwnerIds, intentsEnabled, bullConnectionOptions, logger } = deps;
+  const { plugins, client, prisma, redis, env, botOwnerIds, intentsEnabled, bullConnectionOptions, logger } =
+    deps;
 
   const registry = new PluginRegistry(plugins);
   const events = createPlatformEvents(logger);
@@ -171,7 +177,10 @@ export async function loadPlugins(deps: LoadPluginsDeps): Promise<LoadedHost> {
             await handler.handler(ctx, ...args);
           } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            logger.error({ plugin: pluginId, event: handler.event, err: message }, 'plugin event handler threw');
+            logger.error(
+              { plugin: pluginId, event: handler.event, err: message },
+              'plugin event handler threw',
+            );
             events.emit('plugin.error', {
               pluginId,
               guildId: guildId ?? firstGuildIdArg(args),

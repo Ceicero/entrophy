@@ -2,7 +2,11 @@ import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
 import { NotFoundError, ValidationError, buildPaginated, paginate } from '@entrophy/core';
 import { levelFromXp } from '@entrophy/plugins/engagement/service';
-import type { LevelProfileDto, LevelRewardDto, ReputationLeaderboardEntryDto } from '@entrophy/types/engagement';
+import type {
+  LevelProfileDto,
+  LevelRewardDto,
+  ReputationLeaderboardEntryDto,
+} from '@entrophy/types/engagement';
 import { requireGuildAccess } from '../lib/guild-access';
 import { guildIdParamSchema, paginationQuerySchema, snowflakeSchema } from '../lib/schemas';
 import { writeDashboardAudit } from '../lib/audit';
@@ -19,12 +23,36 @@ const xpAdjustBodySchema = z.object({
   reason: z.string().trim().max(500).optional(),
 });
 
-function toLevelProfileDto(row: { userId: string; xp: number; level: number; messages: number; voiceMinutes: number }): LevelProfileDto {
-  return { userId: row.userId, xp: row.xp, level: row.level, messages: row.messages, voiceMinutes: row.voiceMinutes };
+function toLevelProfileDto(row: {
+  userId: string;
+  xp: number;
+  level: number;
+  messages: number;
+  voiceMinutes: number;
+}): LevelProfileDto {
+  return {
+    userId: row.userId,
+    xp: row.xp,
+    level: row.level,
+    messages: row.messages,
+    voiceMinutes: row.voiceMinutes,
+  };
 }
 
-function toLevelRewardDto(row: { id: string; guildId: string; level: number; roleId: string; createdAt: Date }): LevelRewardDto {
-  return { id: row.id, guildId: row.guildId, level: row.level, roleId: row.roleId, createdAt: row.createdAt.toISOString() };
+function toLevelRewardDto(row: {
+  id: string;
+  guildId: string;
+  level: number;
+  roleId: string;
+  createdAt: Date;
+}): LevelRewardDto {
+  return {
+    id: row.id,
+    guildId: row.guildId,
+    level: row.level,
+    roleId: row.roleId,
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
 /**
@@ -34,25 +62,44 @@ function toLevelRewardDto(row: { id: string; guildId: string; level: number; rol
  * and the reputation leaderboard (ARCHITECTURE.md §10).
  */
 export default async function engagementRoutes(app: ZodFastifyInstance): Promise<void> {
-  app.get('/:guildId/engagement/config', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    return app.configStore.getConfig(request.guildId!, ENGAGEMENT_PLUGIN_ID);
-  });
+  app.get(
+    '/:guildId/engagement/config',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      return app.configStore.getConfig(request.guildId!, ENGAGEMENT_PLUGIN_ID);
+    },
+  );
 
   app.put(
     '/:guildId/engagement/config',
-    { schema: { params: guildIdParamSchema, body: z.record(z.string(), z.unknown()) }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, body: z.record(z.string(), z.unknown()) },
+      preHandler: requireGuildAccess(),
+    },
     async (request) => {
       const guildId = request.guildId!;
       const session = request.session!;
-      const updated = await app.configStore.setConfig(guildId, ENGAGEMENT_PLUGIN_ID, request.body, { id: session.userId, source: 'dashboard' });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'engagement.config.update', targetType: 'plugin_config', targetId: ENGAGEMENT_PLUGIN_ID });
+      const updated = await app.configStore.setConfig(guildId, ENGAGEMENT_PLUGIN_ID, request.body, {
+        id: session.userId,
+        source: 'dashboard',
+      });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'engagement.config.update',
+        targetType: 'plugin_config',
+        targetId: ENGAGEMENT_PLUGIN_ID,
+      });
       return updated;
     },
   );
 
   app.get(
     '/:guildId/engagement/leaderboard',
-    { schema: { params: guildIdParamSchema, querystring: paginationQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: paginationQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request) => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit } = request.query;
@@ -67,10 +114,17 @@ export default async function engagementRoutes(app: ZodFastifyInstance): Promise
     },
   );
 
-  app.get('/:guildId/engagement/rewards', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    const rows = await app.prisma.levelReward.findMany({ where: { guildId: request.guildId! }, orderBy: { level: 'asc' } });
-    return rows.map(toLevelRewardDto);
-  });
+  app.get(
+    '/:guildId/engagement/rewards',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      const rows = await app.prisma.levelReward.findMany({
+        where: { guildId: request.guildId! },
+        orderBy: { level: 'asc' },
+      });
+      return rows.map(toLevelRewardDto);
+    },
+  );
 
   app.post(
     '/:guildId/engagement/rewards',
@@ -78,11 +132,20 @@ export default async function engagementRoutes(app: ZodFastifyInstance): Promise
     async (request, reply) => {
       const guildId = request.guildId!;
       const session = request.session!;
-      const existing = await app.prisma.levelReward.findFirst({ where: { guildId, level: request.body.level, roleId: request.body.roleId } });
+      const existing = await app.prisma.levelReward.findFirst({
+        where: { guildId, level: request.body.level, roleId: request.body.roleId },
+      });
       if (existing) throw new ValidationError('That level already has this role as a reward.');
 
       const row = await app.prisma.levelReward.create({ data: { guildId, ...request.body } });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'engagement.reward.create', targetType: 'level_reward', targetId: row.id, after: { level: row.level, roleId: row.roleId } });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'engagement.reward.create',
+        targetType: 'level_reward',
+        targetId: row.id,
+        after: { level: row.level, roleId: row.roleId },
+      });
       reply.status(201);
       return toLevelRewardDto(row);
     },
@@ -99,7 +162,13 @@ export default async function engagementRoutes(app: ZodFastifyInstance): Promise
       if (!existing) throw new NotFoundError('Level reward not found.');
 
       await app.prisma.levelReward.delete({ where: { id: rewardId } });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'engagement.reward.delete', targetType: 'level_reward', targetId: rewardId });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'engagement.reward.delete',
+        targetType: 'level_reward',
+        targetId: rewardId,
+      });
       reply.status(204);
       return null;
     },
@@ -114,9 +183,16 @@ export default async function engagementRoutes(app: ZodFastifyInstance): Promise
       const session = request.session!;
       const { userId, mode, amount, reason } = request.body;
 
-      const existing = await app.prisma.levelProfile.findUnique({ where: { guildId_userId: { guildId, userId } } });
+      const existing = await app.prisma.levelProfile.findUnique({
+        where: { guildId_userId: { guildId, userId } },
+      });
       const currentXp = existing?.xp ?? 0;
-      const nextXp = mode === 'give' ? currentXp + amount : mode === 'remove' ? Math.max(0, currentXp - amount) : Math.max(0, amount);
+      const nextXp =
+        mode === 'give'
+          ? currentXp + amount
+          : mode === 'remove'
+            ? Math.max(0, currentXp - amount)
+            : Math.max(0, amount);
       const nextLevel = levelFromXp(nextXp);
 
       const row = await app.prisma.levelProfile.upsert({
@@ -142,7 +218,10 @@ export default async function engagementRoutes(app: ZodFastifyInstance): Promise
 
   app.get(
     '/:guildId/engagement/rep/leaderboard',
-    { schema: { params: guildIdParamSchema, querystring: paginationQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: paginationQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request) => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit } = request.query;
@@ -158,7 +237,11 @@ export default async function engagementRoutes(app: ZodFastifyInstance): Promise
         take: limit + 1,
       });
 
-      const items: ReputationLeaderboardEntryDto[] = grouped.map((g) => ({ userId: g.toUserId, total: g._sum.amount ?? 0, eventCount: g._count._all }));
+      const items: ReputationLeaderboardEntryDto[] = grouped.map((g) => ({
+        userId: g.toUserId,
+        total: g._sum.amount ?? 0,
+        eventCount: g._count._all,
+      }));
       return buildPaginated(items, limit, offset);
     },
   );

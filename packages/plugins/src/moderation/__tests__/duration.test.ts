@@ -19,7 +19,7 @@ describe('parseTimeoutDuration', () => {
     expect(parseTimeoutDuration('1s')).toMatchObject({ ok: false });
   });
 
-  it('accepts exactly Discord\'s 28-day cap', () => {
+  it("accepts exactly Discord's 28-day cap", () => {
     const result = parseTimeoutDuration('28d');
     expect(result).toEqual({ ok: true, ms: MAX_TIMEOUT_MS });
   });

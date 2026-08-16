@@ -100,7 +100,9 @@ export function toPublicError(err: unknown): PublicError {
         error: {
           code: 'validation_error',
           message: 'Validation failed.',
-          details: { issues: err.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })) },
+          details: {
+            issues: err.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
+          },
         },
       },
     };

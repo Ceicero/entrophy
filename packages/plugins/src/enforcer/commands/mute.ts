@@ -11,15 +11,24 @@ export function addMuteSubcommands(builder: SlashCommandBuilder): SlashCommandBu
         .setName('mute')
         .setDescription('Mute a user with the configured mute role, through the standard decision pipeline.')
         .addUserOption((opt) => opt.setName('user').setDescription('User').setRequired(true))
-        .addStringOption((opt) => opt.setName('duration').setDescription('e.g. 30m, 2h (default: server default, or indefinite).').setRequired(false))
-        .addStringOption((opt) => opt.setName('reason').setDescription('Reason.').setRequired(false).setMaxLength(1000)),
+        .addStringOption((opt) =>
+          opt
+            .setName('duration')
+            .setDescription('e.g. 30m, 2h (default: server default, or indefinite).')
+            .setRequired(false),
+        )
+        .addStringOption((opt) =>
+          opt.setName('reason').setDescription('Reason.').setRequired(false).setMaxLength(1000),
+        ),
     )
     .addSubcommand((sub) =>
       sub
         .setName('unmute')
         .setDescription('Remove the mute role from a user.')
         .addUserOption((opt) => opt.setName('user').setDescription('User').setRequired(true))
-        .addStringOption((opt) => opt.setName('reason').setDescription('Reason.').setRequired(false).setMaxLength(1000)),
+        .addStringOption((opt) =>
+          opt.setName('reason').setDescription('Reason.').setRequired(false).setMaxLength(1000),
+        ),
     ) as SlashCommandBuilder;
 }
 
@@ -44,7 +53,8 @@ async function muteOrUnmute(c: CommandContext, decision: 'MUTE' | 'UNMUTE'): Pro
   const flagged = await flagRecord(c.ctx, {
     guildId: c.guildId,
     userId: user.id,
-    content: reason ?? `Manual ${decision === 'MUTE' ? 'mute' : 'unmute'} via /enforcer ${decision.toLowerCase()}`,
+    content:
+      reason ?? `Manual ${decision === 'MUTE' ? 'mute' : 'unmute'} via /enforcer ${decision.toLowerCase()}`,
     source: 'MANUAL',
     flaggedBy: c.interaction.user.id,
   });
@@ -60,7 +70,9 @@ async function muteOrUnmute(c: CommandContext, decision: 'MUTE' | 'UNMUTE'): Pro
     source: 'bot',
   });
 
-  await c.interaction.editReply({ embeds: [successEmbed(c.t(decision === 'MUTE' ? 'mute.muted' : 'mute.unmuted', { userId: user.id }))] });
+  await c.interaction.editReply({
+    embeds: [successEmbed(c.t(decision === 'MUTE' ? 'mute.muted' : 'mute.unmuted', { userId: user.id }))],
+  });
 }
 
 export async function executeMute(c: CommandContext): Promise<void> {

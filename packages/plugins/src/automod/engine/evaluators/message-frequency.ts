@@ -5,9 +5,17 @@ import { NO_MATCH, type MessageEvaluator } from '../types';
 type Config = z.infer<typeof messageFrequencyConfigSchema>;
 
 /** Flags a user sending more than `maxMessages` messages within `windowSeconds`. No content intent required. */
-export const evaluateMessageFrequency: MessageEvaluator<Config> = async ({ message, windowStore }, config) => {
+export const evaluateMessageFrequency: MessageEvaluator<Config> = async (
+  { message, windowStore },
+  config,
+) => {
   const windowMs = config.windowSeconds * 1000;
-  const count = await windowStore.pushAndCount(`freq:${message.authorId}`, message.messageId, message.createdAt.getTime(), windowMs);
+  const count = await windowStore.pushAndCount(
+    `freq:${message.authorId}`,
+    message.messageId,
+    message.createdAt.getTime(),
+    windowMs,
+  );
 
   if (count <= config.maxMessages) return NO_MATCH;
 

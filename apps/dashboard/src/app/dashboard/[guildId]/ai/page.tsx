@@ -51,7 +51,8 @@ export default function AiPage() {
     togglePlugin.mutate(
       { pluginId: 'ai', enabled: next },
       {
-        onSuccess: () => toast({ title: next ? 'AI assistant enabled' : 'AI assistant disabled', variant: 'success' }),
+        onSuccess: () =>
+          toast({ title: next ? 'AI assistant enabled' : 'AI assistant disabled', variant: 'success' }),
         onError: (err) =>
           toast({
             title: 'Could not update the plugin',
@@ -64,7 +65,10 @@ export default function AiPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="AI Assistant" description="Optional, opt-in help: /ask, /summarize, /draft, and /mod-assist. Disabled by default." />
+      <PageHeader
+        title="AI Assistant"
+        description="Optional, opt-in help: /ask, /summarize, /draft, and /mod-assist. Disabled by default."
+      />
 
       <Alert>
         <Sparkles className="h-4 w-4" />
@@ -72,20 +76,30 @@ export default function AiPage() {
           <span>Opt-in feature</span>
           {aiPlugin ? (
             <span className="ml-auto flex items-center gap-2 text-xs font-normal">
-              {aiPlugin.enabled ? <Badge variant="success">Enabled</Badge> : <Badge variant="secondary">Disabled</Badge>}
-              <Switch checked={aiPlugin.enabled} onCheckedChange={handleOptInToggle} disabled={togglePlugin.isPending} aria-label="Toggle AI assistant" />
+              {aiPlugin.enabled ? (
+                <Badge variant="success">Enabled</Badge>
+              ) : (
+                <Badge variant="secondary">Disabled</Badge>
+              )}
+              <Switch
+                checked={aiPlugin.enabled}
+                onCheckedChange={handleOptInToggle}
+                disabled={togglePlugin.isPending}
+                aria-label="Toggle AI assistant"
+              />
             </span>
           ) : null}
         </AlertTitle>
         <AlertDescription className="space-y-1">
           <p>
-            This server's messages are never sent anywhere until an admin turns this on <strong>and</strong> configures a provider + API key below.
-            Every AI response includes the disclosure "AI can be inaccurate — verify important information."
+            This server's messages are never sent anywhere until an admin turns this on <strong>and</strong>{' '}
+            configures a provider + API key below. Every AI response includes the disclosure "AI can be
+            inaccurate — verify important information."
           </p>
           <p>
-            Content is redacted (mentions, emails, phone numbers, URL paths, and key/token-shaped strings) before it reaches the provider. Only
-            token counts are stored — never prompt or response text — and the platform does not opt your server into any provider's model training
-            by default.
+            Content is redacted (mentions, emails, phone numbers, URL paths, and key/token-shaped strings)
+            before it reaches the provider. Only token counts are stored — never prompt or response text — and
+            the platform does not opt your server into any provider's model training by default.
           </p>
         </AlertDescription>
       </Alert>
@@ -135,19 +149,28 @@ export default function AiPage() {
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <Stat label="Requests" value={usageQuery.data.totalRequests.toLocaleString()} />
                 <Stat label="Prompt tokens" value={usageQuery.data.totalPromptTokens.toLocaleString()} />
-                <Stat label="Completion tokens" value={usageQuery.data.totalCompletionTokens.toLocaleString()} />
+                <Stat
+                  label="Completion tokens"
+                  value={usageQuery.data.totalCompletionTokens.toLocaleString()}
+                />
                 <Stat label="Daily budget" value={usageQuery.data.dailyTokenBudget.toLocaleString()} />
               </div>
               <UsageChart daily={usageQuery.data.daily} dailyTokenBudget={usageQuery.data.dailyTokenBudget} />
               {usageQuery.data.topCommands.length > 0 ? (
                 <div>
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Top commands</p>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Top commands
+                  </p>
                   <ul className="space-y-1 text-sm">
                     {usageQuery.data.topCommands.map((c) => (
-                      <li key={c.command} className="flex items-center justify-between rounded-md border border-border px-3 py-1.5">
+                      <li
+                        key={c.command}
+                        className="flex items-center justify-between rounded-md border border-border px-3 py-1.5"
+                      >
                         <span className="font-mono">/{c.command}</span>
                         <span className="text-muted-foreground">
-                          {c.requests} request{c.requests === 1 ? '' : 's'} · {c.totalTokens.toLocaleString()} tokens
+                          {c.requests} request{c.requests === 1 ? '' : 's'} · {c.totalTokens.toLocaleString()}{' '}
+                          tokens
                         </span>
                       </li>
                     ))}

@@ -26,9 +26,22 @@ export interface CaseDetailDrawerProps {
 }
 
 const TYPE_LABEL: Record<string, string> = {
-  WARN: 'Warn', TIMEOUT: 'Timeout', UNTIMEOUT: 'Timeout removed', KICK: 'Kick', BAN: 'Ban', UNBAN: 'Unban',
-  SOFTBAN: 'Softban', PURGE: 'Purge', LOCK: 'Channel lock', UNLOCK: 'Channel unlock', SLOWMODE: 'Slowmode',
-  NICK: 'Nickname change', ROLE_ADD: 'Role added', ROLE_REMOVE: 'Role removed', QUARANTINE: 'Quarantine', NOTE: 'Note',
+  WARN: 'Warn',
+  TIMEOUT: 'Timeout',
+  UNTIMEOUT: 'Timeout removed',
+  KICK: 'Kick',
+  BAN: 'Ban',
+  UNBAN: 'Unban',
+  SOFTBAN: 'Softban',
+  PURGE: 'Purge',
+  LOCK: 'Channel lock',
+  UNLOCK: 'Channel unlock',
+  SLOWMODE: 'Slowmode',
+  NICK: 'Nickname change',
+  ROLE_ADD: 'Role added',
+  ROLE_REMOVE: 'Role removed',
+  QUARANTINE: 'Quarantine',
+  NOTE: 'Note',
 };
 
 /** Detail drawer for one moderation case: full metadata, evidence links, an editable reason, and the target's recent warnings/notes. */
@@ -53,7 +66,11 @@ export function CaseDetailDrawer({ guildId, caseRow, onOpenChange }: CaseDetailD
       {
         onSuccess: () => toast({ title: 'Reason updated', variant: 'success' }),
         onError: (err) =>
-          toast({ title: 'Could not update reason', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+          toast({
+            title: 'Could not update reason',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -82,11 +99,15 @@ export function CaseDetailDrawer({ guildId, caseRow, onOpenChange }: CaseDetailD
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Source</p>
-                  <Badge variant="outline" className="capitalize">{caseRow.source.toLowerCase()}</Badge>
+                  <Badge variant="outline" className="capitalize">
+                    {caseRow.source.toLowerCase()}
+                  </Badge>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">DM sent</p>
-                  <Badge variant={caseRow.dmSent ? 'success' : 'outline'}>{caseRow.dmSent ? 'Yes' : 'No'}</Badge>
+                  <Badge variant={caseRow.dmSent ? 'success' : 'outline'}>
+                    {caseRow.dmSent ? 'Yes' : 'No'}
+                  </Badge>
                 </div>
                 {caseRow.durationMs ? (
                   <div>
@@ -97,7 +118,10 @@ export function CaseDetailDrawer({ guildId, caseRow, onOpenChange }: CaseDetailD
                 {caseRow.expiresAt ? (
                   <div>
                     <p className="text-xs text-muted-foreground">Expires</p>
-                    <p>{formatDateTime(caseRow.expiresAt)}{caseRow.expiredAt ? ' (already applied)' : ''}</p>
+                    <p>
+                      {formatDateTime(caseRow.expiresAt)}
+                      {caseRow.expiredAt ? ' (already applied)' : ''}
+                    </p>
                   </div>
                 ) : null}
               </div>
@@ -108,7 +132,12 @@ export function CaseDetailDrawer({ guildId, caseRow, onOpenChange }: CaseDetailD
                   <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
                     {caseRow.evidenceUrls.map((url) => (
                       <li key={url}>
-                        <a href={url} target="_blank" rel="noreferrer" className="text-primary underline break-all">
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary underline break-all"
+                        >
                           {url}
                         </a>
                       </li>
@@ -119,8 +148,17 @@ export function CaseDetailDrawer({ guildId, caseRow, onOpenChange }: CaseDetailD
 
               <div className="space-y-2">
                 <Label htmlFor="case-reason">Reason</Label>
-                <Textarea id="case-reason" value={reasonDraft} onChange={(e) => setReasonDraft(e.target.value)} rows={3} />
-                <Button size="sm" onClick={handleSaveReason} disabled={updateReason.isPending || reasonDraft === (caseRow.reason ?? '')}>
+                <Textarea
+                  id="case-reason"
+                  value={reasonDraft}
+                  onChange={(e) => setReasonDraft(e.target.value)}
+                  rows={3}
+                />
+                <Button
+                  size="sm"
+                  onClick={handleSaveReason}
+                  disabled={updateReason.isPending || reasonDraft === (caseRow.reason ?? '')}
+                >
                   {updateReason.isPending ? 'Saving…' : 'Save reason'}
                 </Button>
               </div>
@@ -133,10 +171,14 @@ export function CaseDetailDrawer({ guildId, caseRow, onOpenChange }: CaseDetailD
                   <Skeleton className="mt-2 h-16 w-full" />
                 ) : (
                   <ul className="mt-2 space-y-1 text-sm">
-                    {(warnings.data?.items ?? []).length === 0 ? <p className="text-muted-foreground">None.</p> : null}
+                    {(warnings.data?.items ?? []).length === 0 ? (
+                      <p className="text-muted-foreground">None.</p>
+                    ) : null}
                     {(warnings.data?.items ?? []).map((w) => (
                       <li key={w.id} className="flex items-center gap-2">
-                        <Badge variant={w.active ? 'warning' : 'outline'}>{w.active ? 'Active' : 'Cleared'}</Badge>
+                        <Badge variant={w.active ? 'warning' : 'outline'}>
+                          {w.active ? 'Active' : 'Cleared'}
+                        </Badge>
                         <span className="truncate">{w.reason ?? 'No reason'}</span>
                       </li>
                     ))}
@@ -150,11 +192,15 @@ export function CaseDetailDrawer({ guildId, caseRow, onOpenChange }: CaseDetailD
                   <Skeleton className="mt-2 h-16 w-full" />
                 ) : (
                   <ul className="mt-2 space-y-1 text-sm">
-                    {(notes.data?.items ?? []).length === 0 ? <p className="text-muted-foreground">None.</p> : null}
+                    {(notes.data?.items ?? []).length === 0 ? (
+                      <p className="text-muted-foreground">None.</p>
+                    ) : null}
                     {(notes.data?.items ?? []).map((n) => (
                       <li key={n.id} className="rounded-md border border-border p-2">
                         <p>{n.content}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(n.createdAt)} · by {n.authorId}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatDateTime(n.createdAt)} · by {n.authorId}
+                        </p>
                       </li>
                     ))}
                   </ul>

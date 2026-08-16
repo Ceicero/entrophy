@@ -1,7 +1,19 @@
 'use client';
 
 import * as React from 'react';
-import { Badge, Button, EmptyState, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, useToast } from '@entrophy/ui';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  useToast,
+} from '@entrophy/ui';
 import { useAlertConnections, useDeleteAlertConnection } from '../../lib/integrations-queries';
 import { ApiClientError } from '../../lib/api';
 import { ConfirmDialog } from '../confirm-dialog';
@@ -31,7 +43,12 @@ export function AlertsList({ guildId }: { guildId: string }) {
     );
   }
   if (!data || data.length === 0) {
-    return <EmptyState title="No alert watches yet" description="Add a Twitch, YouTube, Reddit, or Steam watch from one of the provider cards above." />;
+    return (
+      <EmptyState
+        title="No alert watches yet"
+        description="Add a Twitch, YouTube, Reddit, or Steam watch from one of the provider cards above."
+      />
+    );
   }
 
   function handleDelete() {
@@ -41,7 +58,12 @@ export function AlertsList({ guildId }: { guildId: string }) {
         toast({ title: 'Alert watch removed', variant: 'success' });
         setPendingDelete(null);
       },
-      onError: (err) => toast({ title: 'Could not remove watch', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not remove watch',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -63,12 +85,18 @@ export function AlertsList({ guildId }: { guildId: string }) {
             <TableRow key={conn.id}>
               <TableCell className="font-medium">{conn.provider}</TableCell>
               <TableCell className="font-mono text-xs">{conn.target ?? conn.label ?? '—'}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">{conn.channelId ? `#${conn.channelId}` : '—'}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {conn.channelId ? `#${conn.channelId}` : '—'}
+              </TableCell>
               <TableCell>
                 <Badge variant={STATUS_VARIANT[conn.status] ?? 'secondary'}>{conn.status}</Badge>
-                {conn.status === 'error' && conn.lastError ? <p className="mt-1 max-w-xs text-xs text-destructive">{conn.lastError}</p> : null}
+                {conn.status === 'error' && conn.lastError ? (
+                  <p className="mt-1 max-w-xs text-xs text-destructive">{conn.lastError}</p>
+                ) : null}
               </TableCell>
-              <TableCell className="text-xs text-muted-foreground">{conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleString() : 'never'}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleString() : 'never'}
+              </TableCell>
               <TableCell>
                 <Button size="sm" variant="ghost" onClick={() => setPendingDelete(conn.id)}>
                   Remove

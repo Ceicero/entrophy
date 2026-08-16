@@ -20,7 +20,8 @@ export function PluginCard({ plugin, guildId, onConfigure }: PluginCardProps) {
     toggle.mutate(
       { pluginId: plugin.id, enabled: next },
       {
-        onSuccess: () => toast({ title: `${plugin.name} ${next ? 'enabled' : 'disabled'}`, variant: 'success' }),
+        onSuccess: () =>
+          toast({ title: `${plugin.name} ${next ? 'enabled' : 'disabled'}`, variant: 'success' }),
         onError: (err) =>
           toast({
             title: 'Could not update plugin',
@@ -58,10 +59,15 @@ export function PluginCard({ plugin, guildId, onConfigure }: PluginCardProps) {
           {plugin.category}
         </Badge>
         {!plugin.available ? (
-          <Badge variant="destructive">Unavailable{plugin.availabilityReason ? `: ${plugin.availabilityReason}` : ''}</Badge>
+          <Badge variant="destructive">
+            Unavailable{plugin.availabilityReason ? `: ${plugin.availabilityReason}` : ''}
+          </Badge>
         ) : null}
         {plugin.health && plugin.health.status !== 'ok' ? (
-          <Badge variant={plugin.health.status === 'unavailable' ? 'destructive' : 'warning'} className="capitalize">
+          <Badge
+            variant={plugin.health.status === 'unavailable' ? 'destructive' : 'warning'}
+            className="capitalize"
+          >
             {plugin.health.status}
           </Badge>
         ) : null}

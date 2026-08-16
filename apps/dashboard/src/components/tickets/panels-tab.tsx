@@ -36,8 +36,18 @@ export function TicketsPanelsTab({ guildId }: TicketsPanelsTabProps) {
 
   function handlePost(panel: TicketPanelDto) {
     postPanel.mutate(panel.id, {
-      onSuccess: () => toast({ title: `Posting "${panel.title}"…`, description: 'The bot will post it shortly.', variant: 'success' }),
-      onError: (err) => toast({ title: 'Could not post panel', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onSuccess: () =>
+        toast({
+          title: `Posting "${panel.title}"…`,
+          description: 'The bot will post it shortly.',
+          variant: 'success',
+        }),
+      onError: (err) =>
+        toast({
+          title: 'Could not post panel',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -48,7 +58,12 @@ export function TicketsPanelsTab({ guildId }: TicketsPanelsTabProps) {
         toast({ title: 'Panel deleted', variant: 'success' });
         setDeletingPanel(null);
       },
-      onError: (err) => toast({ title: 'Could not delete panel', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not delete panel',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -84,25 +99,45 @@ export function TicketsPanelsTab({ guildId }: TicketsPanelsTabProps) {
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium text-foreground">{panel.title}</p>
-                    <Badge variant="outline">{panel.mode === 'CHANNEL' ? 'Private channel' : 'Private thread'}</Badge>
-                    {panel.intakeForm && panel.intakeForm.length > 0 ? <Badge variant="secondary">Intake form</Badge> : null}
+                    <Badge variant="outline">
+                      {panel.mode === 'CHANNEL' ? 'Private channel' : 'Private thread'}
+                    </Badge>
+                    {panel.intakeForm && panel.intakeForm.length > 0 ? (
+                      <Badge variant="secondary">Intake form</Badge>
+                    ) : null}
                     {!panel.messageId ? <Badge variant="warning">Not posted</Badge> : null}
                   </div>
                   <p className="truncate text-sm text-muted-foreground">{panel.description}</p>
                   <p className="text-xs text-muted-foreground">
-                    #{panel.channelId} · Support roles: {panel.supportRoleIds.length > 0 ? panel.supportRoleIds.length : 'server default'} · SLA:{' '}
+                    #{panel.channelId} · Support roles:{' '}
+                    {panel.supportRoleIds.length > 0 ? panel.supportRoleIds.length : 'server default'} · SLA:{' '}
                     {panel.slaMinutes ? `${panel.slaMinutes}m` : 'server default'}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handlePost(panel)} disabled={postPanel.isPending}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePost(panel)}
+                    disabled={postPanel.isPending}
+                  >
                     <Send className="h-4 w-4" />
                     {panel.messageId ? 'Re-post' : 'Post'}
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(panel)} aria-label={`Edit ${panel.title}`}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEdit(panel)}
+                    aria-label={`Edit ${panel.title}`}
+                  >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setDeletingPanel(panel)} aria-label={`Delete ${panel.title}`}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setDeletingPanel(panel)}
+                    aria-label={`Delete ${panel.title}`}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

@@ -41,7 +41,11 @@ export function createHostService(deps: CreateHostServiceDeps): HostService {
     return registry.get(pluginId);
   }
 
-  async function runGuildLifecycleHook(pluginId: PluginId, guildId: string, hook: 'onGuildEnable' | 'onGuildDisable'): Promise<void> {
+  async function runGuildLifecycleHook(
+    pluginId: PluginId,
+    guildId: string,
+    hook: 'onGuildEnable' | 'onGuildDisable',
+  ): Promise<void> {
     const plugin = getPlugin(pluginId);
     const ctx = contexts.get(pluginId);
     const fn = plugin?.[hook];
@@ -88,7 +92,12 @@ export function createHostService(deps: CreateHostServiceDeps): HostService {
       return configStore.getConfig<T>(guildId, pluginId);
     },
 
-    setPluginConfig<T = unknown>(guildId: string, pluginId: PluginId, patch: Partial<T>, actor: HostEnableActor) {
+    setPluginConfig<T = unknown>(
+      guildId: string,
+      pluginId: PluginId,
+      patch: Partial<T>,
+      actor: HostEnableActor,
+    ) {
       return configStore.setConfig<T>(guildId, pluginId, patch, toActor(actor));
     },
 
@@ -96,7 +105,11 @@ export function createHostService(deps: CreateHostServiceDeps): HostService {
       return configStore.getGuildConfig(guildId);
     },
 
-    updateGuildConfig(guildId: string, patch: GuildConfigPatch, actor: HostEnableActor): Promise<GuildConfigData> {
+    updateGuildConfig(
+      guildId: string,
+      patch: GuildConfigPatch,
+      actor: HostEnableActor,
+    ): Promise<GuildConfigData> {
       return configStore.updateGuildConfig(guildId, patch, toActor(actor));
     },
 

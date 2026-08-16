@@ -3,7 +3,9 @@ import { assertStaffLevel, listEmbed, type CommandContext } from '../../sdk';
 import type { EnforcerConfig } from '../manifest';
 
 export function addStatusSubcommand(builder: SlashCommandBuilder): SlashCommandBuilder {
-  return builder.addSubcommand((sub) => sub.setName('status').setDescription('Show Enforcer setup status, health, and configuration.')) as SlashCommandBuilder;
+  return builder.addSubcommand((sub) =>
+    sub.setName('status').setDescription('Show Enforcer setup status, health, and configuration.'),
+  ) as SlashCommandBuilder;
 }
 
 export async function executeStatus(c: CommandContext): Promise<void> {
@@ -12,8 +14,12 @@ export async function executeStatus(c: CommandContext): Promise<void> {
   const config = await c.config<EnforcerConfig>();
   const moderationEnabled = await c.ctx.isEnabled(c.guildId, 'moderation');
   const enforcerEnabled = await c.ctx.isEnabled(c.guildId);
-  const policyCount = await c.ctx.prisma.enforcerPolicy.count({ where: { guildId: c.guildId, deletedAt: null, enabled: true } });
-  const pendingCount = await c.ctx.prisma.enforcerRecord.count({ where: { guildId: c.guildId, kind: 'FLAG', status: 'PENDING' } });
+  const policyCount = await c.ctx.prisma.enforcerPolicy.count({
+    where: { guildId: c.guildId, deletedAt: null, enabled: true },
+  });
+  const pendingCount = await c.ctx.prisma.enforcerRecord.count({
+    where: { guildId: c.guildId, kind: 'FLAG', status: 'PENDING' },
+  });
 
   const lines = [
     `Enabled: ${enforcerEnabled ? 'Yes' : 'No — run `/plugin enable enforcer`'}`,

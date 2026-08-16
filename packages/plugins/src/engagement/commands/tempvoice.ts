@@ -1,6 +1,13 @@
 import { ChannelType, SlashCommandBuilder, type VoiceBasedChannel } from 'discord.js';
 import type { TempVoiceChannel } from '@entrophy/database';
-import { assertStaffLevel, errorEmbed, fetchMemberSafe, successEmbed, type CommandContext, type PluginCommand } from '../../sdk';
+import {
+  assertStaffLevel,
+  errorEmbed,
+  fetchMemberSafe,
+  successEmbed,
+  type CommandContext,
+  type PluginCommand,
+} from '../../sdk';
 import type { EngagementConfig } from '../manifest';
 
 const data = new SlashCommandBuilder()
@@ -11,25 +18,54 @@ const data = new SlashCommandBuilder()
     sub
       .setName('setup')
       .setDescription('Register a hub channel: joining it creates a personal voice channel.')
-      .addChannelOption((opt) => opt.setName('hub').setDescription('The "Join to create" voice channel.').addChannelTypes(ChannelType.GuildVoice).setRequired(true))
-      .addChannelOption((opt) => opt.setName('category').setDescription('Category new channels are created under (defaults to the hub\'s category).').addChannelTypes(ChannelType.GuildCategory))
-      .addStringOption((opt) => opt.setName('name-template').setDescription('Channel name template. {user} is replaced with the owner\'s name.').setMaxLength(90)),
+      .addChannelOption((opt) =>
+        opt
+          .setName('hub')
+          .setDescription('The "Join to create" voice channel.')
+          .addChannelTypes(ChannelType.GuildVoice)
+          .setRequired(true),
+      )
+      .addChannelOption((opt) =>
+        opt
+          .setName('category')
+          .setDescription("Category new channels are created under (defaults to the hub's category).")
+          .addChannelTypes(ChannelType.GuildCategory),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('name-template')
+          .setDescription("Channel name template. {user} is replaced with the owner's name.")
+          .setMaxLength(90),
+      ),
   )
-  .addSubcommand((sub) => sub.setName('lock').setDescription('Lock your temp channel so only permitted members can join.'))
+  .addSubcommand((sub) =>
+    sub.setName('lock').setDescription('Lock your temp channel so only permitted members can join.'),
+  )
   .addSubcommand((sub) => sub.setName('unlock').setDescription('Unlock your temp channel.'))
   .addSubcommand((sub) =>
     sub
       .setName('limit')
-      .setDescription('Set your temp channel\'s user limit.')
-      .addIntegerOption((opt) => opt.setName('count').setDescription('0 = no limit.').setMinValue(0).setMaxValue(99).setRequired(true)),
+      .setDescription("Set your temp channel's user limit.")
+      .addIntegerOption((opt) =>
+        opt.setName('count').setDescription('0 = no limit.').setMinValue(0).setMaxValue(99).setRequired(true),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('rename')
       .setDescription('Rename your temp channel.')
-      .addStringOption((opt) => opt.setName('name').setDescription('New channel name.').setMinLength(1).setMaxLength(90).setRequired(true)),
+      .addStringOption((opt) =>
+        opt
+          .setName('name')
+          .setDescription('New channel name.')
+          .setMinLength(1)
+          .setMaxLength(90)
+          .setRequired(true),
+      ),
   )
-  .addSubcommand((sub) => sub.setName('claim').setDescription('Claim ownership of this temp channel (its owner has left).'))
+  .addSubcommand((sub) =>
+    sub.setName('claim').setDescription('Claim ownership of this temp channel (its owner has left).'),
+  )
   .addSubcommand((sub) =>
     sub
       .setName('kick')
@@ -87,13 +123,19 @@ export const command: PluginCommand = {
         { id: c.interaction.user.id, source: 'bot' },
       );
 
-      await c.interaction.reply({ embeds: [successEmbed(c.t('tempvoice.setup.success', { channel: `<#${hub.id}>` }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [successEmbed(c.t('tempvoice.setup.success', { channel: `<#${hub.id}>` }))],
+        ephemeral: true,
+      });
       return;
     }
 
     const owned = await getCurrentTempChannel(c);
     if (!owned) {
-      await c.interaction.reply({ embeds: [errorEmbed(c.t('errors.tempVoiceNotInChannel'))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [errorEmbed(c.t('errors.tempVoiceNotInChannel'))],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -103,11 +145,22 @@ export const command: PluginCommand = {
         await c.interaction.reply({ embeds: [errorEmbed(c.t('errors.tempVoiceNotOwner'))], ephemeral: true });
         return;
       }
-      await c.ctx.prisma.tempVoiceChannel.update({ where: { id: owned.row.id }, data: { ownerId: c.interaction.user.id } });
+      await c.ctx.prisma.tempVoiceChannel.update({
+        where: { id: owned.row.id },
+        data: { ownerId: c.interaction.user.id },
+      });
       await owned.channel.permissionOverwrites
-        .edit(c.interaction.user.id, { ManageChannels: true, MoveMembers: true, MuteMembers: true, DeafenMembers: true })
+        .edit(c.interaction.user.id, {
+          ManageChannels: true,
+          MoveMembers: true,
+          MuteMembers: true,
+          DeafenMembers: true,
+        })
         .catch(() => undefined);
-      await c.interaction.reply({ embeds: [successEmbed(c.t('tempvoice.claimed', { user: c.interaction.user.toString() }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [successEmbed(c.t('tempvoice.claimed', { user: c.interaction.user.toString() }))],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -117,13 +170,17 @@ export const command: PluginCommand = {
     }
 
     if (sub === 'lock') {
-      await owned.channel.permissionOverwrites.edit(c.interaction.guild.roles.everyone, { Connect: false }).catch(() => undefined);
+      await owned.channel.permissionOverwrites
+        .edit(c.interaction.guild.roles.everyone, { Connect: false })
+        .catch(() => undefined);
       await c.interaction.reply({ embeds: [successEmbed(c.t('tempvoice.locked'))], ephemeral: true });
       return;
     }
 
     if (sub === 'unlock') {
-      await owned.channel.permissionOverwrites.edit(c.interaction.guild.roles.everyone, { Connect: null }).catch(() => undefined);
+      await owned.channel.permissionOverwrites
+        .edit(c.interaction.guild.roles.everyone, { Connect: null })
+        .catch(() => undefined);
       await c.interaction.reply({ embeds: [successEmbed(c.t('tempvoice.unlocked'))], ephemeral: true });
       return;
     }
@@ -131,14 +188,20 @@ export const command: PluginCommand = {
     if (sub === 'limit') {
       const count = c.interaction.options.getInteger('count', true);
       await owned.channel.setUserLimit(count).catch(() => undefined);
-      await c.interaction.reply({ embeds: [successEmbed(c.t('tempvoice.limitSet', { limit: count }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [successEmbed(c.t('tempvoice.limitSet', { limit: count }))],
+        ephemeral: true,
+      });
       return;
     }
 
     if (sub === 'rename') {
       const name = c.interaction.options.getString('name', true).slice(0, 100);
       await owned.channel.setName(name).catch(() => undefined);
-      await c.interaction.reply({ embeds: [successEmbed(c.t('tempvoice.renamed', { name }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [successEmbed(c.t('tempvoice.renamed', { name }))],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -154,13 +217,19 @@ export const command: PluginCommand = {
         return;
       }
       await targetMember.voice.disconnect('Kicked by temp voice channel owner').catch(() => undefined);
-      await c.interaction.reply({ embeds: [successEmbed(c.t('tempvoice.kicked', { user: target.toString() }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [successEmbed(c.t('tempvoice.kicked', { user: target.toString() }))],
+        ephemeral: true,
+      });
       return;
     }
 
     // sub === 'permit'
     const target = c.interaction.options.getUser('user', true);
     await owned.channel.permissionOverwrites.edit(target.id, { Connect: true }).catch(() => undefined);
-    await c.interaction.reply({ embeds: [successEmbed(c.t('tempvoice.permitted', { user: target.toString() }))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [successEmbed(c.t('tempvoice.permitted', { user: target.toString() }))],
+      ephemeral: true,
+    });
   },
 };

@@ -1,5 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
-import { BRAND, EMBED_LIMITS, truncate } from '@entrophy/core';
+import { BRAND, EMBED_LIMITS, brandIconUrl, env, truncate } from '@entrophy/core';
 import { channelMention, userMention } from '../sdk';
 import type { LogKind, LogPayload } from '../sdk';
 import { LOG_KIND_LABELS } from './constants';
@@ -32,7 +32,7 @@ export function buildLogEmbed({ kind, guildId, payload }: BuildLogEmbedOptions):
   const embed = new EmbedBuilder()
     .setColor(BRAND.color)
     .setTitle(truncate(payload.title ?? LOG_KIND_LABELS[kind], EMBED_LIMITS.title))
-    .setFooter({ text: BRAND.name })
+    .setFooter({ text: BRAND.name, iconURL: brandIconUrl(env) })
     .setTimestamp();
 
   if (payload.description) {
@@ -42,16 +42,28 @@ export function buildLogEmbed({ kind, guildId, payload }: BuildLogEmbedOptions):
   const fields: EmbedField[] = [];
 
   if (payload.actorId) {
-    fields.push({ name: 'Actor', value: `${userMention(payload.actorId)} (\`${payload.actorId}\`)`, inline: true });
+    fields.push({
+      name: 'Actor',
+      value: `${userMention(payload.actorId)} (\`${payload.actorId}\`)`,
+      inline: true,
+    });
   }
   if (payload.targetId && payload.targetId !== payload.actorId) {
-    fields.push({ name: 'Target', value: `${userMention(payload.targetId)} (\`${payload.targetId}\`)`, inline: true });
+    fields.push({
+      name: 'Target',
+      value: `${userMention(payload.targetId)} (\`${payload.targetId}\`)`,
+      inline: true,
+    });
   }
   if (payload.channelId) {
     fields.push({ name: 'Channel', value: channelMention(payload.channelId), inline: true });
   }
   if (payload.channelId && payload.messageId) {
-    fields.push({ name: 'Message', value: `[Jump to message](${jumpLink(guildId, payload.channelId, payload.messageId)})`, inline: true });
+    fields.push({
+      name: 'Message',
+      value: `[Jump to message](${jumpLink(guildId, payload.channelId, payload.messageId)})`,
+      inline: true,
+    });
   }
   if (payload.contentBefore) {
     fields.push({ name: 'Before', value: truncate(payload.contentBefore, EMBED_LIMITS.fieldValue) });
@@ -60,7 +72,10 @@ export function buildLogEmbed({ kind, guildId, payload }: BuildLogEmbedOptions):
     fields.push({ name: 'After', value: truncate(payload.contentAfter, EMBED_LIMITS.fieldValue) });
   }
   if (payload.attachments && payload.attachments.length > 0) {
-    fields.push({ name: 'Attachments', value: truncate(payload.attachments.join('\n'), EMBED_LIMITS.fieldValue) });
+    fields.push({
+      name: 'Attachments',
+      value: truncate(payload.attachments.join('\n'), EMBED_LIMITS.fieldValue),
+    });
   }
   for (const field of payload.fields ?? []) {
     fields.push({

@@ -1,18 +1,35 @@
 import { ExternalServiceError, env } from '@entrophy/core';
 import type { IntegrationProvider } from '@entrophy/database';
-import { INTEGRATION_PROVIDER_IDS, type IntegrationProviderId as CanonicalProviderId, type IntegrationProviderInfoDto, type IntegrationProviderKind } from '@entrophy/types/integrations';
+import {
+  INTEGRATION_PROVIDER_IDS,
+  type IntegrationProviderId as CanonicalProviderId,
+  type IntegrationProviderInfoDto,
+  type IntegrationProviderKind,
+} from '@entrophy/types/integrations';
 
 export type OAuthProviderId = 'twitch' | 'google' | 'microsoft' | 'notion' | 'reddit';
 /** Providers that connect via an inbound webhook endpoint (a secret + URL) rather than OAuth. */
 export type WebhookProviderId = 'github' | 'stripe' | 'generic_webhook';
 export type IntegrationProviderId = OAuthProviderId | WebhookProviderId;
 
-export const OAUTH_PROVIDER_IDS: readonly OAuthProviderId[] = ['twitch', 'google', 'microsoft', 'notion', 'reddit'];
+export const OAUTH_PROVIDER_IDS: readonly OAuthProviderId[] = [
+  'twitch',
+  'google',
+  'microsoft',
+  'notion',
+  'reddit',
+];
 export const WEBHOOK_PROVIDER_IDS: readonly WebhookProviderId[] = ['github', 'stripe', 'generic_webhook'];
 
 interface EnvKeys {
-  clientId: 'TWITCH_CLIENT_ID' | 'GOOGLE_CLIENT_ID' | 'MICROSOFT_CLIENT_ID' | 'NOTION_CLIENT_ID' | 'REDDIT_CLIENT_ID';
-  clientSecret: 'TWITCH_CLIENT_SECRET' | 'GOOGLE_CLIENT_SECRET' | 'MICROSOFT_CLIENT_SECRET' | 'NOTION_CLIENT_SECRET' | 'REDDIT_CLIENT_SECRET';
+  clientId:
+    'TWITCH_CLIENT_ID' | 'GOOGLE_CLIENT_ID' | 'MICROSOFT_CLIENT_ID' | 'NOTION_CLIENT_ID' | 'REDDIT_CLIENT_ID';
+  clientSecret:
+    | 'TWITCH_CLIENT_SECRET'
+    | 'GOOGLE_CLIENT_SECRET'
+    | 'MICROSOFT_CLIENT_SECRET'
+    | 'NOTION_CLIENT_SECRET'
+    | 'REDDIT_CLIENT_SECRET';
 }
 
 export interface OAuthProviderConfig {
@@ -105,7 +122,11 @@ export function isOAuthProviderConfigured(providerId: OAuthProviderId): boolean 
 }
 
 /** Builds the provider's OAuth2 authorize URL with the given anti-CSRF `state`. */
-export function buildProviderAuthorizeUrl(providerId: OAuthProviderId, state: string, redirectUri: string): string {
+export function buildProviderAuthorizeUrl(
+  providerId: OAuthProviderId,
+  state: string,
+  redirectUri: string,
+): string {
   const cfg = OAUTH_PROVIDERS[providerId];
   const clientId = env[cfg.envKeys.clientId];
   if (!clientId) {
@@ -139,7 +160,11 @@ interface RawTokenResponse {
 }
 
 /** Exchanges an OAuth `code` for tokens with the provider's token endpoint. */
-export async function exchangeProviderCode(providerId: OAuthProviderId, code: string, redirectUri: string): Promise<ExchangedProviderToken> {
+export async function exchangeProviderCode(
+  providerId: OAuthProviderId,
+  code: string,
+  redirectUri: string,
+): Promise<ExchangedProviderToken> {
   const cfg = OAUTH_PROVIDERS[providerId];
   const clientId = env[cfg.envKeys.clientId];
   const clientSecret = env[cfg.envKeys.clientSecret];
@@ -148,7 +173,10 @@ export async function exchangeProviderCode(providerId: OAuthProviderId, code: st
   }
 
   const body = new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: redirectUri });
-  const headers: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    Accept: 'application/json',
+  };
 
   if (cfg.tokenAuthStyle === 'basic') {
     headers.Authorization = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`;
@@ -187,15 +215,45 @@ interface ProviderMeta {
 }
 
 const PROVIDER_META: Record<CanonicalProviderId, ProviderMeta> = {
-  twitch: { id: 'twitch', name: 'Twitch', kind: 'oauth', requiredEnv: ['TWITCH_CLIENT_ID', 'TWITCH_CLIENT_SECRET'] },
+  twitch: {
+    id: 'twitch',
+    name: 'Twitch',
+    kind: 'oauth',
+    requiredEnv: ['TWITCH_CLIENT_ID', 'TWITCH_CLIENT_SECRET'],
+  },
   youtube: { id: 'youtube', name: 'YouTube', kind: 'apikey', requiredEnv: ['YOUTUBE_API_KEY'] },
   github: { id: 'github', name: 'GitHub', kind: 'webhook', requiredEnv: [] },
-  reddit: { id: 'reddit', name: 'Reddit', kind: 'apikey', requiredEnv: ['REDDIT_CLIENT_ID', 'REDDIT_CLIENT_SECRET', 'REDDIT_USER_AGENT'] },
+  reddit: {
+    id: 'reddit',
+    name: 'Reddit',
+    kind: 'apikey',
+    requiredEnv: ['REDDIT_CLIENT_ID', 'REDDIT_CLIENT_SECRET', 'REDDIT_USER_AGENT'],
+  },
   steam: { id: 'steam', name: 'Steam', kind: 'public', requiredEnv: ['STEAM_API_KEY'] },
-  google_calendar: { id: 'google_calendar', name: 'Google Calendar', kind: 'oauth', requiredEnv: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'] },
-  microsoft_calendar: { id: 'microsoft_calendar', name: 'Microsoft 365 Calendar', kind: 'oauth', requiredEnv: ['MICROSOFT_CLIENT_ID', 'MICROSOFT_CLIENT_SECRET'] },
-  notion: { id: 'notion', name: 'Notion', kind: 'oauth', requiredEnv: ['NOTION_CLIENT_ID', 'NOTION_CLIENT_SECRET'] },
-  stripe: { id: 'stripe', name: 'Stripe', kind: 'webhook', requiredEnv: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'] },
+  google_calendar: {
+    id: 'google_calendar',
+    name: 'Google Calendar',
+    kind: 'oauth',
+    requiredEnv: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'],
+  },
+  microsoft_calendar: {
+    id: 'microsoft_calendar',
+    name: 'Microsoft 365 Calendar',
+    kind: 'oauth',
+    requiredEnv: ['MICROSOFT_CLIENT_ID', 'MICROSOFT_CLIENT_SECRET'],
+  },
+  notion: {
+    id: 'notion',
+    name: 'Notion',
+    kind: 'oauth',
+    requiredEnv: ['NOTION_CLIENT_ID', 'NOTION_CLIENT_SECRET'],
+  },
+  stripe: {
+    id: 'stripe',
+    name: 'Stripe',
+    kind: 'webhook',
+    requiredEnv: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'],
+  },
   generic_webhook: { id: 'generic_webhook', name: 'Generic webhook', kind: 'webhook', requiredEnv: [] },
 };
 
@@ -223,6 +281,13 @@ export function listProviderAvailability(): IntegrationProviderInfoDto[] {
   return INTEGRATION_PROVIDER_IDS.map((id) => {
     const meta = PROVIDER_META[id];
     const missingEnv = meta.requiredEnv.filter((key) => !env[key as keyof typeof env]);
-    return { id: meta.id, name: meta.name, kind: meta.kind, available: missingEnv.length === 0, missingEnv, supportsAlerts: ALERT_CAPABLE.has(id) };
+    return {
+      id: meta.id,
+      name: meta.name,
+      kind: meta.kind,
+      available: missingEnv.length === 0,
+      missingEnv,
+      supportsAlerts: ALERT_CAPABLE.has(id),
+    };
   });
 }

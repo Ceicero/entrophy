@@ -18,22 +18,48 @@ function buildEmbedModalHandler(section: 'welcome' | 'goodbye'): ComponentHandle
       const footer = interaction.fields.getTextInputValue('footer') || undefined;
 
       if (color && !HEX_COLOR_PATTERN.test(color)) {
-        await interaction.reply({ embeds: [errorEmbed('Color must be a hex code like #e5e5e5.')], ephemeral: true });
+        await interaction.reply({
+          embeds: [errorEmbed('Color must be a hex code like #e5e5e5.')],
+          ephemeral: true,
+        });
         return;
       }
 
       if (!title && !description) {
-        await interaction.reply({ embeds: [errorEmbed('Set at least a title or a description.')], ephemeral: true });
+        await interaction.reply({
+          embeds: [errorEmbed('Set at least a title or a description.')],
+          ephemeral: true,
+        });
         return;
       }
 
       const current = await c.config<RolesConfig>();
-      const embed = { ...(title ? { title } : {}), ...(description ? { description } : {}), ...(color ? { color } : {}), ...(footer ? { footer: { text: footer } } : {}) };
+      const embed = {
+        ...(title ? { title } : {}),
+        ...(description ? { description } : {}),
+        ...(color ? { color } : {}),
+        ...(footer ? { footer: { text: footer } } : {}),
+      };
 
-      await c.ctx.setConfig<RolesConfig>(c.guildId, { [section]: { ...current[section], enabled: true, embed } } as Partial<RolesConfig>, { id: interaction.user.id, source: 'bot' });
-      await c.ctx.audit({ guildId: c.guildId, actorId: interaction.user.id, actorType: 'user', action: AuditAction.RolesWelcomeUpdate, targetType: 'plugin_config', targetId: 'roles', source: 'bot' });
+      await c.ctx.setConfig<RolesConfig>(
+        c.guildId,
+        { [section]: { ...current[section], enabled: true, embed } } as Partial<RolesConfig>,
+        { id: interaction.user.id, source: 'bot' },
+      );
+      await c.ctx.audit({
+        guildId: c.guildId,
+        actorId: interaction.user.id,
+        actorType: 'user',
+        action: AuditAction.RolesWelcomeUpdate,
+        targetType: 'plugin_config',
+        targetId: 'roles',
+        source: 'bot',
+      });
 
-      await interaction.reply({ embeds: [successEmbed(`Saved the ${section} embed. Run \`/${section} test\` to preview it.`)], ephemeral: true });
+      await interaction.reply({
+        embeds: [successEmbed(`Saved the ${section} embed. Run \`/${section} test\` to preview it.`)],
+        ephemeral: true,
+      });
     },
   };
 }

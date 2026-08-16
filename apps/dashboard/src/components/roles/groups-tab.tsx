@@ -25,7 +25,13 @@ import {
   TableRow,
   useToast,
 } from '@entrophy/ui';
-import { useCreateRoleGroup, useDeleteRoleGroup, useRoleGroups, useUpdateRoleGroup, type RoleGroupInput } from '../../lib/roles-queries';
+import {
+  useCreateRoleGroup,
+  useDeleteRoleGroup,
+  useRoleGroups,
+  useUpdateRoleGroup,
+  type RoleGroupInput,
+} from '../../lib/roles-queries';
 import { MultiRolePicker } from '../multi-role-picker';
 import { ErrorState } from '../error-state';
 import { ApiClientError } from '../../lib/api';
@@ -34,7 +40,13 @@ function emptyForm(): RoleGroupInput {
   return { name: '', roleIds: [], exclusive: false, maxSelections: null };
 }
 
-export function GroupsTab({ guildId, onGroupsChange }: { guildId: string; onGroupsChange?: (groups: RoleGroupDto[]) => void }) {
+export function GroupsTab({
+  guildId,
+  onGroupsChange,
+}: {
+  guildId: string;
+  onGroupsChange?: (groups: RoleGroupDto[]) => void;
+}) {
   const { data: groups, isLoading, error, refetch } = useRoleGroups(guildId);
   const createGroup = useCreateRoleGroup(guildId);
   const updateGroup = useUpdateRoleGroup(guildId);
@@ -57,7 +69,12 @@ export function GroupsTab({ guildId, onGroupsChange }: { guildId: string; onGrou
 
   function openEdit(group: RoleGroupDto) {
     setEditingId(group.id);
-    setForm({ name: group.name, roleIds: group.roleIds, exclusive: group.exclusive, maxSelections: group.maxSelections });
+    setForm({
+      name: group.name,
+      roleIds: group.roleIds,
+      exclusive: group.exclusive,
+      maxSelections: group.maxSelections,
+    });
     setDialogOpen(true);
   }
 
@@ -71,7 +88,12 @@ export function GroupsTab({ guildId, onGroupsChange }: { guildId: string; onGrou
         toast({ title: editingId ? 'Group updated' : 'Group created', variant: 'success' });
         setDialogOpen(false);
       },
-      onError: (err: unknown) => toast({ title: 'Could not save the group', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onError: (err: unknown) =>
+        toast({
+          title: 'Could not save the group',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     };
     if (editingId) {
       updateGroup.mutate({ groupId: editingId, ...form }, onSettled);
@@ -96,7 +118,10 @@ export function GroupsTab({ guildId, onGroupsChange }: { guildId: string; onGrou
       </div>
 
       {!groups || groups.length === 0 ? (
-        <EmptyState title="No role groups yet" description="Groups let a panel enforce exclusive picks or a max-selection limit." />
+        <EmptyState
+          title="No role groups yet"
+          description="Groups let a panel enforce exclusive picks or a max-selection limit."
+        />
       ) : (
         <Table>
           <TableHeader>
@@ -112,7 +137,13 @@ export function GroupsTab({ guildId, onGroupsChange }: { guildId: string; onGrou
               <TableRow key={group.id}>
                 <TableCell className="font-medium">{group.name}</TableCell>
                 <TableCell>
-                  {group.exclusive ? <Badge>Exclusive (max 1)</Badge> : group.maxSelections ? <Badge variant="secondary">Max {group.maxSelections}</Badge> : <Badge variant="outline">No limit</Badge>}
+                  {group.exclusive ? (
+                    <Badge>Exclusive (max 1)</Badge>
+                  ) : group.maxSelections ? (
+                    <Badge variant="secondary">Max {group.maxSelections}</Badge>
+                  ) : (
+                    <Badge variant="outline">No limit</Badge>
+                  )}
                 </TableCell>
                 <TableCell>{group.roleIds.length}</TableCell>
                 <TableCell className="text-right">
@@ -120,7 +151,12 @@ export function GroupsTab({ guildId, onGroupsChange }: { guildId: string; onGrou
                     <Button size="sm" variant="outline" onClick={() => openEdit(group)}>
                       Edit
                     </Button>
-                    <IconButton label="Delete group" size="sm" variant="outline" onClick={() => handleDelete(group.id)}>
+                    <IconButton
+                      label="Delete group"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDelete(group.id)}
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </IconButton>
                   </div>
@@ -139,19 +175,32 @@ export function GroupsTab({ guildId, onGroupsChange }: { guildId: string; onGrou
 
           <div className="space-y-4">
             <FormField label="Name">
-              <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} maxLength={100} />
+              <Input
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                maxLength={100}
+              />
             </FormField>
 
             <FormField label="Roles">
-              <MultiRolePicker guildId={guildId} value={form.roleIds} onChange={(v) => setForm((p) => ({ ...p, roleIds: v }))} />
+              <MultiRolePicker
+                guildId={guildId}
+                value={form.roleIds}
+                onChange={(v) => setForm((p) => ({ ...p, roleIds: v }))}
+              />
             </FormField>
 
             <div className="flex items-center justify-between rounded-md border border-border p-3">
               <div>
                 <p className="text-sm font-medium">Exclusive</p>
-                <p className="text-xs text-muted-foreground">Selecting one role from this group removes the others.</p>
+                <p className="text-xs text-muted-foreground">
+                  Selecting one role from this group removes the others.
+                </p>
               </div>
-              <Switch checked={form.exclusive} onCheckedChange={(v) => setForm((p) => ({ ...p, exclusive: v }))} />
+              <Switch
+                checked={form.exclusive}
+                onCheckedChange={(v) => setForm((p) => ({ ...p, exclusive: v }))}
+              />
             </div>
 
             {!form.exclusive ? (
@@ -161,7 +210,12 @@ export function GroupsTab({ guildId, onGroupsChange }: { guildId: string; onGrou
                   min={1}
                   max={25}
                   value={form.maxSelections ?? ''}
-                  onChange={(e) => setForm((p) => ({ ...p, maxSelections: e.target.value === '' ? null : Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      maxSelections: e.target.value === '' ? null : Number(e.target.value),
+                    }))
+                  }
                 />
               </FormField>
             ) : null}

@@ -52,23 +52,23 @@ embed builder, optional translation/weather adapters, and a bot/plugin health su
 
 ## Config keys (`utility.*`, per guild)
 
-| Key | Type | Default | Notes |
-|---|---|---|---|
-| `afkEnabled` | boolean | `true` | Turns off both `/utility afk` and the mention-reply behavior. |
-| `translateDefaultTarget` | string | `'en'` | Reserved for a future default-target UX; the command's `to` option is currently always required. |
-| `weatherUnits` | `'metric' \| 'imperial'` | `'metric'` | Controls both the adapter request and the displayed units. |
-| `embedBuilderStaffOnly` | boolean | `true` | When on, `/embed builder` additionally requires `helper` staff level (on top of the Manage Messages Discord permission, which is always required). |
+| Key                      | Type                     | Default    | Notes                                                                                                                                              |
+| ------------------------ | ------------------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `afkEnabled`             | boolean                  | `true`     | Turns off both `/utility afk` and the mention-reply behavior.                                                                                      |
+| `translateDefaultTarget` | string                   | `'en'`     | Reserved for a future default-target UX; the command's `to` option is currently always required.                                                   |
+| `weatherUnits`           | `'metric' \| 'imperial'` | `'metric'` | Controls both the adapter request and the displayed units.                                                                                         |
+| `embedBuilderStaffOnly`  | boolean                  | `true`     | When on, `/embed builder` additionally requires `helper` staff level (on top of the Manage Messages Discord permission, which is always required). |
 
 No dashboard page: utility is configured entirely through the plugin config drawer (auto-generated from
 `configSchema`) on `/dashboard/[guildId]/plugins` — `manifest.dashboard` is intentionally left `undefined`.
 
 ## Permissions
 
-| Permission | Feature | Optional | Fallback |
-|---|---|---|---|
-| View Channel | every read-only command | No | Interaction replies go over the interaction token; nothing actually needs this, listed for completeness. |
-| Embed Links | rich embed replies | Yes | Discord may render some embeds as plain links without it. |
-| Manage Messages | `/embed builder` → send to channel | No | The command is hidden from members without it (`setDefaultMemberPermissions`); "Send to channel" also re-checks the bot's own permissions in the destination channel. |
+| Permission      | Feature                            | Optional | Fallback                                                                                                                                                              |
+| --------------- | ---------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| View Channel    | every read-only command            | No       | Interaction replies go over the interaction token; nothing actually needs this, listed for completeness.                                                              |
+| Embed Links     | rich embed replies                 | Yes      | Discord may render some embeds as plain links without it.                                                                                                             |
+| Manage Messages | `/embed builder` → send to channel | No       | The command is hidden from members without it (`setDefaultMemberPermissions`); "Send to channel" also re-checks the bot's own permissions in the destination channel. |
 
 No privileged intents: the AFK-mention flow only reads `message.mentions`/`message.author`, which are present on
 every gateway message regardless of the Message Content intent.

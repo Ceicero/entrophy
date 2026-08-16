@@ -35,7 +35,11 @@ export function RuleActionsEditor({ actions, onChange, disabled }: RuleActionsEd
     <div className="space-y-2">
       {actions.map((action, i) => (
         <div key={i} className="flex items-center gap-2">
-          <Select value={action.type} onValueChange={(v) => update(i, { type: v as AutomodActionType })} disabled={disabled}>
+          <Select
+            value={action.type}
+            onValueChange={(v) => update(i, { type: v as AutomodActionType })}
+            disabled={disabled}
+          >
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
@@ -56,13 +60,21 @@ export function RuleActionsEditor({ actions, onChange, disabled }: RuleActionsEd
               value={action.timeoutMs ? Math.round(action.timeoutMs / 60000) : ''}
               onChange={(e) => {
                 const minutes = Number(e.target.value);
-                update(i, { timeoutMs: Number.isFinite(minutes) && minutes > 0 ? minutes * 60_000 : undefined });
+                update(i, {
+                  timeoutMs: Number.isFinite(minutes) && minutes > 0 ? minutes * 60_000 : undefined,
+                });
               }}
               disabled={disabled}
             />
           ) : null}
           {!disabled ? (
-            <Button type="button" variant="ghost" size="icon" aria-label="Remove action" onClick={() => remove(i)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Remove action"
+              onClick={() => remove(i)}
+            >
               <X className="h-4 w-4" />
             </Button>
           ) : null}
@@ -73,7 +85,9 @@ export function RuleActionsEditor({ actions, onChange, disabled }: RuleActionsEd
           <Plus className="h-4 w-4" /> Add action
         </Button>
       ) : null}
-      {actions.length === 0 ? <p className="text-xs text-destructive">At least one action is required.</p> : null}
+      {actions.length === 0 ? (
+        <p className="text-xs text-destructive">At least one action is required.</p>
+      ) : null}
     </div>
   );
 }

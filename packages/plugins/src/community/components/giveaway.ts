@@ -35,18 +35,26 @@ const enterButton: ComponentHandler = {
       return;
     }
 
-    const existing = await c.ctx.prisma.giveawayEntry.findUnique({ where: { giveawayId_userId: { giveawayId, userId: interaction.user.id } } });
+    const existing = await c.ctx.prisma.giveawayEntry.findUnique({
+      where: { giveawayId_userId: { giveawayId, userId: interaction.user.id } },
+    });
     if (existing) {
       await c.ctx.prisma.giveawayEntry.delete({ where: { id: existing.id } });
       await interaction.reply({ embeds: [successEmbed('You left this giveaway.')], ephemeral: true });
     } else {
       await c.ctx.prisma.giveawayEntry.create({ data: { giveawayId, userId: interaction.user.id } });
-      await interaction.reply({ embeds: [successEmbed('You entered this giveaway. Good luck! 🍀')], ephemeral: true });
+      await interaction.reply({
+        embeds: [successEmbed('You entered this giveaway. Good luck! 🍀')],
+        ephemeral: true,
+      });
     }
 
     const entryCount = await c.ctx.prisma.giveawayEntry.count({ where: { giveawayId } });
     await interaction.message
-      .edit({ embeds: [buildGiveawayEmbed(giveaway, entryCount)], components: buildGiveawayComponents(giveaway.id, giveaway.ended) })
+      .edit({
+        embeds: [buildGiveawayEmbed(giveaway, entryCount)],
+        components: buildGiveawayComponents(giveaway.id, giveaway.ended),
+      })
       .catch(() => undefined);
   },
 };

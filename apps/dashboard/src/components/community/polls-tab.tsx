@@ -1,7 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import { Badge, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, Pagination, Skeleton } from '@entrophy/ui';
+import {
+  Badge,
+  Card,
+  CardContent,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  Pagination,
+  Skeleton,
+} from '@entrophy/ui';
 import type { PollDto } from '@entrophy/types/community';
 import { useCommunityPolls, usePollResults } from '../../lib/community-queries';
 import { DataTable, type DataTableColumn } from '../data-table';
@@ -17,7 +27,8 @@ function ResultsBars({ guildId, pollId }: { guildId: string; pollId: string }) {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        {data.totalVotes} total vote{data.totalVotes === 1 ? '' : 's'} · {data.anonymous ? 'anonymous' : 'public votes'} · {data.closed ? 'closed' : 'open'}
+        {data.totalVotes} total vote{data.totalVotes === 1 ? '' : 's'} ·{' '}
+        {data.anonymous ? 'anonymous' : 'public votes'} · {data.closed ? 'closed' : 'open'}
       </p>
       {data.options.map((option) => {
         const pct = data.totalVotes > 0 ? Math.round((option.votes / data.totalVotes) * 100) : 0;
@@ -30,10 +41,15 @@ function ResultsBars({ guildId, pollId }: { guildId: string; pollId: string }) {
               </span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-primary" style={{ width: `${(option.votes / max) * 100}%` }} />
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{ width: `${(option.votes / max) * 100}%` }}
+              />
             </div>
             {option.voterIds && option.voterIds.length > 0 ? (
-              <p className="text-xs text-muted-foreground">{option.voterIds.length} voter(s) recorded (anonymous polls never expose this)</p>
+              <p className="text-xs text-muted-foreground">
+                {option.voterIds.length} voter(s) recorded (anonymous polls never expose this)
+              </p>
             ) : null}
           </div>
         );
@@ -50,10 +66,23 @@ export function PollsTab({ guildId }: { guildId: string }) {
 
   const columns: DataTableColumn<PollDto>[] = [
     { key: 'question', header: 'Question', render: (p) => <span className="font-medium">{p.question}</span> },
-    { key: 'status', header: 'Status', render: (p) => <Badge variant={p.closed ? 'secondary' : 'success'}>{p.closed ? 'Closed' : 'Open'}</Badge> },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (p) => (
+        <Badge variant={p.closed ? 'secondary' : 'success'}>{p.closed ? 'Closed' : 'Open'}</Badge>
+      ),
+    },
     { key: 'options', header: 'Options', render: (p) => p.options.length },
     { key: 'votes', header: 'Total votes', render: (p) => p.totalVotes },
-    { key: 'flags', header: 'Settings', render: (p) => [p.anonymous ? 'anonymous' : null, p.multiSelect ? 'multi-select' : null].filter(Boolean).join(', ') || '—' },
+    {
+      key: 'flags',
+      header: 'Settings',
+      render: (p) =>
+        [p.anonymous ? 'anonymous' : null, p.multiSelect ? 'multi-select' : null]
+          .filter(Boolean)
+          .join(', ') || '—',
+    },
   ];
 
   return (

@@ -52,8 +52,14 @@ interface FakePanel {
 function ticketsFixture() {
   const tickets = new Map<string, FakeTicket>();
   const panels = new Map<string, FakePanel>();
-  const transcripts = new Map<string, { ticketId: string; htmlContent: string | null; jsonContent: unknown }>();
-  const participants = new Map<string, { id: string; ticketId: string; userId: string; addedBy: string; createdAt: Date }[]>();
+  const transcripts = new Map<
+    string,
+    { ticketId: string; htmlContent: string | null; jsonContent: unknown }
+  >();
+  const participants = new Map<
+    string,
+    { id: string; ticketId: string; userId: string; addedBy: string; createdAt: Date }[]
+  >();
   let panelSeq = 0;
 
   function matchesTicketWhere(t: FakeTicket, where: Record<string, unknown> = {}): boolean {
@@ -113,7 +119,8 @@ function ticketsFixture() {
           return found;
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake
-        findMany: async (args: any) => [...tickets.values()].filter((t) => matchesTicketWhere(t, args?.where)),
+        findMany: async (args: any) =>
+          [...tickets.values()].filter((t) => matchesTicketWhere(t, args?.where)),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake
         update: async (args: any) => {
           const existing = tickets.get(args.where.id);
@@ -127,12 +134,23 @@ function ticketsFixture() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake
         findFirst: async (args: any) => {
           const where = args.where ?? {};
-          return [...panels.values()].find((p) => (where.id === undefined || p.id === where.id) && (where.guildId === undefined || p.guildId === where.guildId) && (where.deletedAt !== null || p.deletedAt === null)) ?? null;
+          return (
+            [...panels.values()].find(
+              (p) =>
+                (where.id === undefined || p.id === where.id) &&
+                (where.guildId === undefined || p.guildId === where.guildId) &&
+                (where.deletedAt !== null || p.deletedAt === null),
+            ) ?? null
+          );
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake
         findMany: async (args: any) => {
           const where = args.where ?? {};
-          return [...panels.values()].filter((p) => (where.guildId === undefined || p.guildId === where.guildId) && (where.deletedAt !== null || p.deletedAt === null));
+          return [...panels.values()].filter(
+            (p) =>
+              (where.guildId === undefined || p.guildId === where.guildId) &&
+              (where.deletedAt !== null || p.deletedAt === null),
+          );
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake
         create: async (args: any) => {
@@ -175,7 +193,11 @@ async function authedContext(fixture: ReturnType<typeof ticketsFixture>) {
   const { app, redis, queues } = await buildTestApp(fixture.overrides);
   const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
   await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-  const mutHeaders = { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken };
+  const mutHeaders = {
+    cookie: cookieHeader,
+    origin: 'http://localhost:3000',
+    'x-csrf-token': session.csrfToken,
+  };
   return { app, queues, cookieHeader, mutHeaders };
 }
 
@@ -188,12 +210,23 @@ describe('tickets panels', () => {
       method: 'POST',
       url: `/guilds/${GUILD_ID}/tickets/panels`,
       headers: mutHeaders,
-      payload: { channelId: '700000000000000001', title: 'Support', description: 'Need help?', buttonLabel: 'Open a ticket', mode: 'CHANNEL' },
+      payload: {
+        channelId: '700000000000000001',
+        title: 'Support',
+        description: 'Need help?',
+        buttonLabel: 'Open a ticket',
+        mode: 'CHANNEL',
+      },
     });
 
     expect(res.statusCode).toBe(201);
     const body = res.json();
-    expect(body).toMatchObject({ guildId: GUILD_ID, channelId: '700000000000000001', title: 'Support', mode: 'CHANNEL' });
+    expect(body).toMatchObject({
+      guildId: GUILD_ID,
+      channelId: '700000000000000001',
+      title: 'Support',
+      mode: 'CHANNEL',
+    });
 
     await app.close();
   });
@@ -219,14 +252,23 @@ describe('tickets panels', () => {
     });
     const { app, queues, mutHeaders } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/tickets/panels/panel_1/post`, headers: mutHeaders });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/tickets/panels/panel_1/post`,
+      headers: mutHeaders,
+    });
 
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true, queued: true });
     expect(queues.calls).toContainEqual({
       queue: 'bot-actions',
       name: 'bot-action',
-      data: { type: 'tickets.postPanel', guildId: GUILD_ID, payload: { panelId: 'panel_1' }, requestedBy: USER_ID },
+      data: {
+        type: 'tickets.postPanel',
+        guildId: GUILD_ID,
+        payload: { panelId: 'panel_1' },
+        requestedBy: USER_ID,
+      },
     });
 
     await app.close();
@@ -236,7 +278,11 @@ describe('tickets panels', () => {
     const fixture = ticketsFixture();
     const { app, mutHeaders } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/tickets/panels/nope/post`, headers: mutHeaders });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/tickets/panels/nope/post`,
+      headers: mutHeaders,
+    });
     expect(res.statusCode).toBe(404);
 
     await app.close();
@@ -246,15 +292,36 @@ describe('tickets panels', () => {
 describe('tickets queue', () => {
   it('lists tickets and computes slaBreached for an overdue, unanswered ticket', async () => {
     const fixture = ticketsFixture();
-    fixture.seedTicket({ id: 't1', number: 1, slaDueAt: new Date(Date.now() - 60_000), firstResponseAt: null });
-    fixture.seedTicket({ id: 't2', number: 2, slaDueAt: new Date(Date.now() + 60_000), firstResponseAt: null });
-    fixture.seedTicket({ id: 't3', number: 3, slaDueAt: new Date(Date.now() - 60_000), firstResponseAt: new Date() });
+    fixture.seedTicket({
+      id: 't1',
+      number: 1,
+      slaDueAt: new Date(Date.now() - 60_000),
+      firstResponseAt: null,
+    });
+    fixture.seedTicket({
+      id: 't2',
+      number: 2,
+      slaDueAt: new Date(Date.now() + 60_000),
+      firstResponseAt: null,
+    });
+    fixture.seedTicket({
+      id: 't3',
+      number: 3,
+      slaDueAt: new Date(Date.now() - 60_000),
+      firstResponseAt: new Date(),
+    });
     const { app, cookieHeader } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/tickets/queue`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/tickets/queue`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     const body = res.json();
-    const byNumber = Object.fromEntries(body.items.map((t: { number: number; slaBreached: boolean }) => [t.number, t.slaBreached]));
+    const byNumber = Object.fromEntries(
+      body.items.map((t: { number: number; slaBreached: boolean }) => [t.number, t.slaBreached]),
+    );
     expect(byNumber).toEqual({ 1: true, 2: false, 3: false });
 
     await app.close();
@@ -266,7 +333,11 @@ describe('tickets queue', () => {
     fixture.seedTicket({ id: 't2', number: 2, status: 'CLOSED', closedAt: new Date() });
     const { app, cookieHeader } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/tickets/queue?status=CLOSED`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/tickets/queue?status=CLOSED`,
+      headers: { cookie: cookieHeader },
+    });
     const body = res.json();
     expect(body.items).toHaveLength(1);
     expect(body.items[0].number).toBe(2);
@@ -280,10 +351,18 @@ describe('tickets queue', () => {
     fixture.seedTicket({ id: 't2', number: 2, assigneeId: null, tags: [] });
     const { app, cookieHeader } = await authedContext(fixture);
 
-    const byAssignee = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/tickets/queue?assigneeId=${OPENER_ID}`, headers: { cookie: cookieHeader } });
+    const byAssignee = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/tickets/queue?assigneeId=${OPENER_ID}`,
+      headers: { cookie: cookieHeader },
+    });
     expect(byAssignee.json().items).toHaveLength(1);
 
-    const byTag = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/tickets/queue?tag=billing`, headers: { cookie: cookieHeader } });
+    const byTag = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/tickets/queue?tag=billing`,
+      headers: { cookie: cookieHeader },
+    });
     expect(byTag.json().items).toHaveLength(1);
 
     await app.close();
@@ -297,7 +376,11 @@ describe('ticket detail', () => {
     fixture.transcripts.set('t1', { ticketId: 't1', htmlContent: '<html></html>', jsonContent: {} });
     const { app, cookieHeader } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/tickets/t1`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/tickets/t1`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.hasTranscript).toBe(true);
@@ -311,7 +394,11 @@ describe('ticket detail', () => {
     fixture.seedTicket({ id: 't1', number: 1, guildId: 'other-guild' });
     const { app, cookieHeader } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/tickets/t1`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/tickets/t1`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(404);
 
     await app.close();
@@ -324,14 +411,24 @@ describe('ticket close', () => {
     fixture.seedTicket({ id: 't1', number: 1, status: 'OPEN' });
     const { app, queues, mutHeaders } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/tickets/t1/close`, headers: mutHeaders, payload: { reason: 'Resolved' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/tickets/t1/close`,
+      headers: mutHeaders,
+      payload: { reason: 'Resolved' },
+    });
 
     expect(res.statusCode).toBe(202);
     expect(res.json()).toEqual({ ok: true, queued: true });
     expect(queues.calls).toContainEqual({
       queue: 'bot-actions',
       name: 'bot-action',
-      data: { type: 'tickets.close', guildId: GUILD_ID, payload: { ticketId: 't1', closedBy: USER_ID, reason: 'Resolved' }, requestedBy: USER_ID },
+      data: {
+        type: 'tickets.close',
+        guildId: GUILD_ID,
+        payload: { ticketId: 't1', closedBy: USER_ID, reason: 'Resolved' },
+        requestedBy: USER_ID,
+      },
     });
     expect(fixture.tickets.get('t1')?.status).toBe('OPEN'); // the close itself is owned by the plugin, not this route
 
@@ -343,7 +440,12 @@ describe('ticket close', () => {
     fixture.seedTicket({ id: 't1', number: 1, status: 'CLOSED', closedAt: new Date() });
     const { app, mutHeaders } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/tickets/t1/close`, headers: mutHeaders, payload: {} });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/tickets/t1/close`,
+      headers: mutHeaders,
+      payload: {},
+    });
     expect(res.statusCode).toBe(400);
 
     await app.close();
@@ -356,7 +458,12 @@ describe('ticket assign', () => {
     fixture.seedTicket({ id: 't1', number: 1 });
     const { app, mutHeaders } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/tickets/t1/assign`, headers: mutHeaders, payload: { assigneeId: OPENER_ID } });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/tickets/t1/assign`,
+      headers: mutHeaders,
+      payload: { assigneeId: OPENER_ID },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().assigneeId).toBe(OPENER_ID);
     expect(fixture.tickets.get('t1')?.assigneeId).toBe(OPENER_ID);
@@ -369,10 +476,18 @@ describe('ticket transcript download', () => {
   it('serves the HTML transcript with a sanitized Content-Disposition filename', async () => {
     const fixture = ticketsFixture();
     fixture.seedTicket({ id: 't1', number: 9 });
-    fixture.transcripts.set('t1', { ticketId: 't1', htmlContent: '<html><body>hi</body></html>', jsonContent: { messages: [] } });
+    fixture.transcripts.set('t1', {
+      ticketId: 't1',
+      htmlContent: '<html><body>hi</body></html>',
+      jsonContent: { messages: [] },
+    });
     const { app, cookieHeader } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/tickets/t1/transcript`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/tickets/t1/transcript`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-disposition']).toBe('attachment; filename="ticket-9-transcript.html"');
     expect(res.body).toContain('hi');
@@ -383,10 +498,18 @@ describe('ticket transcript download', () => {
   it('serves the JSON transcript when format=json', async () => {
     const fixture = ticketsFixture();
     fixture.seedTicket({ id: 't1', number: 9 });
-    fixture.transcripts.set('t1', { ticketId: 't1', htmlContent: '<html></html>', jsonContent: { messages: [{ content: 'hi' }] } });
+    fixture.transcripts.set('t1', {
+      ticketId: 't1',
+      htmlContent: '<html></html>',
+      jsonContent: { messages: [{ content: 'hi' }] },
+    });
     const { app, cookieHeader } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/tickets/t1/transcript?format=json`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/tickets/t1/transcript?format=json`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-disposition']).toBe('attachment; filename="ticket-9-transcript.json"');
     expect(JSON.parse(res.body)).toEqual({ messages: [{ content: 'hi' }] });
@@ -399,7 +522,11 @@ describe('ticket transcript download', () => {
     fixture.seedTicket({ id: 't1', number: 1 });
     const { app, cookieHeader } = await authedContext(fixture);
 
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/tickets/t1/transcript`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/tickets/t1/transcript`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(404);
 
     await app.close();

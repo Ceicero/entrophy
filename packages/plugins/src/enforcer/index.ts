@@ -98,7 +98,13 @@ const enforcerCommand: PluginCommand = {
   },
 };
 
-const components: ComponentHandler[] = [...decideComponents, ...contextComponents, ...historyButtonComponents, ...flagReviewComponents, ...appealComponents];
+const components: ComponentHandler[] = [
+  ...decideComponents,
+  ...contextComponents,
+  ...historyButtonComponents,
+  ...flagReviewComponents,
+  ...appealComponents,
+];
 
 export const plugin = definePlugin({
   manifest,
@@ -111,10 +117,17 @@ export const plugin = definePlugin({
   },
   async health(ctx) {
     if (!ctx.services.get('moderation')) {
-      return { status: 'degraded', details: 'The moderation plugin is not loaded/enabled — decisions cannot execute until it is.' };
+      return {
+        status: 'degraded',
+        details: 'The moderation plugin is not loaded/enabled — decisions cannot execute until it is.',
+      };
     }
     if (!ctx.intentsEnabled.messageContent) {
-      return { status: 'degraded', details: 'The Message Content privileged intent is off — automatic flagging is unavailable; manual flagging still works.' };
+      return {
+        status: 'degraded',
+        details:
+          'The Message Content privileged intent is off — automatic flagging is unavailable; manual flagging still works.',
+      };
     }
     return { status: 'ok' };
   },

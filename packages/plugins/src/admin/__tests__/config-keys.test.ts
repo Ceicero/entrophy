@@ -1,7 +1,13 @@
 import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
 import { defineManifest } from '../../sdk';
-import { allConfigKeys, findConfigKey, guildConfigKeys, parseConfigValue, pluginConfigKeys } from '../config-keys';
+import {
+  allConfigKeys,
+  findConfigKey,
+  guildConfigKeys,
+  parseConfigValue,
+  pluginConfigKeys,
+} from '../config-keys';
 
 describe('guildConfigKeys', () => {
   it('lists every settable guild.* key', () => {
@@ -86,7 +92,7 @@ describe('allConfigKeys / findConfigKey', () => {
     configSchema: z.object({ greeting: z.string().default('hi') }),
   });
 
-  it('combines guild.* keys with every manifest\'s plugin-scoped keys', () => {
+  it("combines guild.* keys with every manifest's plugin-scoped keys", () => {
     const keys = allConfigKeys([manifest]);
     expect(keys.some((k) => k.key === 'guild.locale')).toBe(true);
     expect(keys.some((k) => k.key === 'utility.greeting')).toBe(true);
@@ -100,18 +106,62 @@ describe('allConfigKeys / findConfigKey', () => {
 });
 
 describe('parseConfigValue', () => {
-  const boolDescriptor = { key: 'utility.b', scope: 'utility' as const, field: 'b', kind: 'boolean' as const, nullable: false, description: '' };
-  const numberDescriptor = { key: 'utility.n', scope: 'utility' as const, field: 'n', kind: 'number' as const, nullable: false, description: '' };
-  const channelDescriptor = { key: 'utility.c', scope: 'utility' as const, field: 'c', kind: 'channel' as const, nullable: true, description: '' };
-  const roleListDescriptor = { key: 'utility.r', scope: 'utility' as const, field: 'r', kind: 'role-list' as const, nullable: false, description: '' };
-  const localeDescriptor = { key: 'guild.locale', scope: 'guild' as const, field: 'locale', kind: 'locale' as const, nullable: false, description: '' };
-  const stringDescriptor = { key: 'utility.s', scope: 'utility' as const, field: 's', kind: 'string' as const, nullable: false, description: '' };
+  const boolDescriptor = {
+    key: 'utility.b',
+    scope: 'utility' as const,
+    field: 'b',
+    kind: 'boolean' as const,
+    nullable: false,
+    description: '',
+  };
+  const numberDescriptor = {
+    key: 'utility.n',
+    scope: 'utility' as const,
+    field: 'n',
+    kind: 'number' as const,
+    nullable: false,
+    description: '',
+  };
+  const channelDescriptor = {
+    key: 'utility.c',
+    scope: 'utility' as const,
+    field: 'c',
+    kind: 'channel' as const,
+    nullable: true,
+    description: '',
+  };
+  const roleListDescriptor = {
+    key: 'utility.r',
+    scope: 'utility' as const,
+    field: 'r',
+    kind: 'role-list' as const,
+    nullable: false,
+    description: '',
+  };
+  const localeDescriptor = {
+    key: 'guild.locale',
+    scope: 'guild' as const,
+    field: 'locale',
+    kind: 'locale' as const,
+    nullable: false,
+    description: '',
+  };
+  const stringDescriptor = {
+    key: 'utility.s',
+    scope: 'utility' as const,
+    field: 's',
+    kind: 'string' as const,
+    nullable: false,
+    description: '',
+  };
 
   it('parses booleans from common truthy/falsy words', () => {
     expect(parseConfigValue(boolDescriptor, 'true')).toBe(true);
     expect(parseConfigValue(boolDescriptor, 'YES')).toBe(true);
     expect(parseConfigValue(boolDescriptor, 'off')).toBe(false);
-    expect(() => parseConfigValue(boolDescriptor, 'maybe')).toThrow(/not a valid boolean|isn't a valid boolean/);
+    expect(() => parseConfigValue(boolDescriptor, 'maybe')).toThrow(
+      /not a valid boolean|isn't a valid boolean/,
+    );
   });
 
   it('parses numbers and rejects non-numeric input', () => {

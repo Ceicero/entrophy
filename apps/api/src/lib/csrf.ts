@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { PermissionError, env } from '@entrophy/core';
+import { PermissionError, env, timingSafeEqualStr } from '@entrophy/core';
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const CSRF_HEADER = 'x-csrf-token';
@@ -58,7 +58,7 @@ export async function csrfProtection(request: FastifyRequest, _reply: FastifyRep
 
   const headerToken = request.headers[CSRF_HEADER];
   const token = Array.isArray(headerToken) ? headerToken[0] : headerToken;
-  if (!token || token !== request.session.csrfToken) {
+  if (!token || !timingSafeEqualStr(token, request.session.csrfToken)) {
     throw new PermissionError('Missing or invalid CSRF token.');
   }
 }

@@ -31,7 +31,9 @@ export const configSchema = z.object({
   /** Overrides `GuildConfig.appealsChannelId`; falls back to it, then `GuildConfig.staffChannelId`, when null. */
   appealsChannelId: z.string().nullable().default(null),
   dmOnAction: z.boolean().default(true),
-  escalations: z.array(escalationRuleSchema).default([{ warnings: 3, action: 'timeout', durationMs: 3_600_000 }]),
+  escalations: z
+    .array(escalationRuleSchema)
+    .default([{ warnings: 3, action: 'timeout', durationMs: 3_600_000 }]),
   tempBanEnabled: z.boolean().default(true),
   purgeMax: z.number().int().min(1).max(100).default(100),
   requireReasonFor: z.array(z.enum(['kick', 'ban', 'softban'])).default([]),
@@ -48,15 +50,60 @@ export const manifest = defineManifest({
   version: '0.1.0',
   defaultEnabled: true,
   permissions: [
-    { permission: PermissionFlagsBits.ModerateMembers, feature: 'timeout / untimeout', optional: false, fallback: 'Timeout commands fail with a friendly error until granted.' },
-    { permission: PermissionFlagsBits.KickMembers, feature: 'kick / softban', optional: false, fallback: 'Kick and softban commands fail with a friendly error until granted.' },
-    { permission: PermissionFlagsBits.BanMembers, feature: 'ban / unban / softban', optional: false, fallback: 'Ban, unban, and softban commands fail with a friendly error until granted.' },
-    { permission: PermissionFlagsBits.ManageMessages, feature: 'purge', optional: false, fallback: '/mod purge fails with a friendly error until granted.' },
-    { permission: PermissionFlagsBits.ManageChannels, feature: 'lock / unlock / slowmode', optional: false, fallback: 'Channel-lock commands fail with a friendly error until granted.' },
-    { permission: PermissionFlagsBits.ManageNicknames, feature: 'nick', optional: false, fallback: '/mod nick fails with a friendly error until granted.' },
-    { permission: PermissionFlagsBits.ManageRoles, feature: 'role add / remove', optional: false, fallback: '/mod role fails with a friendly error until granted.' },
-    { permission: PermissionFlagsBits.EmbedLinks, feature: 'mod-log and appeal embeds', optional: false, fallback: 'Mod-log posts fall back to plain text.' },
-    { permission: PermissionFlagsBits.ReadMessageHistory, feature: 'purge (fetching messages to delete)', optional: false, fallback: '/mod purge fails with a friendly error until granted.' },
+    {
+      permission: PermissionFlagsBits.ModerateMembers,
+      feature: 'timeout / untimeout',
+      optional: false,
+      fallback: 'Timeout commands fail with a friendly error until granted.',
+    },
+    {
+      permission: PermissionFlagsBits.KickMembers,
+      feature: 'kick / softban',
+      optional: false,
+      fallback: 'Kick and softban commands fail with a friendly error until granted.',
+    },
+    {
+      permission: PermissionFlagsBits.BanMembers,
+      feature: 'ban / unban / softban',
+      optional: false,
+      fallback: 'Ban, unban, and softban commands fail with a friendly error until granted.',
+    },
+    {
+      permission: PermissionFlagsBits.ManageMessages,
+      feature: 'purge',
+      optional: false,
+      fallback: '/mod purge fails with a friendly error until granted.',
+    },
+    {
+      permission: PermissionFlagsBits.ManageChannels,
+      feature: 'lock / unlock / slowmode',
+      optional: false,
+      fallback: 'Channel-lock commands fail with a friendly error until granted.',
+    },
+    {
+      permission: PermissionFlagsBits.ManageNicknames,
+      feature: 'nick',
+      optional: false,
+      fallback: '/mod nick fails with a friendly error until granted.',
+    },
+    {
+      permission: PermissionFlagsBits.ManageRoles,
+      feature: 'role add / remove',
+      optional: false,
+      fallback: '/mod role fails with a friendly error until granted.',
+    },
+    {
+      permission: PermissionFlagsBits.EmbedLinks,
+      feature: 'mod-log and appeal embeds',
+      optional: false,
+      fallback: 'Mod-log posts fall back to plain text.',
+    },
+    {
+      permission: PermissionFlagsBits.ReadMessageHistory,
+      feature: 'purge (fetching messages to delete)',
+      optional: false,
+      fallback: '/mod purge fails with a friendly error until granted.',
+    },
   ],
   // No gateway events are needed — every action (ban/kick/timeout/purge/member fetch) is a REST call the bot
   // makes on demand from a command, not something it listens for on the gateway.

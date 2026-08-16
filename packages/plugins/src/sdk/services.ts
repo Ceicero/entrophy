@@ -155,7 +155,12 @@ export interface TicketsService {
   /** Posts (or re-posts) a ticket panel message to its configured channel. */
   postPanel(guildId: string, panelId: string): Promise<void>;
   /** Closes a ticket initiated from the dashboard (as opposed to a Discord interaction). */
-  closeTicketFromDashboard(guildId: string, ticketId: string, closedBy: string, reason?: string): Promise<void>;
+  closeTicketFromDashboard(
+    guildId: string,
+    ticketId: string,
+    closedBy: string,
+    reason?: string,
+  ): Promise<void>;
 }
 
 export interface AssignRolesInput {
@@ -194,7 +199,11 @@ export interface RolesService {
 
 /** Registered by the `integrations` plugin. */
 export interface IntegrationsService {
-  sendOutbound(guildId: string, endpointId: string, payload: unknown): Promise<{ delivered: boolean; error?: string }>;
+  sendOutbound(
+    guildId: string,
+    endpointId: string,
+    payload: unknown,
+  ): Promise<{ delivered: boolean; error?: string }>;
   /** Sends a synthetic test payload through a configured outbound webhook endpoint. */
   testWebhook(guildId: string, endpointId: string): Promise<{ delivered: boolean; error?: string }>;
 }
@@ -297,9 +306,18 @@ export interface HostService {
   /** Result of `plugin.health(ctx)` for a loaded plugin that declares one; `undefined` if it doesn't or isn't loaded. */
   getPluginHealth(pluginId: PluginId): Promise<PluginHealth | undefined>;
   getPluginConfig<T = unknown>(guildId: string, pluginId: PluginId): Promise<T>;
-  setPluginConfig<T = unknown>(guildId: string, pluginId: PluginId, patch: Partial<T>, actor: HostEnableActor): Promise<T>;
+  setPluginConfig<T = unknown>(
+    guildId: string,
+    pluginId: PluginId,
+    patch: Partial<T>,
+    actor: HostEnableActor,
+  ): Promise<T>;
   getGuildConfig(guildId: string): Promise<GuildConfigData>;
-  updateGuildConfig(guildId: string, patch: GuildConfigPatch, actor: HostEnableActor): Promise<GuildConfigData>;
+  updateGuildConfig(
+    guildId: string,
+    patch: GuildConfigPatch,
+    actor: HostEnableActor,
+  ): Promise<GuildConfigData>;
   getBotStats(): HostBotStats;
 }
 
@@ -334,7 +352,9 @@ export class ServiceRegistry {
   require<K extends keyof ServiceMap>(key: K): ServiceMap[K] {
     const impl = this.get(key);
     if (!impl) {
-      throw new Error(`Service "${key}" is not registered (its owning plugin may be disabled or unavailable).`);
+      throw new Error(
+        `Service "${key}" is not registered (its owning plugin may be disabled or unavailable).`,
+      );
     }
     return impl;
   }

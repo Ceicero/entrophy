@@ -38,9 +38,16 @@ interface FetchedOption {
   options?: readonly FetchedOption[];
 }
 
-function flatten(name: string, description: string, options: readonly FetchedOption[] | undefined, prefix: string): CatalogEntry[] {
+function flatten(
+  name: string,
+  description: string,
+  options: readonly FetchedOption[] | undefined,
+  prefix: string,
+): CatalogEntry[] {
   const fullName = `${prefix}${name}`;
-  const subOptions = (options ?? []).filter((opt) => opt.type === 1 /* Subcommand */ || opt.type === 2 /* SubcommandGroup */);
+  const subOptions = (options ?? []).filter(
+    (opt) => opt.type === 1 /* Subcommand */ || opt.type === 2 /* SubcommandGroup */,
+  );
 
   if (subOptions.length === 0) {
     return [{ fullName, description }];
@@ -71,7 +78,11 @@ function buildManifestFallback(): CommandCatalog {
  * from Discord, flattens subcommands/groups, and groups the results by owning plugin. Falls back to a
  * manifest-only catalog (one line per plugin) if the client isn't ready yet or the fetch fails.
  */
-export async function getCommandCatalog(client: Client, guildId: string, force = false): Promise<CommandCatalog> {
+export async function getCommandCatalog(
+  client: Client,
+  guildId: string,
+  force = false,
+): Promise<CommandCatalog> {
   if (!force && cached && Date.now() - cached.fetchedAt < CATALOG_TTL_MS) {
     return cached;
   }
@@ -86,13 +97,31 @@ export async function getCommandCatalog(client: Client, guildId: string, force =
       client.application.commands.fetch({ guildId }).catch(() => null),
     ]);
 
-    const merged = new Map<string, { name: string; description: string; type: ApplicationCommandType; options: readonly ApplicationCommandOptionData[] }>();
+    const merged = new Map<
+      string,
+      {
+        name: string;
+        description: string;
+        type: ApplicationCommandType;
+        options: readonly ApplicationCommandOptionData[];
+      }
+    >();
     for (const cmd of globalCommands.values()) {
-      merged.set(cmd.name, { name: cmd.name, description: cmd.description, type: cmd.type, options: (cmd.options ?? []) as readonly ApplicationCommandOptionData[] });
+      merged.set(cmd.name, {
+        name: cmd.name,
+        description: cmd.description,
+        type: cmd.type,
+        options: (cmd.options ?? []) as readonly ApplicationCommandOptionData[],
+      });
     }
     if (guildCommands) {
       for (const cmd of guildCommands.values()) {
-        merged.set(cmd.name, { name: cmd.name, description: cmd.description, type: cmd.type, options: (cmd.options ?? []) as readonly ApplicationCommandOptionData[] });
+        merged.set(cmd.name, {
+          name: cmd.name,
+          description: cmd.description,
+          type: cmd.type,
+          options: (cmd.options ?? []) as readonly ApplicationCommandOptionData[],
+        });
       }
     }
 
@@ -103,7 +132,8 @@ export async function getCommandCatalog(client: Client, guildId: string, force =
     const byPlugin = new Map<PluginId | typeof OTHER_GROUP, CatalogEntry[]>();
     for (const cmd of merged.values()) {
       const pluginId = resolvePluginForCommand(cmd.name);
-      const isContextMenu = cmd.type === ApplicationCommandType.User || cmd.type === ApplicationCommandType.Message;
+      const isContextMenu =
+        cmd.type === ApplicationCommandType.User || cmd.type === ApplicationCommandType.Message;
       const entries = isContextMenu
         ? [{ fullName: cmd.name, description: cmd.description || '(context menu command)' }]
         : flatten(cmd.name, cmd.description, cmd.options as unknown as FetchedOption[] | undefined, '/');

@@ -12,7 +12,10 @@ export default function ModerationPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Moderation" description="Case viewer, warnings, appeals, and moderation settings for this server." />
+      <PageHeader
+        title="Moderation"
+        description="Case viewer, warnings, appeals, and moderation settings for this server."
+      />
 
       <Tabs defaultValue="cases">
         <TabsList>

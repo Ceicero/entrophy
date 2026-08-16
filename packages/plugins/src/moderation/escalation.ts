@@ -8,8 +8,13 @@ import type { EscalationRule } from './manifest';
  */
 const ACTION_SEVERITY: Record<EscalationRule['action'], number> = { timeout: 0, kick: 1, ban: 2 };
 
-export function evaluateEscalation(activeWarningCount: number, escalations: EscalationRule[]): EscalationRule | null {
+export function evaluateEscalation(
+  activeWarningCount: number,
+  escalations: EscalationRule[],
+): EscalationRule | null {
   const matches = escalations.filter((rule) => rule.warnings === activeWarningCount);
   if (matches.length === 0) return null;
-  return matches.reduce((best, rule) => (ACTION_SEVERITY[rule.action] > ACTION_SEVERITY[best.action] ? rule : best));
+  return matches.reduce((best, rule) =>
+    ACTION_SEVERITY[rule.action] > ACTION_SEVERITY[best.action] ? rule : best,
+  );
 }

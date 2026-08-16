@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { escapeHtml, escapeMarkdown, sanitizeEmbedText, sanitizeFilename, stripMentions, truncate } from '../src/utils/sanitize';
+import {
+  escapeHtml,
+  escapeMarkdown,
+  sanitizeEmbedText,
+  sanitizeFilename,
+  stripMentions,
+  truncate,
+} from '../src/utils/sanitize';
 
 describe('escapeMarkdown', () => {
   it('escapes markdown special characters', () => {
@@ -50,8 +57,12 @@ describe('truncate', () => {
 
 describe('stripMentions', () => {
   it('removes user, role, and @everyone/@here mentions', () => {
-    expect(stripMentions('hey <@123456789012345678> and <@&987654321098765432>')).toBe('hey [mention] and [mention]');
-    expect(stripMentions('@everyone please read this, @here too')).toBe('[mention] please read this, [mention] too');
+    expect(stripMentions('hey <@123456789012345678> and <@&987654321098765432>')).toBe(
+      'hey [mention] and [mention]',
+    );
+    expect(stripMentions('@everyone please read this, @here too')).toBe(
+      '[mention] please read this, [mention] too',
+    );
   });
 
   it('leaves normal text untouched', () => {

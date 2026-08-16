@@ -9,7 +9,11 @@ function isRefreshableProvider(id: string | undefined): id is keyof typeof OAUTH
 }
 
 /** Every `OAuthToken` row expiring within `WINDOW_MS`, joined to its `IntegrationConnection` for the provider tag. */
-export function selectTokensDueForRefresh<T extends { expiresAt: Date | null }>(tokens: T[], now: Date, windowMs = WINDOW_MS): T[] {
+export function selectTokensDueForRefresh<T extends { expiresAt: Date | null }>(
+  tokens: T[],
+  now: Date,
+  windowMs = WINDOW_MS,
+): T[] {
   return tokens.filter((t) => t.expiresAt !== null && t.expiresAt.getTime() - now.getTime() < windowMs);
 }
 
@@ -22,7 +26,10 @@ export const tokenRefreshJob: PluginJob = {
   async processor(ctx) {
     const now = new Date();
     const candidates = await ctx.prisma.oAuthToken.findMany({
-      where: { expiresAt: { not: null, lt: new Date(now.getTime() + WINDOW_MS) }, connection: { deletedAt: null, status: { not: 'DISCONNECTED' } } },
+      where: {
+        expiresAt: { not: null, lt: new Date(now.getTime() + WINDOW_MS) },
+        connection: { deletedAt: null, status: { not: 'DISCONNECTED' } },
+      },
       include: { connection: true },
     });
 
@@ -34,11 +41,19 @@ export const tokenRefreshJob: PluginJob = {
 
       const refreshed = await refreshOAuthToken(ctx, providerId, token);
       if (!refreshed) {
-        await ctx.prisma.integrationConnection.update({
-          where: { id: token.connectionId },
-          data: { status: 'ERROR', lastError: 'Token refresh failed — reconnect this integration from the dashboard.' },
-        }).catch(() => undefined);
-        ctx.logger.warn({ connectionId: token.connectionId, provider: providerId }, 'integrations: token refresh failed');
+        await ctx.prisma.integrationConnection
+          .update({
+            where: { id: token.connectionId },
+            data: {
+              status: 'ERROR',
+              lastError: 'Token refresh failed — reconnect this integration from the dashboard.',
+            },
+          })
+          .catch(() => undefined);
+        ctx.logger.warn(
+          { connectionId: token.connectionId, provider: providerId },
+          'integrations: token refresh failed',
+        );
       }
     }
   },

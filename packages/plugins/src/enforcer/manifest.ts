@@ -1,4 +1,4 @@
-import { PermissionFlagsBits } from 'discord-api-types/v10';
+import { GatewayIntentBits, PermissionFlagsBits } from 'discord-api-types/v10';
 import { z } from 'zod';
 import { defineManifest } from '../sdk';
 import { ENFORCER_DECISIONS } from './schemas';
@@ -37,17 +37,68 @@ export const manifest = defineManifest({
   version: '0.1.0',
   defaultEnabled: false,
   permissions: [
-    { permission: PermissionFlagsBits.ViewChannel, feature: 'reading the ledger, flag-queue, and flagged channels', optional: false, fallback: 'Enforcer cannot read the channels it needs and will report itself unavailable.' },
-    { permission: PermissionFlagsBits.SendMessages, feature: 'posting ledger entries and flag-queue embeds', optional: false, fallback: 'Ledger entries and flag posts fail; `/enforcer setup` reports the missing permission.' },
-    { permission: PermissionFlagsBits.EmbedLinks, feature: 'ledger entries and flag-queue embeds', optional: false, fallback: 'Falls back to a much plainer message where possible.' },
-    { permission: PermissionFlagsBits.ReadMessageHistory, feature: '"View context" (surrounding messages) on a flag', optional: false, fallback: 'Context snapshots and live context lookups are unavailable; only the flagged message itself (and its jump link) are shown.' },
-    { permission: PermissionFlagsBits.ManageChannels, feature: 'creating/repairing the ledger and flag-queue channels during `/enforcer setup`', optional: true, fallback: 'You must create the channels yourself and pick them in the setup wizard; permission overwrites will not be applied automatically.' },
-    { permission: PermissionFlagsBits.ManageRoles, feature: 'creating the mute role and applying MUTE/UNMUTE decisions', optional: true, fallback: 'The Mute decision is unavailable; you must create/assign a mute role manually.' },
-    { permission: PermissionFlagsBits.ModerateMembers, feature: 'the Timeout decision (routed through the moderation plugin)', optional: true, fallback: 'The Timeout decision is disabled in the flag-queue until this permission is granted.' },
-    { permission: PermissionFlagsBits.KickMembers, feature: 'the Kick decision', optional: true, fallback: 'The Kick decision is disabled in the flag-queue until this permission is granted.' },
-    { permission: PermissionFlagsBits.BanMembers, feature: 'the Ban decision', optional: true, fallback: 'The Ban decision is disabled in the flag-queue until this permission is granted.' },
+    {
+      permission: PermissionFlagsBits.ViewChannel,
+      feature: 'reading the ledger, flag-queue, and flagged channels',
+      optional: false,
+      fallback: 'Enforcer cannot read the channels it needs and will report itself unavailable.',
+    },
+    {
+      permission: PermissionFlagsBits.SendMessages,
+      feature: 'posting ledger entries and flag-queue embeds',
+      optional: false,
+      fallback: 'Ledger entries and flag posts fail; `/enforcer setup` reports the missing permission.',
+    },
+    {
+      permission: PermissionFlagsBits.EmbedLinks,
+      feature: 'ledger entries and flag-queue embeds',
+      optional: false,
+      fallback: 'Falls back to a much plainer message where possible.',
+    },
+    {
+      permission: PermissionFlagsBits.ReadMessageHistory,
+      feature: '"View context" (surrounding messages) on a flag',
+      optional: false,
+      fallback:
+        'Context snapshots and live context lookups are unavailable; only the flagged message itself (and its jump link) are shown.',
+    },
+    {
+      permission: PermissionFlagsBits.ManageChannels,
+      feature: 'creating/repairing the ledger and flag-queue channels during `/enforcer setup`',
+      optional: true,
+      fallback:
+        'You must create the channels yourself and pick them in the setup wizard; permission overwrites will not be applied automatically.',
+    },
+    {
+      permission: PermissionFlagsBits.ManageRoles,
+      feature: 'creating the mute role and applying MUTE/UNMUTE decisions',
+      optional: true,
+      fallback: 'The Mute decision is unavailable; you must create/assign a mute role manually.',
+    },
+    {
+      permission: PermissionFlagsBits.ModerateMembers,
+      feature: 'the Timeout decision (routed through the moderation plugin)',
+      optional: true,
+      fallback: 'The Timeout decision is disabled in the flag-queue until this permission is granted.',
+    },
+    {
+      permission: PermissionFlagsBits.KickMembers,
+      feature: 'the Kick decision',
+      optional: true,
+      fallback: 'The Kick decision is disabled in the flag-queue until this permission is granted.',
+    },
+    {
+      permission: PermissionFlagsBits.BanMembers,
+      feature: 'the Ban decision',
+      optional: true,
+      fallback: 'The Ban decision is disabled in the flag-queue until this permission is granted.',
+    },
   ],
-  intents: [],
+  // Auto-flagging (events/message-create.ts) listens to `messageCreate`, which needs GuildMessages. This
+  // currently "worked" only because other loaded plugins (automod/logging/tickets/engagement) also declare
+  // GuildMessages and the registry unions every loaded plugin's intents — but the manifest itself must state
+  // what this plugin actually needs to be accurate documentation and safe if that ever changes.
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   privilegedIntents: ['MessageContent'],
   requiredEnv: [],
   configSchema,
@@ -57,5 +108,6 @@ export const manifest = defineManifest({
     'Turning "Capture context" off in `/enforcer setup` (or the dashboard Settings tab) stops all excerpt/context storage; flags then carry only a jump link to the live message, which may no longer exist by the time it is reviewed.',
     'Automatic flagging (matching messages as they are sent) only runs when the server has enabled the Message Content privileged intent; without it, Enforcer still works in fully manual mode (context-menu "Flag for review" and `/enforcer flag`), which always has the message content available regardless of intent.',
     'Ledger entries and database records are the source of truth for every flag and decision, retained per the server\'s moderation-case retention policy, and are visible to staff (optionally server-wide if the admin sets ledger visibility to "everyone").',
+    'When "AI assist" is turned on, the flagged content (and the matched policy name, if any) is sent to the server\'s configured AI provider to generate a risk score and one-sentence explanation. It never decides or acts on its own — a moderator still reviews and picks the outcome.',
   ],
 });

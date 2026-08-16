@@ -15,11 +15,23 @@ import { BRAND, Cooldowns, redisKey, sanitizeEmbedText, truncate } from '@entrop
 import type { AutomodEvent, AutomodRule, Prisma } from '@entrophy/database';
 import { buildCustomId, resolveTextChannel, type PluginContext } from '../sdk';
 import type { AutomodConfig } from './manifest';
-import { RedisWindowStore, evaluateJoinRule, evaluateMessageRule, isMessageRuleType, isRuleTypeActive, scopedWindowStore } from './engine';
+import {
+  RedisWindowStore,
+  evaluateJoinRule,
+  evaluateMessageRule,
+  isMessageRuleType,
+  isRuleTypeActive,
+  scopedWindowStore,
+} from './engine';
 import type { EvaluatorResult } from './engine';
 import { isExempt, isTrustedDomain } from './exemptions';
 import { normalizeJoin, normalizeMessage } from './normalize';
-import { automodActionsSchema, automodRuleConfigSchema, type AutomodAction, type AutomodRuleConfig } from './schemas';
+import {
+  automodActionsSchema,
+  automodRuleConfigSchema,
+  type AutomodAction,
+  type AutomodRuleConfig,
+} from './schemas';
 
 const RAID_LOCKDOWN_KEY_PREFIX = 'automod:raidlockdown';
 
@@ -29,7 +41,11 @@ export interface StaffContext {
 }
 
 /** Resolves whether `member` is at/above `helper` staff level, using the `host` service's `GuildConfig` staff roles (best-effort — defaults to "not staff" if `host` isn't available). */
-export async function getStaffContext(ctx: PluginContext, guild: Guild, member: GuildMember | null): Promise<StaffContext> {
+export async function getStaffContext(
+  ctx: PluginContext,
+  guild: Guild,
+  member: GuildMember | null,
+): Promise<StaffContext> {
   if (!member) return { isStaff: false, roleIds: [] };
   const roleIds = [...member.roles.cache.keys()];
 
@@ -38,7 +54,11 @@ export async function getStaffContext(ctx: PluginContext, guild: Guild, member: 
 
   try {
     const guildConfig = await host.getGuildConfig(guild.id);
-    const staffRoleIds = new Set([...guildConfig.adminRoleIds, ...guildConfig.modRoleIds, ...guildConfig.helperRoleIds]);
+    const staffRoleIds = new Set([
+      ...guildConfig.adminRoleIds,
+      ...guildConfig.modRoleIds,
+      ...guildConfig.helperRoleIds,
+    ]);
     const isStaff =
       member.id === guild.ownerId ||
       ctx.botOwnerIds.includes(member.id) ||
@@ -75,14 +95,20 @@ interface ActionOutcome {
 }
 
 /** Assigns `config.quarantineRoleId` to `userId`. Used by the registered `automod` service AND internally for the "quarantine" per-rule action and raid-lockdown quarantine. */
-async function applyQuarantine(ctx: PluginContext, guildId: string, userId: string, reason: string): Promise<ActionOutcome> {
+async function applyQuarantine(
+  ctx: PluginContext,
+  guildId: string,
+  userId: string,
+  reason: string,
+): Promise<ActionOutcome> {
   const config = await ctx.getConfig<AutomodConfig>(guildId);
   if (!config.quarantineRoleId) {
     ctx.logger.warn({ guildId, userId }, 'automod: quarantine skipped — no quarantineRoleId configured');
     return { type: 'quarantine', applied: false, detail: 'No quarantine role configured.' };
   }
 
-  const guild = ctx.client.guilds.cache.get(guildId) ?? (await ctx.client.guilds.fetch(guildId).catch(() => null));
+  const guild =
+    ctx.client.guilds.cache.get(guildId) ?? (await ctx.client.guilds.fetch(guildId).catch(() => null));
   if (!guild) return { type: 'quarantine', applied: false, detail: 'Guild not found.' };
 
   const member = guild.members.cache.get(userId) ?? (await guild.members.fetch(userId).catch(() => null));
@@ -92,8 +118,15 @@ async function applyQuarantine(ctx: PluginContext, guildId: string, userId: stri
     await member.roles.add(config.quarantineRoleId, reason);
     return { type: 'quarantine', applied: true };
   } catch (err) {
-    ctx.logger.error({ guildId, userId, err: err instanceof Error ? err.message : String(err) }, 'automod: failed to assign quarantine role');
-    return { type: 'quarantine', applied: false, detail: 'Failed to assign the quarantine role (check role hierarchy/permissions).' };
+    ctx.logger.error(
+      { guildId, userId, err: err instanceof Error ? err.message : String(err) },
+      'automod: failed to assign quarantine role',
+    );
+    return {
+      type: 'quarantine',
+      applied: false,
+      detail: 'Failed to assign the quarantine role (check role hierarchy/permissions).',
+    };
   }
 }
 
@@ -119,7 +152,15 @@ function alertEmbed(params: {
       { name: 'Channel', value: channelId ? `<#${channelId}>` : '—', inline: true },
       {
         name: 'Actions',
-        value: actionOutcomes.length > 0 ? actionOutcomes.map((a) => `${a.applied ? '✅' : dryRun ? '⏸️' : '⚠️'} ${a.type}${a.detail ? ` — ${a.detail}` : ''}`).join('\n') : '_None configured_',
+        value:
+          actionOutcomes.length > 0
+            ? actionOutcomes
+                .map(
+                  (a) =>
+                    `${a.applied ? '✅' : dryRun ? '⏸️' : '⚠️'} ${a.type}${a.detail ? ` — ${a.detail}` : ''}`,
+                )
+                .join('\n')
+            : '_None configured_',
       },
     )
     .setTimestamp();
@@ -135,8 +176,14 @@ function reviewButtons(eventId: string, resolved = false): ActionRowBuilder<Butt
   if (resolved) return [];
   return [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId(buildCustomId('automod', 'review-confirm', eventId)).setLabel('Confirm violation').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId(buildCustomId('automod', 'review-false-positive', eventId)).setLabel('False positive').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('automod', 'review-confirm', eventId))
+        .setLabel('Confirm violation')
+        .setStyle(ButtonStyle.Danger),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('automod', 'review-false-positive', eventId))
+        .setLabel('False positive')
+        .setStyle(ButtonStyle.Secondary),
     ),
   ];
 }
@@ -145,21 +192,43 @@ async function postAlert(
   ctx: PluginContext,
   guild: Guild,
   config: AutomodConfig,
-  params: { rule: AutomodRule; userId: string; channelId: string | null; result: EvaluatorResult; excerpt: string | null; actionOutcomes: ActionOutcome[]; dryRun: boolean; eventId: string },
+  params: {
+    rule: AutomodRule;
+    userId: string;
+    channelId: string | null;
+    result: EvaluatorResult;
+    excerpt: string | null;
+    actionOutcomes: ActionOutcome[];
+    dryRun: boolean;
+    eventId: string;
+  },
 ): Promise<void> {
   if (!config.alertChannelId) {
-    ctx.logger.warn({ guildId: guild.id, ruleId: params.rule.id }, 'automod: alert_staff action configured but no alertChannelId set');
+    ctx.logger.warn(
+      { guildId: guild.id, ruleId: params.rule.id },
+      'automod: alert_staff action configured but no alertChannelId set',
+    );
     return;
   }
   const channel = await resolveTextChannel(guild, config.alertChannelId);
   if (!channel) {
-    ctx.logger.warn({ guildId: guild.id, channelId: config.alertChannelId }, 'automod: cannot post to configured alert channel (missing/no permission)');
+    ctx.logger.warn(
+      { guildId: guild.id, channelId: config.alertChannelId },
+      'automod: cannot post to configured alert channel (missing/no permission)',
+    );
     return;
   }
   try {
-    await channel.send({ embeds: [alertEmbed(params)], components: reviewButtons(params.eventId), allowedMentions: { parse: [] } });
+    await channel.send({
+      embeds: [alertEmbed(params)],
+      components: reviewButtons(params.eventId),
+      allowedMentions: { parse: [] },
+    });
   } catch (err) {
-    ctx.logger.error({ guildId: guild.id, err: err instanceof Error ? err.message : String(err) }, 'automod: failed to post alert embed');
+    ctx.logger.error(
+      { guildId: guild.id, err: err instanceof Error ? err.message : String(err) },
+      'automod: failed to post alert embed',
+    );
   }
 }
 
@@ -167,7 +236,14 @@ async function postAlert(
 async function executeMessageAction(
   ctx: PluginContext,
   action: AutomodAction,
-  params: { guildId: string; message: Message | PartialMessage | null; member: GuildMember | null; userId: string; reason: string; config: AutomodConfig },
+  params: {
+    guildId: string;
+    message: Message | PartialMessage | null;
+    member: GuildMember | null;
+    userId: string;
+    reason: string;
+    config: AutomodConfig;
+  },
 ): Promise<ActionOutcome> {
   const { guildId, message, member, userId, reason, config } = params;
 
@@ -181,7 +257,11 @@ async function executeMessageAction(
         await message.delete();
         return { type: 'delete', applied: true };
       } catch (err) {
-        return { type: 'delete', applied: false, detail: err instanceof Error ? err.message : 'Could not delete the message.' };
+        return {
+          type: 'delete',
+          applied: false,
+          detail: err instanceof Error ? err.message : 'Could not delete the message.',
+        };
       }
     }
 
@@ -189,7 +269,14 @@ async function executeMessageAction(
       const moderation = ctx.services.get('moderation');
       if (!moderation) return { type: 'warn', applied: false, detail: 'Moderation plugin unavailable.' };
       try {
-        await moderation.warn({ guildId, targetId: userId, moderatorId: ctx.client.user.id, reason, source: 'AUTOMOD', dmUser: true });
+        await moderation.warn({
+          guildId,
+          targetId: userId,
+          moderatorId: ctx.client.user.id,
+          reason,
+          source: 'AUTOMOD',
+          dmUser: true,
+        });
         return { type: 'warn', applied: true };
       } catch (err) {
         return { type: 'warn', applied: false, detail: err instanceof Error ? err.message : 'Warn failed.' };
@@ -201,18 +288,39 @@ async function executeMessageAction(
       const moderation = ctx.services.get('moderation');
       if (moderation) {
         try {
-          await moderation.timeout({ guildId, targetId: userId, moderatorId: ctx.client.user.id, durationMs, reason, source: 'AUTOMOD', dmUser: true });
+          await moderation.timeout({
+            guildId,
+            targetId: userId,
+            moderatorId: ctx.client.user.id,
+            durationMs,
+            reason,
+            source: 'AUTOMOD',
+            dmUser: true,
+          });
           return { type: 'timeout', applied: true };
         } catch (err) {
-          return { type: 'timeout', applied: false, detail: err instanceof Error ? err.message : 'Timeout failed.' };
+          return {
+            type: 'timeout',
+            applied: false,
+            detail: err instanceof Error ? err.message : 'Timeout failed.',
+          };
         }
       }
-      if (!member) return { type: 'timeout', applied: false, detail: 'Member not available and moderation plugin unavailable.' };
+      if (!member)
+        return {
+          type: 'timeout',
+          applied: false,
+          detail: 'Member not available and moderation plugin unavailable.',
+        };
       try {
         await member.timeout(durationMs, reason);
         return { type: 'timeout', applied: true };
       } catch (err) {
-        return { type: 'timeout', applied: false, detail: err instanceof Error ? err.message : 'Timeout failed.' };
+        return {
+          type: 'timeout',
+          applied: false,
+          detail: err instanceof Error ? err.message : 'Timeout failed.',
+        };
       }
     }
 
@@ -230,7 +338,17 @@ async function executeMessageAction(
 
 async function createEvent(
   ctx: PluginContext,
-  params: { guildId: string; rule: AutomodRule; userId: string; channelId: string | null; messageId: string | null; result: EvaluatorResult; excerpt: string | null; actionOutcomes: ActionOutcome[]; dryRun: boolean },
+  params: {
+    guildId: string;
+    rule: AutomodRule;
+    userId: string;
+    channelId: string | null;
+    messageId: string | null;
+    result: EvaluatorResult;
+    excerpt: string | null;
+    actionOutcomes: ActionOutcome[];
+    dryRun: boolean;
+  },
 ): Promise<AutomodEvent> {
   const { guildId, rule, userId, channelId, messageId, result, excerpt, actionOutcomes, dryRun } = params;
   return ctx.prisma.automodEvent.create({
@@ -272,14 +390,20 @@ export async function handleMessage(ctx: PluginContext, message: Message | Parti
   const rules = allRules.filter((r) => isMessageRuleType(r.type));
   if (rules.length === 0) return;
 
-  const guild = message.guild ?? ctx.client.guilds.cache.get(guildId) ?? (await ctx.client.guilds.fetch(guildId).catch(() => null));
+  const guild =
+    message.guild ??
+    ctx.client.guilds.cache.get(guildId) ??
+    (await ctx.client.guilds.fetch(guildId).catch(() => null));
   if (!guild) return;
 
   const config = await ctx.getConfig<AutomodConfig>(guildId);
   const normalized = normalizeMessage(message, ctx.intentsEnabled.messageContent);
   if (!normalized.authorId) return;
 
-  const member = message.member ?? guild.members.cache.get(normalized.authorId) ?? (await guild.members.fetch(normalized.authorId).catch(() => null));
+  const member =
+    message.member ??
+    guild.members.cache.get(normalized.authorId) ??
+    (await guild.members.fetch(normalized.authorId).catch(() => null));
   const staffCtx = await getStaffContext(ctx, guild, member);
   const windowStoreBase = new RedisWindowStore(ctx.redis);
   const cooldowns = new Cooldowns(ctx.redis);
@@ -288,7 +412,18 @@ export async function handleMessage(ctx: PluginContext, message: Message | Parti
   for (const rule of rules) {
     if (!isRuleTypeActive(rule.type, ctx.intentsEnabled)) continue;
 
-    if (isExempt(rule, { userId: normalized.authorId, channelId: normalized.channelId, roleIds: staffCtx.roleIds, isStaff: staffCtx.isStaff }, config.exemptStaff)) {
+    if (
+      isExempt(
+        rule,
+        {
+          userId: normalized.authorId,
+          channelId: normalized.channelId,
+          roleIds: staffCtx.roleIds,
+          isStaff: staffCtx.isStaff,
+        },
+        config.exemptStaff,
+      )
+    ) {
       continue;
     }
 
@@ -299,10 +434,17 @@ export async function handleMessage(ctx: PluginContext, message: Message | Parti
     }
 
     let effectiveConfig: AutomodRuleConfig = ruleConfig;
-    if (ruleConfig.type === 'INVITE_LINKS' && ruleConfig.allowOwnServerInvites && guild.members.me?.permissions.has('ManageGuild')) {
+    if (
+      ruleConfig.type === 'INVITE_LINKS' &&
+      ruleConfig.allowOwnServerInvites &&
+      guild.members.me?.permissions.has('ManageGuild')
+    ) {
       try {
         const invites = await guild.invites.fetch();
-        effectiveConfig = { ...ruleConfig, allowedInviteCodes: [...ruleConfig.allowedInviteCodes, ...invites.map((i) => i.code)] };
+        effectiveConfig = {
+          ...ruleConfig,
+          allowedInviteCodes: [...ruleConfig.allowedInviteCodes, ...invites.map((i) => i.code)],
+        };
       } catch {
         // Best-effort only — proceed with the configured allow list as-is.
       }
@@ -312,11 +454,15 @@ export async function handleMessage(ctx: PluginContext, message: Message | Parti
     const result = await evaluateMessageRule(effectiveConfig, { message: normalized, windowStore });
     if (!result.matched) continue;
 
-    const matchedDomain = typeof result.evidence?.matchedDomain === 'string' ? result.evidence.matchedDomain : null;
+    const matchedDomain =
+      typeof result.evidence?.matchedDomain === 'string' ? result.evidence.matchedDomain : null;
     if (matchedDomain && isTrustedDomain(matchedDomain, rule.trustedDomains)) continue;
 
     if (rule.cooldownSeconds > 0) {
-      const cooldownResult = await cooldowns.take(`automod:${rule.id}:${normalized.authorId}`, rule.cooldownSeconds);
+      const cooldownResult = await cooldowns.take(
+        `automod:${rule.id}:${normalized.authorId}`,
+        rule.cooldownSeconds,
+      );
       if (!cooldownResult.ok) continue;
     }
 
@@ -327,11 +473,19 @@ export async function handleMessage(ctx: PluginContext, message: Message | Parti
     const actionOutcomes: ActionOutcome[] = [];
     if (!dryRun) {
       for (const action of actions) {
-        const outcome = await executeMessageAction(ctx, action, { guildId, message, member, userId: normalized.authorId, reason, config });
+        const outcome = await executeMessageAction(ctx, action, {
+          guildId,
+          message,
+          member,
+          userId: normalized.authorId,
+          reason,
+          config,
+        });
         actionOutcomes.push(outcome);
       }
     } else {
-      for (const action of actions) actionOutcomes.push({ type: action.type, applied: false, detail: 'dry run' });
+      for (const action of actions)
+        actionOutcomes.push({ type: action.type, applied: false, detail: 'dry run' });
     }
 
     const excerpt = logContent && normalized.content ? sanitizeEmbedText(normalized.content, 900) : null;
@@ -349,7 +503,16 @@ export async function handleMessage(ctx: PluginContext, message: Message | Parti
     });
 
     if (actions.some((a) => a.type === 'alert_staff')) {
-      await postAlert(ctx, guild, config, { rule, userId: normalized.authorId, channelId: normalized.channelId, result, excerpt, actionOutcomes, dryRun, eventId: event.id });
+      await postAlert(ctx, guild, config, {
+        rule,
+        userId: normalized.authorId,
+        channelId: normalized.channelId,
+        result,
+        excerpt,
+        actionOutcomes,
+        dryRun,
+        eventId: event.id,
+      });
     }
 
     ctx.events.emit('automod.triggered', {
@@ -388,7 +551,14 @@ export async function handleMemberJoin(ctx: PluginContext, member: GuildMember):
 
   for (const rule of rules) {
     if (!isRuleTypeActive(rule.type, ctx.intentsEnabled)) continue;
-    if (isExempt(rule, { userId: member.id, roleIds: staffCtx.roleIds, isStaff: staffCtx.isStaff }, config.exemptStaff)) continue;
+    if (
+      isExempt(
+        rule,
+        { userId: member.id, roleIds: staffCtx.roleIds, isStaff: staffCtx.isStaff },
+        config.exemptStaff,
+      )
+    )
+      continue;
 
     const ruleConfig = parseRuleConfig(rule);
     if (!ruleConfig) continue;
@@ -409,24 +579,62 @@ export async function handleMemberJoin(ctx: PluginContext, member: GuildMember):
     const actionOutcomes: ActionOutcome[] = [];
     for (const action of actions) {
       if (action.type === 'delete') {
-        actionOutcomes.push({ type: 'delete', applied: false, detail: 'Not applicable to a member join (no message).' });
+        actionOutcomes.push({
+          type: 'delete',
+          applied: false,
+          detail: 'Not applicable to a member join (no message).',
+        });
         continue;
       }
       if (dryRun) {
         actionOutcomes.push({ type: action.type, applied: false, detail: 'dry run' });
         continue;
       }
-      const outcome = await executeMessageAction(ctx, action, { guildId, message: null, member, userId: member.id, reason, config });
+      const outcome = await executeMessageAction(ctx, action, {
+        guildId,
+        message: null,
+        member,
+        userId: member.id,
+        reason,
+        config,
+      });
       actionOutcomes.push(outcome);
     }
 
-    const event = await createEvent(ctx, { guildId, rule, userId: member.id, channelId: null, messageId: null, result, excerpt: null, actionOutcomes, dryRun });
+    const event = await createEvent(ctx, {
+      guildId,
+      rule,
+      userId: member.id,
+      channelId: null,
+      messageId: null,
+      result,
+      excerpt: null,
+      actionOutcomes,
+      dryRun,
+    });
 
     if (actions.some((a) => a.type === 'alert_staff')) {
-      await postAlert(ctx, member.guild, config, { rule, userId: member.id, channelId: null, result, excerpt: null, actionOutcomes, dryRun, eventId: event.id });
+      await postAlert(ctx, member.guild, config, {
+        rule,
+        userId: member.id,
+        channelId: null,
+        result,
+        excerpt: null,
+        actionOutcomes,
+        dryRun,
+        eventId: event.id,
+      });
     }
 
-    ctx.events.emit('automod.triggered', { guildId, ruleId: rule.id, ruleType: rule.type, userId: member.id, channelId: '', action: actions.map((a) => a.type).join(','), dryRun });
+    ctx.events.emit('automod.triggered', {
+      guildId,
+      ruleId: rule.id,
+      ruleType: rule.type,
+      userId: member.id,
+      channelId: '',
+      action: actions.map((a) => a.type).join(','),
+      dryRun,
+    });
 
     if (rule.type === 'RAID_DETECTION' && !dryRun && config.raidLockdown !== 'none') {
       await applyRaidLockdown(ctx, member.guild, config, reason);
@@ -434,12 +642,20 @@ export async function handleMemberJoin(ctx: PluginContext, member: GuildMember):
   }
 }
 
-async function applyRaidLockdown(ctx: PluginContext, guild: Guild, config: AutomodConfig, reason: string): Promise<void> {
+async function applyRaidLockdown(
+  ctx: PluginContext,
+  guild: Guild,
+  config: AutomodConfig,
+  reason: string,
+): Promise<void> {
   if (config.raidLockdown === 'raise-verification') {
     try {
       await guild.setVerificationLevel(GuildVerificationLevel.High, reason);
     } catch (err) {
-      ctx.logger.error({ guildId: guild.id, err: err instanceof Error ? err.message : String(err) }, 'automod: failed to raise verification level during raid lockdown');
+      ctx.logger.error(
+        { guildId: guild.id, err: err instanceof Error ? err.message : String(err) },
+        'automod: failed to raise verification level during raid lockdown',
+      );
     }
     return;
   }

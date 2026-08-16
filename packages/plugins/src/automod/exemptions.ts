@@ -10,7 +10,11 @@ export interface ExemptionCheckInput {
 }
 
 /** True if `input` is exempt from `rule` per its per-rule exemptions (roles/channels/users) plus the guild-wide `exemptStaff` toggle. */
-export function isExempt(rule: Pick<AutomodRule, 'exemptRoleIds' | 'exemptChannelIds' | 'exemptUserIds'>, input: ExemptionCheckInput, exemptStaff: boolean): boolean {
+export function isExempt(
+  rule: Pick<AutomodRule, 'exemptRoleIds' | 'exemptChannelIds' | 'exemptUserIds'>,
+  input: ExemptionCheckInput,
+  exemptStaff: boolean,
+): boolean {
   if (exemptStaff && input.isStaff) return true;
   if (rule.exemptUserIds.includes(input.userId)) return true;
   if (input.channelId && rule.exemptChannelIds.includes(input.channelId)) return true;

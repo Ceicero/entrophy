@@ -43,7 +43,11 @@ describe('ai prompt builder', () => {
   });
 
   it('buildModAssistPrompt never phrases the suggestion as an action already taken, and wraps history as data', () => {
-    const prompt = buildModAssistPrompt('@someone', { totalCases: 2, byType: { WARN: 2 }, recentReasons: ['WARN: spam'] }, 'user was rude in chat');
+    const prompt = buildModAssistPrompt(
+      '@someone',
+      { totalCases: 2, byType: { WARN: 2 }, recentReasons: ['WARN: spam'] },
+      'user was rude in chat',
+    );
     expect(prompt).toContain('<data label="case-history-summary">');
     expect(prompt).toContain('<data label="additional-context">');
     expect(prompt).toContain('<data label="subject">');

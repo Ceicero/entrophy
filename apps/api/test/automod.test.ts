@@ -37,7 +37,11 @@ function automodOverrides() {
       automodRule: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake, args shape mirrors Prisma's generated types
         findMany: async (args: any) => {
-          return [...rules.values()].filter((r) => r.guildId === args?.where?.guildId && (args?.where?.deletedAt === undefined || r.deletedAt === args.where.deletedAt));
+          return [...rules.values()].filter(
+            (r) =>
+              r.guildId === args?.where?.guildId &&
+              (args?.where?.deletedAt === undefined || r.deletedAt === args.where.deletedAt),
+          );
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         findFirst: async (args: any) => {
@@ -49,7 +53,13 @@ function automodOverrides() {
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         create: async (args: any) => {
-          const row: FakeRule = { id: randomUUID(), createdAt: new Date(), updatedAt: new Date(), deletedAt: null, ...args.data };
+          const row: FakeRule = {
+            id: randomUUID(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            deletedAt: null,
+            ...args.data,
+          };
           rules.set(row.id, row);
           return row;
         },
@@ -65,7 +75,10 @@ function automodOverrides() {
         updateMany: async (args: any) => {
           let count = 0;
           for (const [id, r] of rules) {
-            if (r.guildId === args.where.guildId && (args.where.deletedAt === undefined || r.deletedAt === args.where.deletedAt)) {
+            if (
+              r.guildId === args.where.guildId &&
+              (args.where.deletedAt === undefined || r.deletedAt === args.where.deletedAt)
+            ) {
               rules.set(id, { ...r, ...args.data });
               count += 1;
             }
@@ -77,7 +90,8 @@ function automodOverrides() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         findMany: async (args: any) => {
           let list = [...events.values()].filter((e) => e.guildId === args?.where?.guildId);
-          if (args?.where?.reviewStatus) list = list.filter((e) => e.reviewStatus === args.where.reviewStatus);
+          if (args?.where?.reviewStatus)
+            list = list.filter((e) => e.reviewStatus === args.where.reviewStatus);
           return list;
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,14 +122,22 @@ async function authedContext() {
   });
   const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
   await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
-  const mutHeaders = { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken };
+  const mutHeaders = {
+    cookie: cookieHeader,
+    origin: 'http://localhost:3000',
+    'x-csrf-token': session.csrfToken,
+  };
   return { app, cookieHeader, mutHeaders, store };
 }
 
 describe('automod rules CRUD', () => {
   it('GET returns an empty list when no rules exist', async () => {
     const { app, cookieHeader } = await authedContext();
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/automod/rules`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/automod/rules`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual([]);
     await app.close();
@@ -147,7 +169,11 @@ describe('automod rules CRUD', () => {
       method: 'POST',
       url: `/guilds/${GUILD_ID}/automod/rules`,
       headers: mutHeaders,
-      payload: { name: 'Bad', config: { type: 'MESSAGE_FREQUENCY', maxMessages: 'not-a-number' }, actions: [{ type: 'warn' }] },
+      payload: {
+        name: 'Bad',
+        config: { type: 'MESSAGE_FREQUENCY', maxMessages: 'not-a-number' },
+        actions: [{ type: 'warn' }],
+      },
     });
     expect(res.statusCode).toBe(400);
     await app.close();
@@ -159,7 +185,11 @@ describe('automod rules CRUD', () => {
       method: 'POST',
       url: `/guilds/${GUILD_ID}/automod/rules`,
       headers: mutHeaders,
-      payload: { name: 'Evil regex', config: { type: 'REGEX_FILTER', pattern: '(a+)+$', flags: 'i' }, actions: [{ type: 'warn' }] },
+      payload: {
+        name: 'Evil regex',
+        config: { type: 'REGEX_FILTER', pattern: '(a+)+$', flags: 'i' },
+        actions: [{ type: 'warn' }],
+      },
     });
     expect(res.statusCode).toBe(400);
     await app.close();
@@ -184,11 +214,20 @@ describe('automod rules CRUD', () => {
     expect(toggled.statusCode).toBe(200);
     expect(toggled.json().dryRun).toBe(false);
 
-    const guildWide = await app.inject({ method: 'POST', url: `/guilds/${GUILD_ID}/automod/dry-run`, headers: mutHeaders, payload: { dryRun: true } });
+    const guildWide = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/automod/dry-run`,
+      headers: mutHeaders,
+      payload: { dryRun: true },
+    });
     expect(guildWide.statusCode).toBe(200);
     expect(guildWide.json().rulesAffected).toBe(1);
 
-    const list = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/automod/rules`, headers: { cookie: cookieHeader } });
+    const list = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/automod/rules`,
+      headers: { cookie: cookieHeader },
+    });
     expect(list.json()[0].dryRun).toBe(true);
     await app.close();
   });
@@ -203,17 +242,29 @@ describe('automod rules CRUD', () => {
     });
     const ruleId = created.json().id;
 
-    const del = await app.inject({ method: 'DELETE', url: `/guilds/${GUILD_ID}/automod/rules/${ruleId}`, headers: mutHeaders });
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/automod/rules/${ruleId}`,
+      headers: mutHeaders,
+    });
     expect(del.statusCode).toBe(204);
 
-    const list = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/automod/rules`, headers: { cookie: cookieHeader } });
+    const list = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/automod/rules`,
+      headers: { cookie: cookieHeader },
+    });
     expect(list.json()).toEqual([]);
     await app.close();
   });
 
   it('404s deleting an unknown rule id', async () => {
     const { app, mutHeaders } = await authedContext();
-    const res = await app.inject({ method: 'DELETE', url: `/guilds/${GUILD_ID}/automod/rules/does-not-exist`, headers: mutHeaders });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/automod/rules/does-not-exist`,
+      headers: mutHeaders,
+    });
     expect(res.statusCode).toBe(404);
     await app.close();
   });
@@ -226,7 +277,11 @@ describe('POST /:guildId/automod/rules/:ruleId/test', () => {
       method: 'POST',
       url: `/guilds/${GUILD_ID}/automod/rules`,
       headers: mutHeaders,
-      payload: { name: 'Word filter', config: { type: 'WORD_FILTER', words: ['badword'] }, actions: [{ type: 'warn' }] },
+      payload: {
+        name: 'Word filter',
+        config: { type: 'WORD_FILTER', words: ['badword'] },
+        actions: [{ type: 'warn' }],
+      },
     });
     const ruleId = created.json().id;
 
@@ -246,7 +301,11 @@ describe('POST /:guildId/automod/rules/:ruleId/test', () => {
       method: 'POST',
       url: `/guilds/${GUILD_ID}/automod/rules`,
       headers: mutHeaders,
-      payload: { name: 'Word filter', config: { type: 'WORD_FILTER', words: ['badword'] }, actions: [{ type: 'warn' }] },
+      payload: {
+        name: 'Word filter',
+        config: { type: 'WORD_FILTER', words: ['badword'] },
+        actions: [{ type: 'warn' }],
+      },
     });
     const ruleId = created.json().id;
 
@@ -275,7 +334,19 @@ describe('POST /:guildId/automod/rules/:ruleId/test', () => {
 describe('automod events review', () => {
   it('PATCH marks an event reviewed and audits it', async () => {
     const { app, mutHeaders, store } = await authedContext();
-    store.events.set('event1', { id: 'event1', guildId: GUILD_ID, ruleId: 'rule1', userId: 'u1', channelId: 'c1', matched: null, actionsTaken: ['warn'], dryRun: true, reviewStatus: 'PENDING', riskScore: null, createdAt: new Date() });
+    store.events.set('event1', {
+      id: 'event1',
+      guildId: GUILD_ID,
+      ruleId: 'rule1',
+      userId: 'u1',
+      channelId: 'c1',
+      matched: null,
+      actionsTaken: ['warn'],
+      dryRun: true,
+      reviewStatus: 'PENDING',
+      riskScore: null,
+      createdAt: new Date(),
+    });
 
     const res = await app.inject({
       method: 'PATCH',

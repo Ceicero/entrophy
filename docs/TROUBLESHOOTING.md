@@ -38,6 +38,7 @@ anywhere, resetting is the only way back in.
 `4014`)**
 → The bot is asking the gateway for a privileged intent that isn't turned on for your application
 in the Developer Portal. Two places must agree:
+
 1. Developer Portal → your application → **Bot** tab → **Privileged Gateway Intents** — toggle on
    whichever the error is about (**Server Members Intent** and/or **Message Content Intent**).
 2. Your `.env` — `ENABLE_GUILD_MEMBERS_INTENT=true` and/or `ENABLE_MESSAGE_CONTENT_INTENT=true`
@@ -123,7 +124,7 @@ This is almost always one of four values not matching each other exactly. Check,
    registered parent domain in `COOKIE_DOMAIN` (e.g. `COOKIE_DOMAIN=.yourdomain.com`), the session
    cookie set by the API isn't visible to the dashboard and every page load looks logged-out. Locally
    (both on `localhost`), leave `COOKIE_DOMAIN` unset — don't set it for local dev.
-4. **SameSite / cross-site hosting** — if api and dashboard are on two *different* platform-provided
+4. **SameSite / cross-site hosting** — if api and dashboard are on two _different_ platform-provided
    subdomains that don't share a custom domain (e.g. one on `*.up.railway.app` and one on
    `*.onrender.com`, or you haven't set up custom domains yet), the browser treats them as
    cross-site and blocks the cookie under the default `SESSION_COOKIE_SAMESITE=lax`. Either put both
@@ -145,7 +146,7 @@ Server** permission (or you're the server owner) — this is checked fresh again
 roles, not just "the bot is in this server." If you can see the server in the guild selector but get
 a 403 opening it, ask a server admin to either grant you Manage Server or make the change themselves.
 Being a bot owner (`BOT_OWNER_IDS`) does not bypass this — that setting only affects bot-owner-only
-Discord *commands*, not dashboard access.
+Discord _commands_, not dashboard access.
 
 ---
 
@@ -154,7 +155,7 @@ Discord *commands*, not dashboard access.
 1. **The API must be reachable from the public internet** at the URL you configured with the
    provider — `localhost` is never reachable from Stripe/GitHub/Twitch's servers. For local testing,
    use the provider's own CLI/tunnel tool (e.g. `stripe listen --forward-to
-   localhost:3001/webhooks/stripe`) instead of trying to receive real webhooks locally. In
+localhost:3001/webhooks/stripe`) instead of trying to receive real webhooks locally. In
    production, this is `https://api.yourdomain.com/webhooks/...` (`PUBLIC_WEBHOOK_BASE_URL` /
    `API_BASE_URL`).
 2. **Signing secrets must match.** Each provider signs its webhook payloads, and Entrophy verifies

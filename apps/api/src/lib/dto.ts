@@ -31,8 +31,15 @@ import type {
   WebhookEndpointDto,
 } from '@entrophy/types';
 
-const ACTOR_TYPE_MAP: Record<AuditLog['actorType'], AuditLogEntryDto['actorType']> = { USER: 'user', SYSTEM: 'system' };
-const AUDIT_SOURCE_MAP: Record<AuditLog['source'], AuditLogEntryDto['source']> = { BOT: 'bot', DASHBOARD: 'dashboard', SYSTEM: 'system' };
+const ACTOR_TYPE_MAP: Record<AuditLog['actorType'], AuditLogEntryDto['actorType']> = {
+  USER: 'user',
+  SYSTEM: 'system',
+};
+const AUDIT_SOURCE_MAP: Record<AuditLog['source'], AuditLogEntryDto['source']> = {
+  BOT: 'bot',
+  DASHBOARD: 'dashboard',
+  SYSTEM: 'system',
+};
 
 export function toAuditLogEntryDto(row: AuditLog): AuditLogEntryDto {
   return {
@@ -90,7 +97,9 @@ export function toModerationWarningDto(row: ModerationWarning): ModerationWarnin
 function summarizeActions(actions: unknown): string {
   if (!Array.isArray(actions) || actions.length === 0) return 'none';
   return actions
-    .map((a) => (a && typeof a === 'object' && 'type' in a ? String((a as { type: unknown }).type) : String(a)))
+    .map((a) =>
+      a && typeof a === 'object' && 'type' in a ? String((a as { type: unknown }).type) : String(a),
+    )
     .join(', ');
 }
 
@@ -119,14 +128,21 @@ export function toAutomodRuleDto(row: AutomodRule): AutomodRuleDto {
 }
 
 export function toAutomodEventDto(row: AutomodEvent): AutomodEventDto {
-  const reviewStatus = row.reviewStatus === 'CONFIRMED' ? 'APPROVED' : row.reviewStatus === 'NONE' ? 'PENDING' : row.reviewStatus;
+  const reviewStatus =
+    row.reviewStatus === 'CONFIRMED'
+      ? 'APPROVED'
+      : row.reviewStatus === 'NONE'
+        ? 'PENDING'
+        : row.reviewStatus;
   return {
     id: row.id,
     guildId: row.guildId,
     ruleId: row.ruleId,
     userId: row.userId,
     channelId: row.channelId ?? '',
-    action: Array.isArray(row.actionsTaken) ? (row.actionsTaken as unknown[]).join(', ') : String(row.actionsTaken ?? ''),
+    action: Array.isArray(row.actionsTaken)
+      ? (row.actionsTaken as unknown[]).join(', ')
+      : String(row.actionsTaken ?? ''),
     dryRun: row.dryRun,
     reviewStatus: reviewStatus as AutomodEventDto['reviewStatus'],
     details: { matched: row.matched, messageId: row.messageId, riskScore: row.riskScore },
@@ -134,7 +150,11 @@ export function toAutomodEventDto(row: AutomodEvent): AutomodEventDto {
   };
 }
 
-const TICKET_STATUS_MAP: Record<Ticket['status'], TicketDto['status']> = { OPEN: 'open', CLOSED: 'closed', ARCHIVED: 'closed' };
+const TICKET_STATUS_MAP: Record<Ticket['status'], TicketDto['status']> = {
+  OPEN: 'open',
+  CLOSED: 'closed',
+  ARCHIVED: 'closed',
+};
 
 export function toTicketDto(row: Ticket): TicketDto {
   return {
@@ -153,7 +173,11 @@ export function toTicketDto(row: Ticket): TicketDto {
   };
 }
 
-const ROLE_PANEL_MODE_MAP: Record<RolePanel['style'], RolePanelDto['mode']> = { BUTTONS: 'button', SELECT: 'select', REACTIONS: 'reaction' };
+const ROLE_PANEL_MODE_MAP: Record<RolePanel['style'], RolePanelDto['mode']> = {
+  BUTTONS: 'button',
+  SELECT: 'select',
+  REACTIONS: 'reaction',
+};
 
 export function toRolePanelOptionDto(row: RolePanelOption): RolePanelOptionDto {
   return { id: row.id, roleId: row.roleId, label: row.label, emoji: row.emoji, description: row.description };

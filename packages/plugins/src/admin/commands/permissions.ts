@@ -33,18 +33,24 @@ export const command: PluginCommand = {
         const bit = PermissionsBitField.resolve(doc.permission);
         if ((have & bit) === bit) continue;
         const requirement = doc.optional ? 'optional' : 'required';
-        permissionLines.push(`❌ **${manifest.name}** — missing **${describePermission(bit)}** (${requirement}) for ${doc.feature}. ${doc.fallback}`);
+        permissionLines.push(
+          `❌ **${manifest.name}** — missing **${describePermission(bit)}** (${requirement}) for ${doc.feature}. ${doc.fallback}`,
+        );
       }
     }
     if (permissionLines.length === 0) permissionLines.push(c.t('permissions.noMissingPermissions'));
 
     const hierarchyLines: string[] = [];
     if (botMember) {
-      const staffRoleIds = [...new Set([...guildConfig.adminRoleIds, ...guildConfig.modRoleIds, ...guildConfig.helperRoleIds])];
+      const staffRoleIds = [
+        ...new Set([...guildConfig.adminRoleIds, ...guildConfig.modRoleIds, ...guildConfig.helperRoleIds]),
+      ];
       for (const roleId of staffRoleIds) {
         const role = guild.roles.cache.get(roleId);
         if (role && role.position >= botMember.roles.highest.position) {
-          hierarchyLines.push(`⚠️ My highest role is at or below <@&${roleId}> — I may not be able to moderate members with that role.`);
+          hierarchyLines.push(
+            `⚠️ My highest role is at or below <@&${roleId}> — I may not be able to moderate members with that role.`,
+          );
         }
       }
     }
@@ -56,9 +62,16 @@ export const command: PluginCommand = {
       const enabled = manifest.alwaysEnabled ? true : await host.isPluginEnabled(c.guildId, manifest.id);
       if (!enabled) continue;
       for (const intent of manifest.privilegedIntents) {
-        const key = intent === 'MessageContent' ? 'messageContent' : intent === 'GuildMembers' ? 'guildMembers' : 'guildPresences';
+        const key =
+          intent === 'MessageContent'
+            ? 'messageContent'
+            : intent === 'GuildMembers'
+              ? 'guildMembers'
+              : 'guildPresences';
         if (!c.ctx.intentsEnabled[key]) {
-          intentLines.push(`⚠️ **${manifest.name}** needs the ${intent} privileged intent, which isn't enabled — related features are degraded.`);
+          intentLines.push(
+            `⚠️ **${manifest.name}** needs the ${intent} privileged intent, which isn't enabled — related features are degraded.`,
+          );
         }
       }
     }

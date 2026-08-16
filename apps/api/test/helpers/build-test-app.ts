@@ -63,7 +63,11 @@ export interface AuthedSession {
 }
 
 /** Creates a live session in `redis` and returns a `Cookie` header value, signed exactly the way the real app signs `sid`. */
-export async function loginAs(app: ZodFastifyInstance, redis: Redis, input: LoginAsInput): Promise<AuthedSession> {
+export async function loginAs(
+  app: ZodFastifyInstance,
+  redis: Redis,
+  input: LoginAsInput,
+): Promise<AuthedSession> {
   const { sid, session } = await createSession(redis, {
     userId: input.userId,
     username: input.username ?? 'test-user',
@@ -86,7 +90,15 @@ export async function seedUserGuilds(
   const { redisKey } = await import('@entrophy/core');
   await redis.set(
     redisKey('userguilds', userId),
-    JSON.stringify(guilds.map((g) => ({ id: g.id, name: g.name ?? 'Test Guild', icon: g.icon ?? null, owner: g.owner, permissions: g.permissions }))),
+    JSON.stringify(
+      guilds.map((g) => ({
+        id: g.id,
+        name: g.name ?? 'Test Guild',
+        icon: g.icon ?? null,
+        owner: g.owner,
+        permissions: g.permissions,
+      })),
+    ),
     'EX',
     60,
   );

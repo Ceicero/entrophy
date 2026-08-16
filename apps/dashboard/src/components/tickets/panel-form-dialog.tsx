@@ -21,7 +21,12 @@ import {
   useToast,
 } from '@entrophy/ui';
 import { ApiClientError } from '../../lib/api';
-import { useCreateTicketPanel, useTicketSettings, useUpdateTicketPanel, type CreateTicketPanelInput } from '../../lib/tickets-queries';
+import {
+  useCreateTicketPanel,
+  useTicketSettings,
+  useUpdateTicketPanel,
+  type CreateTicketPanelInput,
+} from '../../lib/tickets-queries';
 import { DiscordChannelSelect } from '../discord-selects';
 import { MultiRolePicker } from '../multi-role-picker';
 import { IntakeFormBuilder } from './intake-form-builder';
@@ -79,12 +84,17 @@ export function PanelFormDialog({ guildId, open, onOpenChange, panel }: PanelFor
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
 
-  const valid = draft.channelId.length > 0 && draft.title.trim().length > 0 && draft.description.trim().length > 0;
+  const valid =
+    draft.channelId.length > 0 && draft.title.trim().length > 0 && draft.description.trim().length > 0;
 
   function handleSubmit() {
     if (!valid) return;
     const onError = (err: unknown) =>
-      toast({ title: `Could not ${panel ? 'update' : 'create'} panel`, description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' });
+      toast({
+        title: `Could not ${panel ? 'update' : 'create'} panel`,
+        description: err instanceof ApiClientError ? err.message : 'Please try again.',
+        variant: 'destructive',
+      });
     const onSuccess = () => {
       toast({ title: panel ? 'Panel updated' : 'Panel created', variant: 'success' });
       onOpenChange(false);
@@ -106,19 +116,44 @@ export function PanelFormDialog({ guildId, open, onOpenChange, panel }: PanelFor
 
         <div className="space-y-4">
           <FormField label="Title" required>
-            <Input value={draft.title} maxLength={100} onChange={(e) => set('title', e.target.value)} disabled={pending} />
+            <Input
+              value={draft.title}
+              maxLength={100}
+              onChange={(e) => set('title', e.target.value)}
+              disabled={pending}
+            />
           </FormField>
           <FormField label="Description" required>
-            <Textarea value={draft.description} maxLength={2000} rows={4} onChange={(e) => set('description', e.target.value)} disabled={pending} />
+            <Textarea
+              value={draft.description}
+              maxLength={2000}
+              rows={4}
+              onChange={(e) => set('description', e.target.value)}
+              disabled={pending}
+            />
           </FormField>
           <FormField label="Button label">
-            <Input value={draft.buttonLabel} maxLength={80} onChange={(e) => set('buttonLabel', e.target.value)} disabled={pending} />
+            <Input
+              value={draft.buttonLabel}
+              maxLength={80}
+              onChange={(e) => set('buttonLabel', e.target.value)}
+              disabled={pending}
+            />
           </FormField>
           <FormField label="Channel to post in" required>
-            <DiscordChannelSelect guildId={guildId} value={draft.channelId || null} onChange={(v) => set('channelId', v ?? '')} disabled={pending} />
+            <DiscordChannelSelect
+              guildId={guildId}
+              value={draft.channelId || null}
+              onChange={(v) => set('channelId', v ?? '')}
+              disabled={pending}
+            />
           </FormField>
           <FormField label="Ticket mode">
-            <Select value={draft.mode} onValueChange={(v) => set('mode', v as CreateTicketPanelInput['mode'])} disabled={pending}>
+            <Select
+              value={draft.mode}
+              onValueChange={(v) => set('mode', v as CreateTicketPanelInput['mode'])}
+              disabled={pending}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -130,11 +165,24 @@ export function PanelFormDialog({ guildId, open, onOpenChange, panel }: PanelFor
           </FormField>
           {draft.mode === 'CHANNEL' ? (
             <FormField label="Category" hint="New ticket channels are created under this category.">
-              <DiscordChannelSelect guildId={guildId} value={draft.categoryId ?? null} onChange={(v) => set('categoryId', v)} disabled={pending} />
+              <DiscordChannelSelect
+                guildId={guildId}
+                value={draft.categoryId ?? null}
+                onChange={(v) => set('categoryId', v)}
+                disabled={pending}
+              />
             </FormField>
           ) : null}
-          <FormField label="Support roles" hint="Up to 3. Overrides the server default for tickets opened from this panel.">
-            <MultiRolePicker guildId={guildId} value={draft.supportRoleIds} onChange={(v) => set('supportRoleIds', v.slice(0, 3))} disabled={pending} />
+          <FormField
+            label="Support roles"
+            hint="Up to 3. Overrides the server default for tickets opened from this panel."
+          >
+            <MultiRolePicker
+              guildId={guildId}
+              value={draft.supportRoleIds}
+              onChange={(v) => set('supportRoleIds', v.slice(0, 3))}
+              disabled={pending}
+            />
           </FormField>
           <FormField label="SLA override (minutes)" hint="Blank uses the server default.">
             <Input
@@ -150,17 +198,31 @@ export function PanelFormDialog({ guildId, open, onOpenChange, panel }: PanelFor
             <div className="flex items-center justify-between gap-4 rounded-md border border-border p-3">
               <div>
                 <p className="text-sm font-medium">Ask questions before opening</p>
-                <p className="text-xs text-muted-foreground">Shows a modal for the answers below when someone clicks the panel button.</p>
+                <p className="text-xs text-muted-foreground">
+                  Shows a modal for the answers below when someone clicks the panel button.
+                </p>
               </div>
               <Switch
                 checked={draft.intakeForm !== null}
-                onCheckedChange={(v) => set('intakeForm', v ? (draft.intakeForm ?? settings?.intakeForm ?? [{ label: '', style: 'short', required: true }]) : null)}
+                onCheckedChange={(v) =>
+                  set(
+                    'intakeForm',
+                    v
+                      ? (draft.intakeForm ??
+                          settings?.intakeForm ?? [{ label: '', style: 'short', required: true }])
+                      : null,
+                  )
+                }
                 disabled={pending}
               />
             </div>
             {draft.intakeForm !== null ? (
               <div className="mt-3">
-                <IntakeFormBuilder value={draft.intakeForm} onChange={(v) => set('intakeForm', v)} disabled={pending} />
+                <IntakeFormBuilder
+                  value={draft.intakeForm}
+                  onChange={(v) => set('intakeForm', v)}
+                  disabled={pending}
+                />
               </div>
             ) : null}
           </FormField>

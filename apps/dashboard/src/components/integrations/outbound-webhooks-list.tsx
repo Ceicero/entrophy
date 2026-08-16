@@ -1,8 +1,24 @@
 'use client';
 
 import * as React from 'react';
-import { Badge, Button, EmptyState, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, useToast } from '@entrophy/ui';
-import { useDeleteOutboundWebhook, useOutboundWebhooks, useTestOutboundWebhook } from '../../lib/integrations-queries';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  useToast,
+} from '@entrophy/ui';
+import {
+  useDeleteOutboundWebhook,
+  useOutboundWebhooks,
+  useTestOutboundWebhook,
+} from '../../lib/integrations-queries';
 import { ApiClientError } from '../../lib/api';
 import { ConfirmDialog } from '../confirm-dialog';
 import { ErrorState } from '../error-state';
@@ -27,7 +43,12 @@ export function OutboundWebhooksList({ guildId }: { guildId: string }) {
     );
   }
   if (!data || data.length === 0) {
-    return <EmptyState title="No outbound webhooks yet" description="Notify an external service whenever something happens — a moderation case, a ticket, a level-up." />;
+    return (
+      <EmptyState
+        title="No outbound webhooks yet"
+        description="Notify an external service whenever something happens — a moderation case, a ticket, a level-up."
+      />
+    );
   }
 
   function handleDelete() {
@@ -37,14 +58,29 @@ export function OutboundWebhooksList({ guildId }: { guildId: string }) {
         toast({ title: 'Webhook deleted', variant: 'success' });
         setPendingDelete(null);
       },
-      onError: (err) => toast({ title: 'Could not delete webhook', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not delete webhook',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
   function handleTest(id: string) {
     test.mutate(id, {
-      onSuccess: () => toast({ title: 'Test delivery queued', description: 'Check the deliveries list in a moment.', variant: 'success' }),
-      onError: (err) => toast({ title: 'Could not queue test delivery', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onSuccess: () =>
+        toast({
+          title: 'Test delivery queued',
+          description: 'Check the deliveries list in a moment.',
+          variant: 'success',
+        }),
+      onError: (err) =>
+        toast({
+          title: 'Could not queue test delivery',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -64,14 +100,31 @@ export function OutboundWebhooksList({ guildId }: { guildId: string }) {
           {data.map((hook) => (
             <TableRow key={hook.id}>
               <TableCell className="font-medium">{hook.name}</TableCell>
-              <TableCell className="max-w-xs text-xs text-muted-foreground">{hook.events.join(', ')}</TableCell>
-              <TableCell>{hook.active ? <Badge variant="success">Enabled</Badge> : <Badge variant="secondary">Auto-disabled</Badge>}</TableCell>
+              <TableCell className="max-w-xs text-xs text-muted-foreground">
+                {hook.events.join(', ')}
+              </TableCell>
+              <TableCell>
+                {hook.active ? (
+                  <Badge variant="success">Enabled</Badge>
+                ) : (
+                  <Badge variant="secondary">Auto-disabled</Badge>
+                )}
+              </TableCell>
               <TableCell className="text-xs text-muted-foreground">{hook.failureCount}</TableCell>
               <TableCell className="space-x-1 whitespace-nowrap">
-                <Button size="sm" variant="outline" onClick={() => handleTest(hook.id)} disabled={test.isPending}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleTest(hook.id)}
+                  disabled={test.isPending}
+                >
                   Test
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setViewingDeliveries({ id: hook.id, name: hook.name })}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setViewingDeliveries({ id: hook.id, name: hook.name })}
+                >
                   Deliveries
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setPendingDelete(hook.id)}>
@@ -94,7 +147,12 @@ export function OutboundWebhooksList({ guildId }: { guildId: string }) {
         onConfirm={handleDelete}
       />
 
-      <DeliveriesDialog guildId={guildId} endpointId={viewingDeliveries?.id ?? null} endpointName={viewingDeliveries?.name} onOpenChange={(open) => !open && setViewingDeliveries(null)} />
+      <DeliveriesDialog
+        guildId={guildId}
+        endpointId={viewingDeliveries?.id ?? null}
+        endpointName={viewingDeliveries?.name}
+        onOpenChange={(open) => !open && setViewingDeliveries(null)}
+      />
     </>
   );
 }

@@ -1,6 +1,12 @@
 import { ChannelType, type SlashCommandBuilder } from 'discord.js';
 import { assertStaffLevel, errorEmbed, successEmbed, type CommandContext } from '../../sdk';
-import { applyFlagQueueOverwrites, applyLedgerOverwrites, applyMuteRoleToChannels, ensureMuteRole, ensureTextChannel } from '../channels';
+import {
+  applyFlagQueueOverwrites,
+  applyLedgerOverwrites,
+  applyMuteRoleToChannels,
+  ensureMuteRole,
+  ensureTextChannel,
+} from '../channels';
 import { buildLedgerEmbed } from '../embeds';
 import type { EnforcerConfig } from '../manifest';
 
@@ -9,18 +15,52 @@ export function addSetupSubcommand(builder: SlashCommandBuilder): SlashCommandBu
     sub
       .setName('setup')
       .setDescription('Set up (or repair) the ledger channel, flag-queue channel, and mute role.')
-      .addChannelOption((opt) => opt.setName('ledger_channel').setDescription('Existing channel to use as the ledger (created as #mod-ledger if omitted).').addChannelTypes(ChannelType.GuildText).setRequired(false))
+      .addChannelOption((opt) =>
+        opt
+          .setName('ledger_channel')
+          .setDescription('Existing channel to use as the ledger (created as #mod-ledger if omitted).')
+          .addChannelTypes(ChannelType.GuildText)
+          .setRequired(false),
+      )
       .addStringOption((opt) =>
         opt
           .setName('ledger_visibility')
           .setDescription('Who can read the ledger channel (default: staff only).')
-          .addChoices({ name: 'Staff only', value: 'staff' }, { name: 'Everyone (transparency mode)', value: 'everyone' })
+          .addChoices(
+            { name: 'Staff only', value: 'staff' },
+            { name: 'Everyone (transparency mode)', value: 'everyone' },
+          )
           .setRequired(false),
       )
-      .addChannelOption((opt) => opt.setName('flag_channel').setDescription('Existing channel to use as the flag queue (created as #enforcer-queue if omitted).').addChannelTypes(ChannelType.GuildText).setRequired(false))
-      .addRoleOption((opt) => opt.setName('mute_role').setDescription('Existing role to use for Mute decisions (a "Muted" role is created if omitted).').setRequired(false))
-      .addBooleanOption((opt) => opt.setName('capture_context').setDescription('Store a short context snapshot with every flag (default: on).').setRequired(false))
-      .addBooleanOption((opt) => opt.setName('repair').setDescription('Only re-apply channel permission overwrites from the current config — no other changes.').setRequired(false)),
+      .addChannelOption((opt) =>
+        opt
+          .setName('flag_channel')
+          .setDescription(
+            'Existing channel to use as the flag queue (created as #enforcer-queue if omitted).',
+          )
+          .addChannelTypes(ChannelType.GuildText)
+          .setRequired(false),
+      )
+      .addRoleOption((opt) =>
+        opt
+          .setName('mute_role')
+          .setDescription('Existing role to use for Mute decisions (a "Muted" role is created if omitted).')
+          .setRequired(false),
+      )
+      .addBooleanOption((opt) =>
+        opt
+          .setName('capture_context')
+          .setDescription('Store a short context snapshot with every flag (default: on).')
+          .setRequired(false),
+      )
+      .addBooleanOption((opt) =>
+        opt
+          .setName('repair')
+          .setDescription(
+            'Only re-apply channel permission overwrites from the current config — no other changes.',
+          )
+          .setRequired(false),
+      ),
   ) as SlashCommandBuilder;
 }
 
@@ -45,12 +85,15 @@ export async function executeSetup(c: CommandContext): Promise<void> {
   if (repairOnly) {
     const enforcer = c.ctx.services.get('enforcer');
     if (enforcer) await enforcer.repairChannels(c.guildId);
-    await c.interaction.editReply({ embeds: [successEmbed('Channel permission overwrites re-applied from the current configuration.')] });
+    await c.interaction.editReply({
+      embeds: [successEmbed('Channel permission overwrites re-applied from the current configuration.')],
+    });
     return;
   }
 
   const ledgerChannelOpt = c.interaction.options.getChannel('ledger_channel');
-  const ledgerVisibilityOpt = c.interaction.options.getString('ledger_visibility') as 'staff' | 'everyone' | null;
+  const ledgerVisibilityOpt = c.interaction.options.getString('ledger_visibility') as
+    'staff' | 'everyone' | null;
   const flagChannelOpt = c.interaction.options.getChannel('flag_channel');
   const muteRoleOpt = c.interaction.options.getRole('mute_role');
   const captureContextOpt = c.interaction.options.getBoolean('capture_context');
@@ -124,7 +167,7 @@ export async function executeSetup(c: CommandContext): Promise<void> {
           `Ledger channel: <#${ledgerChannel.id}> (${ledgerVisibility === 'staff' ? 'staff only' : 'server-wide'})`,
           `Flag-queue channel: <#${flagChannel.id}> (staff only)`,
           `Mute role: ${muteRoleId ? `<@&${muteRoleId}> — ${muteRoleReport}` : 'not set'}`,
-          `Capture context: ${captureContextOpt ?? config.captureContext ? 'On' : 'Off'}`,
+          `Capture context: ${(captureContextOpt ?? config.captureContext) ? 'On' : 'Off'}`,
           '',
           'Enable Enforcer with `/plugin enable enforcer`, then create your first policy with `/enforcer policy import` or `/enforcer policy create`.',
         ].join('\n'),

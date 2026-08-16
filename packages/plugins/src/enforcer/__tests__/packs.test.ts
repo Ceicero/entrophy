@@ -19,7 +19,16 @@ function baseMessage(overrides: Partial<NormalizedMessage> = {}): NormalizedMess
 }
 
 function packAsPolicy(pack: (typeof POLICY_PACKS)[number]): Policy {
-  return { id: pack.key, name: pack.name, enabled: true, severity: pack.severity, matchers: pack.matchers, channelIds: [], exemptRoleIds: [], exemptChannelIds: [] };
+  return {
+    id: pack.key,
+    name: pack.name,
+    enabled: true,
+    severity: pack.severity,
+    matchers: pack.matchers,
+    channelIds: [],
+    exemptRoleIds: [],
+    exemptChannelIds: [],
+  };
 }
 
 describe('POLICY_PACKS', () => {

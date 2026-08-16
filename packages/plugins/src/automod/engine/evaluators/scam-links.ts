@@ -8,7 +8,9 @@ type Config = z.infer<typeof scamLinksConfigSchema>;
 
 /** Flags known scam/phishing domains and common bait phrases ("free nitro", "steam gift", homoglyph discord domains). Requires the Message Content intent. */
 export const evaluateScamLinks: MessageEvaluator<Config> = async ({ message }, config) => {
-  const domainList = config.useBuiltInList ? [...DEFAULT_SCAM_DOMAINS, ...config.blockedDomains] : config.blockedDomains;
+  const domainList = config.useBuiltInList
+    ? [...DEFAULT_SCAM_DOMAINS, ...config.blockedDomains]
+    : config.blockedDomains;
 
   if (domainList.length > 0) {
     const hostnames = extractLinkHostnames(message.content);

@@ -159,7 +159,15 @@ describe('voice XP sessions (Redis-backed)', () => {
   });
 
   function member(overrides: Partial<VoiceMemberLike> = {}): VoiceMemberLike {
-    return { id: 'x', isBot: false, selfMute: false, selfDeaf: false, serverMute: false, serverDeaf: false, ...overrides };
+    return {
+      id: 'x',
+      isBot: false,
+      selfMute: false,
+      selfDeaf: false,
+      serverMute: false,
+      serverDeaf: false,
+      ...overrides,
+    };
   }
 
   it('isEligibleVoiceMember excludes bots and any muted/deafened state', () => {
@@ -176,7 +184,13 @@ describe('voice XP sessions (Redis-backed)', () => {
     expect(channelQualifiesForVoiceXp([member({ id: 'a' })])).toBe(false);
     expect(channelQualifiesForVoiceXp([member({ id: 'a' }), member({ id: 'b', isBot: true })])).toBe(false);
     expect(channelQualifiesForVoiceXp([member({ id: 'a' }), member({ id: 'b' })])).toBe(true);
-    expect(channelQualifiesForVoiceXp([member({ id: 'a' }), member({ id: 'b' }), member({ id: 'c', selfMute: true })])).toBe(true);
+    expect(
+      channelQualifiesForVoiceXp([
+        member({ id: 'a' }),
+        member({ id: 'b' }),
+        member({ id: 'c', selfMute: true }),
+      ]),
+    ).toBe(true);
   });
 });
 

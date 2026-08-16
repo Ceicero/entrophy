@@ -2,7 +2,11 @@
 
 import * as React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import type { EscalationRuleDto, ModerationSettingsDto, RequireReasonAction } from '@entrophy/types/moderation';
+import type {
+  EscalationRuleDto,
+  ModerationSettingsDto,
+  RequireReasonAction,
+} from '@entrophy/types/moderation';
 import {
   Button,
   Card,
@@ -49,7 +53,9 @@ export function SettingsTab({ guildId }: { guildId: string }) {
 
   function toggleRequireReason(action: RequireReasonAction, checked: boolean) {
     if (!draft) return;
-    const next = checked ? [...draft.requireReasonFor, action] : draft.requireReasonFor.filter((a) => a !== action);
+    const next = checked
+      ? [...draft.requireReasonFor, action]
+      : draft.requireReasonFor.filter((a) => a !== action);
     set('requireReasonFor', next);
   }
 
@@ -77,7 +83,11 @@ export function SettingsTab({ guildId }: { guildId: string }) {
     update.mutate(draft, {
       onSuccess: () => toast({ title: 'Settings saved', variant: 'success' }),
       onError: (err) =>
-        toast({ title: 'Could not save settings', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+        toast({
+          title: 'Could not save settings',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -108,11 +118,27 @@ export function SettingsTab({ guildId }: { guildId: string }) {
           <CardTitle>Channels</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label="Mod-log channel override" hint="Leave unset to use the server's default mod-log channel (Settings page).">
-            <DiscordChannelSelect guildId={guildId} value={draft.modLogChannelId} onChange={(v) => set('modLogChannelId', v)} disabled={update.isPending} />
+          <FormField
+            label="Mod-log channel override"
+            hint="Leave unset to use the server's default mod-log channel (Settings page)."
+          >
+            <DiscordChannelSelect
+              guildId={guildId}
+              value={draft.modLogChannelId}
+              onChange={(v) => set('modLogChannelId', v)}
+              disabled={update.isPending}
+            />
           </FormField>
-          <FormField label="Appeals channel override" hint="Leave unset to use the server's appeals or staff channel.">
-            <DiscordChannelSelect guildId={guildId} value={draft.appealsChannelId} onChange={(v) => set('appealsChannelId', v)} disabled={update.isPending} />
+          <FormField
+            label="Appeals channel override"
+            hint="Leave unset to use the server's appeals or staff channel."
+          >
+            <DiscordChannelSelect
+              guildId={guildId}
+              value={draft.appealsChannelId}
+              onChange={(v) => set('appealsChannelId', v)}
+              disabled={update.isPending}
+            />
           </FormField>
         </CardContent>
       </Card>
@@ -126,19 +152,31 @@ export function SettingsTab({ guildId }: { guildId: string }) {
             <div>
               <p className="text-sm font-medium">DM users on moderation action</p>
               <p className="text-xs text-muted-foreground">
-                Also requires the server-wide &quot;DM on moderation action&quot; toggle (Settings page) to be on — both must allow it.
+                Also requires the server-wide &quot;DM on moderation action&quot; toggle (Settings page) to be
+                on — both must allow it.
               </p>
             </div>
-            <Switch checked={draft.dmOnAction} onCheckedChange={(v) => set('dmOnAction', v)} disabled={update.isPending} />
+            <Switch
+              checked={draft.dmOnAction}
+              onCheckedChange={(v) => set('dmOnAction', v)}
+              disabled={update.isPending}
+            />
           </div>
           <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
             <div>
               <p className="text-sm font-medium">Allow temporary bans</p>
               <p className="text-xs text-muted-foreground">Lets /mod ban accept a duration option.</p>
             </div>
-            <Switch checked={draft.tempBanEnabled} onCheckedChange={(v) => set('tempBanEnabled', v)} disabled={update.isPending} />
+            <Switch
+              checked={draft.tempBanEnabled}
+              onCheckedChange={(v) => set('tempBanEnabled', v)}
+              disabled={update.isPending}
+            />
           </div>
-          <FormField label="Purge limit" hint="Maximum messages /mod purge can delete at once (Discord's own cap is 100).">
+          <FormField
+            label="Purge limit"
+            hint="Maximum messages /mod purge can delete at once (Discord's own cap is 100)."
+          >
             <Input
               type="number"
               min={1}
@@ -188,7 +226,11 @@ export function SettingsTab({ guildId }: { guildId: string }) {
                 />
               </FormField>
               <FormField label="Action">
-                <Select value={rule.action} onValueChange={(v) => updateRule(index, { action: v as EscalationRuleDto['action'] })} disabled={update.isPending}>
+                <Select
+                  value={rule.action}
+                  onValueChange={(v) => updateRule(index, { action: v as EscalationRuleDto['action'] })}
+                  disabled={update.isPending}
+                >
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
@@ -202,7 +244,14 @@ export function SettingsTab({ guildId }: { guildId: string }) {
                 </Select>
               </FormField>
               {rule.action !== 'kick' ? (
-                <FormField label="Duration (minutes)" hint={rule.action === 'timeout' ? 'Required for timeout.' : 'Optional — omit for a permanent ban.'}>
+                <FormField
+                  label="Duration (minutes)"
+                  hint={
+                    rule.action === 'timeout'
+                      ? 'Required for timeout.'
+                      : 'Optional — omit for a permanent ban.'
+                  }
+                >
                   <Input
                     type="number"
                     min={1}
@@ -216,7 +265,13 @@ export function SettingsTab({ guildId }: { guildId: string }) {
                   />
                 </FormField>
               ) : null}
-              <Button variant="outline" size="icon" onClick={() => removeRule(index)} disabled={update.isPending} aria-label="Remove rule">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => removeRule(index)}
+                disabled={update.isPending}
+                aria-label="Remove rule"
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>

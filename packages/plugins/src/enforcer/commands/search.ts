@@ -2,8 +2,14 @@ import type { SlashCommandBuilder } from 'discord.js';
 import { assertStaffLevel, infoEmbed, paginatedReply, type CommandContext } from '../../sdk';
 import { buildRecordSearchWhere } from '../search-filters';
 
-const KIND_CHOICES = ['FLAG', 'DECISION', 'APPEAL_OPENED', 'APPEAL_DECIDED', 'NOTE'].map((k) => ({ name: k, value: k }));
-const DECISION_CHOICES = ['WARN', 'TIMEOUT', 'MUTE', 'UNMUTE', 'KICK', 'BAN', 'DISMISS'].map((d) => ({ name: d, value: d }));
+const KIND_CHOICES = ['FLAG', 'DECISION', 'APPEAL_OPENED', 'APPEAL_DECIDED', 'NOTE'].map((k) => ({
+  name: k,
+  value: k,
+}));
+const DECISION_CHOICES = ['WARN', 'TIMEOUT', 'MUTE', 'UNMUTE', 'KICK', 'BAN', 'DISMISS'].map((d) => ({
+  name: d,
+  value: d,
+}));
 
 export function addSearchSubcommand(builder: SlashCommandBuilder): SlashCommandBuilder {
   return builder.addSubcommand((sub) =>
@@ -11,14 +17,37 @@ export function addSearchSubcommand(builder: SlashCommandBuilder): SlashCommandB
       .setName('search')
       .setDescription('Search the ledger.')
       .addUserOption((opt) => opt.setName('user').setDescription('Filter by user.').setRequired(false))
-      .addStringOption((opt) => opt.setName('kind').setDescription('Filter by record kind.').addChoices(...KIND_CHOICES).setRequired(false))
-      .addStringOption((opt) => opt.setName('decision').setDescription('Filter by decision.').addChoices(...DECISION_CHOICES).setRequired(false))
-      .addStringOption((opt) => opt.setName('policy').setDescription('Filter by policy.').setRequired(false).setAutocomplete(true))
-      .addStringOption((opt) => opt.setName('since').setDescription('How far back, e.g. 7d, 24h.').setRequired(false)),
+      .addStringOption((opt) =>
+        opt
+          .setName('kind')
+          .setDescription('Filter by record kind.')
+          .addChoices(...KIND_CHOICES)
+          .setRequired(false),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('decision')
+          .setDescription('Filter by decision.')
+          .addChoices(...DECISION_CHOICES)
+          .setRequired(false),
+      )
+      .addStringOption((opt) =>
+        opt.setName('policy').setDescription('Filter by policy.').setRequired(false).setAutocomplete(true),
+      )
+      .addStringOption((opt) =>
+        opt.setName('since').setDescription('How far back, e.g. 7d, 24h.').setRequired(false),
+      ),
   ) as SlashCommandBuilder;
 }
 
-function recordLine(row: { recordNumber: number; kind: string; userId: string; decision: string | null; status: string | null; createdAt: Date }): string {
+function recordLine(row: {
+  recordNumber: number;
+  kind: string;
+  userId: string;
+  decision: string | null;
+  status: string | null;
+  createdAt: Date;
+}): string {
   const parts = [`#E-${row.recordNumber}`, row.kind, `<@${row.userId}>`];
   if (row.decision) parts.push(row.decision);
   else if (row.status) parts.push(row.status);
@@ -39,15 +68,29 @@ export async function executeSearch(c: CommandContext): Promise<void> {
     since: c.interaction.options.getString('since'),
   });
 
-  const rows = await c.ctx.prisma.enforcerRecord.findMany({ where, orderBy: { createdAt: 'desc' }, take: 100 });
+  const rows = await c.ctx.prisma.enforcerRecord.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  });
 
   const PAGE_SIZE = 10;
   const pages = [];
   for (let i = 0; i < rows.length; i += PAGE_SIZE) {
     const slice = rows.slice(i, i + PAGE_SIZE);
-    pages.push(infoEmbed(`Ledger search (${rows.length} result${rows.length === 1 ? '' : 's'})`, slice.map(recordLine).join('\n')));
+    pages.push(
+      infoEmbed(
+        `Ledger search (${rows.length} result${rows.length === 1 ? '' : 's'})`,
+        slice.map(recordLine).join('\n'),
+      ),
+    );
   }
   if (pages.length === 0) pages.push(infoEmbed('Ledger search', 'No records matched.'));
 
-  await paginatedReply({ interaction: c.interaction, pages, ownerId: c.interaction.user.id, pluginId: 'enforcer' });
+  await paginatedReply({
+    interaction: c.interaction,
+    pages,
+    ownerId: c.interaction.user.id,
+    pluginId: 'enforcer',
+  });
 }

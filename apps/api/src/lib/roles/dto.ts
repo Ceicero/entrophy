@@ -2,7 +2,12 @@
 // (ARCHITECTURE.md §10). `RolePanelDto`/`RolePanelOptionDto` already live in the shared `lib/dto.ts` — this
 // file only covers what that one doesn't (groups, welcome/goodbye, verification, onboarding, persistence).
 import type { RoleGroup, VerificationRequest } from '@entrophy/database';
-import type { OnboardingConfigDto, RoleGroupDto, VerificationRequestDto, WelcomeGoodbyeDto } from '@entrophy/types/roles';
+import type {
+  OnboardingConfigDto,
+  RoleGroupDto,
+  VerificationRequestDto,
+  WelcomeGoodbyeDto,
+} from '@entrophy/types/roles';
 import type { RolesConfig, WelcomeGoodbyeConfig } from '@entrophy/plugins/roles/manifest';
 
 export function toRoleGroupDto(row: RoleGroup): RoleGroupDto {

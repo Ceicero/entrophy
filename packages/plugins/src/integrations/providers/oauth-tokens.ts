@@ -13,15 +13,28 @@ export interface OAuthRefreshMeta {
   authStyle: 'body' | 'basic';
 }
 
-export const OAUTH_REFRESH_META: Record<'google_calendar' | 'microsoft_calendar' | 'notion', OAuthRefreshMeta> = {
-  google_calendar: { tokenUrl: 'https://oauth2.googleapis.com/token', clientIdEnv: 'GOOGLE_CLIENT_ID', clientSecretEnv: 'GOOGLE_CLIENT_SECRET', authStyle: 'body' },
+export const OAUTH_REFRESH_META: Record<
+  'google_calendar' | 'microsoft_calendar' | 'notion',
+  OAuthRefreshMeta
+> = {
+  google_calendar: {
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    clientIdEnv: 'GOOGLE_CLIENT_ID',
+    clientSecretEnv: 'GOOGLE_CLIENT_SECRET',
+    authStyle: 'body',
+  },
   microsoft_calendar: {
     tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
     clientIdEnv: 'MICROSOFT_CLIENT_ID',
     clientSecretEnv: 'MICROSOFT_CLIENT_SECRET',
     authStyle: 'body',
   },
-  notion: { tokenUrl: 'https://api.notion.com/v1/oauth/token', clientIdEnv: 'NOTION_CLIENT_ID', clientSecretEnv: 'NOTION_CLIENT_SECRET', authStyle: 'basic' },
+  notion: {
+    tokenUrl: 'https://api.notion.com/v1/oauth/token',
+    clientIdEnv: 'NOTION_CLIENT_ID',
+    clientSecretEnv: 'NOTION_CLIENT_SECRET',
+    authStyle: 'basic',
+  },
 };
 
 interface RawTokenResponse {
@@ -45,7 +58,10 @@ export async function refreshOAuthToken(
 
   const refreshToken = decryptSecret(token.refreshTokenEnc);
   const body = new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken });
-  const headers: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    Accept: 'application/json',
+  };
 
   if (meta.authStyle === 'basic') {
     headers.Authorization = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`;

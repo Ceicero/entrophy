@@ -14,7 +14,13 @@ export interface MultiChannelPickerProps {
 }
 
 /** Add-one-at-a-time multi-select over guild channels (temp-voice hub channels, etc.), with removable chips. Falls back to a comma-separated id input if the channels endpoint is unavailable. */
-export function MultiChannelPicker({ guildId, value, onChange, filterType, disabled }: MultiChannelPickerProps) {
+export function MultiChannelPicker({
+  guildId,
+  value,
+  onChange,
+  filterType,
+  disabled,
+}: MultiChannelPickerProps) {
   const { data: channels, isError, isLoading } = useGuildChannels(guildId);
   const options = (channels ?? []).filter((c) => filterType === undefined || c.type === filterType);
   const channelName = (id: string) => channels?.find((c) => c.id === id)?.name ?? id;

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isValidIanaTimezone, listIanaTimezones, parseTimestampInput, TimestampParseError } from '../timestamp';
+import {
+  isValidIanaTimezone,
+  listIanaTimezones,
+  parseTimestampInput,
+  TimestampParseError,
+} from '../timestamp';
 
 describe('listIanaTimezones / isValidIanaTimezone', () => {
   it('lists a non-trivial number of IANA zones including common ones', () => {
@@ -49,7 +54,7 @@ describe('parseTimestampInput', () => {
     expect(dt.hour).toBe(15);
   });
 
-  it('parses a time-only string against today\'s date', () => {
+  it("parses a time-only string against today's date", () => {
     const dt = parseTimestampInput('15:00', 'UTC');
     expect(dt.isValid).toBe(true);
     expect(dt.hour).toBe(15);

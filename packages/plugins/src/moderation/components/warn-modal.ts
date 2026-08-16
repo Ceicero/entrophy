@@ -17,11 +17,22 @@ export const warnModalComponent: ComponentHandler = {
 
     const target = await fetchMemberSafe(c.interaction.guild, targetId);
     if (!target) throw new NotFoundError('That member is no longer in this server.');
-    hierarchyGuard({ guild: c.interaction.guild, member: c.interaction.member as GuildMember }, target, c.ctx.botOwnerIds, c.t);
+    hierarchyGuard(
+      { guild: c.interaction.guild, member: c.interaction.member as GuildMember },
+      target,
+      c.ctx.botOwnerIds,
+      c.t,
+    );
 
     const reason = interaction.fields.getTextInputValue('reason') || undefined;
     const service = moderationService(c.ctx);
-    const row = await service.warn({ guildId: c.guildId, targetId, moderatorId: c.interaction.user.id, reason, source: 'BOT' });
+    const row = await service.warn({
+      guildId: c.guildId,
+      targetId,
+      moderatorId: c.interaction.user.id,
+      reason,
+      source: 'BOT',
+    });
 
     await interaction.reply({ embeds: [buildCaseLogEmbed(row)], ephemeral: true });
   },

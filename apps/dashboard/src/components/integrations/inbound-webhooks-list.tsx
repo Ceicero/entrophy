@@ -1,7 +1,19 @@
 'use client';
 
 import * as React from 'react';
-import { Badge, Button, EmptyState, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, useToast } from '@entrophy/ui';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  useToast,
+} from '@entrophy/ui';
 import { useDeleteInboundWebhook, useInboundWebhooks } from '../../lib/integrations-queries';
 import { ApiClientError } from '../../lib/api';
 import { ConfirmDialog } from '../confirm-dialog';
@@ -24,7 +36,12 @@ export function InboundWebhooksList({ guildId }: { guildId: string }) {
     );
   }
   if (!data || data.length === 0) {
-    return <EmptyState title="No inbound webhooks yet" description="Create one to receive GitHub or generic JSON events as Discord messages." />;
+    return (
+      <EmptyState
+        title="No inbound webhooks yet"
+        description="Create one to receive GitHub or generic JSON events as Discord messages."
+      />
+    );
   }
 
   function handleDelete() {
@@ -34,7 +51,12 @@ export function InboundWebhooksList({ guildId }: { guildId: string }) {
         toast({ title: 'Webhook deleted', variant: 'success' });
         setPendingDelete(null);
       },
-      onError: (err) => toast({ title: 'Could not delete webhook', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not delete webhook',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -56,9 +78,19 @@ export function InboundWebhooksList({ guildId }: { guildId: string }) {
             <TableRow key={hook.id}>
               <TableCell className="font-medium">{hook.name}</TableCell>
               <TableCell className="text-xs text-muted-foreground">{hook.provider}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">{hook.channelId ? `#${hook.channelId}` : '—'}</TableCell>
-              <TableCell>{hook.active ? <Badge variant="success">Enabled</Badge> : <Badge variant="secondary">Disabled</Badge>}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">{hook.lastDeliveryAt ? new Date(hook.lastDeliveryAt).toLocaleString() : 'never'}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {hook.channelId ? `#${hook.channelId}` : '—'}
+              </TableCell>
+              <TableCell>
+                {hook.active ? (
+                  <Badge variant="success">Enabled</Badge>
+                ) : (
+                  <Badge variant="secondary">Disabled</Badge>
+                )}
+              </TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {hook.lastDeliveryAt ? new Date(hook.lastDeliveryAt).toLocaleString() : 'never'}
+              </TableCell>
               <TableCell>
                 <Button size="sm" variant="ghost" onClick={() => setPendingDelete(hook.id)}>
                   Delete

@@ -43,15 +43,15 @@ Discord permission the action needs before attempting it.
 
 ## Config keys (per guild)
 
-| Key | Default | Notes |
-|---|---|---|
-| `modLogChannelId` | `null` | Overrides the core `GuildConfig.modLogChannelId` for this plugin; falls back to it when unset. |
-| `appealsChannelId` | `null` | Overrides core `GuildConfig.appealsChannelId`, then `staffChannelId`, when unset. |
-| `dmOnAction` | `true` | Combined with core `GuildConfig.dmOnModeration` — **both** must be on for DMs to send. |
-| `escalations` | `[{warnings: 3, action: 'timeout', durationMs: 3600000}]` | Ladder of `{warnings, action, durationMs?}` rules; fires once per exact warning-count threshold. |
-| `tempBanEnabled` | `true` | Gate for the `/mod ban duration` option. |
-| `purgeMax` | `100` | Server-configurable ceiling on `/mod purge count` (Discord's own bulk-delete cap is 100). |
-| `requireReasonFor` | `[]` | Any of `kick`, `ban`, `softban` — makes `reason` effectively required for that action. |
+| Key                | Default                                                   | Notes                                                                                            |
+| ------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `modLogChannelId`  | `null`                                                    | Overrides the core `GuildConfig.modLogChannelId` for this plugin; falls back to it when unset.   |
+| `appealsChannelId` | `null`                                                    | Overrides core `GuildConfig.appealsChannelId`, then `staffChannelId`, when unset.                |
+| `dmOnAction`       | `true`                                                    | Combined with core `GuildConfig.dmOnModeration` — **both** must be on for DMs to send.           |
+| `escalations`      | `[{warnings: 3, action: 'timeout', durationMs: 3600000}]` | Ladder of `{warnings, action, durationMs?}` rules; fires once per exact warning-count threshold. |
+| `tempBanEnabled`   | `true`                                                    | Gate for the `/mod ban duration` option.                                                         |
+| `purgeMax`         | `100`                                                     | Server-configurable ceiling on `/mod purge count` (Discord's own bulk-delete cap is 100).        |
+| `requireReasonFor` | `[]`                                                      | Any of `kick`, `ban`, `softban` — makes `reason` effectively required for that action.           |
 
 ## Permissions (why)
 
@@ -62,7 +62,7 @@ Never requests Administrator. Missing permissions surface a friendly error namin
 ## Privileged intents
 
 `GuildMembers` is **not** required — every member lookup here goes through a REST fetch by id, not the member
-cache. No privileged intents are declared. `/mod purge`'s `contains` filter additionally *degrades gracefully*
+cache. No privileged intents are declared. `/mod purge`'s `contains` filter additionally _degrades gracefully_
 when `MessageContent` isn't enabled (it's simply not honored, with an explanation) rather than failing outright.
 
 ## Privacy notes
@@ -75,7 +75,7 @@ when `MessageContent` isn't enabled (it's simply not honored, with an explanatio
 
 ## Escalation
 
-After each `/mod warn`, the plugin counts the target's currently-*active* warnings and checks the configured
+After each `/mod warn`, the plugin counts the target's currently-_active_ warnings and checks the configured
 `escalations` ladder for an exact match on that count. The first (highest-severity, if there's a tie) matching
 rule fires automatically — `timeout`, `kick`, or `ban` — attributed to the same moderator who issued the
 triggering warning, with reason `"Automatic escalation: reached N active warning(s)."`.
@@ -94,9 +94,10 @@ Accept/Deny buttons. Accepting a `TIMEOUT` case automatically removes the timeou
 an explicit "Unban now" button instead of auto-unbanning (a deliberate extra step for the most consequential
 reversal). The dashboard's appeal-decide endpoint only writes the database row (the API process has no Discord
 client) — a repeatable job (`moderation:appeal-sync`, every minute) picks up appeals decided from the dashboard
-and applies the same Discord-side effects. Idempotency for that job is tracked with a Redis key
-(`entrophy:moderation:appeal-applied:<id>`, 30-day TTL) rather than a database column, since `ModerationAppeal`
-has no spare JSON field and `decisionNote` is human-facing text, not machine state.
+(only those reviewed in the last 24h with `effectsAppliedAt` still null) and applies the same Discord-side
+effects. Idempotency is tracked with the durable `ModerationAppeal.effectsAppliedAt` column, set once the
+effects are applied and never expiring — a short-lived Redis key is used only as an in-flight lock so two
+overlapping ticks can't race on the same appeal.
 
 ## Dashboard
 

@@ -23,7 +23,9 @@ describe('HELP_MAP coverage', () => {
           continue;
         }
         if (resolved !== plugin.manifest.id) {
-          wrongOwner.push(`${name}: HELP_MAP says "${resolved}" but it's registered by "${plugin.manifest.id}"`);
+          wrongOwner.push(
+            `${name}: HELP_MAP says "${resolved}" but it's registered by "${plugin.manifest.id}"`,
+          );
         }
       }
     }

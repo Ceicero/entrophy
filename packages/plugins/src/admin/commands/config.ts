@@ -1,6 +1,14 @@
 import { PermissionFlagsBits, SlashCommandBuilder, type EmbedBuilder } from 'discord.js';
 import { ValidationError } from '@entrophy/core';
-import { assertStaffLevel, errorEmbed, listEmbed, paginatedReply, successEmbed, DEFAULT_GUILD_CONFIG, type PluginCommand } from '../../sdk';
+import {
+  assertStaffLevel,
+  errorEmbed,
+  listEmbed,
+  paginatedReply,
+  successEmbed,
+  DEFAULT_GUILD_CONFIG,
+  type PluginCommand,
+} from '../../sdk';
 import { allConfigKeys, findConfigKey, parseConfigValue, pluginConfigKeys } from '../config-keys';
 
 const data = new SlashCommandBuilder()
@@ -13,14 +21,24 @@ const data = new SlashCommandBuilder()
     sub
       .setName('set')
       .setDescription('Set a configuration key.')
-      .addStringOption((opt) => opt.setName('key').setDescription('Config key, e.g. guild.locale').setRequired(true).setAutocomplete(true))
-      .addStringOption((opt) => opt.setName('value').setDescription('New value ("none" clears a nullable field)').setRequired(true)),
+      .addStringOption((opt) =>
+        opt
+          .setName('key')
+          .setDescription('Config key, e.g. guild.locale')
+          .setRequired(true)
+          .setAutocomplete(true),
+      )
+      .addStringOption((opt) =>
+        opt.setName('value').setDescription('New value ("none" clears a nullable field)').setRequired(true),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('reset')
       .setDescription('Reset a configuration key to its default.')
-      .addStringOption((opt) => opt.setName('key').setDescription('Config key to reset').setRequired(true).setAutocomplete(true)),
+      .addStringOption((opt) =>
+        opt.setName('key').setDescription('Config key to reset').setRequired(true).setAutocomplete(true),
+      ),
   );
 
 function formatConfigValue(value: unknown): string {
@@ -69,11 +87,18 @@ export const command: PluginCommand = {
         const enabled = await host.isPluginEnabled(c.guildId, manifest.id);
         if (!enabled) continue;
         const config = await host.getPluginConfig<Record<string, unknown>>(c.guildId, manifest.id);
-        const lines = keys.map((descriptor) => `${descriptor.field}: ${formatConfigValue(config[descriptor.field])}`);
+        const lines = keys.map(
+          (descriptor) => `${descriptor.field}: ${formatConfigValue(config[descriptor.field])}`,
+        );
         pages.push(listEmbed(c.t('config.pluginTitle', { plugin: manifest.name }), lines));
       }
 
-      await paginatedReply({ interaction: c.interaction, pages, ownerId: c.interaction.user.id, pluginId: 'admin' });
+      await paginatedReply({
+        interaction: c.interaction,
+        pages,
+        ownerId: c.interaction.user.id,
+        pluginId: 'admin',
+      });
       return;
     }
 
@@ -97,9 +122,17 @@ export const command: PluginCommand = {
       } else {
         const manifest = host.getManifest(descriptor.scope);
         const defaults = (manifest?.defaultConfig ?? {}) as Record<string, unknown>;
-        await host.setPluginConfig(c.guildId, descriptor.scope, { [descriptor.field]: defaults[descriptor.field] }, actor);
+        await host.setPluginConfig(
+          c.guildId,
+          descriptor.scope,
+          { [descriptor.field]: defaults[descriptor.field] },
+          actor,
+        );
       }
-      await c.interaction.reply({ embeds: [successEmbed(c.t('config.resetSuccess', { key: descriptor.key }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [successEmbed(c.t('config.resetSuccess', { key: descriptor.key }))],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -120,13 +153,29 @@ export const command: PluginCommand = {
       const after = await host.updateGuildConfig(c.guildId, { [descriptor.field]: parsedValue }, actor);
       const afterValue = (after as unknown as Record<string, unknown>)[descriptor.field];
       await c.interaction.reply({
-        embeds: [successEmbed(c.t('config.setSuccess', { key: descriptor.key, value: formatConfigValue(afterValue) }))],
+        embeds: [
+          successEmbed(
+            c.t('config.setSuccess', { key: descriptor.key, value: formatConfigValue(afterValue) }),
+          ),
+        ],
         ephemeral: true,
       });
     } else {
-      const after = await host.setPluginConfig<Record<string, unknown>>(c.guildId, descriptor.scope, { [descriptor.field]: parsedValue }, actor);
+      const after = await host.setPluginConfig<Record<string, unknown>>(
+        c.guildId,
+        descriptor.scope,
+        { [descriptor.field]: parsedValue },
+        actor,
+      );
       await c.interaction.reply({
-        embeds: [successEmbed(c.t('config.setSuccess', { key: descriptor.key, value: formatConfigValue(after[descriptor.field]) }))],
+        embeds: [
+          successEmbed(
+            c.t('config.setSuccess', {
+              key: descriptor.key,
+              value: formatConfigValue(after[descriptor.field]),
+            }),
+          ),
+        ],
         ephemeral: true,
       });
     }
@@ -137,6 +186,8 @@ export const command: PluginCommand = {
     const keys = allConfigKeys(host.listManifests());
     const query = String(focused.value).toLowerCase();
     const matches = keys.filter((descriptor) => descriptor.key.toLowerCase().includes(query)).slice(0, 25);
-    await c.interaction.respond(matches.map((descriptor) => ({ name: descriptor.key, value: descriptor.key })));
+    await c.interaction.respond(
+      matches.map((descriptor) => ({ name: descriptor.key, value: descriptor.key })),
+    );
   },
 };

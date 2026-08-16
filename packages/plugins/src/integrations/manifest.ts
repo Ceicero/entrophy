@@ -10,15 +10,36 @@ export type IntegrationsConfig = z.infer<typeof configSchema>;
 export const manifest = defineManifest({
   id: 'integrations',
   name: 'Integrations',
-  description: 'Secure connector framework for optional external services: Twitch, YouTube, GitHub, Reddit, Steam, Google/Microsoft Calendar, Notion, Stripe, and generic webhooks.',
+  description:
+    'Secure connector framework for optional external services: Twitch, YouTube, GitHub, Reddit, Steam, Google/Microsoft Calendar, Notion, Stripe, and generic webhooks.',
   category: 'integrations',
   version: '0.1.0',
   defaultEnabled: false,
   permissions: [
-    { permission: PermissionFlagsBits.ViewChannel, feature: 'posting alerts / inbound webhook events', optional: false, fallback: 'Alerts silently fail to post in that channel; connection health shows an error.' },
-    { permission: PermissionFlagsBits.SendMessages, feature: 'posting alerts / inbound webhook events', optional: false, fallback: 'Alerts silently fail to post in that channel; connection health shows an error.' },
-    { permission: PermissionFlagsBits.EmbedLinks, feature: 'alert embeds (Twitch/YouTube/GitHub/Reddit/Steam/Calendar/Notion)', optional: true, fallback: 'Alerts post as plain text instead of a rich embed.' },
-    { permission: PermissionFlagsBits.ManageRoles, feature: 'role mention on alert / Stripe role rewards', optional: true, fallback: 'The configured role is skipped (not mentioned, or not granted/revoked).' },
+    {
+      permission: PermissionFlagsBits.ViewChannel,
+      feature: 'posting alerts / inbound webhook events',
+      optional: false,
+      fallback: 'Alerts silently fail to post in that channel; connection health shows an error.',
+    },
+    {
+      permission: PermissionFlagsBits.SendMessages,
+      feature: 'posting alerts / inbound webhook events',
+      optional: false,
+      fallback: 'Alerts silently fail to post in that channel; connection health shows an error.',
+    },
+    {
+      permission: PermissionFlagsBits.EmbedLinks,
+      feature: 'alert embeds (Twitch/YouTube/GitHub/Reddit/Steam/Calendar/Notion)',
+      optional: true,
+      fallback: 'Alerts post as plain text instead of a rich embed.',
+    },
+    {
+      permission: PermissionFlagsBits.ManageRoles,
+      feature: 'role mention on alert / Stripe role rewards',
+      optional: true,
+      fallback: 'The configured role is skipped (not mentioned, or not granted/revoked).',
+    },
   ],
   intents: [GatewayIntentBits.Guilds],
   requiredEnv: [],

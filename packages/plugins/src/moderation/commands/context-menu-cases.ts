@@ -1,4 +1,10 @@
-import { ApplicationCommandType, ContextMenuCommandBuilder, EmbedBuilder, PermissionFlagsBits, type UserContextMenuCommandInteraction } from 'discord.js';
+import {
+  ApplicationCommandType,
+  ContextMenuCommandBuilder,
+  EmbedBuilder,
+  PermissionFlagsBits,
+  type UserContextMenuCommandInteraction,
+} from 'discord.js';
 import { assertStaffLevel, errorEmbed, listEmbed, paginatedReply, type PluginCommand } from '../../sdk';
 import { caseTypeLabel } from '../embeds';
 import { moderationService } from './shared';
@@ -13,7 +19,10 @@ export const command: PluginCommand = {
   data,
   requirement: { staffLevel: 'helper', guildOnly: true },
   async execute(c) {
-    await c.interaction.reply({ embeds: [errorEmbed(c.t('errors.not_found', { thing: 'Command' }))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('errors.not_found', { thing: 'Command' }))],
+      ephemeral: true,
+    });
   },
   async executeContextMenu(c) {
     assertStaffLevel(c.staffLevel, 'helper', c.t);
@@ -31,12 +40,19 @@ export const command: PluginCommand = {
       pages.push(
         listEmbed(
           `Cases — ${target.tag}`,
-          page.items.map((row) => `#${row.caseNumber} — ${caseTypeLabel(row.type)} — ${row.reason ?? '_No reason_'}`),
+          page.items.map(
+            (row) => `#${row.caseNumber} — ${caseTypeLabel(row.type)} — ${row.reason ?? '_No reason_'}`,
+          ),
         ),
       );
       cursor = page.nextCursor;
     } while (cursor && pages.length < 10);
 
-    await paginatedReply({ interaction: c.interaction, pages, ownerId: c.interaction.user.id, pluginId: 'moderation' });
+    await paginatedReply({
+      interaction: c.interaction,
+      pages,
+      ownerId: c.interaction.user.id,
+      pluginId: 'moderation',
+    });
   },
 };

@@ -5,20 +5,20 @@ member verification (instant button, staff-approved modal, or CAPTCHA). Disabled
 
 ## Commands
 
-| Command | What it does | Who |
-|---|---|---|
-| `/roles panel create` | Creates a role panel (channel/style/group/max-selections as options, title/description via a form). | Moderator+ |
-| `/roles panel edit` \| `delete` \| `list` \| `post` | Manage panels; `post` (re)posts the panel message. | Moderator+ |
-| `/roles panel option-add` \| `option-remove` | Add/remove a role option. Blocked for elevated/managed/above-bot roles unless `allowElevatedRoles` is on. | Moderator+ |
-| `/roles group create` \| `edit` \| `delete` \| `list` | Role groups: exclusive (max 1) or max-N selection, shared by any panel that references the group. | Moderator+ |
-| `/roles persist on` \| `off` \| `status` | Toggle role persistence, with the disclosure text shown every time. | Admin |
-| `/welcome set` \| `embed` \| `test` \| `disable` | Configure the join message (channel/text/embed/DM). Template vars: `{user} {user.tag} {user.id} {server} {memberCount} {mention}`. | Moderator+ |
-| `/goodbye set` \| `embed` \| `test` \| `disable` | Same, for the leave message. | Moderator+ |
-| `/verify` | Member-facing: runs the configured verification flow (button/modal/captcha). | Everyone |
-| `/verification setup` \| `queue` \| `approve` \| `deny` | Configure verification and review the modal-mode staff queue. | Moderator+ (`setup` is Admin) |
-| `/onboarding checklist` | Ephemeral personal progress: rules, verification, roles picked, custom steps. | Everyone |
-| `/onboarding config` \| `rules-post` \| `step-add` \| `step-remove` | Configure onboarding. | Moderator+ |
-| "I agree" button on the posted rules | Records acceptance and grants `rulesRoleId` if set. | Everyone |
+| Command                                                             | What it does                                                                                                                       | Who                           |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `/roles panel create`                                               | Creates a role panel (channel/style/group/max-selections as options, title/description via a form).                                | Moderator+                    |
+| `/roles panel edit` \| `delete` \| `list` \| `post`                 | Manage panels; `post` (re)posts the panel message.                                                                                 | Moderator+                    |
+| `/roles panel option-add` \| `option-remove`                        | Add/remove a role option. Blocked for elevated/managed/above-bot roles unless `allowElevatedRoles` is on.                          | Moderator+                    |
+| `/roles group create` \| `edit` \| `delete` \| `list`               | Role groups: exclusive (max 1) or max-N selection, shared by any panel that references the group.                                  | Moderator+                    |
+| `/roles persist on` \| `off` \| `status`                            | Toggle role persistence, with the disclosure text shown every time.                                                                | Admin                         |
+| `/welcome set` \| `embed` \| `test` \| `disable`                    | Configure the join message (channel/text/embed/DM). Template vars: `{user} {user.tag} {user.id} {server} {memberCount} {mention}`. | Moderator+                    |
+| `/goodbye set` \| `embed` \| `test` \| `disable`                    | Same, for the leave message.                                                                                                       | Moderator+                    |
+| `/verify`                                                           | Member-facing: runs the configured verification flow (button/modal/captcha).                                                       | Everyone                      |
+| `/verification setup` \| `queue` \| `approve` \| `deny`             | Configure verification and review the modal-mode staff queue.                                                                      | Moderator+ (`setup` is Admin) |
+| `/onboarding checklist`                                             | Ephemeral personal progress: rules, verification, roles picked, custom steps.                                                      | Everyone                      |
+| `/onboarding config` \| `rules-post` \| `step-add` \| `step-remove` | Configure onboarding.                                                                                                              | Moderator+                    |
+| "I agree" button on the posted rules                                | Records acceptance and grants `rulesRoleId` if set.                                                                                | Everyone                      |
 
 ## Config keys (`config.roles`)
 

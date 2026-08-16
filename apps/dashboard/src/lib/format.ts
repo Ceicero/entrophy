@@ -57,7 +57,10 @@ export function formatRelativeTime(input: string | Date, now: Date = new Date())
 }
 
 const numberFormatter = new Intl.NumberFormat(undefined);
-const compactNumberFormatter = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 });
+const compactNumberFormatter = new Intl.NumberFormat(undefined, {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
 
 /** Formats a count with locale thousands separators, e.g. `12,480`. */
 export function formatNumber(value: number): string {

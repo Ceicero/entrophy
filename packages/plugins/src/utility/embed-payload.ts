@@ -34,7 +34,9 @@ export function parseColorHex(input: string | null | undefined): number | undefi
   const trimmed = input?.trim();
   if (!trimmed) return undefined;
   if (!HEX_COLOR_PATTERN.test(trimmed)) {
-    throw new EmbedPayloadError(`"${input}" is not a valid hex color. Use a format like "#5865F2" or "5865F2".`);
+    throw new EmbedPayloadError(
+      `"${input}" is not a valid hex color. Use a format like "#5865F2" or "5865F2".`,
+    );
   }
   return parseInt(trimmed.replace(/^#/, ''), 16);
 }
@@ -107,14 +109,22 @@ export function embedPayloadFromJson(jsonText: string): EmbedBuilderPayload {
   let imageUrl: string | undefined;
   if (typeof obj.imageUrl === 'string') {
     imageUrl = obj.imageUrl;
-  } else if (obj.image && typeof obj.image === 'object' && typeof (obj.image as Record<string, unknown>).url === 'string') {
+  } else if (
+    obj.image &&
+    typeof obj.image === 'object' &&
+    typeof (obj.image as Record<string, unknown>).url === 'string'
+  ) {
     imageUrl = (obj.image as Record<string, unknown>).url as string;
   }
 
   let footer: string | undefined;
   if (typeof obj.footer === 'string') {
     footer = obj.footer;
-  } else if (obj.footer && typeof obj.footer === 'object' && typeof (obj.footer as Record<string, unknown>).text === 'string') {
+  } else if (
+    obj.footer &&
+    typeof obj.footer === 'object' &&
+    typeof (obj.footer as Record<string, unknown>).text === 'string'
+  ) {
     footer = (obj.footer as Record<string, unknown>).text as string;
   }
 

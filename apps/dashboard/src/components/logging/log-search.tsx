@@ -107,7 +107,11 @@ export function LogSearch({ guildId, storeEventsEnabled }: LogSearchProps) {
           <FormField label="Search text" hint="Matches embed title/description">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input className="pl-8" value={filters.q ?? ''} onChange={(e) => updateFilter('q', e.target.value || undefined)} />
+              <Input
+                className="pl-8"
+                value={filters.q ?? ''}
+                onChange={(e) => updateFilter('q', e.target.value || undefined)}
+              />
             </div>
           </FormField>
         </CardContent>
@@ -133,7 +137,10 @@ export function LogSearch({ guildId, storeEventsEnabled }: LogSearchProps) {
               ))}
             </div>
           ) : !data || data.items.length === 0 ? (
-            <EmptyState title="No log events found" description="Try widening your filters, or check that events are being generated for this server." />
+            <EmptyState
+              title="No log events found"
+              description="Try widening your filters, or check that events are being generated for this server."
+            />
           ) : (
             <>
               <Table>
@@ -150,11 +157,19 @@ export function LogSearch({ guildId, storeEventsEnabled }: LogSearchProps) {
                   {data.items.map((event) => (
                     <TableRow key={event.id}>
                       <TableCell>
-                        <Badge variant="outline">{LOG_KIND_LABELS[event.kind as keyof typeof LOG_KIND_LABELS] ?? event.kind}</Badge>
+                        <Badge variant="outline">
+                          {LOG_KIND_LABELS[event.kind as keyof typeof LOG_KIND_LABELS] ?? event.kind}
+                        </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{(event.payload.actorId as string | undefined) ?? '—'}</TableCell>
-                      <TableCell className="font-mono text-xs">{(event.payload.targetId as string | undefined) ?? '—'}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{formatDateTime(event.createdAt)}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {(event.payload.actorId as string | undefined) ?? '—'}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {(event.payload.targetId as string | undefined) ?? '—'}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {formatDateTime(event.createdAt)}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="ghost" onClick={() => setDetail(event)}>
                           View
@@ -171,7 +186,9 @@ export function LogSearch({ guildId, storeEventsEnabled }: LogSearchProps) {
                 loading={isLoading}
                 label={`${data.items.length} shown`}
                 onPrevious={() => setCursorStack((prev) => prev.slice(0, -1))}
-                onNext={() => data.nextCursor && setCursorStack((prev) => [...prev, data.nextCursor ?? undefined])}
+                onNext={() =>
+                  data.nextCursor && setCursorStack((prev) => [...prev, data.nextCursor ?? undefined])
+                }
               />
             </>
           )}
@@ -181,7 +198,9 @@ export function LogSearch({ guildId, storeEventsEnabled }: LogSearchProps) {
       <Dialog open={Boolean(detail)} onOpenChange={(open) => !open && setDetail(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{detail ? LOG_KIND_LABELS[detail.kind as keyof typeof LOG_KIND_LABELS] ?? detail.kind : ''}</DialogTitle>
+            <DialogTitle>
+              {detail ? (LOG_KIND_LABELS[detail.kind as keyof typeof LOG_KIND_LABELS] ?? detail.kind) : ''}
+            </DialogTitle>
           </DialogHeader>
           {detail ? (
             <div className="space-y-2">

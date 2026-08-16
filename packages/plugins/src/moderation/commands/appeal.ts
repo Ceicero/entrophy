@@ -1,4 +1,10 @@
-import { ActionRowBuilder, ModalBuilder, SlashCommandBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ModalBuilder,
+  SlashCommandBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+} from 'discord.js';
 import { buildCustomId, errorEmbed, type PluginCommand } from '../../sdk';
 import { moderationService } from './shared';
 
@@ -6,7 +12,9 @@ const data = new SlashCommandBuilder()
   .setName('appeal')
   .setDescription('Appeal a moderation case taken against you.')
   .setDMPermission(false)
-  .addIntegerOption((o) => o.setName('case-number').setDescription('The case number to appeal').setRequired(true).setMinValue(1));
+  .addIntegerOption((o) =>
+    o.setName('case-number').setDescription('The case number to appeal').setRequired(true).setMinValue(1),
+  );
 
 export const command: PluginCommand = {
   data,
@@ -17,11 +25,14 @@ export const command: PluginCommand = {
     const caseRow = await service.getCase(c.guildId, caseNumber);
 
     if (!caseRow) {
-      await c.interaction.reply({ embeds: [errorEmbed(c.t('mod.errors.caseNotFound', { number: caseNumber }))], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [errorEmbed(c.t('errors.caseNotFound', { number: caseNumber }))],
+        ephemeral: true,
+      });
       return;
     }
     if (caseRow.targetId !== c.interaction.user.id) {
-      await c.interaction.reply({ embeds: [errorEmbed(c.t('mod.appeal.notYours'))], ephemeral: true });
+      await c.interaction.reply({ embeds: [errorEmbed(c.t('appeal.notYours'))], ephemeral: true });
       return;
     }
 

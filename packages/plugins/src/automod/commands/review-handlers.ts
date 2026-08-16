@@ -1,6 +1,21 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, type ButtonInteraction, type StringSelectMenuInteraction } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  StringSelectMenuBuilder,
+  type ButtonInteraction,
+  type StringSelectMenuInteraction,
+} from 'discord.js';
 import { AuditAction } from '@entrophy/core';
-import { buildCustomId, errorEmbed, infoEmbed, successEmbed, type ComponentContext, type ComponentHandler, type CommandContext } from '../../sdk';
+import {
+  buildCustomId,
+  errorEmbed,
+  infoEmbed,
+  successEmbed,
+  type ComponentContext,
+  type ComponentHandler,
+  type CommandContext,
+} from '../../sdk';
 import { resolveReview } from '../service';
 import { eventSummaryLine, ruleStatusLine } from './format';
 
@@ -15,7 +30,10 @@ export async function handleReview(c: CommandContext): Promise<void> {
   });
 
   if (events.length === 0) {
-    await c.interaction.reply({ embeds: [infoEmbed(c.t('automod.review.title'), c.t('automod.review.empty'))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [infoEmbed(c.t('automod.review.title'), c.t('automod.review.empty'))],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -35,7 +53,12 @@ export async function handleReview(c: CommandContext): Promise<void> {
     );
 
   await c.interaction.reply({
-    embeds: [infoEmbed(c.t('automod.review.title'), events.map((e) => eventSummaryLine(e, ruleNameById.get(e.ruleId) ?? e.ruleType)).join('\n'))],
+    embeds: [
+      infoEmbed(
+        c.t('automod.review.title'),
+        events.map((e) => eventSummaryLine(e, ruleNameById.get(e.ruleId) ?? e.ruleType)).join('\n'),
+      ),
+    ],
     components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select)],
     ephemeral: true,
   });
@@ -62,8 +85,14 @@ async function eventDetailEmbed(c: ComponentContext, eventId: string) {
 function reviewButtonsRow(eventId: string): ActionRowBuilder<ButtonBuilder>[] {
   return [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId(buildCustomId('automod', 'review-confirm', eventId)).setLabel('Confirm violation').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId(buildCustomId('automod', 'review-false-positive', eventId)).setLabel('False positive').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('automod', 'review-confirm', eventId))
+        .setLabel('Confirm violation')
+        .setStyle(ButtonStyle.Danger),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('automod', 'review-false-positive', eventId))
+        .setLabel('False positive')
+        .setStyle(ButtonStyle.Secondary),
     ),
   ];
 }
@@ -84,8 +113,12 @@ export const reviewSelectHandler: ComponentHandler = {
       return;
     }
 
-    const resolved = payload.event.reviewStatus === 'CONFIRMED' || payload.event.reviewStatus === 'FALSE_POSITIVE';
-    await interaction.update({ embeds: [payload.embed], components: resolved ? [] : reviewButtonsRow(payload.event.id) });
+    const resolved =
+      payload.event.reviewStatus === 'CONFIRMED' || payload.event.reviewStatus === 'FALSE_POSITIVE';
+    await interaction.update({
+      embeds: [payload.embed],
+      components: resolved ? [] : reviewButtonsRow(payload.event.id),
+    });
   },
 };
 
@@ -101,7 +134,10 @@ function makeReviewResolveHandler(status: 'CONFIRMED' | 'FALSE_POSITIVE', label:
 
       const updated = await resolveReview(c.ctx, c.guildId, eventId, status, c.interaction.user.id);
       if (!updated) {
-        await c.interaction.reply({ embeds: [errorEmbed(c.t('automod.errors.eventNotFound'))], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [errorEmbed(c.t('automod.errors.eventNotFound'))],
+          ephemeral: true,
+        });
         return;
       }
 
@@ -118,7 +154,10 @@ function makeReviewResolveHandler(status: 'CONFIRMED' | 'FALSE_POSITIVE', label:
 
       const interaction = c.interaction as unknown as ButtonInteraction<'cached'>;
       const confirmationEmbed = successEmbed(`Marked as **${label}** by <@${c.interaction.user.id}>.`);
-      await interaction.update({ embeds: [...interaction.message.embeds, confirmationEmbed], components: [] });
+      await interaction.update({
+        embeds: [...interaction.message.embeds, confirmationEmbed],
+        components: [],
+      });
     },
   };
 }

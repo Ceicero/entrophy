@@ -3,7 +3,19 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AlertTriangle, Gavel, LifeBuoy, Puzzle, ScrollText, ShieldAlert, Users } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle, Badge, Card, CardContent, CardHeader, CardTitle, PageHeader, Skeleton, StatCard } from '@entrophy/ui';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  PageHeader,
+  Skeleton,
+  StatCard,
+} from '@entrophy/ui';
 import { useGuild } from '../../../lib/queries';
 import { ErrorState } from '../../../components/error-state';
 
@@ -61,7 +73,11 @@ export default function GuildOverviewPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Members" value={stats.memberCount ?? '—'} icon={<Users />} />
-        <StatCard label="Plugins enabled" value={stats.pluginsEnabled ?? plugins.filter((p) => p.enabled).length} icon={<Puzzle />} />
+        <StatCard
+          label="Plugins enabled"
+          value={stats.pluginsEnabled ?? plugins.filter((p) => p.enabled).length}
+          icon={<Puzzle />}
+        />
         <StatCard label="Open tickets" value={stats.openTickets ?? '—'} icon={<LifeBuoy />} />
         <StatCard label="Cases (7d)" value={stats.moderationCasesLast7d ?? '—'} icon={<Gavel />} />
       </div>
@@ -78,9 +94,20 @@ export default function GuildOverviewPage() {
               plugins
                 .filter((p) => p.enabled)
                 .map((p) => (
-                  <div key={p.id} className="flex items-center justify-between border-b border-border py-2 text-sm last:border-0">
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between border-b border-border py-2 text-sm last:border-0"
+                  >
                     <span>{p.name}</span>
-                    <Badge variant={!p.health || p.health.status === 'ok' ? 'success' : p.health.status === 'unavailable' ? 'destructive' : 'warning'}>
+                    <Badge
+                      variant={
+                        !p.health || p.health.status === 'ok'
+                          ? 'success'
+                          : p.health.status === 'unavailable'
+                            ? 'destructive'
+                            : 'warning'
+                      }
+                    >
                       {p.health?.status ?? 'ok'}
                     </Badge>
                   </div>

@@ -11,7 +11,11 @@ export interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
 /** Standard page title row: title + description on the left, actions on the right. */
 export const PageHeader = React.forwardRef<HTMLDivElement, PageHeaderProps>(
   ({ className, title, description, actions, breadcrumb, ...props }, ref) => (
-    <div ref={ref} className={cn('flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between', className)} {...props}>
+    <div
+      ref={ref}
+      className={cn('flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between', className)}
+      {...props}
+    >
       <div className="space-y-1">
         {breadcrumb}
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { EMBED_LIMITS } from '@entrophy/core';
-import { embedPayloadFromJson, EmbedPayloadError, isPayloadEmpty, parseColorHex, sanitizeEmbedPayload } from '../embed-payload';
+import {
+  embedPayloadFromJson,
+  EmbedPayloadError,
+  isPayloadEmpty,
+  parseColorHex,
+  sanitizeEmbedPayload,
+} from '../embed-payload';
 
 describe('parseColorHex', () => {
   it('parses "#RRGGBB" and bare "RRGGBB"', () => {
@@ -24,7 +30,13 @@ describe('parseColorHex', () => {
 
 describe('sanitizeEmbedPayload', () => {
   it('trims whitespace and drops empty fields', () => {
-    const payload = sanitizeEmbedPayload({ title: '  Hello  ', description: '', footer: null, imageUrl: undefined, colorHex: '  ' });
+    const payload = sanitizeEmbedPayload({
+      title: '  Hello  ',
+      description: '',
+      footer: null,
+      imageUrl: undefined,
+      colorHex: '  ',
+    });
     expect(payload.title).toBe('Hello');
     expect(payload.description).toBeUndefined();
     expect(payload.footer).toBeUndefined();
@@ -33,13 +45,20 @@ describe('sanitizeEmbedPayload', () => {
   });
 
   it('strips @everyone/@here and mention syntax from text fields', () => {
-    const payload = sanitizeEmbedPayload({ title: 'Hey @everyone', description: 'Ping <@123456789012345678> and <@&98765432109876543>' });
+    const payload = sanitizeEmbedPayload({
+      title: 'Hey @everyone',
+      description: 'Ping <@123456789012345678> and <@&98765432109876543>',
+    });
     expect(payload.title).not.toContain('@everyone');
     expect(payload.description).not.toContain('<@123456789012345678>');
   });
 
   it('truncates text fields to Discord embed limits', () => {
-    const payload = sanitizeEmbedPayload({ title: 'x'.repeat(500), description: 'y'.repeat(5000), footer: 'z'.repeat(3000) });
+    const payload = sanitizeEmbedPayload({
+      title: 'x'.repeat(500),
+      description: 'y'.repeat(5000),
+      footer: 'z'.repeat(3000),
+    });
     expect(payload.title!.length).toBeLessThanOrEqual(EMBED_LIMITS.title);
     expect(payload.description!.length).toBeLessThanOrEqual(EMBED_LIMITS.description);
     expect(payload.footer!.length).toBeLessThanOrEqual(EMBED_LIMITS.footer);
@@ -66,12 +85,33 @@ describe('isPayloadEmpty', () => {
 
 describe('embedPayloadFromJson', () => {
   it('accepts the flat plugin shape', () => {
-    const payload = embedPayloadFromJson(JSON.stringify({ title: 'T', description: 'D', colorHex: '#ff0000', imageUrl: 'https://example.com/i.png', footer: 'F' }));
-    expect(payload).toMatchObject({ title: 'T', description: 'D', colorHex: '#ff0000', imageUrl: 'https://example.com/i.png', footer: 'F' });
+    const payload = embedPayloadFromJson(
+      JSON.stringify({
+        title: 'T',
+        description: 'D',
+        colorHex: '#ff0000',
+        imageUrl: 'https://example.com/i.png',
+        footer: 'F',
+      }),
+    );
+    expect(payload).toMatchObject({
+      title: 'T',
+      description: 'D',
+      colorHex: '#ff0000',
+      imageUrl: 'https://example.com/i.png',
+      footer: 'F',
+    });
   });
 
   it('accepts a standard Discord embed JSON shape (numeric color, nested image/footer)', () => {
-    const payload = embedPayloadFromJson(JSON.stringify({ title: 'T', color: 0x00ff00, image: { url: 'https://example.com/i.png' }, footer: { text: 'F' } }));
+    const payload = embedPayloadFromJson(
+      JSON.stringify({
+        title: 'T',
+        color: 0x00ff00,
+        image: { url: 'https://example.com/i.png' },
+        footer: { text: 'F' },
+      }),
+    );
     expect(payload.title).toBe('T');
     expect(payload.colorHex).toBe('#00ff00');
     expect(payload.imageUrl).toBe('https://example.com/i.png');

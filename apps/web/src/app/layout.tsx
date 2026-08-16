@@ -16,7 +16,8 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Entrophy',
     title: 'Entrophy — Discord moderation you can trust',
-    description: 'A modular, compliance-first Discord bot built for gaming communities. Never Administrator. Everything logged.',
+    description:
+      'A modular, compliance-first Discord bot built for gaming communities. Never Administrator. Everything logged.',
     url: SITE_URL,
   },
   twitter: {

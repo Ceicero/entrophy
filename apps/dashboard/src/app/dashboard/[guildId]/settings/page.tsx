@@ -114,13 +114,28 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <FormField label="Admin roles" hint="Full access to configuration, in addition to Manage Server.">
-            <MultiRolePicker guildId={guildId} value={draft.adminRoleIds ?? []} onChange={(v) => set('adminRoleIds', v)} disabled={update.isPending} />
+            <MultiRolePicker
+              guildId={guildId}
+              value={draft.adminRoleIds ?? []}
+              onChange={(v) => set('adminRoleIds', v)}
+              disabled={update.isPending}
+            />
           </FormField>
           <FormField label="Moderator roles" hint="Can use moderation commands and the mod dashboard.">
-            <MultiRolePicker guildId={guildId} value={draft.modRoleIds ?? []} onChange={(v) => set('modRoleIds', v)} disabled={update.isPending} />
+            <MultiRolePicker
+              guildId={guildId}
+              value={draft.modRoleIds ?? []}
+              onChange={(v) => set('modRoleIds', v)}
+              disabled={update.isPending}
+            />
           </FormField>
           <FormField label="Helper roles" hint="Lowest staff tier — flag review, tickets, limited commands.">
-            <MultiRolePicker guildId={guildId} value={draft.helperRoleIds ?? []} onChange={(v) => set('helperRoleIds', v)} disabled={update.isPending} />
+            <MultiRolePicker
+              guildId={guildId}
+              value={draft.helperRoleIds ?? []}
+              onChange={(v) => set('helperRoleIds', v)}
+              disabled={update.isPending}
+            />
           </FormField>
         </CardContent>
       </Card>
@@ -138,7 +153,10 @@ export default function SettingsPage() {
               disabled={update.isPending}
             />
           </FormField>
-          <FormField label="Staff channel" hint="Internal alerts (flag queue, review queue) post here by default.">
+          <FormField
+            label="Staff channel"
+            hint="Internal alerts (flag queue, review queue) post here by default."
+          >
             <DiscordChannelSelect
               guildId={guildId}
               value={draft.staffChannelId ?? null}
@@ -155,7 +173,11 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField label="Locale">
-            <Select value={draft.locale ?? 'en'} onValueChange={(v) => set('locale', v)} disabled={update.isPending}>
+            <Select
+              value={draft.locale ?? 'en'}
+              onValueChange={(v) => set('locale', v)}
+              disabled={update.isPending}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -169,7 +191,11 @@ export default function SettingsPage() {
             </Select>
           </FormField>
           <FormField label="Timezone" hint="Used for scheduled announcements, reminders, and timestamps.">
-            <Select value={draft.timezone ?? 'UTC'} onValueChange={(v) => set('timezone', v)} disabled={update.isPending}>
+            <Select
+              value={draft.timezone ?? 'UTC'}
+              onValueChange={(v) => set('timezone', v)}
+              disabled={update.isPending}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -193,26 +219,38 @@ export default function SettingsPage() {
           <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
             <div>
               <p className="text-sm font-medium">Fast actions</p>
-              <p className="text-xs text-muted-foreground">Skip the confirm/cancel step for kick, ban, softban, and small purges.</p>
+              <p className="text-xs text-muted-foreground">
+                Skip the confirm/cancel step for kick, ban, softban, and small purges.
+              </p>
             </div>
-            <Switch checked={Boolean(draft.fastActions)} onCheckedChange={(v) => set('fastActions', v)} disabled={update.isPending} />
+            <Switch
+              checked={Boolean(draft.fastActions)}
+              onCheckedChange={(v) => set('fastActions', v)}
+              disabled={update.isPending}
+            />
           </div>
           {draft.fastActions ? (
             <Alert variant="warning">
               <AlertTriangle />
               <AlertTitle>Fast actions are on</AlertTitle>
               <AlertDescription>
-                Moderators won&apos;t be asked to confirm destructive actions before they happen. Large purges (over 100 messages) still
-                require confirmation regardless of this setting.
+                Moderators won&apos;t be asked to confirm destructive actions before they happen. Large purges
+                (over 100 messages) still require confirmation regardless of this setting.
               </AlertDescription>
             </Alert>
           ) : null}
           <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
             <div>
               <p className="text-sm font-medium">DM users on moderation action</p>
-              <p className="text-xs text-muted-foreground">Send a direct message explaining the action and how to appeal.</p>
+              <p className="text-xs text-muted-foreground">
+                Send a direct message explaining the action and how to appeal.
+              </p>
             </div>
-            <Switch checked={Boolean(draft.dmOnModeration)} onCheckedChange={(v) => set('dmOnModeration', v)} disabled={update.isPending} />
+            <Switch
+              checked={Boolean(draft.dmOnModeration)}
+              onCheckedChange={(v) => set('dmOnModeration', v)}
+              disabled={update.isPending}
+            />
           </div>
         </CardContent>
       </Card>
@@ -226,21 +264,29 @@ export default function SettingsPage() {
             <div>
               <p className="text-sm font-medium">Enable analytics data collection</p>
               <p className="text-xs text-muted-foreground">
-                Stores aggregated daily counts (member growth, moderation volume, message activity) so the Analytics page has data. No
-                message content is ever included. Off by default.
+                Stores aggregated daily counts (member growth, moderation volume, message activity) so the
+                Analytics page has data. No message content is ever included. Off by default.
               </p>
             </div>
-            <Switch checked={Boolean(draft.dataCollectionEnabled)} onCheckedChange={(v) => set('dataCollectionEnabled', v)} disabled={update.isPending} />
+            <Switch
+              checked={Boolean(draft.dataCollectionEnabled)}
+              onCheckedChange={(v) => set('dataCollectionEnabled', v)}
+              disabled={update.isPending}
+            />
           </div>
           <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
             <div>
               <p className="text-sm font-medium">Log message content on edit/delete</p>
               <p className="text-xs text-muted-foreground">
-                When off (default), edit/delete logs record metadata only — no message text is stored. Only enable this if your
-                moderation needs require it and members have been informed.
+                When off (default), edit/delete logs record metadata only — no message text is stored. Only
+                enable this if your moderation needs require it and members have been informed.
               </p>
             </div>
-            <Switch checked={Boolean(draft.logMessageContent)} onCheckedChange={(v) => set('logMessageContent', v)} disabled={update.isPending} />
+            <Switch
+              checked={Boolean(draft.logMessageContent)}
+              onCheckedChange={(v) => set('logMessageContent', v)}
+              disabled={update.isPending}
+            />
           </div>
         </CardContent>
       </Card>

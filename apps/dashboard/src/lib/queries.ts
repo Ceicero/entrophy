@@ -21,7 +21,8 @@ export const queryKeys = {
   guild: (guildId: string) => ['guilds', guildId] as const,
   guildConfig: (guildId: string) => ['guilds', guildId, 'config'] as const,
   plugins: (guildId: string) => ['guilds', guildId, 'plugins'] as const,
-  pluginConfig: (guildId: string, pluginId: string) => ['guilds', guildId, 'plugins', pluginId, 'config'] as const,
+  pluginConfig: (guildId: string, pluginId: string) =>
+    ['guilds', guildId, 'plugins', pluginId, 'config'] as const,
   auditLog: (guildId: string, filters: AuditLogFilters) => ['guilds', guildId, 'audit', filters] as const,
   analytics: (guildId: string, range: AnalyticsRange) => ['guilds', guildId, 'analytics', range] as const,
   retention: (guildId: string) => ['guilds', guildId, 'retention'] as const,
@@ -110,8 +111,12 @@ export function usePlugins(guildId: string | undefined) {
 export function useTogglePlugin(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
+    // apps/api's enable/disable routes return `{ ok: true }`, not a `PluginSummary` — the response is unused
+    // here anyway (the cache is updated optimistically above/below), but the declared type should match reality.
     mutationFn: ({ pluginId, enabled }: { pluginId: string; enabled: boolean }) =>
-      apiFetch<PluginSummary>(`/guilds/${guildId}/plugins/${pluginId}/${enabled ? 'enable' : 'disable'}`, { method: 'POST' }),
+      apiFetch<{ ok: boolean }>(`/guilds/${guildId}/plugins/${pluginId}/${enabled ? 'enable' : 'disable'}`, {
+        method: 'POST',
+      }),
     onMutate: async ({ pluginId, enabled }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.plugins(guildId) });
       const previous = queryClient.getQueryData<PluginSummary[]>(queryKeys.plugins(guildId));
@@ -147,7 +152,10 @@ export function useUpdatePluginConfig<T = unknown>(guildId: string, pluginId: st
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (patch: Partial<T>) =>
-      apiFetch<PluginConfigResponse<T>>(`/guilds/${guildId}/plugins/${pluginId}/config`, { method: 'PUT', body: patch }),
+      apiFetch<PluginConfigResponse<T>>(`/guilds/${guildId}/plugins/${pluginId}/config`, {
+        method: 'PUT',
+        body: patch,
+      }),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.pluginConfig(guildId, pluginId), data);
     },
@@ -168,7 +176,8 @@ export interface AuditLogFilters {
 export function useAuditLog(guildId: string | undefined, filters: AuditLogFilters = {}) {
   return useQuery({
     queryKey: queryKeys.auditLog(guildId ?? '', filters),
-    queryFn: () => apiFetch<Paginated<AuditLogEntryDto>>(`/guilds/${guildId}/audit${toQueryString({ ...filters })}`),
+    queryFn: () =>
+      apiFetch<Paginated<AuditLogEntryDto>>(`/guilds/${guildId}/audit${toQueryString({ ...filters })}`),
     enabled: Boolean(guildId),
   });
 }
@@ -224,7 +233,8 @@ export function useDataRequests(guildId: string | undefined) {
     queryFn: () => apiFetch<Paginated<DataRequestDto>>(`/guilds/${guildId}/data/requests`),
     select: (res) => res.items,
     enabled: Boolean(guildId),
-    refetchInterval: (query) => (query.state.data?.items.some((r) => r.status === 'pending' || r.status === 'processing') ? 5000 : false),
+    refetchInterval: (query) =>
+      query.state.data?.items.some((r) => r.status === 'pending' || r.status === 'processing') ? 5000 : false,
   });
 }
 
@@ -243,7 +253,10 @@ export function useRequestDataDelete(guildId: string) {
   return useMutation({
     // Body key is `confirm`, matching apps/api's routes/privacy.ts `deleteBodySchema`.
     mutationFn: (confirmationPhrase: string) =>
-      apiFetch<DataRequestDto>(`/guilds/${guildId}/data/delete`, { method: 'POST', body: { confirm: confirmationPhrase } }),
+      apiFetch<DataRequestDto>(`/guilds/${guildId}/data/delete`, {
+        method: 'POST',
+        body: { confirm: confirmationPhrase },
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.dataRequests(guildId) });
     },

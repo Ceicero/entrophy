@@ -23,7 +23,13 @@ function renderLevelUpMessage(template: string, userId: string, level: number): 
   return template.replace(/\{user\}/g, userMention(userId)).replace(/\{level\}/g, String(level));
 }
 
-async function applyRoleRewards(ctx: PluginContext, guildId: string, member: GuildMember, newLevel: number, mode: EngagementLevelingConfig['rewardMode']): Promise<void> {
+async function applyRoleRewards(
+  ctx: PluginContext,
+  guildId: string,
+  member: GuildMember,
+  newLevel: number,
+  mode: EngagementLevelingConfig['rewardMode'],
+): Promise<void> {
   const rewards = await ctx.prisma.levelReward.findMany({ where: { guildId } });
   if (rewards.length === 0) return;
 
@@ -32,8 +38,10 @@ async function applyRoleRewards(ctx: PluginContext, guildId: string, member: Gui
   if (plan.toAdd.length === 0 && plan.toRemove.length === 0) return;
 
   try {
-    if (plan.toAdd.length > 0) await member.roles.add(plan.toAdd, `Entrophy engagement: reached level ${newLevel}`);
-    if (plan.toRemove.length > 0) await member.roles.remove(plan.toRemove, `Entrophy engagement: level rewards (${mode})`);
+    if (plan.toAdd.length > 0)
+      await member.roles.add(plan.toAdd, `Entrophy engagement: reached level ${newLevel}`);
+    if (plan.toRemove.length > 0)
+      await member.roles.remove(plan.toRemove, `Entrophy engagement: level rewards (${mode})`);
   } catch (err) {
     ctx.logger.warn(
       { guildId, userId: member.id, err: err instanceof Error ? err.message : String(err) },

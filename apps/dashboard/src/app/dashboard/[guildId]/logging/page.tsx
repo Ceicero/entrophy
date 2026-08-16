@@ -3,7 +3,16 @@
 import * as React from 'react';
 import { useParams } from 'next/navigation';
 import type { LoggingConfigDto } from '@entrophy/types/logging';
-import { Button, PageHeader, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from '@entrophy/ui';
+import {
+  Button,
+  PageHeader,
+  Skeleton,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  useToast,
+} from '@entrophy/ui';
 import { useLoggingSettings, useUpdateLoggingSettings } from '../../../../lib/logging-queries';
 import { ErrorState } from '../../../../components/error-state';
 import { ChannelMapTable } from '../../../../components/logging/channel-map-table';

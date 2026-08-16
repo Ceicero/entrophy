@@ -1,12 +1,25 @@
 // Component handlers for the `/setup wizard` step flow (see ../wizard.ts for session/render logic).
-import type { ChannelSelectMenuInteraction, RoleSelectMenuInteraction, StringSelectMenuInteraction } from 'discord.js';
+import type {
+  ChannelSelectMenuInteraction,
+  RoleSelectMenuInteraction,
+  StringSelectMenuInteraction,
+} from 'discord.js';
 import { AuditAction, PermissionError } from '@entrophy/core';
 import { redactForAudit } from '@entrophy/database';
 import type { PluginId } from '@entrophy/types';
 import { errorEmbed, successEmbed, type ComponentContext, type ComponentHandler } from '../../sdk';
-import { WIZARD_STEP_IDS, WizardSessionStore, finishWizard, renderWizardStep, type WizardSession } from '../wizard';
+import {
+  WIZARD_STEP_IDS,
+  WizardSessionStore,
+  finishWizard,
+  renderWizardStep,
+  type WizardSession,
+} from '../wizard';
 
-async function loadOwnedSession(c: ComponentContext, ownerId: string | undefined): Promise<WizardSession | null> {
+async function loadOwnedSession(
+  c: ComponentContext,
+  ownerId: string | undefined,
+): Promise<WizardSession | null> {
   if (!ownerId || c.interaction.user.id !== ownerId) {
     throw new PermissionError(c.t('setup.notWizardOwner'));
   }
@@ -19,21 +32,32 @@ async function renderAndUpdate(c: ComponentContext, session: WizardSession): Pro
   const rendered = renderWizardStep(session, manifests);
   // `.update` exists on every select/button component interaction; component handlers are typed generically
   // across button/select/modal in the SDK, so this narrows structurally rather than by discord.js subtype.
-  await (c.interaction as unknown as { update: (opts: { embeds: unknown[]; components: unknown[] }) => Promise<unknown> }).update({
+  await (
+    c.interaction as unknown as {
+      update: (opts: { embeds: unknown[]; components: unknown[] }) => Promise<unknown>;
+    }
+  ).update({
     embeds: rendered.embeds,
     components: rendered.components,
   });
 }
 
 async function expiredUpdate(c: ComponentContext): Promise<void> {
-  await (c.interaction as unknown as { update: (opts: { content: string; embeds: unknown[]; components: unknown[] }) => Promise<unknown> }).update({
+  await (
+    c.interaction as unknown as {
+      update: (opts: { content: string; embeds: unknown[]; components: unknown[] }) => Promise<unknown>;
+    }
+  ).update({
     content: c.t('setup.sessionExpired'),
     embeds: [],
     components: [],
   });
 }
 
-function roleSelectHandler(field: 'adminRoleIds' | 'modRoleIds' | 'helperRoleIds', action: string): ComponentHandler {
+function roleSelectHandler(
+  field: 'adminRoleIds' | 'modRoleIds' | 'helperRoleIds',
+  action: string,
+): ComponentHandler {
   return {
     action,
     kind: 'select',
@@ -179,7 +203,11 @@ const cancelHandler: ComponentHandler = {
     }
     const store = new WizardSessionStore(c.ctx.redis);
     await store.clear(c.guildId, ownerId);
-    await (c.interaction as unknown as { update: (opts: { embeds: unknown[]; components: unknown[] }) => Promise<unknown> }).update({
+    await (
+      c.interaction as unknown as {
+        update: (opts: { embeds: unknown[]; components: unknown[] }) => Promise<unknown>;
+      }
+    ).update({
       embeds: [errorEmbed(c.t('setup.cancelled'))],
       components: [],
     });
@@ -239,7 +267,11 @@ const finishHandler: ComponentHandler = {
       ].join('\n'),
     );
 
-    await (c.interaction as unknown as { update: (opts: { embeds: unknown[]; components: unknown[] }) => Promise<unknown> }).update({
+    await (
+      c.interaction as unknown as {
+        update: (opts: { embeds: unknown[]; components: unknown[] }) => Promise<unknown>;
+      }
+    ).update({
       embeds: [summary],
       components: [],
     });

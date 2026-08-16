@@ -14,7 +14,10 @@ function makeCommand(name: string) {
   };
 }
 
-function makePlugin(id: string, opts: { commandNames?: string[]; componentActions?: string[]; alwaysEnabled?: boolean } = {}): Plugin {
+function makePlugin(
+  id: string,
+  opts: { commandNames?: string[]; componentActions?: string[]; alwaysEnabled?: boolean } = {},
+): Plugin {
   const manifest = defineManifest({
     // Cast: test fixtures use arbitrary ids outside the real PluginId union on purpose.
     id: id as never,
@@ -91,10 +94,17 @@ describe('PluginRegistry', () => {
     expect(registry.commandsJson()).toHaveLength(1);
     expect(registry.commandsJson()[0]).toMatchObject({ name: 'cmd-a' });
 
-    const intents = registry.requiredIntents({ messageContent: true, guildMembers: true, guildPresences: true });
+    const intents = registry.requiredIntents({
+      messageContent: true,
+      guildMembers: true,
+      guildPresences: true,
+    });
     expect(intents).toEqual([]); // plugin 'a' declares no intents and no privileged intents
 
-    const availability = registry.availability({}, { messageContent: false, guildMembers: true, guildPresences: false });
+    const availability = registry.availability(
+      {},
+      { messageContent: false, guildMembers: true, guildPresences: false },
+    );
     expect(availability.get('a' as never)).toEqual({ available: true });
   });
 
@@ -114,8 +124,14 @@ describe('PluginRegistry', () => {
     const plugin = definePlugin({ manifest, commands: [] });
     const registry = new PluginRegistry([plugin]);
 
-    const availability = registry.availability({}, { messageContent: false, guildMembers: false, guildPresences: false });
-    expect(availability.get('needs-env' as never)).toMatchObject({ available: false, reason: expect.stringContaining('SOME_VAR') });
+    const availability = registry.availability(
+      {},
+      { messageContent: false, guildMembers: false, guildPresences: false },
+    );
+    expect(availability.get('needs-env' as never)).toMatchObject({
+      available: false,
+      reason: expect.stringContaining('SOME_VAR'),
+    });
   });
 
   it('reports degraded plugins when a needed privileged intent is not enabled', () => {
@@ -135,10 +151,17 @@ describe('PluginRegistry', () => {
     const plugin = definePlugin({ manifest, commands: [] });
     const registry = new PluginRegistry([plugin]);
 
-    const availability = registry.availability({}, { messageContent: false, guildMembers: false, guildPresences: false });
+    const availability = registry.availability(
+      {},
+      { messageContent: false, guildMembers: false, guildPresences: false },
+    );
     expect(availability.get('needs-intent' as never)).toMatchObject({ available: true, degraded: true });
 
-    const intents = registry.requiredIntents({ messageContent: true, guildMembers: false, guildPresences: false });
+    const intents = registry.requiredIntents({
+      messageContent: true,
+      guildMembers: false,
+      guildPresences: false,
+    });
     expect(intents).toEqual([GatewayIntentBits.MessageContent]);
   });
 

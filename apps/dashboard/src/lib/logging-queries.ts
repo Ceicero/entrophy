@@ -3,13 +3,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LogEventDto, Paginated } from '@entrophy/types';
 // Not (yet) re-exported from `@entrophy/types`'s barrel — see `packages/types/src/logging.ts`'s header comment.
-import type { LoggingConfigDto, RedactionTestRequestDto, RedactionTestResponseDto } from '@entrophy/types/logging';
+import type {
+  LoggingConfigDto,
+  RedactionTestRequestDto,
+  RedactionTestResponseDto,
+} from '@entrophy/types/logging';
 import { apiFetch, toQueryString } from './api';
 
 /** Own query-key namespace per this plugin's ownership boundary (do not add these to the shared `lib/queries.ts`). */
 export const loggingQueryKeys = {
   settings: (guildId: string) => ['guilds', guildId, 'logging', 'settings'] as const,
-  logs: (guildId: string, filters: LogSearchFilters) => ['guilds', guildId, 'logging', 'logs', filters] as const,
+  logs: (guildId: string, filters: LogSearchFilters) =>
+    ['guilds', guildId, 'logging', 'logs', filters] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -27,7 +32,8 @@ export function useLoggingSettings(guildId: string | undefined) {
 export function useUpdateLoggingSettings(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (patch: Partial<LoggingConfigDto>) => apiFetch<LoggingConfigDto>(`/guilds/${guildId}/logging/settings`, { method: 'PUT', body: patch }),
+    mutationFn: (patch: Partial<LoggingConfigDto>) =>
+      apiFetch<LoggingConfigDto>(`/guilds/${guildId}/logging/settings`, { method: 'PUT', body: patch }),
     onSuccess: (data) => {
       queryClient.setQueryData(loggingQueryKeys.settings(guildId), data);
     },
@@ -52,7 +58,8 @@ export interface LogSearchFilters {
 export function useLogSearch(guildId: string | undefined, filters: LogSearchFilters = {}) {
   return useQuery({
     queryKey: loggingQueryKeys.logs(guildId ?? '', filters),
-    queryFn: () => apiFetch<Paginated<LogEventDto>>(`/guilds/${guildId}/logging/logs${toQueryString({ ...filters })}`),
+    queryFn: () =>
+      apiFetch<Paginated<LogEventDto>>(`/guilds/${guildId}/logging/logs${toQueryString({ ...filters })}`),
     enabled: Boolean(guildId),
   });
 }
@@ -70,6 +77,9 @@ export function logsExportCsvUrl(guildId: string, filters: LogSearchFilters = {}
 export function useRedactionTest(guildId: string) {
   return useMutation({
     mutationFn: (body: RedactionTestRequestDto) =>
-      apiFetch<RedactionTestResponseDto>(`/guilds/${guildId}/logging/redaction/test`, { method: 'POST', body }),
+      apiFetch<RedactionTestResponseDto>(`/guilds/${guildId}/logging/redaction/test`, {
+        method: 'POST',
+        body,
+      }),
   });
 }

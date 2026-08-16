@@ -26,7 +26,11 @@ const OPENER_ALLOW: bigint[] = [
 
 const SUPPORT_ALLOW: bigint[] = [...OPENER_ALLOW];
 
-const BOT_ALLOW: bigint[] = [...OPENER_ALLOW, PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ManageChannels];
+const BOT_ALLOW: bigint[] = [
+  ...OPENER_ALLOW,
+  PermissionFlagsBits.ManageMessages,
+  PermissionFlagsBits.ManageChannels,
+];
 
 /**
  * Builds the overwrite list for a new ticket channel: `@everyone` denied View, the opener and every configured

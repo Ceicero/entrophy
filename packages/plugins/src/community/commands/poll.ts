@@ -15,29 +15,53 @@ const data = new SlashCommandBuilder()
     sub
       .setName('create')
       .setDescription('Start a new poll.')
-      .addStringOption((opt) => opt.setName('question').setDescription('The poll question').setRequired(true).setMaxLength(256))
-      .addStringOption((opt) => opt.setName('option1').setDescription('Option 1').setRequired(true).setMaxLength(100))
-      .addStringOption((opt) => opt.setName('option2').setDescription('Option 2').setRequired(true).setMaxLength(100));
+      .addStringOption((opt) =>
+        opt.setName('question').setDescription('The poll question').setRequired(true).setMaxLength(256),
+      )
+      .addStringOption((opt) =>
+        opt.setName('option1').setDescription('Option 1').setRequired(true).setMaxLength(100),
+      )
+      .addStringOption((opt) =>
+        opt.setName('option2').setDescription('Option 2').setRequired(true).setMaxLength(100),
+      );
     for (let i = 3; i <= MAX_OPTIONS; i++) {
-      sub.addStringOption((opt) => opt.setName(`option${i}`).setDescription(`Option ${i}`).setRequired(false).setMaxLength(100));
+      sub.addStringOption((opt) =>
+        opt.setName(`option${i}`).setDescription(`Option ${i}`).setRequired(false).setMaxLength(100),
+      );
     }
     sub
-      .addStringOption((opt) => opt.setName('duration').setDescription('How long the poll stays open, e.g. 1h, 30m (default: open until manually ended)').setRequired(false))
-      .addBooleanOption((opt) => opt.setName('anonymous').setDescription('Hide who voted for what (default: off)').setRequired(false))
-      .addBooleanOption((opt) => opt.setName('multi').setDescription('Allow selecting more than one option (default: off)').setRequired(false));
+      .addStringOption((opt) =>
+        opt
+          .setName('duration')
+          .setDescription('How long the poll stays open, e.g. 1h, 30m (default: open until manually ended)')
+          .setRequired(false),
+      )
+      .addBooleanOption((opt) =>
+        opt.setName('anonymous').setDescription('Hide who voted for what (default: off)').setRequired(false),
+      )
+      .addBooleanOption((opt) =>
+        opt
+          .setName('multi')
+          .setDescription('Allow selecting more than one option (default: off)')
+          .setRequired(false),
+      );
     return sub;
   })
   .addSubcommand((sub) =>
     sub
       .setName('end')
       .setDescription('End a poll early and show final results.')
-      .addStringOption((opt) => opt.setName('id').setDescription('Poll id').setRequired(true).setAutocomplete(true)),
+      .addStringOption((opt) =>
+        opt.setName('id').setDescription('Poll id').setRequired(true).setAutocomplete(true),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('results')
-      .setDescription('Show a poll\'s current results.')
-      .addStringOption((opt) => opt.setName('id').setDescription('Poll id').setRequired(true).setAutocomplete(true)),
+      .setDescription("Show a poll's current results.")
+      .addStringOption((opt) =>
+        opt.setName('id').setDescription('Poll id').setRequired(true).setAutocomplete(true),
+      ),
   );
 
 async function handleCreate(c: CommandContext): Promise<void> {
@@ -56,7 +80,10 @@ async function handleCreate(c: CommandContext): Promise<void> {
     return;
   }
   if (rawOptions.length > config.polls.maxOptions) {
-    await interaction.reply({ embeds: [errorEmbed(t('poll.tooManyOptions', { max: config.polls.maxOptions }))], ephemeral: true });
+    await interaction.reply({
+      embeds: [errorEmbed(t('poll.tooManyOptions', { max: config.polls.maxOptions }))],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -89,12 +116,21 @@ async function handleCreate(c: CommandContext): Promise<void> {
   });
 
   const tallies = tallyPollFromRows(poll, poll.options, []);
-  await interaction.reply({ embeds: [buildPollEmbed(poll, tallies)], components: buildPollComponents(poll.id, poll.options, false) });
+  await interaction.reply({
+    embeds: [buildPollEmbed(poll, tallies)],
+    components: buildPollComponents(poll.id, poll.options, false),
+  });
   const message = await interaction.fetchReply();
   await ctx.prisma.poll.update({ where: { id: poll.id }, data: { messageId: message.id } });
 
   if (endsAt) {
-    await ctx.queue('poll-end').add('poll-end', { pollId: poll.id }, { jobId: `poll:${poll.id}`, delay: Math.max(0, endsAt.getTime() - Date.now()) });
+    await ctx
+      .queue('poll-end')
+      .add(
+        'poll-end',
+        { pollId: poll.id },
+        { jobId: `poll:${poll.id}`, delay: Math.max(0, endsAt.getTime() - Date.now()) },
+      );
   }
 }
 
@@ -115,7 +151,10 @@ async function handleEnd(c: CommandContext): Promise<void> {
     return;
   }
 
-  await ctx.queue('poll-end').remove(`poll:${poll.id}`).catch(() => undefined);
+  await ctx
+    .queue('poll-end')
+    .remove(`poll:${poll.id}`)
+    .catch(() => undefined);
   await closePoll(ctx, poll.id);
   await interaction.reply({ embeds: [successEmbed(t('poll.ended'))], ephemeral: true });
 }
@@ -123,7 +162,10 @@ async function handleEnd(c: CommandContext): Promise<void> {
 async function handleResults(c: CommandContext): Promise<void> {
   const { interaction, ctx, t } = c;
   const id = interaction.options.getString('id', true);
-  const poll = await ctx.prisma.poll.findFirst({ where: { id, guildId: c.guildId }, include: { options: true, votes: true } });
+  const poll = await ctx.prisma.poll.findFirst({
+    where: { id, guildId: c.guildId },
+    include: { options: true, votes: true },
+  });
   if (!poll) {
     await interaction.reply({ embeds: [errorEmbed(t('poll.notFound'))], ephemeral: true });
     return;
@@ -149,7 +191,14 @@ export const command: PluginCommand = {
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
-    const matches = polls.filter((p) => p.question.toLowerCase().includes(query) || p.id.includes(query)).slice(0, 25);
-    await c.interaction.respond(matches.map((p) => ({ name: `${p.closed ? '[closed] ' : ''}${p.question}`.slice(0, 100), value: p.id })));
+    const matches = polls
+      .filter((p) => p.question.toLowerCase().includes(query) || p.id.includes(query))
+      .slice(0, 25);
+    await c.interaction.respond(
+      matches.map((p) => ({
+        name: `${p.closed ? '[closed] ' : ''}${p.question}`.slice(0, 100),
+        value: p.id,
+      })),
+    );
   },
 };

@@ -2,7 +2,9 @@ import type { PluginContext, PluginEventHandler } from '../../sdk';
 
 /** Content is only ever meaningful when the Message Content privileged intent is enabled; otherwise Discord never sends it and every message looks empty, so a per-event "content not captured" note is more honest than silently showing blank fields. */
 function contentUnavailableNote(ctx: PluginContext): string | undefined {
-  return ctx.intentsEnabled.messageContent ? undefined : 'Message content is not captured (the Message Content privileged intent is disabled for this bot).';
+  return ctx.intentsEnabled.messageContent
+    ? undefined
+    : 'Message content is not captured (the Message Content privileged intent is disabled for this bot).';
 }
 
 export const messageUpdate: PluginEventHandler<'messageUpdate'> = {
@@ -42,7 +44,9 @@ export const messageDelete: PluginEventHandler<'messageDelete'> = {
       messageId: message.id,
       description: contentUnavailableNote(ctx),
       contentBefore: message.content || undefined,
-      attachments: message.attachments ? [...message.attachments.values()].map((attachment) => attachment.url) : undefined,
+      attachments: message.attachments
+        ? [...message.attachments.values()].map((attachment) => attachment.url)
+        : undefined,
     });
   },
 };

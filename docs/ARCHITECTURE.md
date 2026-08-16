@@ -2,7 +2,7 @@
 
 This document is binding for everyone (human or agent) writing code in this repo. It fixes the decisions that
 `SPEC.md` leaves open so that independently-built parts fit together. When SPEC.md and this file conflict on a
-mechanism, this file wins; when they conflict on a *requirement*, SPEC.md wins.
+mechanism, this file wins; when they conflict on a _requirement_, SPEC.md wins.
 
 ---
 
@@ -33,32 +33,32 @@ entrophy/
 
 ## 2. Toolchain & versions (pin these ranges)
 
-| Tool | Version | Notes |
-|---|---|---|
-| Node | >=22 (`.nvmrc` = 22) | dev machine runs 24 |
-| pnpm | 9.15.x (`"packageManager": "pnpm@9.15.9"`) | pnpm workspaces, **no turbo** |
-| typescript | ^5.6 | strict |
-| discord.js | ^14.16 | |
-| prisma / @prisma/client | ^6.1 | |
-| ioredis | ^5.4 | |
-| bullmq | ^5.30 | |
-| fastify | ^5.1 | + @fastify/cookie ^11, @fastify/cors ^10, @fastify/helmet ^13, @fastify/rate-limit ^10, @fastify/swagger ^9, @fastify/swagger-ui ^5, fastify-type-provider-zod ^4 |
-| next | ^15.1 | react ^19, react-dom ^19 |
-| tailwindcss | ^3.4 | classic `tailwind.config.ts` (NOT v4 CSS-first) |
-| zod | ^3.23 | (not zod 4) |
-| pino | ^9 | pino-pretty ^13 (dev only) |
-| vitest | ^3 | |
-| @playwright/test | ^1.49 | |
-| eslint | ^9 (flat config) | typescript-eslint ^8, eslint-config-prettier |
-| prettier | ^3 | |
-| tsx | ^4.19 | runs bot & api from TS source |
-| @tanstack/react-query | ^5 | dashboard data fetching |
-| next-themes | ^0.4 | dark mode |
-| lucide-react | latest | icons |
-| class-variance-authority, clsx, tailwind-merge | latest | ui |
-| @radix-ui/react-{dialog,switch,select,tabs,tooltip,dropdown-menu,checkbox,label,popover} | latest | ui primitives |
-| safe-regex2 | ^4 | regex safety heuristic |
-| dotenv | ^16 | |
+| Tool                                                                                     | Version                                    | Notes                                                                                                                                                             |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node                                                                                     | >=22 (`.nvmrc` = 22)                       | dev machine runs 24                                                                                                                                               |
+| pnpm                                                                                     | 9.15.x (`"packageManager": "pnpm@9.15.9"`) | pnpm workspaces, **no turbo**                                                                                                                                     |
+| typescript                                                                               | ^5.6                                       | strict                                                                                                                                                            |
+| discord.js                                                                               | ^14.16                                     |                                                                                                                                                                   |
+| prisma / @prisma/client                                                                  | ^6.1                                       |                                                                                                                                                                   |
+| ioredis                                                                                  | ^5.4                                       |                                                                                                                                                                   |
+| bullmq                                                                                   | ^5.30                                      |                                                                                                                                                                   |
+| fastify                                                                                  | ^5.1                                       | + @fastify/cookie ^11, @fastify/cors ^10, @fastify/helmet ^13, @fastify/rate-limit ^10, @fastify/swagger ^9, @fastify/swagger-ui ^5, fastify-type-provider-zod ^4 |
+| next                                                                                     | ^15.1                                      | react ^19, react-dom ^19                                                                                                                                          |
+| tailwindcss                                                                              | ^3.4                                       | classic `tailwind.config.ts` (NOT v4 CSS-first)                                                                                                                   |
+| zod                                                                                      | ^3.23                                      | (not zod 4)                                                                                                                                                       |
+| pino                                                                                     | ^9                                         | pino-pretty ^13 (dev only)                                                                                                                                        |
+| vitest                                                                                   | ^3                                         |                                                                                                                                                                   |
+| @playwright/test                                                                         | ^1.49                                      |                                                                                                                                                                   |
+| eslint                                                                                   | ^9 (flat config)                           | typescript-eslint ^8, eslint-config-prettier                                                                                                                      |
+| prettier                                                                                 | ^3                                         |                                                                                                                                                                   |
+| tsx                                                                                      | ^4.19                                      | runs bot & api from TS source                                                                                                                                     |
+| @tanstack/react-query                                                                    | ^5                                         | dashboard data fetching                                                                                                                                           |
+| next-themes                                                                              | ^0.4                                       | dark mode                                                                                                                                                         |
+| lucide-react                                                                             | latest                                     | icons                                                                                                                                                             |
+| class-variance-authority, clsx, tailwind-merge                                           | latest                                     | ui                                                                                                                                                                |
+| @radix-ui/react-{dialog,switch,select,tabs,tooltip,dropdown-menu,checkbox,label,popover} | latest                                     | ui primitives                                                                                                                                                     |
+| safe-regex2                                                                              | ^4                                         | regex safety heuristic                                                                                                                                            |
+| dotenv                                                                                   | ^16                                        |                                                                                                                                                                   |
 
 ## 3. Module system & build strategy — SOURCE-FIRST WORKSPACE PACKAGES
 
@@ -83,10 +83,19 @@ entrophy/
   ```json
   {
     "compilerOptions": {
-      "target": "ES2022", "lib": ["ES2022"], "module": "ESNext", "moduleResolution": "Bundler",
-      "strict": true, "esModuleInterop": true, "skipLibCheck": true, "resolveJsonModule": true,
-      "isolatedModules": true, "forceConsistentCasingInFileNames": true, "noEmit": true,
-      "declaration": false, "types": ["node"]
+      "target": "ES2022",
+      "lib": ["ES2022"],
+      "module": "ESNext",
+      "moduleResolution": "Bundler",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "resolveJsonModule": true,
+      "isolatedModules": true,
+      "forceConsistentCasingInFileNames": true,
+      "noEmit": true,
+      "declaration": false,
+      "types": ["node"]
     }
   }
   ```
@@ -113,6 +122,7 @@ entrophy/
 ## 4. Environment variables (`.env.example`) — all read through `@entrophy/core` `env`
 
 Required (process fails fast with a clear message if missing where needed):
+
 ```
 NODE_ENV=development
 LOG_LEVEL=info
@@ -129,7 +139,9 @@ API_BASE_URL=http://localhost:3001
 DASHBOARD_URL=http://localhost:3000            # CORS allowlist + OAuth return
 NEXT_PUBLIC_API_URL=http://localhost:3001      # dashboard → api
 ```
+
 Optional:
+
 ```
 BOT_OWNER_IDS=                # comma-separated user IDs (bot-owner-only commands, protected from moderation)
 DEV_GUILD_ID=                 # if set, `register` registers commands to this guild only (instant) instead of globally
@@ -160,6 +172,7 @@ HCAPTCHA_SITE_KEY= HCAPTCHA_SECRET= TURNSTILE_SITE_KEY= TURNSTILE_SECRET=
 MEDIA_PROVIDER=none           # none | <compliant provider id>; media plugin is unavailable when none
 PUBLIC_WEBHOOK_BASE_URL=      # public https base for inbound webhooks (EventSub, GitHub, Stripe)
 ```
+
 `@entrophy/core` exports `env` (a zod-validated object) with **all keys optional except NODE_ENV/LOG_LEVEL**, plus `requireEnv('DISCORD_TOKEN')` helper that throws `ConfigError` with a helpful message. Each app validates the subset it needs at boot.
 
 ## 5. `@entrophy/types` (pure types)
@@ -172,53 +185,54 @@ PUBLIC_WEBHOOK_BASE_URL=      # public https base for inbound webhooks (EventSub
 
 ## 6. `@entrophy/core` (exports from `src/index.ts`)
 
-| Module | Exports | Notes |
-|---|---|---|
-| `env.ts` | `loadEnv()`, `env`, `requireEnv()`, `isProduction` | zod schema; never logs values |
-| `logger.ts` | `createLogger(name)`, `logger` | pino; `redact` paths: `*.token, *.accessToken, *.refreshToken, *.password, *.secret, *.authorization, req.headers.authorization, req.headers.cookie, *.content, *.messageContent, *.apiKey`; pretty in dev |
-| `errors.ts` | `AppError(code, message, {status, details, expose})`, `ValidationError`, `PermissionError`, `NotFoundError`, `RateLimitError`, `ConfigError`, `ExternalServiceError`, `isAppError`, `toPublicError(err)` | `toPublicError` never leaks stack/secrets |
-| `crypto/encryption.ts` | `encryptSecret(plain, key?)`, `decryptSecret(cipher, key?)`, `generateEncryptionKey()`, `EncryptedString` format `v1:<iv b64>:<tag b64>:<ciphertext b64>` (AES-256-GCM, 12-byte IV, key from `ENCRYPTION_KEY` base64) | key rotation: `ENCRYPTION_KEY_PREVIOUS` supported for decrypt fallback |
-| `crypto/signatures.ts` | `timingSafeEqualStr`, `verifyHmacSha256(payload, secret, signature, {prefix})`, `verifyGithubSignature`, `verifyStripeSignature(payload, header, secret, toleranceSec)`, `verifyTwitchEventSubSignature`, `verifyDiscordInteractionSignature(publicKey, sig, ts, body)` (ed25519 via node:crypto) | pure functions, unit tested |
-| `permissions/staff.ts` | `resolveStaffLevel({ member, guildOwnerId, botOwnerIds, staffRoles: {adminRoleIds, modRoleIds, helperRoleIds} }): StaffLevel`, `hasStaffLevel(level, required)` | Discord perms fallback: Administrator/ManageGuild → admin; ModerateMembers/KickMembers/BanMembers/ManageMessages → moderator |
-| `permissions/hierarchy.ts` | `checkModerationTarget({ actor, target, botMember, guildOwnerId, botOwnerIds }): { ok: true } \| { ok: false; reason: HierarchyReason }` where reason ∈ `'self' \| 'bot' \| 'guild_owner' \| 'bot_owner' \| 'target_higher_or_equal_than_actor' \| 'target_higher_or_equal_than_bot'` | takes plain data (`{ id, highestRolePosition, isBot }`) so it is unit-testable without discord.js |
-| `permissions/discord.ts` | `PERMISSION_NAMES`, `describePermission(flag)`, `missingPermissions(member/channel, required)`, `INVITE_PERMISSIONS` (least-privilege default set), `buildInviteUrl(clientId, permissions)` | |
-| `ratelimit.ts` | `RateLimiter` (Redis sliding window via `MULTI INCR/PEXPIRE`), `MemoryRateLimiter` (same interface, for tests), `Cooldowns` (`take(key, seconds)`) | interface `RateLimiterLike { consume(key, limit, windowMs): Promise<{allowed, remaining, resetMs}> }` |
-| `redis.ts` | `createRedis(url)`, `getRedis()` singleton, `redisKey(...parts)` → `entrophy:${parts.join(':')}` | |
-| `i18n/index.ts` | `t(key, vars?, locale?)`, `locales/en.json`, `resolveLocale(discordLocale)` | fallback to en; interpolation `{name}` |
-| `audit.ts` | `AuditAction` string constants (`config.update`, `plugin.enable`, `plugin.disable`, `moderation.*`, `automod.rule.*`, `ticket.*`, `integration.*`, `retention.update`, `data.export`, `data.delete`, ...), `type AuditEntry` | writer lives in database package (`writeAudit`) |
-| `utils/safe-regex.ts` | `validateUserRegex(pattern, flags): {ok, error?}` (max length 256, `safe-regex2`, disallow lookbehind-heavy nesting), `safeTest(re, input, {maxInputLength=2000})` | |
-| `utils/ssrf.ts` | `assertPublicHttpUrl(url): Promise<URL>` (https/http only, no creds in URL, resolves DNS and rejects private/loopback/link-local/metadata IPs, rejects ports other than 80/443 unless allowlisted), `SsrfError` | uses `node:dns/promises`; unit tests mock lookup |
-| `utils/sanitize.ts` | `escapeMarkdown`, `escapeHtml`, `sanitizeFilename`, `truncate(str, max)`, `sanitizeEmbedText`, `stripMentions` | |
-| `utils/time.ts` | `parseDuration('10m' \| '2h' \| '3d')` → ms or null, `formatDuration`, `discordTimestamp(date, style)` | |
-| `utils/ids.ts` | `newId()` (crypto.randomUUID), `shortId()` | |
-| `utils/pagination.ts` | `paginate(params)` | |
-| `events.ts` | `PlatformEvents` (typed EventEmitter over `PlatformEventMap`), `createPlatformEvents()` | |
-| `constants.ts` | `BRAND = { name: 'Entrophy', color: 0x6366f1, ... }`, `EMBED_LIMITS` | |
+| Module                     | Exports                                                                                                                                                                                                                                                                                           | Notes                                                                                                                                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `env.ts`                   | `loadEnv()`, `env`, `requireEnv()`, `isProduction`                                                                                                                                                                                                                                                | zod schema; never logs values                                                                                                                                                                              |
+| `logger.ts`                | `createLogger(name)`, `logger`                                                                                                                                                                                                                                                                    | pino; `redact` paths: `*.token, *.accessToken, *.refreshToken, *.password, *.secret, *.authorization, req.headers.authorization, req.headers.cookie, *.content, *.messageContent, *.apiKey`; pretty in dev |
+| `errors.ts`                | `AppError(code, message, {status, details, expose})`, `ValidationError`, `PermissionError`, `NotFoundError`, `RateLimitError`, `ConfigError`, `ExternalServiceError`, `isAppError`, `toPublicError(err)`                                                                                          | `toPublicError` never leaks stack/secrets                                                                                                                                                                  |
+| `crypto/encryption.ts`     | `encryptSecret(plain, key?)`, `decryptSecret(cipher, key?)`, `generateEncryptionKey()`, `EncryptedString` format `v1:<iv b64>:<tag b64>:<ciphertext b64>` (AES-256-GCM, 12-byte IV, key from `ENCRYPTION_KEY` base64)                                                                             | key rotation: `ENCRYPTION_KEY_PREVIOUS` supported for decrypt fallback                                                                                                                                     |
+| `crypto/signatures.ts`     | `timingSafeEqualStr`, `verifyHmacSha256(payload, secret, signature, {prefix})`, `verifyGithubSignature`, `verifyStripeSignature(payload, header, secret, toleranceSec)`, `verifyTwitchEventSubSignature`, `verifyDiscordInteractionSignature(publicKey, sig, ts, body)` (ed25519 via node:crypto) | pure functions, unit tested                                                                                                                                                                                |
+| `permissions/staff.ts`     | `resolveStaffLevel({ member, guildOwnerId, botOwnerIds, staffRoles: {adminRoleIds, modRoleIds, helperRoleIds} }): StaffLevel`, `hasStaffLevel(level, required)`                                                                                                                                   | Discord perms fallback: Administrator/ManageGuild → admin; ModerateMembers/KickMembers/BanMembers/ManageMessages → moderator                                                                               |
+| `permissions/hierarchy.ts` | `checkModerationTarget({ actor, target, botMember, guildOwnerId, botOwnerIds }): { ok: true } \| { ok: false; reason: HierarchyReason }` where reason ∈ `'self' \| 'bot' \| 'guild_owner' \| 'bot_owner' \| 'target_higher_or_equal_than_actor' \| 'target_higher_or_equal_than_bot'`             | takes plain data (`{ id, highestRolePosition, isBot }`) so it is unit-testable without discord.js                                                                                                          |
+| `permissions/discord.ts`   | `PERMISSION_NAMES`, `describePermission(flag)`, `missingPermissions(member/channel, required)`, `INVITE_PERMISSIONS` (least-privilege default set), `buildInviteUrl(clientId, permissions)`                                                                                                       |                                                                                                                                                                                                            |
+| `ratelimit.ts`             | `RateLimiter` (Redis sliding window via `MULTI INCR/PEXPIRE`), `MemoryRateLimiter` (same interface, for tests), `Cooldowns` (`take(key, seconds)`)                                                                                                                                                | interface `RateLimiterLike { consume(key, limit, windowMs): Promise<{allowed, remaining, resetMs}> }`                                                                                                      |
+| `redis.ts`                 | `createRedis(url)`, `getRedis()` singleton, `redisKey(...parts)` → `entrophy:${parts.join(':')}`                                                                                                                                                                                                  |                                                                                                                                                                                                            |
+| `i18n/index.ts`            | `t(key, vars?, locale?)`, `locales/en.json`, `resolveLocale(discordLocale)`                                                                                                                                                                                                                       | fallback to en; interpolation `{name}`                                                                                                                                                                     |
+| `audit.ts`                 | `AuditAction` string constants (`config.update`, `plugin.enable`, `plugin.disable`, `moderation.*`, `automod.rule.*`, `ticket.*`, `integration.*`, `retention.update`, `data.export`, `data.delete`, ...), `type AuditEntry`                                                                      | writer lives in database package (`writeAudit`)                                                                                                                                                            |
+| `utils/safe-regex.ts`      | `validateUserRegex(pattern, flags): {ok, error?}` (max length 256, `safe-regex2`, disallow lookbehind-heavy nesting), `safeTest(re, input, {maxInputLength=2000})`                                                                                                                                |                                                                                                                                                                                                            |
+| `utils/ssrf.ts`            | `assertPublicHttpUrl(url): Promise<URL>` (https/http only, no creds in URL, resolves DNS and rejects private/loopback/link-local/metadata IPs, rejects ports other than 80/443 unless allowlisted), `SsrfError`                                                                                   | uses `node:dns/promises`; unit tests mock lookup                                                                                                                                                           |
+| `utils/sanitize.ts`        | `escapeMarkdown`, `escapeHtml`, `sanitizeFilename`, `truncate(str, max)`, `sanitizeEmbedText`, `stripMentions`                                                                                                                                                                                    |                                                                                                                                                                                                            |
+| `utils/time.ts`            | `parseDuration('10m' \| '2h' \| '3d')` → ms or null, `formatDuration`, `discordTimestamp(date, style)`                                                                                                                                                                                            |                                                                                                                                                                                                            |
+| `utils/ids.ts`             | `newId()` (crypto.randomUUID), `shortId()`                                                                                                                                                                                                                                                        |                                                                                                                                                                                                            |
+| `utils/pagination.ts`      | `paginate(params)`                                                                                                                                                                                                                                                                                |                                                                                                                                                                                                            |
+| `events.ts`                | `PlatformEvents` (typed EventEmitter over `PlatformEventMap`), `createPlatformEvents()`                                                                                                                                                                                                           |                                                                                                                                                                                                            |
+| `constants.ts`             | `BRAND = { name: 'Entrophy', color: 0xe5e5e5, ... }`, `brandIconUrl(env)`, `EMBED_LIMITS`                                                                                                                                                                                                         | monochrome per §20                                                                                                                                                                                         |
 
 ## 7. Plugin SDK (`@entrophy/plugins`, folder `packages/plugins/src/sdk/`)
 
 ### 7.1 Plugin ids and ownership
 
-| id | Folder | Command groups / top-level commands | Default |
-|---|---|---|---|
-| `admin` | `src/admin` | `/setup wizard\|status`, `/config view\|set\|reset`, `/plugin enable\|disable\|status\|list`, `/permissions audit`, `/health` | always enabled (cannot be disabled) |
-| `moderation` | `src/moderation` | `/mod warn\|warnings\|clearwarns\|timeout\|untimeout\|kick\|ban\|unban\|softban\|purge\|lock\|unlock\|slowmode\|nick\|note\|case\|cases\|appeal-setup`, `/mod role add\|remove` (subcommand group), `/appeal` (member-facing appeal flow), context menus: "Warn user", "View cases" | enabled |
-| `automod` | `src/automod` | `/automod rule create\|list\|view\|edit\|delete\|toggle\|test`, `/automod exempt add\|remove\|list`, `/automod dryrun`, `/automod review`, `/automod status` | enabled, **dry-run on** by default |
-| `enforcer` | `src/enforcer` | `/enforcer setup\|status\|policy create\|list\|view\|edit\|delete\|toggle\|test\|import\|flag\|search\|record\|history\|export\|appeal\|mute\|unmute`, context menu "Flag for review" | disabled |
-| `logging` | `src/logging` | `/logs set\|disable\|status\|retention\|test\|search`, `/logs redact add\|remove\|list` | enabled (no channels configured → does nothing) |
-| `tickets` | `src/tickets` | `/ticket open\|close\|add\|remove\|transcript\|assign\|reopen\|config`, `/ticket tag add\|remove`, `/ticket panel create` | disabled |
-| `roles` | `src/roles` | `/roles panel create\|edit\|delete\|list\|post\|option-add\|option-remove`, `/roles group create\|edit\|delete\|list`, `/roles persist on\|off\|status`, `/welcome set\|embed\|test\|disable`, `/goodbye set\|embed\|test\|disable`, `/verify` (member-facing), `/verification setup\|queue\|approve\|deny`, `/onboarding checklist\|config\|rules-post\|step-add\|step-remove` | disabled |
-| `engagement` | `src/engagement` | `/level rank\|leaderboard\|config\|reset\|xp give\|remove\|set\|rewards add\|remove\|list\|sync\|ignore add\|remove`, `/rep give\|check\|leaderboard\|revoke`, `/starboard set channel\|threshold\|emoji\|selfstar\|status`, `/tempvoice setup\|lock\|unlock\|limit\|rename\|claim\|kick\|permit` | enabled (leveling on, rep on, starboard needs channel) |
-| `community` | `src/community` | `/poll create\|end\|results`, `/giveaway start\|end\|reroll\|list\|cancel`, `/suggest`, `/suggestions setup\|status\|list`, `/announce schedule\|list\|cancel\|preview`, `/remind set\|list\|cancel`, `/event create\|list\|cancel\|rsvps` | enabled |
-| `economy` | `src/economy` | `/economy balance\|daily\|give\|leaderboard\|config`, `/economy admin add\|remove` — virtual currency only, **no real money** | disabled |
-| `utility` | `src/utility` | `/help`, `/utility userinfo\|serverinfo\|avatar\|banner\|roleinfo\|channelinfo\|timestamp\|timezone set\|get\|list\|calculator\|afk\|translate\|weather\|status`, `/embed builder`, context menu "User info" | enabled |
-| `media` | `src/media` | `/music play\|queue\|skip\|pause\|resume\|volume\|loop\|stop\|shuffle\|nowplaying\|playlist save\|load\|list\|delete` — adapter interface only; unavailable unless `MEDIA_PROVIDER` configured with a compliant provider | disabled |
-| `integrations` | `src/integrations` | `/integration connect\|disconnect\|status\|list`, `/integration alerts add\|remove\|list`, `/integration webhook create\|list\|delete`, `/integration outbound create\|list\|delete\|test` | disabled |
-| `ai` | `src/ai` | `/ask`, `/summarize`, `/draft`, `/mod-assist`, `/ai config view\|set-key\|clear-key\|provider\|model\|channels\|budget` | disabled |
+| id             | Folder             | Command groups / top-level commands                                                                                                                                                                                                                                                                                                                                             | Default                                                |
+| -------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `admin`        | `src/admin`        | `/setup wizard\|status`, `/config view\|set\|reset`, `/plugin enable\|disable\|status\|list`, `/permissions audit`, `/health`                                                                                                                                                                                                                                                   | always enabled (cannot be disabled)                    |
+| `moderation`   | `src/moderation`   | `/mod warn\|warnings\|clearwarns\|timeout\|untimeout\|kick\|ban\|unban\|softban\|purge\|lock\|unlock\|slowmode\|nick\|note\|case\|cases\|appeal-setup`, `/mod role add\|remove` (subcommand group), `/appeal` (member-facing appeal flow), context menus: "Warn user", "View cases"                                                                                             | enabled                                                |
+| `automod`      | `src/automod`      | `/automod rule create\|list\|view\|edit\|delete\|toggle\|test`, `/automod exempt add\|remove\|list`, `/automod dryrun`, `/automod review`, `/automod status`                                                                                                                                                                                                                    | enabled, **dry-run on** by default                     |
+| `enforcer`     | `src/enforcer`     | `/enforcer setup\|status\|policy create\|list\|view\|edit\|delete\|toggle\|test\|import\|flag\|search\|record\|history\|export\|appeal\|mute\|unmute`, context menu "Flag for review"                                                                                                                                                                                           | disabled                                               |
+| `logging`      | `src/logging`      | `/logs set\|disable\|status\|retention\|test\|search`, `/logs redact add\|remove\|list`                                                                                                                                                                                                                                                                                         | enabled (no channels configured → does nothing)        |
+| `tickets`      | `src/tickets`      | `/ticket open\|close\|add\|remove\|transcript\|assign\|reopen\|config`, `/ticket tag add\|remove`, `/ticket panel create`                                                                                                                                                                                                                                                       | disabled                                               |
+| `roles`        | `src/roles`        | `/roles panel create\|edit\|delete\|list\|post\|option-add\|option-remove`, `/roles group create\|edit\|delete\|list`, `/roles persist on\|off\|status`, `/welcome set\|embed\|test\|disable`, `/goodbye set\|embed\|test\|disable`, `/verify` (member-facing), `/verification setup\|queue\|approve\|deny`, `/onboarding checklist\|config\|rules-post\|step-add\|step-remove` | disabled                                               |
+| `engagement`   | `src/engagement`   | `/level rank\|leaderboard\|config\|reset\|xp give\|remove\|set\|rewards add\|remove\|list\|sync\|ignore add\|remove`, `/rep give\|check\|leaderboard\|revoke`, `/starboard set channel\|threshold\|emoji\|selfstar\|status`, `/tempvoice setup\|lock\|unlock\|limit\|rename\|claim\|kick\|permit`                                                                               | enabled (leveling on, rep on, starboard needs channel) |
+| `community`    | `src/community`    | `/poll create\|end\|results`, `/giveaway start\|end\|reroll\|list\|cancel`, `/suggest`, `/suggestions setup\|status\|list`, `/announce schedule\|list\|cancel\|preview`, `/remind set\|list\|cancel`, `/event create\|list\|cancel\|rsvps`                                                                                                                                      | enabled                                                |
+| `economy`      | `src/economy`      | `/economy balance\|daily\|give\|leaderboard\|config`, `/economy admin add\|remove` — virtual currency only, **no real money**                                                                                                                                                                                                                                                   | disabled                                               |
+| `utility`      | `src/utility`      | `/help`, `/utility userinfo\|serverinfo\|avatar\|banner\|roleinfo\|channelinfo\|timestamp\|timezone set\|get\|list\|calculator\|afk\|translate\|weather\|status`, `/embed builder`, context menu "User info"                                                                                                                                                                    | enabled                                                |
+| `media`        | `src/media`        | `/music play\|queue\|skip\|pause\|resume\|volume\|loop\|stop\|shuffle\|nowplaying\|playlist save\|load\|list\|delete` — adapter interface only; unavailable unless `MEDIA_PROVIDER` configured with a compliant provider                                                                                                                                                        | disabled                                               |
+| `integrations` | `src/integrations` | `/integration connect\|disconnect\|status\|list`, `/integration alerts add\|remove\|list`, `/integration webhook create\|list\|delete`, `/integration outbound create\|list\|delete\|test`                                                                                                                                                                                      | disabled                                               |
+| `ai`           | `src/ai`           | `/ask`, `/summarize`, `/draft`, `/mod-assist`, `/ai config view\|set-key\|clear-key\|provider\|model\|channels\|budget`                                                                                                                                                                                                                                                         | disabled                                               |
 
 `PluginId` union in `@entrophy/types` = exactly these ids. `packages/plugins/src/index.ts` exports `allPlugins: Plugin[]` in this order and `packages/plugins/src/manifests.ts` exports `allManifests: PluginManifest[]` (import each plugin's `manifest.ts` only — **manifest files must not import discord.js runtime code beyond types/enums** so the API can load them cheaply).
 
 Every plugin folder has this shape:
+
 ```
 src/<id>/
   manifest.ts        export const manifest: PluginManifest  (+ export type <Id>Config = z.infer<typeof configSchema>)
@@ -237,10 +251,21 @@ src/<id>/
 ```ts
 import type { z } from 'zod';
 import type {
-  Client, ChatInputCommandInteraction, ContextMenuCommandInteraction, AutocompleteInteraction,
-  ButtonInteraction, AnySelectMenuInteraction, ModalSubmitInteraction, ClientEvents,
-  SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder, SlashCommandOptionsOnlyBuilder,
-  ContextMenuCommandBuilder, PermissionResolvable, GatewayIntentBits, Locale,
+  Client,
+  ChatInputCommandInteraction,
+  ContextMenuCommandInteraction,
+  AutocompleteInteraction,
+  ButtonInteraction,
+  AnySelectMenuInteraction,
+  ModalSubmitInteraction,
+  ClientEvents,
+  SlashCommandBuilder,
+  SlashCommandSubcommandsOnlyBuilder,
+  SlashCommandOptionsOnlyBuilder,
+  ContextMenuCommandBuilder,
+  PermissionResolvable,
+  GatewayIntentBits,
+  Locale,
 } from 'discord.js';
 import type { Job, Queue } from 'bullmq';
 import type { PrismaClient } from '@entrophy/database';
@@ -249,14 +274,15 @@ import type { Logger } from 'pino';
 import type { PluginId, StaffLevel, PlatformEventMap } from '@entrophy/types';
 import type { PlatformEvents, RateLimiterLike } from '@entrophy/core';
 
-export type PluginCategory = 'admin' | 'moderation' | 'community' | 'utility' | 'integrations' | 'ai' | 'media';
+export type PluginCategory =
+  'admin' | 'moderation' | 'community' | 'utility' | 'integrations' | 'ai' | 'media';
 export type PrivilegedIntent = 'MessageContent' | 'GuildMembers' | 'GuildPresences';
 
 export interface PluginPermissionDoc {
-  permission: PermissionResolvable;   // e.g. PermissionFlagsBits.BanMembers
-  feature: string;                    // "ban / softban"
+  permission: PermissionResolvable; // e.g. PermissionFlagsBits.BanMembers
+  feature: string; // "ban / softban"
   optional: boolean;
-  fallback: string;                   // behaviour when missing
+  fallback: string; // behaviour when missing
 }
 
 export interface PluginManifest {
@@ -266,28 +292,31 @@ export interface PluginManifest {
   category: PluginCategory;
   version: string;
   defaultEnabled: boolean;
-  alwaysEnabled?: boolean;                 // admin only
-  permissions: PluginPermissionDoc[];      // used by /permissions audit + README matrix
-  intents: GatewayIntentBits[];            // non-privileged intents needed
-  privilegedIntents?: PrivilegedIntent[];  // features degrade if not enabled
-  requiredEnv: string[];                   // ALL must be set or plugin status = 'unavailable'
+  alwaysEnabled?: boolean; // admin only
+  permissions: PluginPermissionDoc[]; // used by /permissions audit + README matrix
+  intents: GatewayIntentBits[]; // non-privileged intents needed
+  privilegedIntents?: PrivilegedIntent[]; // features degrade if not enabled
+  requiredEnv: string[]; // ALL must be set or plugin status = 'unavailable'
   optionalEnv?: string[];
-  configSchema: z.ZodTypeAny;              // per-guild config; MUST have defaults for every field
-  defaultConfig: unknown;                  // = configSchema.parse({})
-  dashboard?: { path: string; label: string; icon: string };  // icon = lucide icon name
-  privacyNotes?: string[];                 // shown in dashboard + README
+  configSchema: z.ZodTypeAny; // per-guild config; MUST have defaults for every field
+  defaultConfig: unknown; // = configSchema.parse({})
+  dashboard?: { path: string; label: string; icon: string }; // icon = lucide icon name
+  privacyNotes?: string[]; // shown in dashboard + README
 }
 
 export type CommandBuilder =
-  | SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder | SlashCommandOptionsOnlyBuilder
-  | ContextMenuCommandBuilder | Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>;
+  | SlashCommandBuilder
+  | SlashCommandSubcommandsOnlyBuilder
+  | SlashCommandOptionsOnlyBuilder
+  | ContextMenuCommandBuilder
+  | Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>;
 
 export interface CommandRequirement {
-  staffLevel?: StaffLevel;                       // minimum configured staff level (see core resolveStaffLevel)
-  discordPermissions?: PermissionResolvable[];   // actor must have ALL (checked in addition to staffLevel when both given: staffLevel OR discordPermissions satisfies)
-  botPermissions?: PermissionResolvable[];       // bot must have in guild/channel; else friendly error
+  staffLevel?: StaffLevel; // minimum configured staff level (see core resolveStaffLevel)
+  discordPermissions?: PermissionResolvable[]; // actor must have ALL (checked in addition to staffLevel when both given: staffLevel OR discordPermissions satisfies)
+  botPermissions?: PermissionResolvable[]; // bot must have in guild/channel; else friendly error
   botOwnerOnly?: boolean;
-  guildOnly?: boolean;                           // default true
+  guildOnly?: boolean; // default true
   cooldown?: { seconds: number; scope: 'user' | 'guild' | 'channel' };
 }
 
@@ -298,15 +327,23 @@ export interface CommandContext {
   staffLevel: StaffLevel;
   locale: Locale;
   t: (key: string, vars?: Record<string, string | number>) => string;
-  config: <T = unknown>() => Promise<T>;   // this plugin's guild config (parsed with configSchema)
+  config: <T = unknown>() => Promise<T>; // this plugin's guild config (parsed with configSchema)
 }
-export interface ContextMenuContext extends Omit<CommandContext, 'interaction'> { interaction: ContextMenuCommandInteraction<'cached'>; }
-export interface AutocompleteContext extends Omit<CommandContext, 'interaction'> { interaction: AutocompleteInteraction<'cached'>; }
-export interface ComponentContext<I = ButtonInteraction<'cached'> | AnySelectMenuInteraction<'cached'> | ModalSubmitInteraction<'cached'>>
-  extends Omit<CommandContext, 'interaction'> { interaction: I; args: string[]; }
+export interface ContextMenuContext extends Omit<CommandContext, 'interaction'> {
+  interaction: ContextMenuCommandInteraction<'cached'>;
+}
+export interface AutocompleteContext extends Omit<CommandContext, 'interaction'> {
+  interaction: AutocompleteInteraction<'cached'>;
+}
+export interface ComponentContext<
+  I = ButtonInteraction<'cached'> | AnySelectMenuInteraction<'cached'> | ModalSubmitInteraction<'cached'>,
+> extends Omit<CommandContext, 'interaction'> {
+  interaction: I;
+  args: string[];
+}
 
 export interface PluginCommand {
-  data: CommandBuilder;                        // name must be unique across ALL plugins
+  data: CommandBuilder; // name must be unique across ALL plugins
   requirement?: CommandRequirement;
   execute(c: CommandContext): Promise<void>;
   executeContextMenu?(c: ContextMenuContext): Promise<void>;
@@ -323,7 +360,7 @@ export interface PluginEventHandler<K extends keyof ClientEvents = keyof ClientE
 
 /** Component custom ids are `<pluginId>:<action>:<arg1>:<arg2>...` (max 100 chars). Host routes by pluginId then action. */
 export interface ComponentHandler {
-  action: string;                                   // e.g. 'confirm-ban'
+  action: string; // e.g. 'confirm-ban'
   kind: 'button' | 'select' | 'modal';
   handler: (c: ComponentContext) => Promise<void>;
   requirement?: Pick<CommandRequirement, 'staffLevel' | 'discordPermissions' | 'botOwnerOnly'>;
@@ -332,26 +369,33 @@ export interface ComponentHandler {
 }
 
 export interface PluginJob<T = unknown> {
-  name: string;                     // queue name = `${pluginId}:${name}`
+  name: string; // queue name = `${pluginId}:${name}`
   processor: (ctx: PluginContext, job: Job<T>) => Promise<void>;
   concurrency?: number;
-  repeat?: { pattern: string };     // cron; scheduled at load with jobId = name (idempotent)
+  repeat?: { pattern: string }; // cron; scheduled at load with jobId = name (idempotent)
 }
 
-export interface PluginHealth { status: 'ok' | 'degraded' | 'unavailable' | 'disabled'; details?: string; }
+export interface PluginHealth {
+  status: 'ok' | 'degraded' | 'unavailable' | 'disabled';
+  details?: string;
+}
 
 export interface PluginContext {
   client: Client<true>;
   prisma: PrismaClient;
   redis: Redis;
-  logger: Logger;                                   // child logger with { plugin: id }
-  events: PlatformEvents;                           // in-process typed bus
+  logger: Logger; // child logger with { plugin: id }
+  events: PlatformEvents; // in-process typed bus
   rateLimiter: RateLimiterLike;
-  queue: (jobName: string) => Queue;                // returns/creates queue `${pluginId}:${jobName}`
-  getConfig: <T>(guildId: string) => Promise<T>;    // this plugin's guild config with defaults applied
-  setConfig: <T>(guildId: string, patch: Partial<T>, actor: { id: string; source: 'bot' | 'dashboard' | 'system' }) => Promise<T>;
+  queue: (jobName: string) => Queue; // returns/creates queue `${pluginId}:${jobName}`
+  getConfig: <T>(guildId: string) => Promise<T>; // this plugin's guild config with defaults applied
+  setConfig: <T>(
+    guildId: string,
+    patch: Partial<T>,
+    actor: { id: string; source: 'bot' | 'dashboard' | 'system' },
+  ) => Promise<T>;
   isEnabled: (guildId: string, pluginId?: PluginId) => Promise<boolean>;
-  services: ServiceRegistry;                        // cross-plugin services (see §7.5)
+  services: ServiceRegistry; // cross-plugin services (see §7.5)
   audit: (entry: Omit<AuditEntry, 'id' | 'createdAt'>) => Promise<void>;
   t: (key: string, vars?: Record<string, string | number>, locale?: string) => string;
   env: typeof import('@entrophy/core').env;
@@ -369,25 +413,31 @@ export interface Plugin {
   onGuildEnable?(ctx: PluginContext, guildId: string): Promise<void>;
   onGuildDisable?(ctx: PluginContext, guildId: string): Promise<void>;
   health?(ctx: PluginContext): Promise<PluginHealth>;
-  migrations?: { id: string; run(ctx: PluginContext): Promise<void> }[];   // recorded in PluginMigration table
+  migrations?: { id: string; run(ctx: PluginContext): Promise<void> }[]; // recorded in PluginMigration table
 }
 ```
+
 Helper `definePlugin(p: Plugin): Plugin` (identity, for typing) and `defineManifest`.
 
 ### 7.3 Registry (`src/sdk/registry.ts`)
+
 `class PluginRegistry { constructor(plugins: Plugin[]); get(id); list(); commandsJson(); requiredIntents(opts: {privileged: {...}}); availability(env): Map<PluginId, {available: boolean; reason?: string}> }`. Validates at construction: unique plugin ids, unique command names, custom-id action uniqueness per plugin, `defaultConfig` parses. Throws on violation.
 
 ### 7.4 Config store (`src/sdk/config-store.ts`)
+
 `GuildConfigStore` — reads `PluginConfig` rows (`guildId`, `pluginId`, `config Json`) merged over `manifest.defaultConfig` via `configSchema.parse({...defaults, ...stored})`; Redis cache key `entrophy:cfg:<guildId>:<pluginId>` TTL 300s, invalidated on write. Enablement is `PluginState` (`guildId`, `pluginId`, `enabled`) with the same cache pattern (`entrophy:plugin:<guildId>:<pluginId>`); missing row → `manifest.defaultEnabled`. Both **api and bot** use this store, so config changes from the dashboard are visible to the bot after invalidation (api deletes the same Redis keys).
 
 ### 7.5 Cross-plugin services (`src/sdk/services.ts`)
+
 `ServiceRegistry` = typed map: `register<K extends keyof ServiceMap>(k, impl)`, `get(k): ServiceMap[K] | undefined`, `require(k)`. `ServiceMap` interface (declared in sdk, extended by module augmentation in plugins):
+
 - `moderation`: `{ createCase(input): Promise<ModerationCase>; warn(input); timeout(input); getCase(guildId, caseNumber); listCases(...) }`
 - `logging`: `{ log(guildId, kind: LogKind, payload: LogPayload): Promise<void> }` — kind ∈ `member.join|member.leave|message.edit|message.delete|role.update|channel.update|guild.update|moderation.action|voice.join|voice.leave|invite.use|bot.error|webhook.failure|automod.trigger|ticket.event|verification.event`
 - `automod`: `{ quarantine(guildId, userId, reason) }`
 - `tickets`, `roles` (`assignRoles`, `verifyMember`), `integrations` (`sendOutbound(guildId, endpointId, payload)`), `ai` (`complete(...)`) — each plugin registers its service in `onLoad` and consumers call `ctx.services.get('x')` and no-op gracefully if absent.
 
 ### 7.6 Platform events (`@entrophy/types` `PlatformEventMap`)
+
 ```
 'guild.configChanged': { guildId; pluginId; actorId; source }
 'plugin.enabled' | 'plugin.disabled': { guildId; pluginId; actorId }
@@ -405,6 +455,7 @@ Helper `definePlugin(p: Plugin): Plugin` (identity, for typing) and `defineManif
 ```
 
 ### 7.7 Command conventions
+
 - Every command file exports `const command: PluginCommand`. Use `SlashCommandBuilder` with `.setDMPermission(false)` and `.setDefaultMemberPermissions(...)` matching the requirement (so Discord hides it from non-staff by default). Set descriptions ≤100 chars, names lowercase.
 - Reply **ephemerally** for config, moderation detail, confirmations, errors. Public for community features.
 - Destructive actions (kick/ban/softban/purge/bulk role/ticket delete/data delete): reply ephemeral with an embed summarising the action + `Confirm`/`Cancel` buttons (`<plugin>:confirm-<action>:<ownerUserId>:<payload>`), 60s timeout, unless the guild's `admin` config `fastActions=true` **and** the action is not `purge>100`. Payload that doesn't fit in customId → store in Redis `entrophy:pending:<uuid>` TTL 120s and pass the uuid.
@@ -414,6 +465,7 @@ Helper `definePlugin(p: Plugin): Plugin` (identity, for typing) and `defineManif
 - Rate limits: host applies `requirement.cooldown` via `Cooldowns`; plus a global per-user 20 cmd/10s limiter.
 
 ### 7.8 Discord permission model
+
 - Bot invite permission set `INVITE_PERMISSIONS` (core): ViewChannel, SendMessages, SendMessagesInThreads, EmbedLinks, AttachFiles, ReadMessageHistory, AddReactions, UseExternalEmojis, ManageMessages, ManageChannels, ManageRoles, ManageNicknames, ModerateMembers, KickMembers, BanMembers, ManageThreads, CreatePublicThreads, CreatePrivateThreads, ManageWebhooks, ViewAuditLog, Connect, Speak, MoveMembers, ManageEvents. **Never Administrator.**
 - Each plugin lists its permissions in `manifest.permissions`; `/permissions audit` diffs against `guild.members.me.permissions` and reports missing ones per feature with the fallback text.
 
@@ -438,6 +490,7 @@ src/host/health.ts    tiny http server GET /health → { status, uptime, guilds,
 src/register.ts       `pnpm --filter @entrophy/bot register [--global|--guild <id>|--clear]` — REST PUT applicationCommands (DEV_GUILD_ID default when set)
 src/workers.ts        BullMQ Worker bootstrap for all plugin jobs + shared queues `bot-actions` (dashboard→bot requests: post role panel, send test welcome, etc.)
 ```
+
 Also `apps/bot/src/host/bot-actions.ts`: processes `bot-actions` queue jobs `{ type: 'roles.postPanel' | 'welcome.test' | 'tickets.postPanel' | 'moderation.exportCases' | ... , guildId, payload }` by dispatching to `ctx.services`.
 
 ## 10. API (`apps/api`)
@@ -498,18 +551,22 @@ Also `apps/bot/src/host/bot-actions.ts`: processes `bot-actions` queue jobs `{ t
 - Playwright: `e2e/` with `playwright.config.ts` (`webServer` for dashboard; expects API running with `E2E_TEST_MODE=true`); tests: `login.spec.ts` (unauthenticated redirect; test-login → guild selector visible), `config.spec.ts` (toggle a plugin, change a setting, see audit entry).
 
 ## 12. `@entrophy/ui`
+
 Components (all accessible, keyboard-friendly, dark-mode aware, `cn()` helper): Button, IconButton, Card, Badge, Input, Textarea, Select, Switch, Checkbox, Label, Tabs, Dialog, Sheet/Drawer, DropdownMenu, Tooltip, Table, Pagination, EmptyState, Skeleton, Alert, Toast (sonner-free simple), FormField, ColorPicker (native input), ChannelPicker/RolePicker (props: options), EmbedPreview (Discord-style), CodeBlock, StatCard, PageHeader, Sidebar/Nav, ThemeToggle. `packages/ui/src/index.ts` re-exports; `tailwind.preset.ts` (colors: brand indigo `#6366f1`, semantic tokens) consumed by dashboard `tailwind.config.ts` (`presets: [preset]`, `content` includes `../../packages/ui/src/**/*.{ts,tsx}`).
 
 ## 13. Testing conventions
+
 - Vitest per package (`vitest.config.ts`, `test/**/*.test.ts` or `src/**/__tests__/*.test.ts`). Pure logic is separated from discord.js so tests need no gateway. Mock Redis with `ioredis-mock` where needed. Required suites: core (encryption, signatures, staff level, hierarchy, rate limiter, safe-regex, ssrf, sanitize, time), plugins (automod rule evaluators, moderation escalation + hierarchy integration, registry validation, config store merge), api (auth guard, csrf, guild access, webhook signature routes), database (schema smoke: prisma validate in CI).
 - CI (`.github/workflows/ci.yml`): node 22 + pnpm 9 (`pnpm/action-setup`), `pnpm install --frozen-lockfile`, `pnpm db:generate`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`; services postgres:16 + redis:7; step `prisma migrate deploy` + `prisma validate` against the service DB; Playwright job optional (`if: github.event_name == 'push'`) with browsers cached.
 
 ## 14. Docker
+
 - `infra/docker/Dockerfile.{bot,api}`: `node:22-alpine`, `corepack enable && corepack prepare pnpm@9.15.9 --activate`, copy workspace manifests, `pnpm install --frozen-lockfile`, copy source, `pnpm db:generate`, `CMD ["pnpm","--filter","@entrophy/bot","start"]` (start = `tsx src/index.ts`). Non-root user. Healthcheck hits `BOT_HEALTH_PORT` / `API_PORT/health`.
 - `Dockerfile.dashboard`: multi-stage `next build` with `output: 'standalone'`, `CMD ["node","apps/dashboard/server.js"]`.
 - `docker-compose.yml`: `postgres` (16-alpine, volume, healthcheck), `redis` (7-alpine), `migrate` (api image, `pnpm db:migrate`, depends_on healthy postgres), `bot`, `api`, `dashboard` — all `env_file: .env`, DATABASE_URL/REDIS_URL overridden to service hostnames.
 
 ## 15. Security defaults (recap, enforced in code)
+
 - No content logging by default (`GuildConfig.logMessageContent=false`, `dataCollectionEnabled=false`).
 - All secrets encrypted with `encryptSecret` before DB; decrypted only in-process where used.
 - Webhook receivers: raw body, constant-time signature check, idempotency, 5MB limit, no SSRF (outbound URLs pass `assertPublicHttpUrl`).
@@ -520,6 +577,7 @@ Components (all accessible, keyboard-friendly, dark-mode aware, `cn()` helper): 
 - Errors never leak stack/secrets to users.
 
 ## 16. Documentation set (`docs/`, `README.md`)
+
 README (top-level): overview, features, prerequisites, Discord Developer Portal setup, OAuth redirect config, invite URL (scopes `bot applications.commands`, least-privilege permission integer), privileged intents guidance, local setup (with & without Docker), production deployment, plugin configuration guide (link PLUGINS.md), permissions matrix (link PERMISSIONS.md), privacy policy template (link), troubleshooting, roadmap (link). Every plugin's README.md is linked from PLUGINS.md.
 
 ## 17. `apps/web` (@entrophy/web)
@@ -527,8 +585,8 @@ README (top-level): overview, features, prerequisites, Discord Developer Portal 
 - Next.js 15 App Router (same versions as dashboard), Tailwind 3, `next dev -p 3003`. Depends only on
   `@entrophy/types` (NOT ui — the website has its own monochrome component set under `src/components/`; NOT core).
 - Palette tokens (CSS variables in `src/app/globals.css`): `--ink-0:#050505 --ink-1:#0a0a0a --ink-2:#111111
-  --ink-3:#171717 --ink-4:#1f1f1f --ink-5:#262626 --ink-6:#333333 --ink-7:#404040 --grey-1:#525252 --grey-2:#737373
-  --grey-3:#8a8a8a --grey-4:#a3a3a3 --grey-5:#bdbdbd --grey-6:#d4d4d4 --grey-7:#e5e5e5 --paper:#fafafa`.
+--ink-3:#171717 --ink-4:#1f1f1f --ink-5:#262626 --ink-6:#333333 --ink-7:#404040 --grey-1:#525252 --grey-2:#737373
+--grey-3:#8a8a8a --grey-4:#a3a3a3 --grey-5:#bdbdbd --grey-6:#d4d4d4 --grey-7:#e5e5e5 --paper:#fafafa`.
   Nothing else. Fonts: system stack (`ui-sans-serif, -apple-system, "Segoe UI", Inter, Roboto, sans-serif`) — no
   network font loading (offline builds must work).
 - Smoke: `src/components/Smoke.tsx` renders 4–6 absolutely-positioned blurred radial-gradient blobs (`filter: blur(80px)`,
@@ -538,8 +596,8 @@ README (top-level): overview, features, prerequisites, Discord Developer Portal 
 - Data: `src/data/commands.json` is generated by `pnpm --filter @entrophy/plugins export:commands`
   (`packages/plugins/scripts/export-commands.ts` walks `allPlugins`, calls `data.toJSON()` and emits
   `{ generatedAt, plugins: [{ id, name, description, category, defaultEnabled, privilegedIntents, commands: [{ name,
-  fullName ("/mod warn"), type: 'slash'|'user'|'message', description, staffLevel?, discordPermissions?: string[],
-  options: [{name, description, required, type}], subcommands: [{ name, fullName, description, options }] }] }] }`),
+fullName ("/mod warn"), type: 'slash'|'user'|'message', description, staffLevel?, discordPermissions?: string[],
+options: [{name, description, required, type}], subcommands: [{ name, fullName, description, options }] }] }] }`),
   written to `apps/web/src/data/commands.json` AND `docs/commands.json`. Root script `commands:export`. CI runs it and
   fails on `git diff --exit-code` (docs must be regenerated when commands change). Curated copy lives in
   `src/content/plugins.ts` (`Record<PluginId, { headline, whyGaming: string[], highlights: string[] }>`) and
@@ -564,7 +622,7 @@ README (top-level): overview, features, prerequisites, Discord Developer Portal 
   `{ enabled, currency: 'usd', presetsCents: number[], minCents, maxCents }`; `POST /donations/checkout`
   body `{ amountCents: int, currency: 'usd' }` → validates range → creates `Donation` row (PENDING) → Stripe Checkout
   Session (`mode: 'payment'`, `submit_type: 'donate'`, `line_items[0].price_data = { currency, unit_amount, product_data:
-  { name: 'Entrophy donation' } }`, `success_url: ${WEB_URL}/donate/thanks?session_id={CHECKOUT_SESSION_ID}`,
+{ name: 'Entrophy donation' } }`, `success_url: ${WEB_URL}/donate/thanks?session_id={CHECKOUT_SESSION_ID}`,
   `cancel_url: ${WEB_URL}/donate/cancelled`, `metadata: { kind: 'donation', donationId }`) → stores `stripeSessionId` →
   `{ url }`. 503 `{ error: { code: 'donations_unavailable' } }` when `STRIPE_SECRET_KEY` unset.
 - `apps/api/src/lib/donations.ts` exports `handleStripeDonationEvent(prisma, event)` — for `checkout.session.completed`
@@ -574,8 +632,8 @@ README (top-level): overview, features, prerequisites, Discord Developer Portal 
 - `routes/webhooks.ts` stripe handler MUST call `handleStripeDonationEvent` first; only non-donation events are
   enqueued to `integrations:inbound`.
 - Prisma: `model Donation { id String @id @default(cuid()); stripeSessionId String @unique; stripePaymentIntentId String?;
-  amountCents Int; currency String @default("usd"); status DonationStatus @default(PENDING); createdAt; paidAt DateTime?;
-  updatedAt }` + `enum DonationStatus { PENDING PAID FAILED EXPIRED }`.
+amountCents Int; currency String @default("usd"); status DonationStatus @default(PENDING); createdAt; paidAt DateTime?;
+updatedAt }` + `enum DonationStatus { PENDING PAID FAILED EXPIRED }`.
 
 ## 19. `enforcer` plugin
 
@@ -602,11 +660,11 @@ README (top-level): overview, features, prerequisites, Discord Developer Portal 
   `/enforcer appeal record:<number>` (member; modal → `moderation.openAppeal`),
   `/enforcer mute|unmute user:<user> [duration] [reason]` (mute-role shortcuts routed through decisions).
 - Config schema: `{ ledgerChannelId: string|null, ledgerVisibility: 'staff'|'everyone' = 'staff', flagChannelId:
-  string|null, muteRoleId: string|null, captureContext: boolean = true, contextBefore: 1..15 = 5, contextAfter: 0..10 =
-  3, excerptMaxChars: 50..1000 = 300, autoFlagEnabled: boolean = true, exemptStaff: boolean = true, aiAssist: boolean =
-  false, dmOnAction: boolean = true, defaultTimeoutMinutes: 60, defaultMuteMinutes: number|null = null (null = until
-  unmuted), requireReasonOn: ('warn'|'timeout'|'mute'|'kick'|'ban')[] = ['kick','ban'], allowedDecisions:
-  ('warn'|'timeout'|'mute'|'kick'|'ban'|'dismiss')[] = all, banDeleteMessageSeconds: 0..604800 = 0 }`.
+string|null, muteRoleId: string|null, captureContext: boolean = true, contextBefore: 1..15 = 5, contextAfter: 0..10 =
+3, excerptMaxChars: 50..1000 = 300, autoFlagEnabled: boolean = true, exemptStaff: boolean = true, aiAssist: boolean =
+false, dmOnAction: boolean = true, defaultTimeoutMinutes: 60, defaultMuteMinutes: number|null = null (null = until
+unmuted), requireReasonOn: ('warn'|'timeout'|'mute'|'kick'|'ban')[] = ['kick','ban'], allowedDecisions:
+('warn'|'timeout'|'mute'|'kick'|'ban'|'dismiss')[] = all, banDeleteMessageSeconds: 0..604800 = 0 }`.
 - Prisma models:
   ```
   enum PolicySeverity { LOW MEDIUM HIGH CRITICAL }
@@ -624,8 +682,8 @@ README (top-level): overview, features, prerequisites, Discord Developer Portal 
   ```
   Ledger record numbers are per guild (`#E-<n>`), allocated like case numbers (retry on unique violation).
 - Policy engine `src/enforcer/engine.ts` (pure, unit-tested): `evaluate(message: NormalizedMessage, policies:
-  Policy[], opts) → Match[]` where `NormalizedMessage = { content, authorId, authorRoleIds, channelId, mentionsCount,
-  attachments: {name, contentType?}[], links: string[], invites: string[], isStaff }`; keyword (word-boundary
+Policy[], opts) → Match[]` where `NormalizedMessage = { content, authorId, authorRoleIds, channelId, mentionsCount,
+attachments: {name, contentType?}[], links: string[], invites: string[], isStaff }`; keyword (word-boundary
   case-insensitive by default), phrase, regex (via core `validateUserRegex` at save time and `safeTest` at run time),
   link_domain (hostname suffix match), invite, mention_count (>=), attachment_ext; respects scope + exemptions;
   returns the highest-severity match first. Excerpt = `sanitizeEmbedText(truncate(content, excerptMaxChars))` with
@@ -655,11 +713,11 @@ README (top-level): overview, features, prerequisites, Discord Developer Portal 
   (excerpt + `[Jump]` link), footer with source. Ledger posts never ping (allowedMentions: parse []).
 - Cross-plugin contract additions:
   - `ServiceMap.moderation` MUST also expose `openAppeal({ guildId, userId, caseNumber?, caseId?, content, source }):
-    Promise<{ appealId: string }>` and `getCaseByNumber(guildId, caseNumber)`; the moderation plugin emits
+Promise<{ appealId: string }>` and `getCaseByNumber(guildId, caseNumber)`; the moderation plugin emits
     `moderation.appealOpened` and `moderation.appealDecided`.
   - `ServiceMap.enforcer`: `{ decide(input: { guildId, recordId, decision, moderatorId, reason?, durationMs?,
-    banDeleteMessageSeconds? }): Promise<{ recordNumber }>; flag(input): Promise<{ recordId; recordNumber }>;
-    search(...) }` — used by the bot-action `enforcer.decide` (dashboard decisions) and by other plugins.
+banDeleteMessageSeconds? }): Promise<{ recordNumber }>; flag(input): Promise<{ recordId; recordNumber }>;
+search(...) }` — used by the bot-action `enforcer.decide` (dashboard decisions) and by other plugins.
   - `PlatformEventMap` additions: `'moderation.appealOpened': { guildId; appealId; caseId; caseNumber; userId }`,
     `'moderation.appealDecided': { guildId; appealId; caseId; caseNumber; userId; accepted: boolean; reviewerId }`,
     `'enforcer.flagged': { guildId; recordId; recordNumber; userId; policyId?; source }`,
@@ -684,6 +742,7 @@ README (top-level): overview, features, prerequisites, Discord Developer Portal 
 ## 21. Cloud hosting (production target)
 
 Production runs on a cloud host, not a home machine. Deliverables and rules:
+
 - **Recommended path: Railway** (always-on services; managed Postgres + Redis; deploy from GitHub; per-service
   Dockerfile). Ship `infra/railway/README.md` (exact click-path: New Project → Deploy from GitHub → add 4 services from
   the same repo (bot, api, dashboard, web) each with Root Directory `/` and Dockerfile path
@@ -699,7 +758,7 @@ Production runs on a cloud host, not a home machine. Deliverables and rules:
   and `sync: false` for secrets. Note that free tiers sleep — bots need a paid always-on worker.
 - **Alternative: any VPS** with the existing `docker-compose.yml` (document Caddy/Traefik TLS in front).
 - Cross-site cookies: PaaS-provided subdomains (`*.up.railway.app`, `*.onrender.com`) are on the Public Suffix List, so
-  the API and dashboard are *cross-site* unless custom domains under one apex are used. Add env
+  the API and dashboard are _cross-site_ unless custom domains under one apex are used. Add env
   `SESSION_COOKIE_SAMESITE=lax|none` (default `lax`; when `none`, the cookie is `Secure` and the API refuses to start
   without HTTPS-looking `API_BASE_URL`), and `COOKIE_DOMAIN` for the custom-domain case. CSRF remains protected by the
   `X-CSRF-Token` header + Origin allowlist (`DASHBOARD_URL`, `WEB_URL`). Document both setups with the recommended
@@ -717,17 +776,17 @@ Production runs on a cloud host, not a home machine. Deliverables and rules:
 Brandon owns `entrophybot.com`. Canonical production layout (use these everywhere docs need a concrete example, and
 ship `.env.production.example` pre-filled with them, secrets blank):
 
-| Surface | URL | Env |
-|---|---|---|
-| Website | `https://entrophybot.com` (+ `www` → redirect to apex) | `WEB_URL=https://entrophybot.com` |
-| Dashboard | `https://app.entrophybot.com` | `DASHBOARD_URL=https://app.entrophybot.com`, `NEXT_PUBLIC_DASHBOARD_URL` |
-| API | `https://api.entrophybot.com` | `API_BASE_URL=https://api.entrophybot.com`, `NEXT_PUBLIC_API_URL`, `PUBLIC_WEBHOOK_BASE_URL` |
-| Cookies | shared apex | `COOKIE_DOMAIN=.entrophybot.com`, `SESSION_COOKIE_SAMESITE=lax` (default; `none` not needed) |
-| Discord OAuth redirect | `https://api.entrophybot.com/auth/discord/callback` | `DISCORD_OAUTH_REDIRECT_URI` |
-| Stripe webhook | `https://api.entrophybot.com/webhooks/stripe` | `STRIPE_WEBHOOK_SECRET` from that endpoint |
-| Twitch EventSub / GitHub / generic webhooks | `https://api.entrophybot.com/webhooks/...` | — |
-| Brand links | `BRAND.siteUrl = 'https://entrophybot.com'`, embed icon `https://entrophybot.com/brand/entrophy-skull.jpg` | `WEB_URL` |
-| Placeholders in policy templates | `support@entrophybot.com` (Brandon to confirm mailbox), operator name "Entrophy" | — |
+| Surface                                     | URL                                                                                                        | Env                                                                                          |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Website                                     | `https://entrophybot.com` (+ `www` → redirect to apex)                                                     | `WEB_URL=https://entrophybot.com`                                                            |
+| Dashboard                                   | `https://app.entrophybot.com`                                                                              | `DASHBOARD_URL=https://app.entrophybot.com`, `NEXT_PUBLIC_DASHBOARD_URL`                     |
+| API                                         | `https://api.entrophybot.com`                                                                              | `API_BASE_URL=https://api.entrophybot.com`, `NEXT_PUBLIC_API_URL`, `PUBLIC_WEBHOOK_BASE_URL` |
+| Cookies                                     | shared apex                                                                                                | `COOKIE_DOMAIN=.entrophybot.com`, `SESSION_COOKIE_SAMESITE=lax` (default; `none` not needed) |
+| Discord OAuth redirect                      | `https://api.entrophybot.com/auth/discord/callback`                                                        | `DISCORD_OAUTH_REDIRECT_URI`                                                                 |
+| Stripe webhook                              | `https://api.entrophybot.com/webhooks/stripe`                                                              | `STRIPE_WEBHOOK_SECRET` from that endpoint                                                   |
+| Twitch EventSub / GitHub / generic webhooks | `https://api.entrophybot.com/webhooks/...`                                                                 | —                                                                                            |
+| Brand links                                 | `BRAND.siteUrl = 'https://entrophybot.com'`, embed icon `https://entrophybot.com/brand/entrophy-skull.jpg` | `WEB_URL`                                                                                    |
+| Placeholders in policy templates            | `support@entrophybot.com` (Brandon to confirm mailbox), operator name "Entrophy"                           | —                                                                                            |
 
 DNS (documented in `infra/DEPLOYMENT.md`, cloud-first): at the registrar create `CNAME app` / `CNAME api` /
 `CNAME www` → the host's per-service targets, and apex `entrophybot.com` via ALIAS/ANAME (or the host's apex
@@ -740,6 +799,7 @@ Canonical file: `assets/brand/entrophy-skull.jpg` (present in the repo, JPEG ori
 `assets/brand/entrophy-skull.png` is added later it takes precedence. The sync script picks whichever exists and writes
 `public/brand/manifest.json` (`{ "logo": "/brand/entrophy-skull.jpg" }`) so pages reference the right extension.
 If neither file is present, everything below must degrade gracefully — never fail a build because it is missing.
+
 - `assets/brand/README.md` documents the expected files and how they are consumed.
 - Website: `apps/web/public/brand/entrophy-skull.png` (copied at build by `scripts/sync-brand.mjs`, root script
   `brand:sync`, run automatically as `prebuild`/`predev` of web and dashboard; the script is a no-op when the source is

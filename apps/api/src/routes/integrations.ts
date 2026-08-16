@@ -1,12 +1,30 @@
 import { randomBytes } from 'node:crypto';
 import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
-import { AuditAction, ExternalServiceError, NotFoundError, ValidationError, assertPublicHttpUrl, encryptSecret, env, redisKey } from '@entrophy/core';
+import {
+  AuditAction,
+  ExternalServiceError,
+  NotFoundError,
+  ValidationError,
+  assertPublicHttpUrl,
+  encryptSecret,
+  env,
+  redisKey,
+} from '@entrophy/core';
 import type { WebhookEndpointDto } from '@entrophy/types';
-import type { IntegrationConnectionDetailDto, IntegrationProviderInfoDto, WebhookDeliveryDto, WebhookEndpointDetailDto } from '@entrophy/types/integrations';
+import type {
+  IntegrationConnectionDetailDto,
+  IntegrationProviderInfoDto,
+  WebhookDeliveryDto,
+  WebhookEndpointDetailDto,
+} from '@entrophy/types/integrations';
 import { writeDashboardAudit } from '../lib/audit';
 import { toIntegrationConnectionDto, toWebhookEndpointDto } from '../lib/dto';
-import { toIntegrationConnectionDetailDto, toWebhookDeliveryDto, toWebhookEndpointDetailDto } from '../lib/integrations/dto';
+import {
+  toIntegrationConnectionDetailDto,
+  toWebhookDeliveryDto,
+  toWebhookEndpointDetailDto,
+} from '../lib/integrations/dto';
 import { requireGuildAccess } from '../lib/guild-access';
 import {
   ALERT_PROVIDER_IDS,
@@ -25,7 +43,10 @@ import {
 import { OUTBOUND_PLATFORM_EVENTS } from '../lib/integrations/outbound-events';
 import { guildIdParamSchema, snowflakeSchema } from '../lib/schemas';
 
-const ALL_PROVIDER_IDS = [...OAUTH_PROVIDER_IDS, ...WEBHOOK_PROVIDER_IDS] as [IntegrationProviderId, ...IntegrationProviderId[]];
+const ALL_PROVIDER_IDS = [...OAUTH_PROVIDER_IDS, ...WEBHOOK_PROVIDER_IDS] as [
+  IntegrationProviderId,
+  ...IntegrationProviderId[],
+];
 const providerParamSchema = guildIdParamSchema.extend({ provider: z.enum(ALL_PROVIDER_IDS) });
 const connectionParamSchema = guildIdParamSchema.extend({ connectionId: z.string().min(1) });
 const endpointParamSchema = guildIdParamSchema.extend({ endpointId: z.string().min(1) });
@@ -48,7 +69,9 @@ const alertCreateSchema = z.object({
   roleId: snowflakeSchema.nullable().optional(),
   template: z.string().max(300).nullable().optional(),
 });
-const alertsListQuerySchema = z.object({ provider: z.enum(ALERT_PROVIDER_IDS as [AlertProviderId, ...AlertProviderId[]]).optional() });
+const alertsListQuerySchema = z.object({
+  provider: z.enum(ALERT_PROVIDER_IDS as [AlertProviderId, ...AlertProviderId[]]).optional(),
+});
 
 const outboundCreateSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -56,107 +79,159 @@ const outboundCreateSchema = z.object({
   events: z.array(z.enum(OUTBOUND_PLATFORM_EVENTS)).min(1),
 });
 
-const deliveriesQuerySchema = z.object({ cursor: z.string().optional(), limit: z.coerce.number().int().min(1).max(100).optional() });
+const deliveriesQuerySchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
 
 /** `/guilds/:guildId/integrations` — connection list/connect/disconnect/status, and inbound webhook endpoint CRUD (ARCHITECTURE.md §10). */
 export default async function integrationsRoutes(app: ZodFastifyInstance): Promise<void> {
-  app.get('/:guildId/integrations', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<IntegrationConnectionDetailDto[]> => {
-    const rows = await app.prisma.integrationConnection.findMany({ where: { guildId: request.guildId!, deletedAt: null }, orderBy: { createdAt: 'desc' } });
-    return rows.map(toIntegrationConnectionDetailDto);
-  });
-
-  app.post('/:guildId/integrations/:provider/connect', { schema: { params: providerParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { provider } = request.params as { provider: IntegrationProviderId };
-
-    if (isOAuthProvider(provider)) {
-      if (!isOAuthProviderConfigured(provider)) {
-        throw new ExternalServiceError(`${provider} is not configured on this server.`);
-      }
-      const state = randomBytes(24).toString('hex');
-      await app.redis.set(
-        redisKey('oauthstate', 'integration', state),
-        JSON.stringify({ guildId, provider, userId: session.userId }),
-        'EX',
-        600,
-      );
-      const redirectUri = `${env.API_BASE_URL ?? ''}/integrations/${provider}/callback`;
-      return { url: buildProviderAuthorizeUrl(provider, state, redirectUri) };
-    }
-
-    if (isWebhookProvider(provider)) {
-      const connection = await app.prisma.integrationConnection.create({
-        data: { guildId, provider: PROVIDER_ENUM_MAP[provider], status: 'CONNECTED', config: {}, connectedBy: session.userId },
+  app.get(
+    '/:guildId/integrations',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<IntegrationConnectionDetailDto[]> => {
+      const rows = await app.prisma.integrationConnection.findMany({
+        where: { guildId: request.guildId!, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
       });
+      return rows.map(toIntegrationConnectionDetailDto);
+    },
+  );
 
-      let endpointDto: WebhookEndpointDto | null = null;
-      let secret: string | undefined;
-      let webhookUrl: string | null = null;
+  app.post(
+    '/:guildId/integrations/:provider/connect',
+    { schema: { params: providerParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { provider } = request.params as { provider: IntegrationProviderId };
 
-      if (provider === 'stripe') {
-        // Stripe is verified globally via STRIPE_WEBHOOK_SECRET at a single shared endpoint — no per-guild secret to hand out.
-        webhookUrl = `${env.API_BASE_URL ?? ''}/webhooks/stripe`;
-      } else {
-        secret = randomBytes(32).toString('hex');
-        const endpointRow = await app.prisma.webhookEndpoint.create({
-          data: { guildId, direction: 'INBOUND', provider, name: `${provider} webhook`, secretEnc: encryptSecret(secret), events: [] },
-        });
-        endpointDto = toWebhookEndpointDto(endpointRow);
-        webhookUrl = `${env.API_BASE_URL ?? ''}${webhookPathFor(provider, endpointRow.id)}`;
+      if (isOAuthProvider(provider)) {
+        if (!isOAuthProviderConfigured(provider)) {
+          throw new ExternalServiceError(`${provider} is not configured on this server.`);
+        }
+        const state = randomBytes(24).toString('hex');
+        await app.redis.set(
+          redisKey('oauthstate', 'integration', state),
+          JSON.stringify({ guildId, provider, userId: session.userId }),
+          'EX',
+          600,
+        );
+        const redirectUri = `${env.API_BASE_URL ?? ''}/integrations/${provider}/callback`;
+        return { url: buildProviderAuthorizeUrl(provider, state, redirectUri) };
       }
+
+      if (isWebhookProvider(provider)) {
+        const connection = await app.prisma.integrationConnection.create({
+          data: {
+            guildId,
+            provider: PROVIDER_ENUM_MAP[provider],
+            status: 'CONNECTED',
+            config: {},
+            connectedBy: session.userId,
+          },
+        });
+
+        let endpointDto: WebhookEndpointDto | null = null;
+        let secret: string | undefined;
+        let webhookUrl: string | null = null;
+
+        if (provider === 'stripe') {
+          // Stripe is verified globally via STRIPE_WEBHOOK_SECRET at a single shared endpoint — no per-guild secret to hand out.
+          webhookUrl = `${env.API_BASE_URL ?? ''}/webhooks/stripe`;
+        } else {
+          secret = randomBytes(32).toString('hex');
+          const endpointRow = await app.prisma.webhookEndpoint.create({
+            data: {
+              guildId,
+              direction: 'INBOUND',
+              provider,
+              name: `${provider} webhook`,
+              secretEnc: encryptSecret(secret),
+              events: [],
+            },
+          });
+          endpointDto = toWebhookEndpointDto(endpointRow);
+          webhookUrl = `${env.API_BASE_URL ?? ''}${webhookPathFor(provider, endpointRow.id)}`;
+        }
+
+        await writeDashboardAudit(app.prisma, {
+          guildId,
+          actorId: session.userId,
+          action: AuditAction.IntegrationConnect,
+          targetType: 'integration_connection',
+          targetId: connection.id,
+          after: { provider },
+        });
+
+        // `secret` is returned exactly once here — it is never retrievable again (only the encrypted form is stored).
+        return {
+          connection: toIntegrationConnectionDto(connection),
+          endpoint: endpointDto,
+          webhookUrl,
+          secret,
+        };
+      }
+
+      throw new ValidationError('Unknown integration provider.');
+    },
+  );
+
+  app.post(
+    '/:guildId/integrations/:connectionId/disconnect',
+    { schema: { params: connectionParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { connectionId } = request.params as { connectionId: string };
+      const existing = await app.prisma.integrationConnection.findFirst({
+        where: { id: connectionId, guildId, deletedAt: null },
+      });
+      if (!existing) throw new NotFoundError('Integration connection not found.');
+
+      await app.prisma.integrationConnection.update({
+        where: { id: connectionId },
+        data: { status: 'DISCONNECTED' },
+      });
+      await app.prisma.oAuthToken.deleteMany({ where: { connectionId } });
 
       await writeDashboardAudit(app.prisma, {
         guildId,
         actorId: session.userId,
-        action: AuditAction.IntegrationConnect,
+        action: AuditAction.IntegrationDisconnect,
         targetType: 'integration_connection',
-        targetId: connection.id,
-        after: { provider },
+        targetId: connectionId,
       });
 
-      // `secret` is returned exactly once here — it is never retrievable again (only the encrypted form is stored).
-      return { connection: toIntegrationConnectionDto(connection), endpoint: endpointDto, webhookUrl, secret };
-    }
+      return { ok: true };
+    },
+  );
 
-    throw new ValidationError('Unknown integration provider.');
-  });
-
-  app.post('/:guildId/integrations/:connectionId/disconnect', { schema: { params: connectionParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { connectionId } = request.params as { connectionId: string };
-    const existing = await app.prisma.integrationConnection.findFirst({ where: { id: connectionId, guildId, deletedAt: null } });
-    if (!existing) throw new NotFoundError('Integration connection not found.');
-
-    await app.prisma.integrationConnection.update({ where: { id: connectionId }, data: { status: 'DISCONNECTED' } });
-    await app.prisma.oAuthToken.deleteMany({ where: { connectionId } });
-
-    await writeDashboardAudit(app.prisma, {
-      guildId,
-      actorId: session.userId,
-      action: AuditAction.IntegrationDisconnect,
-      targetType: 'integration_connection',
-      targetId: connectionId,
-    });
-
-    return { ok: true };
-  });
-
-  app.get('/:guildId/integrations/:connectionId/status', { schema: { params: connectionParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    const guildId = request.guildId!;
-    const { connectionId } = request.params as { connectionId: string };
-    const row = await app.prisma.integrationConnection.findFirst({ where: { id: connectionId, guildId } });
-    if (!row) throw new NotFoundError('Integration connection not found.');
-    return toIntegrationConnectionDetailDto(row);
-  });
+  app.get(
+    '/:guildId/integrations/:connectionId/status',
+    { schema: { params: connectionParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      const guildId = request.guildId!;
+      const { connectionId } = request.params as { connectionId: string };
+      const row = await app.prisma.integrationConnection.findFirst({ where: { id: connectionId, guildId } });
+      if (!row) throw new NotFoundError('Integration connection not found.');
+      return toIntegrationConnectionDetailDto(row);
+    },
+  );
 
   // Inbound endpoints only — outbound endpoints have their own `/integrations/outbound` list below, so the
   // dashboard's Webhooks tab can show "inbound" and "outbound" as separate, non-overlapping lists.
-  app.get('/:guildId/integrations/webhooks', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<WebhookEndpointDetailDto[]> => {
-    const rows = await app.prisma.webhookEndpoint.findMany({ where: { guildId: request.guildId!, direction: 'INBOUND', deletedAt: null }, orderBy: { createdAt: 'desc' } });
-    return rows.map(toWebhookEndpointDetailDto);
-  });
+  app.get(
+    '/:guildId/integrations/webhooks',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<WebhookEndpointDetailDto[]> => {
+      const rows = await app.prisma.webhookEndpoint.findMany({
+        where: { guildId: request.guildId!, direction: 'INBOUND', deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+      });
+      return rows.map(toWebhookEndpointDetailDto);
+    },
+  );
 
   app.post(
     '/:guildId/integrations/webhooks',
@@ -187,36 +262,53 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
       });
 
       reply.status(201);
-      return { ...toWebhookEndpointDto(row), secret, url: `${env.API_BASE_URL ?? ''}/webhooks/generic/${row.id}` };
+      return {
+        ...toWebhookEndpointDto(row),
+        secret,
+        url: `${env.API_BASE_URL ?? ''}/webhooks/generic/${row.id}`,
+      };
     },
   );
 
-  app.delete('/:guildId/integrations/webhooks/:endpointId', { schema: { params: endpointParamSchema }, preHandler: requireGuildAccess() }, async (request, reply) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { endpointId } = request.params as { endpointId: string };
-    const existing = await app.prisma.webhookEndpoint.findFirst({ where: { id: endpointId, guildId, deletedAt: null } });
-    if (!existing) throw new NotFoundError('Webhook endpoint not found.');
+  app.delete(
+    '/:guildId/integrations/webhooks/:endpointId',
+    { schema: { params: endpointParamSchema }, preHandler: requireGuildAccess() },
+    async (request, reply) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { endpointId } = request.params as { endpointId: string };
+      const existing = await app.prisma.webhookEndpoint.findFirst({
+        where: { id: endpointId, guildId, deletedAt: null },
+      });
+      if (!existing) throw new NotFoundError('Webhook endpoint not found.');
 
-    await app.prisma.webhookEndpoint.update({ where: { id: endpointId }, data: { deletedAt: new Date(), enabled: false } });
-    await writeDashboardAudit(app.prisma, {
-      guildId,
-      actorId: session.userId,
-      action: AuditAction.IntegrationWebhookDelete,
-      targetType: 'webhook_endpoint',
-      targetId: endpointId,
-    });
-    reply.status(204);
-    return null;
-  });
+      await app.prisma.webhookEndpoint.update({
+        where: { id: endpointId },
+        data: { deletedAt: new Date(), enabled: false },
+      });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.IntegrationWebhookDelete,
+        targetType: 'webhook_endpoint',
+        targetId: endpointId,
+      });
+      reply.status(204);
+      return null;
+    },
+  );
 
   // ---------------------------------------------------------------------------------------------------------
   // Provider availability (dashboard setup hints)
   // ---------------------------------------------------------------------------------------------------------
 
-  app.get('/:guildId/integrations/providers', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (): Promise<IntegrationProviderInfoDto[]> => {
-    return listProviderAvailability();
-  });
+  app.get(
+    '/:guildId/integrations/providers',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (): Promise<IntegrationProviderInfoDto[]> => {
+      return listProviderAvailability();
+    },
+  );
 
   // ---------------------------------------------------------------------------------------------------------
   // Alert watches (Twitch/YouTube/Reddit/Steam) — one `IntegrationConnection` row per watched target.
@@ -224,14 +316,19 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
 
   app.get(
     '/:guildId/integrations/alerts',
-    { schema: { params: guildIdParamSchema, querystring: alertsListQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: alertsListQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<IntegrationConnectionDetailDto[]> => {
       const guildId = request.guildId!;
       const { provider } = request.query;
       const where = {
         guildId,
         deletedAt: null,
-        provider: provider ? CANONICAL_PROVIDER_ENUM_MAP[provider] : { in: ALERT_PROVIDER_IDS.map((id) => CANONICAL_PROVIDER_ENUM_MAP[id]) },
+        provider: provider
+          ? CANONICAL_PROVIDER_ENUM_MAP[provider]
+          : { in: ALERT_PROVIDER_IDS.map((id) => CANONICAL_PROVIDER_ENUM_MAP[id]) },
       };
       const rows = await app.prisma.integrationConnection.findMany({ where, orderBy: { createdAt: 'desc' } });
       return rows.map(toIntegrationConnectionDetailDto);
@@ -257,7 +354,8 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
           status: missingEnv.length === 0 ? 'CONNECTED' : 'ERROR',
           config,
           connectedBy: session.userId,
-          lastError: missingEnv.length > 0 ? `Missing environment variable(s): ${missingEnv.join(', ')}.` : null,
+          lastError:
+            missingEnv.length > 0 ? `Missing environment variable(s): ${missingEnv.join(', ')}.` : null,
         },
       });
 
@@ -275,34 +373,50 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
     },
   );
 
-  app.delete('/:guildId/integrations/alerts/:connectionId', { schema: { params: connectionParamSchema }, preHandler: requireGuildAccess() }, async (request, reply) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { connectionId } = request.params as { connectionId: string };
-    const existing = await app.prisma.integrationConnection.findFirst({ where: { id: connectionId, guildId, deletedAt: null } });
-    if (!existing) throw new NotFoundError('Alert connection not found.');
+  app.delete(
+    '/:guildId/integrations/alerts/:connectionId',
+    { schema: { params: connectionParamSchema }, preHandler: requireGuildAccess() },
+    async (request, reply) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { connectionId } = request.params as { connectionId: string };
+      const existing = await app.prisma.integrationConnection.findFirst({
+        where: { id: connectionId, guildId, deletedAt: null },
+      });
+      if (!existing) throw new NotFoundError('Alert connection not found.');
 
-    await app.prisma.integrationConnection.update({ where: { id: connectionId }, data: { status: 'DISCONNECTED', deletedAt: new Date() } });
-    await writeDashboardAudit(app.prisma, {
-      guildId,
-      actorId: session.userId,
-      action: AuditAction.IntegrationDisconnect,
-      targetType: 'integration_connection',
-      targetId: connectionId,
-    });
+      await app.prisma.integrationConnection.update({
+        where: { id: connectionId },
+        data: { status: 'DISCONNECTED', deletedAt: new Date() },
+      });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.IntegrationDisconnect,
+        targetType: 'integration_connection',
+        targetId: connectionId,
+      });
 
-    reply.status(204);
-    return null;
-  });
+      reply.status(204);
+      return null;
+    },
+  );
 
   // ---------------------------------------------------------------------------------------------------------
   // Outbound webhooks
   // ---------------------------------------------------------------------------------------------------------
 
-  app.get('/:guildId/integrations/outbound', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<WebhookEndpointDetailDto[]> => {
-    const rows = await app.prisma.webhookEndpoint.findMany({ where: { guildId: request.guildId!, direction: 'OUTBOUND', deletedAt: null }, orderBy: { createdAt: 'desc' } });
-    return rows.map(toWebhookEndpointDetailDto);
-  });
+  app.get(
+    '/:guildId/integrations/outbound',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<WebhookEndpointDetailDto[]> => {
+      const rows = await app.prisma.webhookEndpoint.findMany({
+        where: { guildId: request.guildId!, direction: 'OUTBOUND', deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+      });
+      return rows.map(toWebhookEndpointDetailDto);
+    },
+  );
 
   app.post(
     '/:guildId/integrations/outbound',
@@ -320,7 +434,15 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
 
       const secret = randomBytes(32).toString('hex');
       const endpoint = await app.prisma.webhookEndpoint.create({
-        data: { guildId, direction: 'OUTBOUND', provider: 'generic', name, url, events, secretEnc: encryptSecret(secret) },
+        data: {
+          guildId,
+          direction: 'OUTBOUND',
+          provider: 'generic',
+          name,
+          url,
+          events,
+          secretEnc: encryptSecret(secret),
+        },
       });
 
       await writeDashboardAudit(app.prisma, {
@@ -337,52 +459,72 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
     },
   );
 
-  app.delete('/:guildId/integrations/outbound/:endpointId', { schema: { params: endpointParamSchema }, preHandler: requireGuildAccess() }, async (request, reply) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { endpointId } = request.params as { endpointId: string };
-    const existing = await app.prisma.webhookEndpoint.findFirst({ where: { id: endpointId, guildId, direction: 'OUTBOUND', deletedAt: null } });
-    if (!existing) throw new NotFoundError('Outbound webhook not found.');
+  app.delete(
+    '/:guildId/integrations/outbound/:endpointId',
+    { schema: { params: endpointParamSchema }, preHandler: requireGuildAccess() },
+    async (request, reply) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { endpointId } = request.params as { endpointId: string };
+      const existing = await app.prisma.webhookEndpoint.findFirst({
+        where: { id: endpointId, guildId, direction: 'OUTBOUND', deletedAt: null },
+      });
+      if (!existing) throw new NotFoundError('Outbound webhook not found.');
 
-    await app.prisma.webhookEndpoint.update({ where: { id: endpointId }, data: { deletedAt: new Date(), enabled: false } });
-    await writeDashboardAudit(app.prisma, {
-      guildId,
-      actorId: session.userId,
-      action: AuditAction.IntegrationWebhookDelete,
-      targetType: 'webhook_endpoint',
-      targetId: endpointId,
-    });
+      await app.prisma.webhookEndpoint.update({
+        where: { id: endpointId },
+        data: { deletedAt: new Date(), enabled: false },
+      });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.IntegrationWebhookDelete,
+        targetType: 'webhook_endpoint',
+        targetId: endpointId,
+      });
 
-    reply.status(204);
-    return null;
-  });
+      reply.status(204);
+      return null;
+    },
+  );
 
-  app.post('/:guildId/integrations/outbound/:endpointId/test', { schema: { params: endpointParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { endpointId } = request.params as { endpointId: string };
-    const existing = await app.prisma.webhookEndpoint.findFirst({ where: { id: endpointId, guildId, direction: 'OUTBOUND', deletedAt: null } });
-    if (!existing) throw new NotFoundError('Outbound webhook not found.');
+  app.post(
+    '/:guildId/integrations/outbound/:endpointId/test',
+    { schema: { params: endpointParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { endpointId } = request.params as { endpointId: string };
+      const existing = await app.prisma.webhookEndpoint.findFirst({
+        where: { id: endpointId, guildId, direction: 'OUTBOUND', deletedAt: null },
+      });
+      if (!existing) throw new NotFoundError('Outbound webhook not found.');
 
-    await app.queues.botActions().add('integrations.testWebhook', {
-      type: 'integrations.testWebhook',
-      guildId,
-      payload: { endpointId },
-      requestedBy: session.userId,
-    });
+      await app.queues.botActions().add('integrations.testWebhook', {
+        type: 'integrations.testWebhook',
+        guildId,
+        payload: { endpointId },
+        requestedBy: session.userId,
+      });
 
-    return { queued: true };
-  });
+      return { queued: true };
+    },
+  );
 
   app.get(
     '/:guildId/integrations/outbound/:endpointId/deliveries',
-    { schema: { params: endpointParamSchema, querystring: deliveriesQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: endpointParamSchema, querystring: deliveriesQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<{ items: WebhookDeliveryDto[]; nextCursor: string | null }> => {
       const guildId = request.guildId!;
       const { endpointId } = request.params as { endpointId: string };
       const { cursor, limit = 25 } = request.query;
 
-      const endpoint = await app.prisma.webhookEndpoint.findFirst({ where: { id: endpointId, guildId, direction: 'OUTBOUND' } });
+      const endpoint = await app.prisma.webhookEndpoint.findFirst({
+        where: { id: endpointId, guildId, direction: 'OUTBOUND' },
+      });
       if (!endpoint) throw new NotFoundError('Outbound webhook not found.');
 
       const rows = await app.prisma.webhookDelivery.findMany({
@@ -394,7 +536,10 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
 
       const hasMore = rows.length > limit;
       const items = hasMore ? rows.slice(0, limit) : rows;
-      return { items: items.map(toWebhookDeliveryDto), nextCursor: hasMore ? items[items.length - 1]!.id : null };
+      return {
+        items: items.map(toWebhookDeliveryDto),
+        nextCursor: hasMore ? items[items.length - 1]!.id : null,
+      };
     },
   );
 }

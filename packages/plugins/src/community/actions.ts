@@ -18,7 +18,12 @@ import {
   summarizeRsvps,
   tallyPollFromRows,
 } from './render';
-import { checkGiveawayEligibility, pickWinners, upcomingReminderMinutes, type GiveawayEligibilityResult } from './service';
+import {
+  checkGiveawayEligibility,
+  pickWinners,
+  upcomingReminderMinutes,
+  type GiveawayEligibilityResult,
+} from './service';
 
 /** `crypto.randomInt`-backed rng for `pickWinners` (production draws; tests inject a deterministic sequence instead). */
 function cryptoRng(maxExclusive: number): number {
@@ -42,7 +47,10 @@ async function editPollMessage(ctx: PluginContext, poll: Poll): Promise<void> {
 
   try {
     const message = await channel.messages.fetch(poll.messageId);
-    await message.edit({ embeds: [buildPollEmbed(poll, tallies)], components: buildPollComponents(poll.id, options, poll.closed) });
+    await message.edit({
+      embeds: [buildPollEmbed(poll, tallies)],
+      components: buildPollComponents(poll.id, options, poll.closed),
+    });
   } catch {
     // Message may have been deleted; nothing to update.
   }
@@ -68,7 +76,11 @@ export async function closePoll(ctx: PluginContext, pollId: string): Promise<Pol
 // Giveaways
 // ---------------------------------------------------------------------------
 
-async function editGiveawayMessage(ctx: PluginContext, giveaway: Giveaway, entryCount: number): Promise<void> {
+async function editGiveawayMessage(
+  ctx: PluginContext,
+  giveaway: Giveaway,
+  entryCount: number,
+): Promise<void> {
   if (!giveaway.messageId) return;
   const guild = await ctx.client.guilds.fetch(giveaway.guildId).catch(() => null);
   if (!guild) return;
@@ -77,7 +89,10 @@ async function editGiveawayMessage(ctx: PluginContext, giveaway: Giveaway, entry
 
   try {
     const message = await channel.messages.fetch(giveaway.messageId);
-    await message.edit({ embeds: [buildGiveawayEmbed(giveaway, entryCount)], components: buildGiveawayComponents(giveaway.id, giveaway.ended) });
+    await message.edit({
+      embeds: [buildGiveawayEmbed(giveaway, entryCount)],
+      components: buildGiveawayComponents(giveaway.id, giveaway.ended),
+    });
   } catch {
     // Message may have been deleted; nothing to update.
   }
@@ -106,21 +121,34 @@ async function announceWinners(ctx: PluginContext, giveaway: Giveaway, winnerIds
 
 /** Ends a giveaway (idempotent), drawing winners with `crypto.randomInt`, announcing them, and DMing each winner. */
 export async function finalizeGiveaway(ctx: PluginContext, giveawayId: string): Promise<Giveaway | null> {
-  const existing = await ctx.prisma.giveaway.findUnique({ where: { id: giveawayId }, include: { entries: true } });
+  const existing = await ctx.prisma.giveaway.findUnique({
+    where: { id: giveawayId },
+    include: { entries: true },
+  });
   if (!existing || existing.ended) return existing ?? null;
 
   const winners = pickWinners(existing.entries, existing.winnerCount, cryptoRng);
   const winnerIds = winners.map((w) => w.userId);
 
-  const updated = await ctx.prisma.giveaway.update({ where: { id: giveawayId }, data: { ended: true, winnerIds } });
+  const updated = await ctx.prisma.giveaway.update({
+    where: { id: giveawayId },
+    data: { ended: true, winnerIds },
+  });
   await editGiveawayMessage(ctx, updated, existing.entries.length);
   await announceWinners(ctx, updated, winnerIds);
   return updated;
 }
 
 /** Rerolls a giveaway's winners (must already have ended), excluding previous winners when there are enough other entries. */
-export async function rerollGiveaway(ctx: PluginContext, giveawayId: string, count?: number): Promise<{ giveaway: Giveaway; winnerIds: string[] } | null> {
-  const existing = await ctx.prisma.giveaway.findUnique({ where: { id: giveawayId }, include: { entries: true } });
+export async function rerollGiveaway(
+  ctx: PluginContext,
+  giveawayId: string,
+  count?: number,
+): Promise<{ giveaway: Giveaway; winnerIds: string[] } | null> {
+  const existing = await ctx.prisma.giveaway.findUnique({
+    where: { id: giveawayId },
+    include: { entries: true },
+  });
   if (!existing || !existing.ended) return null;
 
   const n = count ?? existing.winnerCount;
@@ -138,15 +166,25 @@ export async function rerollGiveaway(ctx: PluginContext, giveawayId: string, cou
 
 /** Cancels a giveaway before it ends: marks it ended with no winners and removes its scheduled end job. */
 export async function cancelGiveaway(ctx: PluginContext, giveawayId: string): Promise<void> {
-  const updated = await ctx.prisma.giveaway.update({ where: { id: giveawayId }, data: { ended: true, winnerIds: [] } });
-  await ctx.queue('giveaway-end').remove(`gw:${giveawayId}`).catch(() => undefined);
+  const updated = await ctx.prisma.giveaway.update({
+    where: { id: giveawayId },
+    data: { ended: true, winnerIds: [] },
+  });
+  await ctx
+    .queue('giveaway-end')
+    .remove(`gw:${giveawayId}`)
+    .catch(() => undefined);
   if (updated.messageId) {
     const guild = await ctx.client.guilds.fetch(updated.guildId).catch(() => null);
     const channel = guild ? await resolveTextChannel(guild, updated.channelId) : null;
     if (channel) {
       try {
         const message = await channel.messages.fetch(updated.messageId);
-        await message.edit({ content: 'This giveaway was cancelled.', embeds: [buildGiveawayEmbed(updated, 0)], components: [] });
+        await message.edit({
+          content: 'This giveaway was cancelled.',
+          embeds: [buildGiveawayEmbed(updated, 0)],
+          components: [],
+        });
       } catch {
         // Message may already be gone.
       }
@@ -154,10 +192,16 @@ export async function cancelGiveaway(ctx: PluginContext, giveawayId: string): Pr
   }
 }
 
-export async function evaluateGiveawayEligibility(ctx: PluginContext, giveaway: Giveaway, member: GuildMember): Promise<GiveawayEligibilityResult> {
+export async function evaluateGiveawayEligibility(
+  ctx: PluginContext,
+  giveaway: Giveaway,
+  member: GuildMember,
+): Promise<GiveawayEligibilityResult> {
   let level = 0;
   if (giveaway.minLevel !== null) {
-    const profile = await ctx.prisma.levelProfile.findUnique({ where: { guildId_userId: { guildId: giveaway.guildId, userId: member.id } } });
+    const profile = await ctx.prisma.levelProfile.findUnique({
+      where: { guildId_userId: { guildId: giveaway.guildId, userId: member.id } },
+    });
     level = profile?.level ?? 0;
   }
   return checkGiveawayEligibility({
@@ -186,7 +230,10 @@ export async function syncSuggestionMessage(ctx: PluginContext, suggestion: Sugg
 
   try {
     const message = await channel.messages.fetch(suggestion.messageId);
-    await message.edit({ embeds: [buildSuggestionEmbed(suggestion)], components: buildSuggestionComponents(suggestion.id) });
+    await message.edit({
+      embeds: [buildSuggestionEmbed(suggestion)],
+      components: buildSuggestionComponents(suggestion.id),
+    });
   } catch {
     // Message may have been deleted.
   }
@@ -211,9 +258,11 @@ export async function runAnnouncement(ctx: PluginContext, announcementId: string
   const body = announcement.content as unknown as AnnouncementContent | null;
   if (!channel || !body?.content) return;
 
-  await channel.send({ content: body.content, allowedMentions: { parse: ['users', 'roles'] } }).catch((err) => {
-    ctx.logger.warn({ err, announcementId }, 'community: failed to send a scheduled announcement');
-  });
+  await channel
+    .send({ content: body.content, allowedMentions: { parse: ['users', 'roles'] } })
+    .catch((err) => {
+      ctx.logger.warn({ err, announcementId }, 'community: failed to send a scheduled announcement');
+    });
 
   const isOneOff = !announcement.cron;
   await ctx.prisma.scheduledAnnouncement.update({
@@ -223,7 +272,11 @@ export async function runAnnouncement(ctx: PluginContext, announcementId: string
 }
 
 /** Cancels a scheduled announcement: disables it and removes its BullMQ job/scheduler. */
-export async function cancelAnnouncement(ctx: PluginContext, announcementId: string, cron: string | null): Promise<void> {
+export async function cancelAnnouncement(
+  ctx: PluginContext,
+  announcementId: string,
+  cron: string | null,
+): Promise<void> {
   await ctx.prisma.scheduledAnnouncement.update({ where: { id: announcementId }, data: { enabled: false } });
   const queue = ctx.queue('announcement-run');
   if (cron) {
@@ -249,9 +302,11 @@ export async function deliverReminder(ctx: PluginContext, reminderId: string): P
     const guild = await ctx.client.guilds.fetch(reminder.guildId).catch(() => null);
     const channel = guild ? await resolveTextChannel(guild, reminder.channelId) : null;
     if (channel) {
-      await channel.send({ content: `<@${reminder.userId}> ${text}`, allowedMentions: { users: [reminder.userId] } }).catch((err) => {
-        ctx.logger.warn({ err, reminderId }, 'community: failed to deliver a channel reminder');
-      });
+      await channel
+        .send({ content: `<@${reminder.userId}> ${text}`, allowedMentions: { users: [reminder.userId] } })
+        .catch((err) => {
+          ctx.logger.warn({ err, reminderId }, 'community: failed to deliver a channel reminder');
+        });
     }
   } else {
     const user = await ctx.client.users.fetch(reminder.userId).catch(() => null);
@@ -260,12 +315,22 @@ export async function deliverReminder(ctx: PluginContext, reminderId: string): P
     }
   }
 
-  await ctx.prisma.reminder.update({ where: { id: reminder.id }, data: { delivered: true, deliveredAt: new Date() } });
+  await ctx.prisma.reminder.update({
+    where: { id: reminder.id },
+    data: { delivered: true, deliveredAt: new Date() },
+  });
 }
 
 /** Cancels a reminder: marks it delivered (so the sweep skips it) and removes its scheduled job. */
-export async function cancelReminder(ctx: PluginContext, reminderId: string, recurring: string | null): Promise<void> {
-  await ctx.prisma.reminder.update({ where: { id: reminderId }, data: { delivered: true, deliveredAt: new Date() } });
+export async function cancelReminder(
+  ctx: PluginContext,
+  reminderId: string,
+  recurring: string | null,
+): Promise<void> {
+  await ctx.prisma.reminder.update({
+    where: { id: reminderId },
+    data: { delivered: true, deliveredAt: new Date() },
+  });
   const queue = ctx.queue('reminder-deliver');
   if (recurring) {
     await queue.removeJobScheduler(`rem:${reminderId}`).catch(() => undefined);
@@ -278,7 +343,11 @@ export async function cancelReminder(ctx: PluginContext, reminderId: string, rec
 // Events
 // ---------------------------------------------------------------------------
 
-export async function refreshEventMessage(ctx: PluginContext, event: CommunityEvent, cancelled = false): Promise<void> {
+export async function refreshEventMessage(
+  ctx: PluginContext,
+  event: CommunityEvent,
+  cancelled = false,
+): Promise<void> {
   if (!event.messageId) return;
   const guild = await ctx.client.guilds.fetch(event.guildId).catch(() => null);
   if (!guild || !event.channelId) return;
@@ -290,7 +359,10 @@ export async function refreshEventMessage(ctx: PluginContext, event: CommunityEv
 
   try {
     const message = await channel.messages.fetch(event.messageId);
-    await message.edit({ embeds: [buildEventEmbed(event, counts, cancelled)], components: buildEventComponents(event.id, cancelled) });
+    await message.edit({
+      embeds: [buildEventEmbed(event, counts, cancelled)],
+      components: buildEventComponents(event.id, cancelled),
+    });
   } catch {
     // Message may have been deleted.
   }
@@ -324,7 +396,11 @@ export async function cancelEvent(ctx: PluginContext, eventId: string): Promise<
 }
 
 /** Announces an upcoming event reminder in its channel (fired by the `event-reminder` job). */
-export async function fireEventReminder(ctx: PluginContext, eventId: string, minutesBefore: number): Promise<void> {
+export async function fireEventReminder(
+  ctx: PluginContext,
+  eventId: string,
+  minutesBefore: number,
+): Promise<void> {
   const event = await ctx.prisma.communityEvent.findUnique({ where: { id: eventId } });
   if (!event || !event.channelId) return;
 

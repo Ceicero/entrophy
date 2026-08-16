@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { CUSTOM_ID_MAX } from '@entrophy/core';
-import { buildPanelButtonRows, buildPanelEmbed, buildPanelMessagePayload, buildPanelSelectRow, reactionRoleMap, type PanelWithOptions } from '../panel-render';
+import {
+  buildPanelButtonRows,
+  buildPanelEmbed,
+  buildPanelMessagePayload,
+  buildPanelSelectRow,
+  reactionRoleMap,
+  type PanelWithOptions,
+} from '../panel-render';
 
-function makeOption(overrides: Partial<PanelWithOptions['options'][number]> = {}): PanelWithOptions['options'][number] {
+function makeOption(
+  overrides: Partial<PanelWithOptions['options'][number]> = {},
+): PanelWithOptions['options'][number] {
   return {
     id: overrides.id ?? 'opt1',
     panelId: 'panel1',
@@ -36,7 +45,12 @@ function makePanel(overrides: Partial<PanelWithOptions> = {}): PanelWithOptions 
 
 describe('buildPanelEmbed', () => {
   it('lists each option with its role mention and description', () => {
-    const panel = makePanel({ options: [makeOption({ label: 'PC', description: 'PC players', roleId: '1' }), makeOption({ id: 'opt2', label: 'Console', roleId: '2' })] });
+    const panel = makePanel({
+      options: [
+        makeOption({ label: 'PC', description: 'PC players', roleId: '1' }),
+        makeOption({ id: 'opt2', label: 'Console', roleId: '2' }),
+      ],
+    });
     const embed = buildPanelEmbed(panel).toJSON();
     expect(embed.title).toBe('Pick your roles');
     expect(embed.description).toContain('**PC** → <@&1> — PC players');
@@ -46,9 +60,13 @@ describe('buildPanelEmbed', () => {
 
 describe('buildPanelButtonRows', () => {
   it('produces one customId per option, matching roles:toggle:<panelId>:<optionId>', () => {
-    const panel = makePanel({ options: [makeOption({ id: 'a', roleId: '1' }), makeOption({ id: 'b', roleId: '2' })] });
+    const panel = makePanel({
+      options: [makeOption({ id: 'a', roleId: '1' }), makeOption({ id: 'b', roleId: '2' })],
+    });
     const rows = buildPanelButtonRows(panel);
-    const customIds = rows.flatMap((row) => row.components.map((c) => (c.toJSON() as { custom_id: string }).custom_id));
+    const customIds = rows.flatMap((row) =>
+      row.components.map((c) => (c.toJSON() as { custom_id: string }).custom_id),
+    );
     expect(customIds).toEqual(['roles:toggle:panel1:a', 'roles:toggle:panel1:b']);
   });
 
@@ -62,7 +80,7 @@ describe('buildPanelButtonRows', () => {
     }
   });
 
-  it('every generated customId stays within Discord\'s 100-char limit', () => {
+  it("every generated customId stays within Discord's 100-char limit", () => {
     const longId = 'a'.repeat(24); // cuid()-length ids
     const panel = makePanel({ id: longId, options: [makeOption({ id: longId, roleId: '1' })] });
     const rows = buildPanelButtonRows(panel);
@@ -73,9 +91,17 @@ describe('buildPanelButtonRows', () => {
 
 describe('buildPanelSelectRow', () => {
   it('customId matches roles:select:<panelId>, one option per role, maxValues defaults to option count', () => {
-    const panel = makePanel({ style: 'SELECT', options: [makeOption({ id: 'a', roleId: '1' }), makeOption({ id: 'b', roleId: '2' })] });
+    const panel = makePanel({
+      style: 'SELECT',
+      options: [makeOption({ id: 'a', roleId: '1' }), makeOption({ id: 'b', roleId: '2' })],
+    });
     const row = buildPanelSelectRow(panel).toJSON();
-    const select = row.components[0] as { custom_id: string; options: { value: string }[]; min_values: number; max_values: number };
+    const select = row.components[0] as {
+      custom_id: string;
+      options: { value: string }[];
+      min_values: number;
+      max_values: number;
+    };
     expect(select.custom_id).toBe('roles:select:panel1');
     expect(select.options.map((o) => o.value)).toEqual(['1', '2']);
     expect(select.min_values).toBe(0);
@@ -83,7 +109,11 @@ describe('buildPanelSelectRow', () => {
   });
 
   it('respects maxSelections when set', () => {
-    const panel = makePanel({ style: 'SELECT', maxSelections: 1, options: [makeOption({ id: 'a', roleId: '1' }), makeOption({ id: 'b', roleId: '2' })] });
+    const panel = makePanel({
+      style: 'SELECT',
+      maxSelections: 1,
+      options: [makeOption({ id: 'a', roleId: '1' }), makeOption({ id: 'b', roleId: '2' })],
+    });
     const row = buildPanelSelectRow(panel).toJSON();
     const select = row.components[0] as { max_values: number };
     expect(select.max_values).toBe(1);
@@ -111,7 +141,10 @@ describe('reactionRoleMap', () => {
   it('only includes options that have an emoji set', () => {
     const panel = makePanel({
       style: 'REACTIONS',
-      options: [makeOption({ id: 'a', roleId: '1', emoji: '🎮' }), makeOption({ id: 'b', roleId: '2', emoji: null })],
+      options: [
+        makeOption({ id: 'a', roleId: '1', emoji: '🎮' }),
+        makeOption({ id: 'b', roleId: '2', emoji: null }),
+      ],
     });
     expect(reactionRoleMap(panel)).toEqual([{ emoji: '🎮', roleId: '1' }]);
   });

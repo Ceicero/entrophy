@@ -91,7 +91,9 @@ export function whoCanUse(command: Pick<ExportedCommand, 'staffLevel' | 'discord
 
 /** Composes a plausible example invocation from a command/subcommand's declared options, so every row in the
  * command table shows real usage without hand-written examples that could drift from the schema. */
-export function exampleUsage(entry: Pick<ExportedCommand | CommandSubcommand, 'fullName' | 'options'>): string {
+export function exampleUsage(
+  entry: Pick<ExportedCommand | CommandSubcommand, 'fullName' | 'options'>,
+): string {
   const args = entry.options.map((o) => exampleForOption(o)).join(' ');
   return args ? `${entry.fullName} ${args}` : entry.fullName;
 }
@@ -104,7 +106,8 @@ function exampleForOption(option: CommandOption): string {
 
 function exampleValueForType(name: string, type: string): string {
   const lowerName = name.toLowerCase();
-  if (lowerName.includes('user') || lowerName.includes('member') || lowerName.includes('target')) return '@user';
+  if (lowerName.includes('user') || lowerName.includes('member') || lowerName.includes('target'))
+    return '@user';
   if (lowerName.includes('channel')) return '#general';
   if (lowerName.includes('role')) return '@Moderators';
   if (lowerName.includes('reason')) return '"spamming links"';

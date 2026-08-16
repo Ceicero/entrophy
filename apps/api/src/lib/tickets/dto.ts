@@ -2,7 +2,13 @@
 // from the shared `apps/api/src/lib/dto.ts` (not owned by this task) which already exports the narrower root
 // `TicketDto` used elsewhere.
 import type { Ticket, TicketPanel, TicketParticipant } from '@entrophy/database';
-import type { TicketDetailDto, TicketIntakeFieldDto, TicketPanelDto, TicketParticipantDto, TicketQueueItemDto } from '@entrophy/types/tickets';
+import type {
+  TicketDetailDto,
+  TicketIntakeFieldDto,
+  TicketPanelDto,
+  TicketParticipantDto,
+  TicketQueueItemDto,
+} from '@entrophy/types/tickets';
 import { isSlaBreached } from './sla';
 
 function intakeFormOf(value: unknown): TicketIntakeFieldDto[] | null {
@@ -55,7 +61,10 @@ export function toTicketParticipantDto(row: TicketParticipant): TicketParticipan
   return { id: row.id, userId: row.userId, addedBy: row.addedBy, createdAt: row.createdAt.toISOString() };
 }
 
-export function toTicketDetailDto(row: Ticket & { participants?: TicketParticipant[] }, hasTranscript: boolean): TicketDetailDto {
+export function toTicketDetailDto(
+  row: Ticket & { participants?: TicketParticipant[] },
+  hasTranscript: boolean,
+): TicketDetailDto {
   return {
     ...toTicketQueueItemDto(row),
     closedBy: row.closedBy,

@@ -35,7 +35,10 @@ export function buildRuleConfigModal(params: {
 }
 
 /** Reads every field's submitted value out of a modal submit interaction, keyed by field id. */
-export function readModalFieldValues(type: AutomodRuleTypeValue, interaction: { fields: { getTextInputValue: (id: string) => string } }): Record<string, string> {
+export function readModalFieldValues(
+  type: AutomodRuleTypeValue,
+  interaction: { fields: { getTextInputValue: (id: string) => string } },
+): Record<string, string> {
   const specs = RULE_FIELD_SPECS[type];
   const values: Record<string, string> = {};
   for (const spec of specs) {

@@ -28,7 +28,7 @@ export const enforcerWorkflow: WorkflowStep[] = [
   },
   {
     title: '6. Appeal',
-    body: 'The player can appeal directly with `/enforcer appeal <record #>`. The appeal opens through the moderation plugin\'s workflow and both the opening and the decision are written to the ledger too.',
+    body: "The player can appeal directly with `/enforcer appeal <record #>`. The appeal opens through the moderation plugin's workflow and both the opening and the decision are written to the ledger too.",
   },
 ];
 
@@ -48,22 +48,27 @@ export interface FaqEntry {
 export const enforcerFaq: FaqEntry[] = [
   {
     question: 'Does Enforcer replace the moderation plugin?',
-    answer: 'No — Enforcer is built on top of it. Every decision Enforcer executes (warn, timeout, kick, ban) is a real moderation case, with the same hierarchy checks, DM notice, and appeal workflow the moderation plugin already provides.',
+    answer:
+      'No — Enforcer is built on top of it. Every decision Enforcer executes (warn, timeout, kick, ban) is a real moderation case, with the same hierarchy checks, DM notice, and appeal workflow the moderation plugin already provides.',
   },
   {
     question: 'What happens without the Message Content intent?',
-    answer: 'Automatic flagging needs it to read message text. Without it, Enforcer still works in manual mode: staff can flag any message with the "Flag for review" action, or flag a user directly with `/enforcer flag`.',
+    answer:
+      'Automatic flagging needs it to read message text. Without it, Enforcer still works in manual mode: staff can flag any message with the "Flag for review" action, or flag a user directly with `/enforcer flag`.',
   },
   {
     question: 'Can a moderator DM the flagged player directly?',
-    answer: 'That is exactly what Enforcer is designed to avoid. The bot is the only one that contacts the player — with the case number, the record number, and instructions to appeal — so the interaction stays professional and consistent no matter which moderator is on duty.',
+    answer:
+      'That is exactly what Enforcer is designed to avoid. The bot is the only one that contacts the player — with the case number, the record number, and instructions to appeal — so the interaction stays professional and consistent no matter which moderator is on duty.',
   },
   {
     question: 'Is the ledger really tamper-evident?',
-    answer: 'The ledger channel is configured so only the bot can post in it — permission overwrites deny everyone else send access. The database record is the source of truth and every entry keeps its record number, so a gap or edit is visible.',
+    answer:
+      'The ledger channel is configured so only the bot can post in it — permission overwrites deny everyone else send access. The database record is the source of truth and every entry keeps its record number, so a gap or edit is visible.',
   },
   {
     question: 'What does the AI assist feature actually decide?',
-    answer: 'Nothing. When enabled, it adds a risk score and a plain-language explanation to a flag, clearly labelled "assistive — not a decision". A human moderator still has to choose Warn, Timeout, Mute, Kick, Ban, or Dismiss.',
+    answer:
+      'Nothing. When enabled, it adds a risk score and a plain-language explanation to a flag, clearly labelled "assistive — not a decision". A human moderator still has to choose Warn, Timeout, Mute, Kick, Ban, or Dismiss.',
   },
 ];

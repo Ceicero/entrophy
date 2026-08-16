@@ -13,7 +13,9 @@ const contextHandler: ComponentHandler = {
     const [recordId] = c.args;
     const interaction = c.interaction as ButtonInteraction<'cached'>;
 
-    const record = await c.ctx.prisma.enforcerRecord.findFirst({ where: { id: recordId, guildId: c.guildId } });
+    const record = await c.ctx.prisma.enforcerRecord.findFirst({
+      where: { id: recordId, guildId: c.guildId },
+    });
     if (!record) {
       await interaction.reply({ embeds: [errorEmbed(c.t('record.notFound'))], ephemeral: true });
       return;
@@ -23,7 +25,13 @@ const contextHandler: ComponentHandler = {
     let lines: string[] = [];
 
     if (record.channelId && record.messageId) {
-      const live = await buildContextSnapshot(interaction.guild, record.channelId, record.messageId, config.contextBefore, config.excerptMaxChars).catch(() => null);
+      const live = await buildContextSnapshot(
+        interaction.guild,
+        record.channelId,
+        record.messageId,
+        config.contextBefore,
+        config.excerptMaxChars,
+      ).catch(() => null);
       if (live && live.length > 0) {
         lines = live.map((m) => `<@${m.authorId}>: ${m.excerpt}`);
       }
@@ -38,10 +46,15 @@ const contextHandler: ComponentHandler = {
     if (record.messageJumpUrl) lines.push(`[Jump to message](${record.messageJumpUrl})`);
 
     if (lines.length === 0) {
-      lines = ['No context is available for this record (context capture was off, or the message/channel is no longer reachable).'];
+      lines = [
+        'No context is available for this record (context capture was off, or the message/channel is no longer reachable).',
+      ];
     }
 
-    await interaction.reply({ embeds: [infoEmbed(`Context for #E-${record.recordNumber}`, lines.join('\n'))], ephemeral: true });
+    await interaction.reply({
+      embeds: [infoEmbed(`Context for #E-${record.recordNumber}`, lines.join('\n'))],
+      ephemeral: true,
+    });
   },
 };
 

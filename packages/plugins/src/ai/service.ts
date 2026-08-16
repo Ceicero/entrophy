@@ -26,7 +26,10 @@ export class AiUnavailableError extends AppError {
 }
 
 /** `/ai config view`, `/plugin status`, and the API settings endpoint all need "is this actually usable right now". */
-export function describeAvailability(config: AiConfig, env: { OPENAI_API_KEY?: string; ANTHROPIC_API_KEY?: string }): AiUnavailableInfo {
+export function describeAvailability(
+  config: AiConfig,
+  env: { OPENAI_API_KEY?: string; ANTHROPIC_API_KEY?: string },
+): AiUnavailableInfo {
   const resolved = resolveApiKey(config, env);
   if (!resolved) {
     return {
@@ -40,12 +43,20 @@ export function describeAvailability(config: AiConfig, env: { OPENAI_API_KEY?: s
 }
 
 /** Checks the per-user cooldown for AI commands, using the guild's configured `userCooldownSeconds`. Throws `RateLimitError` if still cooling down. */
-export async function enforceCooldown(ctx: PluginContext, guildId: string, userId: string, seconds: number, t: PluginContext['t']): Promise<void> {
+export async function enforceCooldown(
+  ctx: PluginContext,
+  guildId: string,
+  userId: string,
+  seconds: number,
+  t: PluginContext['t'],
+): Promise<void> {
   if (seconds <= 0) return;
   const cooldowns = new Cooldowns(ctx.redis);
   const result = await cooldowns.take(`ai:${guildId}:${userId}`, seconds);
   if (!result.ok) {
-    throw new RateLimitError(t('errors.cooldown', { seconds: Math.max(1, Math.ceil(result.retryAfterMs / 1000)) }));
+    throw new RateLimitError(
+      t('errors.cooldown', { seconds: Math.max(1, Math.ceil(result.retryAfterMs / 1000)) }),
+    );
   }
 }
 
@@ -57,7 +68,13 @@ export async function enforceBudget(
   config: AiConfig,
   t: PluginContext['t'],
 ): Promise<void> {
-  const result = await checkBudget(ctx.redis, guildId, userId, config.dailyTokenBudget, config.perUserDailyTokenBudget);
+  const result = await checkBudget(
+    ctx.redis,
+    guildId,
+    userId,
+    config.dailyTokenBudget,
+    config.perUserDailyTokenBudget,
+  );
   if (!result.ok) {
     throw new RateLimitError(
       result.scope === 'guild' ? t('errors.guildBudgetExhausted') : t('errors.userBudgetExhausted'),
@@ -71,14 +88,23 @@ export function createAiService(ctx: PluginContext): AiService {
     const { guildId, userId, command, prompt, system, maxTokens } = input;
     const config = await ctx.getConfig<AiConfig>(guildId);
 
-    const resolvedKey = resolveApiKey(config, { OPENAI_API_KEY: ctx.env.OPENAI_API_KEY, ANTHROPIC_API_KEY: ctx.env.ANTHROPIC_API_KEY });
+    const resolvedKey = resolveApiKey(config, {
+      OPENAI_API_KEY: ctx.env.OPENAI_API_KEY,
+      ANTHROPIC_API_KEY: ctx.env.ANTHROPIC_API_KEY,
+    });
     if (!resolvedKey) {
       throw new AiUnavailableError(
         'The AI assistant is not configured for this server yet. An admin needs to run `/ai config set-key` (or enable the environment-key fallback).',
       );
     }
 
-    const budgetResult = await checkBudget(ctx.redis, guildId, userId, config.dailyTokenBudget, config.perUserDailyTokenBudget);
+    const budgetResult = await checkBudget(
+      ctx.redis,
+      guildId,
+      userId,
+      config.dailyTokenBudget,
+      config.perUserDailyTokenBudget,
+    );
     if (!budgetResult.ok) {
       throw new RateLimitError(
         budgetResult.scope === 'guild'
@@ -131,9 +157,16 @@ export function createAiService(ctx: PluginContext): AiService {
 
     try {
       const config = await ctx.getConfig<AiConfig>(guildId);
-      const resolvedKey = resolveApiKey(config, { OPENAI_API_KEY: ctx.env.OPENAI_API_KEY, ANTHROPIC_API_KEY: ctx.env.ANTHROPIC_API_KEY });
+      const resolvedKey = resolveApiKey(config, {
+        OPENAI_API_KEY: ctx.env.OPENAI_API_KEY,
+        ANTHROPIC_API_KEY: ctx.env.ANTHROPIC_API_KEY,
+      });
       if (!resolvedKey) {
-        return { ok: false, detail: 'No API key is configured for this server (set one with `/ai config set-key`, or enable the environment-key fallback).' };
+        return {
+          ok: false,
+          detail:
+            'No API key is configured for this server (set one with `/ai config set-key`, or enable the environment-key fallback).',
+        };
       }
 
       const provider = resolveProvider({ config, apiKey: resolvedKey.apiKey });

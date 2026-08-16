@@ -80,6 +80,96 @@ function SchemaField({ fieldKey, node, value, onChange, guildId, disabled }: Sch
   const htmlId = `field-${fieldKey}`;
   const resolved = value === undefined ? defaultForSchema(node) : value;
 
+  // Union types (zod `.union()`/`.discriminatedUnion()`) — no single control fits every branch, so fall back
+  // to raw JSON rather than silently rendering '[object Object]' or corrupting the value on the first keystroke.
+  if (node.anyOf && node.anyOf.length > 0) {
+    return (
+      <FormField
+        label={label}
+        htmlFor={htmlId}
+        hint={node.description ?? 'Advanced field — edit as raw JSON.'}
+      >
+        <JsonTextareaField id={htmlId} value={resolved} onChange={onChange} disabled={disabled} />
+      </FormField>
+    );
+  }
+
+  // Nested object (zod `.object()` inside a config schema, e.g. roles.welcome/verification, engagement.leveling).
+  // Renders a nested field per property instead of falling through to a plain text input (which used to show
+  // "[object Object]" and, on any keystroke, replace the whole nested value with a string).
+  if (node.type === 'object' && node.properties) {
+    const objectValue = (resolved && typeof resolved === 'object' ? resolved : {}) as Record<string, unknown>;
+    const body = (
+      <fieldset className="space-y-3 rounded-md border border-border p-3" disabled={disabled}>
+        <legend className="px-1 text-sm font-medium text-foreground">{label}</legend>
+        {node.description ? <p className="-mt-1 text-xs text-muted-foreground">{node.description}</p> : null}
+        {Object.entries(node.properties).map(([childKey, childNode]) => (
+          <SchemaField
+            key={childKey}
+            fieldKey={childKey}
+            node={childNode}
+            value={objectValue[childKey]}
+            onChange={(next) => onChange({ ...objectValue, [childKey]: next })}
+            guildId={guildId}
+            disabled={disabled}
+          />
+        ))}
+      </fieldset>
+    );
+
+    if (!node.nullable) return body;
+
+    // Nullable object (e.g. roles.welcome.embed): a checkbox toggles between null and an actual object, so
+    // "clear this section" stays possible without a JSON escape hatch.
+    return (
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={resolved !== null && resolved !== undefined}
+            disabled={disabled}
+            onChange={(e) =>
+              onChange(e.target.checked ? defaultForSchema({ ...node, nullable: false }) : null)
+            }
+          />
+          Set {label}
+        </label>
+        {resolved !== null && resolved !== undefined ? body : null}
+      </div>
+    );
+  }
+
+  // Record<string, T> (zod `.record()`, e.g. logging.channels) and arrays of objects (e.g. roles.steps,
+  // tickets.intakeForm) have no fixed set of keys/one-control-per-item — raw JSON, parsed on blur, is safer
+  // than silently mangling the structure.
+  const isRecord = node.type === 'object' && !node.properties && (node.additionalProperties ?? false);
+  const isArrayOfObjects = node.type === 'array' && node.items?.type === 'object';
+  if (isRecord || isArrayOfObjects) {
+    return (
+      <FormField
+        label={label}
+        htmlFor={htmlId}
+        hint={node.description ?? 'Advanced field — edit as raw JSON.'}
+      >
+        <JsonTextareaField id={htmlId} value={resolved} onChange={onChange} disabled={disabled} />
+      </FormField>
+    );
+  }
+
+  // Array of numbers (e.g. community.eventReminderMinutes) → tag input parsing each tag as a number.
+  if (node.type === 'array' && node.items?.type === 'number') {
+    return (
+      <FormField label={label} htmlFor={htmlId} hint={node.description}>
+        <TagInput
+          id={htmlId}
+          value={Array.isArray(resolved) ? (resolved as number[]).map(String) : []}
+          onChange={(tags) => onChange(tags.map((t) => Number(t)).filter((n) => !Number.isNaN(n)))}
+          disabled={disabled}
+        />
+      </FormField>
+    );
+  }
+
   // Boolean → Switch, on its own row (no separate label control needed beyond FormField's).
   if (node.type === 'boolean') {
     return (
@@ -88,7 +178,12 @@ function SchemaField({ fieldKey, node, value, onChange, guildId, disabled }: Sch
           <p className="text-sm font-medium text-foreground">{label}</p>
           {node.description ? <p className="text-xs text-muted-foreground">{node.description}</p> : null}
         </div>
-        <Switch checked={Boolean(resolved)} onCheckedChange={onChange} disabled={disabled} aria-label={label} />
+        <Switch
+          checked={Boolean(resolved)}
+          onCheckedChange={onChange}
+          disabled={disabled}
+          aria-label={label}
+        />
       </div>
     );
   }
@@ -97,14 +192,24 @@ function SchemaField({ fieldKey, node, value, onChange, guildId, disabled }: Sch
   if (node.format === 'discord-channel') {
     return (
       <FormField label={label} htmlFor={htmlId} hint={node.description}>
-        <DiscordChannelSelect guildId={guildId} value={(resolved as string | null) ?? null} onChange={onChange} disabled={disabled} />
+        <DiscordChannelSelect
+          guildId={guildId}
+          value={(resolved as string | null) ?? null}
+          onChange={onChange}
+          disabled={disabled}
+        />
       </FormField>
     );
   }
   if (node.format === 'discord-role') {
     return (
       <FormField label={label} htmlFor={htmlId} hint={node.description}>
-        <DiscordRoleSelect guildId={guildId} value={(resolved as string | null) ?? null} onChange={onChange} disabled={disabled} />
+        <DiscordRoleSelect
+          guildId={guildId}
+          value={(resolved as string | null) ?? null}
+          onChange={onChange}
+          disabled={disabled}
+        />
       </FormField>
     );
   }
@@ -133,7 +238,12 @@ function SchemaField({ fieldKey, node, value, onChange, guildId, disabled }: Sch
   if (node.type === 'array' && (!node.items || node.items.type === 'string')) {
     return (
       <FormField label={label} htmlFor={htmlId} hint={node.description}>
-        <TagInput id={htmlId} value={Array.isArray(resolved) ? (resolved as string[]) : []} onChange={onChange} disabled={disabled} />
+        <TagInput
+          id={htmlId}
+          value={Array.isArray(resolved) ? (resolved as string[]) : []}
+          onChange={onChange}
+          disabled={disabled}
+        />
       </FormField>
     );
   }
@@ -191,6 +301,63 @@ function SchemaField({ fieldKey, node, value, onChange, guildId, disabled }: Sch
         onChange={(e) => onChange(node.nullable && e.target.value === '' ? null : e.target.value)}
       />
     </FormField>
+  );
+}
+
+/**
+ * Raw-JSON fallback for shapes `SchemaField` can't offer a dedicated control for (unions, records, arrays of
+ * objects). Edits a local text buffer and only calls `onChange` once the buffer parses as valid JSON — an
+ * in-progress/invalid edit never corrupts the stored config value, unlike the old plain `<Input>` fallback
+ * which sent every keystroke straight through as a string.
+ */
+function JsonTextareaField({
+  id,
+  value,
+  onChange,
+  disabled,
+}: {
+  id: string;
+  value: unknown;
+  onChange: (next: unknown) => void;
+  disabled?: boolean;
+}) {
+  const [text, setText] = React.useState(() => JSON.stringify(value ?? null, null, 2));
+  const [error, setError] = React.useState<string | null>(null);
+  const [dirty, setDirty] = React.useState(false);
+
+  // Reflect external changes (e.g. loading a different plugin's config) as long as the user hasn't started
+  // typing a not-yet-committed edit here.
+  React.useEffect(() => {
+    if (!dirty) setText(JSON.stringify(value ?? null, null, 2));
+  }, [value, dirty]);
+
+  function commit() {
+    try {
+      const parsed = JSON.parse(text) as unknown;
+      setError(null);
+      setDirty(false);
+      onChange(parsed);
+    } catch {
+      setError('Not valid JSON — edit not saved. Fix the syntax and click away again.');
+    }
+  }
+
+  return (
+    <div className="space-y-1">
+      <Textarea
+        id={id}
+        value={text}
+        disabled={disabled}
+        className="font-mono text-xs"
+        rows={6}
+        onChange={(e) => {
+          setText(e.target.value);
+          setDirty(true);
+        }}
+        onBlur={commit}
+      />
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </div>
   );
 }
 

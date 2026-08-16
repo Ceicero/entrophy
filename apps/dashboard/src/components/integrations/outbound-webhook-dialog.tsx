@@ -1,7 +1,19 @@
 'use client';
 
 import * as React from 'react';
-import { Button, Checkbox, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, FormField, Input, Label, useToast } from '@entrophy/ui';
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  FormField,
+  Input,
+  Label,
+  useToast,
+} from '@entrophy/ui';
 import type { OutboundPlatformEvent } from '@entrophy/types/integrations';
 import { ApiClientError } from '../../lib/api';
 import { useCreateOutboundWebhook, type CreateOutboundWebhookResult } from '../../lib/integrations-queries';
@@ -23,7 +35,12 @@ export interface OutboundWebhookDialogProps {
   onCreated: (result: CreateOutboundWebhookResult) => void;
 }
 
-export function OutboundWebhookDialog({ guildId, open, onOpenChange, onCreated }: OutboundWebhookDialogProps) {
+export function OutboundWebhookDialog({
+  guildId,
+  open,
+  onOpenChange,
+  onCreated,
+}: OutboundWebhookDialogProps) {
   const [name, setName] = React.useState('');
   const [url, setUrl] = React.useState('');
   const [events, setEvents] = React.useState<OutboundPlatformEvent[]>([]);
@@ -52,7 +69,12 @@ export function OutboundWebhookDialog({ guildId, open, onOpenChange, onCreated }
           onOpenChange(false);
           onCreated(result);
         },
-        onError: (err) => toast({ title: 'Could not create webhook', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+        onError: (err) =>
+          toast({
+            title: 'Could not create webhook',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -66,18 +88,37 @@ export function OutboundWebhookDialog({ guildId, open, onOpenChange, onCreated }
 
         <div className="space-y-4">
           <FormField label="Name" required>
-            <Input value={name} maxLength={100} onChange={(e) => setName(e.target.value)} disabled={create.isPending} />
+            <Input
+              value={name}
+              maxLength={100}
+              onChange={(e) => setName(e.target.value)}
+              disabled={create.isPending}
+            />
           </FormField>
 
-          <FormField label="URL" required hint="Must be a public HTTPS URL — private/internal addresses are rejected.">
-            <Input value={url} type="url" placeholder="https://example.com/webhook" onChange={(e) => setUrl(e.target.value)} disabled={create.isPending} />
+          <FormField
+            label="URL"
+            required
+            hint="Must be a public HTTPS URL — private/internal addresses are rejected."
+          >
+            <Input
+              value={url}
+              type="url"
+              placeholder="https://example.com/webhook"
+              onChange={(e) => setUrl(e.target.value)}
+              disabled={create.isPending}
+            />
           </FormField>
 
           <FormField label="Events" required>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {EVENT_OPTIONS.map((opt) => (
                 <label key={opt.value} className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={events.includes(opt.value)} onCheckedChange={(checked) => toggleEvent(opt.value, checked === true)} disabled={create.isPending} />
+                  <Checkbox
+                    checked={events.includes(opt.value)}
+                    onCheckedChange={(checked) => toggleEvent(opt.value, checked === true)}
+                    disabled={create.isPending}
+                  />
                   <Label className="font-normal">{opt.label}</Label>
                 </label>
               ))}

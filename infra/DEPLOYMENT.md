@@ -12,14 +12,14 @@ to click and what to paste. Nothing here requires writing code.
 
 Four deployables, all built from this one GitHub repo, plus two managed data stores:
 
-| Deployable | What it is | Dockerfile | Public? |
-|---|---|---|---|
-| `bot` | Discord gateway process + background job workers | `infra/docker/Dockerfile.bot` | No (outbound only; has a private `/health` port) |
-| `api` | REST API, Discord OAuth, webhook receivers | `infra/docker/Dockerfile.api` | Yes — `api.entrophybot.com` |
-| `dashboard` | Admin dashboard (Next.js) | `infra/docker/Dockerfile.dashboard` | Yes — `app.entrophybot.com` |
-| `web` | Public marketing website (Next.js) | `infra/docker/Dockerfile.web` | Yes — `entrophybot.com` |
-| Postgres 16 | System of record — everything durable | — (managed plugin/add-on) | No |
-| Redis 7 | Sessions, cache, job queues (BullMQ) — not durable data | — (managed plugin/add-on) | No |
+| Deployable  | What it is                                              | Dockerfile                          | Public?                                          |
+| ----------- | ------------------------------------------------------- | ----------------------------------- | ------------------------------------------------ |
+| `bot`       | Discord gateway process + background job workers        | `infra/docker/Dockerfile.bot`       | No (outbound only; has a private `/health` port) |
+| `api`       | REST API, Discord OAuth, webhook receivers              | `infra/docker/Dockerfile.api`       | Yes — `api.entrophybot.com`                      |
+| `dashboard` | Admin dashboard (Next.js)                               | `infra/docker/Dockerfile.dashboard` | Yes — `app.entrophybot.com`                      |
+| `web`       | Public marketing website (Next.js)                      | `infra/docker/Dockerfile.web`       | Yes — `entrophybot.com`                          |
+| Postgres 16 | System of record — everything durable                   | — (managed plugin/add-on)           | No                                               |
+| Redis 7     | Sessions, cache, job queues (BullMQ) — not durable data | — (managed plugin/add-on)           | No                                               |
 
 All four deployables build from the **same repo** with **Root Directory `/`** and a different
 Dockerfile path each — there is nothing to fork or split out.
@@ -100,7 +100,7 @@ NEXT_PUBLIC_API_URL=https://api.entrophybot.com
 ```
 
 **`web` only** (these are build-time — Next.js inlines `NEXT_PUBLIC_*` at build, so set them as
-Railway variables *and* trigger a redeploy after any change, since a variable-only save doesn't
+Railway variables _and_ trigger a redeploy after any change, since a variable-only save doesn't
 rebuild the image):
 
 ```
@@ -293,6 +293,7 @@ runs everything on one box. Put [Caddy](https://caddyserver.com/) in front for a
    Reload Caddy (`caddy reload` or `systemctl reload caddy`) after saving. Caddy handles the
    `www` → apex redirect itself if you'd rather split it into its own block with a `redir` directive;
    the combined block above just serves both from `web`.
+
 5. Register commands and set the avatar from the host:
    ```
    docker compose run --rm api pnpm commands:register
@@ -323,39 +324,39 @@ both modes.
 below when they're just "blank = feature disabled" — see `.env.production.example` for the full
 list with comments; every var there is also documented in `docs/ARCHITECTURE.md` §4.
 
-| Variable | Required? | Which app(s) | Where the value comes from |
-|---|---|---|---|
-| `NODE_ENV` | Yes | all | Literal `production` |
-| `LOG_LEVEL` | No (defaults `info`) | bot, api | Literal `info` (or `debug`/`trace` when diagnosing) |
-| `DATABASE_URL` | Yes | bot, api | Managed Postgres connection string (`${{Postgres.DATABASE_URL}}` on Railway, `fromDatabase` on Render, your own Postgres on a VPS) |
-| `REDIS_URL` | Yes | bot, api | Managed Redis connection string (`${{Redis.REDIS_URL}}` on Railway, `fromService` on Render, your own Redis on a VPS) |
-| `DISCORD_TOKEN` | Yes | bot | Discord Developer Portal → your application → **Bot** → Reset Token |
-| `DISCORD_CLIENT_ID` | Yes | bot, api, web (as `NEXT_PUBLIC_DISCORD_CLIENT_ID`) | Discord Developer Portal → **General Information** → Application ID |
-| `DISCORD_CLIENT_SECRET` | Yes | api | Discord Developer Portal → **OAuth2** → Client Secret |
-| `DISCORD_OAUTH_REDIRECT_URI` | Yes | api | `https://api.entrophybot.com/auth/discord/callback` — must also be added in the Portal's OAuth2 redirect list, byte-for-byte |
-| `ENCRYPTION_KEY` | Yes | bot, api | You generate it: `openssl rand -base64 32` |
-| `ENCRYPTION_KEY_PREVIOUS` | Only during key rotation | bot, api | The previous `ENCRYPTION_KEY` value, set temporarily — see `docs/SECURITY.md` |
-| `SESSION_SECRET` | Yes | api | You generate it: `openssl rand -base64 32` |
-| `API_PORT` | No (defaults `3001`) | api | Literal `3001` |
-| `API_BASE_URL` | Yes | api | `https://api.entrophybot.com` |
-| `DASHBOARD_URL` | Yes | api | `https://app.entrophybot.com` (CORS allowlist + OAuth redirect target) |
-| `WEB_URL` | Yes | api, web (server-side) | `https://entrophybot.com` (CORS allowlist entry + brand links) |
-| `NEXT_PUBLIC_API_URL` | Yes | dashboard, web | `https://api.entrophybot.com` |
-| `NEXT_PUBLIC_DASHBOARD_URL` | Yes | web | `https://app.entrophybot.com` |
-| `NEXT_PUBLIC_INVITE_PERMISSIONS` | No | web | Integer permission bitfield — see `docs/invite.json` (generated) |
-| `NEXT_PUBLIC_SUPPORT_SERVER_URL` | No | web | Your support Discord server invite link, if you have one |
-| `COOKIE_DOMAIN` | Recommended | api | `.entrophybot.com` |
-| `SESSION_COOKIE_SAMESITE` | No (defaults `lax`) | api | `lax` on custom domains; `none` only if temporarily using platform default subdomains — see §5 |
-| `TRUST_PROXY` | Yes in production | api | `true` (all three cloud paths put the API behind a reverse proxy/load balancer) |
-| `E2E_TEST_MODE` | Must be unset/`false` | api | Leave unset. The API also hard-refuses this in production regardless. |
-| `BOT_OWNER_IDS` | Recommended | bot | Your (and any co-owner's) Discord user id — right-click your name in Discord with Developer Mode on → Copy User ID |
-| `DEV_GUILD_ID` | No | bot | A test server's id, temporarily, for instant command registration while testing |
-| `BOT_HEALTH_PORT` | No (defaults `3002`) | bot | Literal `3002` |
-| `ENABLE_GUILD_MEMBERS_INTENT` | Recommended `true` | bot | Enabled in Discord Developer Portal → **Bot** → Privileged Gateway Intents → Server Members Intent, then set `true` here to match |
-| `ENABLE_MESSAGE_CONTENT_INTENT` | No (default `false`) | bot | Only after Discord approves the privileged intent for your bot (or while under 100 servers, which doesn't require approval) — enable in the Portal first, then set `true` here |
-| `PUBLIC_WEBHOOK_BASE_URL` | Yes if using webhooks | api | `https://api.entrophybot.com` |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Only for donations | api | Stripe Dashboard → **Developers → API keys**, and **Developers → Webhooks** → add endpoint `https://api.entrophybot.com/webhooks/stripe` → reveal signing secret |
-| Integration keys (`TWITCH_*`, `YOUTUBE_API_KEY`, `GITHUB_WEBHOOK_SECRET`, `REDDIT_*`, `STEAM_API_KEY`, `GOOGLE_*`, `MICROSOFT_*`, `NOTION_*`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPL_API_KEY`, `OPENWEATHERMAP_API_KEY`, `HCAPTCHA_*`, `TURNSTILE_*`) | No | api, bot | Each provider's own developer console. Blank = that feature stays disabled; nothing else is affected. |
+| Variable                                                                                                                                                                                                                                                     | Required?                | Which app(s)                                       | Where the value comes from                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NODE_ENV`                                                                                                                                                                                                                                                   | Yes                      | all                                                | Literal `production`                                                                                                                                                           |
+| `LOG_LEVEL`                                                                                                                                                                                                                                                  | No (defaults `info`)     | bot, api                                           | Literal `info` (or `debug`/`trace` when diagnosing)                                                                                                                            |
+| `DATABASE_URL`                                                                                                                                                                                                                                               | Yes                      | bot, api                                           | Managed Postgres connection string (`${{Postgres.DATABASE_URL}}` on Railway, `fromDatabase` on Render, your own Postgres on a VPS)                                             |
+| `REDIS_URL`                                                                                                                                                                                                                                                  | Yes                      | bot, api                                           | Managed Redis connection string (`${{Redis.REDIS_URL}}` on Railway, `fromService` on Render, your own Redis on a VPS)                                                          |
+| `DISCORD_TOKEN`                                                                                                                                                                                                                                              | Yes                      | bot                                                | Discord Developer Portal → your application → **Bot** → Reset Token                                                                                                            |
+| `DISCORD_CLIENT_ID`                                                                                                                                                                                                                                          | Yes                      | bot, api, web (as `NEXT_PUBLIC_DISCORD_CLIENT_ID`) | Discord Developer Portal → **General Information** → Application ID                                                                                                            |
+| `DISCORD_CLIENT_SECRET`                                                                                                                                                                                                                                      | Yes                      | api                                                | Discord Developer Portal → **OAuth2** → Client Secret                                                                                                                          |
+| `DISCORD_OAUTH_REDIRECT_URI`                                                                                                                                                                                                                                 | Yes                      | api                                                | `https://api.entrophybot.com/auth/discord/callback` — must also be added in the Portal's OAuth2 redirect list, byte-for-byte                                                   |
+| `ENCRYPTION_KEY`                                                                                                                                                                                                                                             | Yes                      | bot, api                                           | You generate it: `openssl rand -base64 32`                                                                                                                                     |
+| `ENCRYPTION_KEY_PREVIOUS`                                                                                                                                                                                                                                    | Only during key rotation | bot, api                                           | The previous `ENCRYPTION_KEY` value, set temporarily — see `docs/SECURITY.md`                                                                                                  |
+| `SESSION_SECRET`                                                                                                                                                                                                                                             | Yes                      | api                                                | You generate it: `openssl rand -base64 32`                                                                                                                                     |
+| `API_PORT`                                                                                                                                                                                                                                                   | No (defaults `3001`)     | api                                                | Literal `3001`                                                                                                                                                                 |
+| `API_BASE_URL`                                                                                                                                                                                                                                               | Yes                      | api                                                | `https://api.entrophybot.com`                                                                                                                                                  |
+| `DASHBOARD_URL`                                                                                                                                                                                                                                              | Yes                      | api                                                | `https://app.entrophybot.com` (CORS allowlist + OAuth redirect target)                                                                                                         |
+| `WEB_URL`                                                                                                                                                                                                                                                    | Yes                      | api, web (server-side)                             | `https://entrophybot.com` (CORS allowlist entry + brand links)                                                                                                                 |
+| `NEXT_PUBLIC_API_URL`                                                                                                                                                                                                                                        | Yes                      | dashboard, web                                     | `https://api.entrophybot.com`                                                                                                                                                  |
+| `NEXT_PUBLIC_DASHBOARD_URL`                                                                                                                                                                                                                                  | Yes                      | web                                                | `https://app.entrophybot.com`                                                                                                                                                  |
+| `NEXT_PUBLIC_INVITE_PERMISSIONS`                                                                                                                                                                                                                             | No                       | web                                                | Integer permission bitfield — see `docs/invite.json` (generated)                                                                                                               |
+| `NEXT_PUBLIC_SUPPORT_SERVER_URL`                                                                                                                                                                                                                             | No                       | web                                                | Your support Discord server invite link, if you have one                                                                                                                       |
+| `COOKIE_DOMAIN`                                                                                                                                                                                                                                              | Recommended              | api                                                | `.entrophybot.com`                                                                                                                                                             |
+| `SESSION_COOKIE_SAMESITE`                                                                                                                                                                                                                                    | No (defaults `lax`)      | api                                                | `lax` on custom domains; `none` only if temporarily using platform default subdomains — see §5                                                                                 |
+| `TRUST_PROXY`                                                                                                                                                                                                                                                | Yes in production        | api                                                | `true` (all three cloud paths put the API behind a reverse proxy/load balancer)                                                                                                |
+| `E2E_TEST_MODE`                                                                                                                                                                                                                                              | Must be unset/`false`    | api                                                | Leave unset. The API also hard-refuses this in production regardless.                                                                                                          |
+| `BOT_OWNER_IDS`                                                                                                                                                                                                                                              | Recommended              | bot                                                | Your (and any co-owner's) Discord user id — right-click your name in Discord with Developer Mode on → Copy User ID                                                             |
+| `DEV_GUILD_ID`                                                                                                                                                                                                                                               | No                       | bot                                                | A test server's id, temporarily, for instant command registration while testing                                                                                                |
+| `BOT_HEALTH_PORT`                                                                                                                                                                                                                                            | No (defaults `3002`)     | bot                                                | Literal `3002`                                                                                                                                                                 |
+| `ENABLE_GUILD_MEMBERS_INTENT`                                                                                                                                                                                                                                | Recommended `true`       | bot                                                | Enabled in Discord Developer Portal → **Bot** → Privileged Gateway Intents → Server Members Intent, then set `true` here to match                                              |
+| `ENABLE_MESSAGE_CONTENT_INTENT`                                                                                                                                                                                                                              | No (default `false`)     | bot                                                | Only after Discord approves the privileged intent for your bot (or while under 100 servers, which doesn't require approval) — enable in the Portal first, then set `true` here |
+| `PUBLIC_WEBHOOK_BASE_URL`                                                                                                                                                                                                                                    | Yes if using webhooks    | api                                                | `https://api.entrophybot.com`                                                                                                                                                  |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`                                                                                                                                                                                                                | Only for donations       | api                                                | Stripe Dashboard → **Developers → API keys**, and **Developers → Webhooks** → add endpoint `https://api.entrophybot.com/webhooks/stripe` → reveal signing secret               |
+| Integration keys (`TWITCH_*`, `YOUTUBE_API_KEY`, `GITHUB_WEBHOOK_SECRET`, `REDDIT_*`, `STEAM_API_KEY`, `GOOGLE_*`, `MICROSOFT_*`, `NOTION_*`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPL_API_KEY`, `OPENWEATHERMAP_API_KEY`, `HCAPTCHA_*`, `TURNSTILE_*`) | No                       | api, bot                                           | Each provider's own developer console. Blank = that feature stays disabled; nothing else is affected.                                                                          |
 
 ## 7. Secret rotation runbook
 
@@ -376,7 +377,7 @@ framing is in `docs/SECURITY.md`; this is the mechanical "how."
   is signed out and has to log in again. There's no partial/rolling option for this one.
 - **`ENCRYPTION_KEY`**: see the dedicated walkthrough in `docs/SECURITY.md` — it needs the
   `ENCRYPTION_KEY_PREVIOUS` two-step and the re-encryption script (`pnpm --filter @entrophy/database
-  reencrypt:secrets`), not just a variable swap, or every already-encrypted OAuth token, webhook
+reencrypt:secrets`), not just a variable swap, or every already-encrypted OAuth token, webhook
   secret, and stored AI API key becomes unreadable.
 - **Stripe keys**: Stripe Dashboard → roll the secret key; for the webhook signing secret, delete and
   recreate the webhook endpoint (or use Stripe's built-in secret roll if available) and update
@@ -391,7 +392,7 @@ framing is in `docs/SECURITY.md`; this is the mechanical "how."
   redis-cli --scan --pattern 'entrophy:session:*' | xargs -r redis-cli del
   ```
   (On Railway/Render, open a shell on a service that has `REDIS_URL` set and run `redis-cli -u
-  "$REDIS_URL" ...` instead, or use the platform's Redis data browser if it has one.)
+"$REDIS_URL" ...` instead, or use the platform's Redis data browser if it has one.)
 
 ## 8. Backups
 
@@ -399,7 +400,7 @@ framing is in `docs/SECURITY.md`; this is the mechanical "how."
   backup (Railway and Render both offer this on their Postgres plans — check current plan details,
   since free tiers usually have shorter retention or none). In addition, run periodic `pg_dump`
   backups you control and store somewhere separate from the platform (`pg_dump $DATABASE_URL -Fc -f
-  entrophy-$(date +%Y%m%d).dump`, restore with `pg_restore`). **Test a restore periodically** — an
+entrophy-$(date +%Y%m%d).dump`, restore with `pg_restore`). **Test a restore periodically** — an
   untested backup is not a backup.
 - **Redis**: treat it as ephemeral cache/queue/session state, not a system of record. Losing it logs
   everyone out and drops in-flight jobs, but no durable data is lost — nothing in Redis needs a

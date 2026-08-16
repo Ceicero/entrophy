@@ -17,7 +17,10 @@ export default function RolesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Roles &amp; Onboarding" description="Role panel builder, welcome/goodbye embeds, onboarding, verification, and role persistence." />
+      <PageHeader
+        title="Roles &amp; Onboarding"
+        description="Role panel builder, welcome/goodbye embeds, onboarding, verification, and role persistence."
+      />
 
       <Tabs defaultValue="panels">
         <TabsList>

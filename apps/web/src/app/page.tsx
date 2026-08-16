@@ -28,7 +28,9 @@ export default function HomePage() {
           <Badge tone="outline" className="mb-6">
             {plugins.length} modular plugins · {commandCount}+ commands · never Administrator
           </Badge>
-          <h1 className="text-4xl font-semibold tracking-tight text-grey-7 sm:text-6xl">{siteCopy.heroTitle}</h1>
+          <h1 className="text-4xl font-semibold tracking-tight text-grey-7 sm:text-6xl">
+            {siteCopy.heroTitle}
+          </h1>
           <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-grey-3">{siteCopy.heroSubtitle}</p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             {invite ? (
@@ -91,7 +93,8 @@ export default function HomePage() {
         <Glass className="flex flex-col items-start gap-6 p-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-grey-3">
-              Policy-driven, hands-off moderation with a full appeal trail — built for communities that need to show their moderation is fair.
+              Policy-driven, hands-off moderation with a full appeal trail — built for communities that need
+              to show their moderation is fair.
             </p>
           </div>
           <ButtonLink href="/enforcer" variant="outline" className="shrink-0">

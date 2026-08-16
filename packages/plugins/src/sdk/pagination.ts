@@ -15,7 +15,12 @@ export interface PaginatedReplyOptions {
   ephemeral?: boolean;
 }
 
-function buildPageRow(pluginId: PluginId, ownerId: string, index: number, total: number): ActionRowBuilder<ButtonBuilder> {
+function buildPageRow(
+  pluginId: PluginId,
+  ownerId: string,
+  index: number,
+  total: number,
+): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(buildCustomId(pluginId, 'page', ownerId, String(index - 1)))
@@ -39,7 +44,10 @@ export async function paginatedReply(options: PaginatedReplyOptions): Promise<vo
   const { interaction, pages, ownerId, pluginId, ephemeral = true } = options;
 
   if (pages.length === 0) {
-    await interaction.reply({ embeds: [infoEmbed('Nothing to show', 'There is nothing to display yet.')], ephemeral });
+    await interaction.reply({
+      embeds: [infoEmbed('Nothing to show', 'There is nothing to display yet.')],
+      ephemeral,
+    });
     return;
   }
 
@@ -57,7 +65,10 @@ export async function paginatedReply(options: PaginatedReplyOptions): Promise<vo
   collector.on('collect', (button) => {
     void (async () => {
       if (button.user.id !== ownerId) {
-        await button.reply({ content: 'Only the person who ran this command can page through it.', ephemeral: true });
+        await button.reply({
+          content: 'Only the person who ran this command can page through it.',
+          ephemeral: true,
+        });
         return;
       }
       const parsed = parseCustomId(button.customId);
@@ -66,7 +77,10 @@ export async function paginatedReply(options: PaginatedReplyOptions): Promise<vo
         await button.deferUpdate();
         return;
       }
-      await button.update({ embeds: [pages[nextIndex]], components: [buildPageRow(pluginId, ownerId, nextIndex, pages.length)] });
+      await button.update({
+        embeds: [pages[nextIndex]],
+        components: [buildPageRow(pluginId, ownerId, nextIndex, pages.length)],
+      });
     })();
   });
 

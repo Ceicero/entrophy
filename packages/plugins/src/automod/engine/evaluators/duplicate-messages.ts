@@ -6,7 +6,10 @@ import { NO_MATCH, type MessageEvaluator } from '../types';
 type Config = z.infer<typeof duplicateMessagesConfigSchema>;
 
 /** Flags a user repeating the same message content `maxDuplicates+` times within `windowSeconds`. Requires the Message Content intent. */
-export const evaluateDuplicateMessages: MessageEvaluator<Config> = async ({ message, windowStore }, config) => {
+export const evaluateDuplicateMessages: MessageEvaluator<Config> = async (
+  { message, windowStore },
+  config,
+) => {
   const normalized = message.content.trim();
   if (normalized.length === 0) return NO_MATCH;
 

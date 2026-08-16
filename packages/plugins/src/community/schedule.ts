@@ -17,7 +17,10 @@ export type ParsedSchedule =
   | { kind: 'invalid'; reason: string };
 
 /** True if `expr` validates as a cron-parser expression under `timezone`. */
-export function validateCron(expr: string, timezone: string): { ok: true; nextRunAt: Date } | { ok: false; reason: string } {
+export function validateCron(
+  expr: string,
+  timezone: string,
+): { ok: true; nextRunAt: Date } | { ok: false; reason: string } {
   try {
     const interval = cronParser.parseExpression(expr, { tz: timezone });
     return { ok: true, nextRunAt: interval.next().toDate() };
@@ -34,7 +37,10 @@ export function validateCron(expr: string, timezone: string): { ok: true; nextRu
 export function parseSchedule(input: string, timezone: string, now: Date = new Date()): ParsedSchedule {
   const trimmed = input.trim();
   if (trimmed.length === 0) {
-    return { kind: 'invalid', reason: 'Provide a cron expression, an ISO date/time, or a duration like "10m" or "2h".' };
+    return {
+      kind: 'invalid',
+      reason: 'Provide a cron expression, an ISO date/time, or a duration like "10m" or "2h".',
+    };
   }
 
   const fieldCount = trimmed.split(/\s+/).length;
@@ -55,14 +61,21 @@ export function parseSchedule(input: string, timezone: string, now: Date = new D
     return { kind: 'at', runAt: new Date(now.getTime() + durationMs) };
   }
 
-  return { kind: 'invalid', reason: 'Could not parse that as a cron expression, an ISO date/time, or a duration like "10m" or "2h".' };
+  return {
+    kind: 'invalid',
+    reason: 'Could not parse that as a cron expression, an ISO date/time, or a duration like "10m" or "2h".',
+  };
 }
 
 /**
  * Parses a one-off "at" time only (no cron) — used by `/remind set` and `/event create`, which never accept a
  * cron expression for their primary time field. Accepts ISO 8601 (in `timezone`) or a relative duration.
  */
-export function parseAt(input: string, timezone: string, now: Date = new Date()): { ok: true; date: Date } | { ok: false; reason: string } {
+export function parseAt(
+  input: string,
+  timezone: string,
+  now: Date = new Date(),
+): { ok: true; date: Date } | { ok: false; reason: string } {
   const trimmed = input.trim();
   if (trimmed.length === 0) {
     return { ok: false, reason: 'Provide an ISO date/time or a duration like "10m" or "2h".' };

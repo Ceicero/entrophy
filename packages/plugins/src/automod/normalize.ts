@@ -7,7 +7,10 @@ import type { NormalizedJoin, NormalizedMessage } from './engine/types';
  * without the Message Content intent, Discord simply never sends it for messages the bot didn't author, so this
  * always yields `''` in that case regardless of what `message.content` happens to hold.
  */
-export function normalizeMessage(message: Message | PartialMessage, hasContentIntent: boolean): NormalizedMessage {
+export function normalizeMessage(
+  message: Message | PartialMessage,
+  hasContentIntent: boolean,
+): NormalizedMessage {
   const channel = message.channel;
   const channelNsfw = channel && 'nsfw' in channel ? Boolean((channel as { nsfw?: boolean }).nsfw) : false;
 
@@ -42,5 +45,9 @@ export function normalizeJoin(member: GuildMember): NormalizedJoin {
 
 /** True if `channelId` resolves to a real, text-capable (non-thread, non-voice) guild channel — used to skip evaluating rules in channel types where "delete"/"alert" actions don't make sense. */
 export function isEvaluableChannelType(type: ChannelType | undefined): boolean {
-  return type !== ChannelType.GuildVoice && type !== ChannelType.GuildStageVoice && type !== ChannelType.GuildCategory;
+  return (
+    type !== ChannelType.GuildVoice &&
+    type !== ChannelType.GuildStageVoice &&
+    type !== ChannelType.GuildCategory
+  );
 }

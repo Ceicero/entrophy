@@ -10,7 +10,9 @@ import { guildIdParamSchema, paginationQuerySchema } from '../lib/schemas';
 import { toTicketDetailDto, toTicketPanelDto, toTicketQueueItemDto } from '../lib/tickets/dto';
 
 /** Prisma's nullable `Json` columns need the sentinel `Prisma.JsonNull`, not a bare `null`, to actually store JSON null. */
-function toNullableJsonInput(value: unknown[] | Record<string, unknown> | null | undefined): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
+function toNullableJsonInput(
+  value: unknown[] | Record<string, unknown> | null | undefined,
+): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
   if (value === undefined) return undefined;
   if (value === null) return Prisma.JsonNull;
   return value as Prisma.InputJsonValue;
@@ -50,23 +52,40 @@ const transcriptQuerySchema = z.object({ format: z.enum(['html', 'json']).defaul
 
 /** `/guilds/:guildId/tickets` — settings, panel CRUD, queue, close/assign, and transcript download (ARCHITECTURE.md §10). */
 export default async function ticketsRoutes(app: ZodFastifyInstance): Promise<void> {
-  app.get('/:guildId/tickets/settings', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    return app.configStore.getConfig(request.guildId!, TICKETS_PLUGIN_ID);
-  });
-
-  app.put(
+  app.get(
     '/:guildId/tickets/settings',
-    { schema: { params: guildIdParamSchema, body: z.record(z.string(), z.unknown()) }, preHandler: requireGuildAccess() },
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
     async (request) => {
-      const session = request.session!;
-      return app.configStore.setConfig(request.guildId!, TICKETS_PLUGIN_ID, request.body, { id: session.userId, source: 'dashboard' });
+      return app.configStore.getConfig(request.guildId!, TICKETS_PLUGIN_ID);
     },
   );
 
-  app.get('/:guildId/tickets/panels', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<TicketPanelDto[]> => {
-    const rows = await app.prisma.ticketPanel.findMany({ where: { guildId: request.guildId!, deletedAt: null }, orderBy: { createdAt: 'desc' } });
-    return rows.map(toTicketPanelDto);
-  });
+  app.put(
+    '/:guildId/tickets/settings',
+    {
+      schema: { params: guildIdParamSchema, body: z.record(z.string(), z.unknown()) },
+      preHandler: requireGuildAccess(),
+    },
+    async (request) => {
+      const session = request.session!;
+      return app.configStore.setConfig(request.guildId!, TICKETS_PLUGIN_ID, request.body, {
+        id: session.userId,
+        source: 'dashboard',
+      });
+    },
+  );
+
+  app.get(
+    '/:guildId/tickets/panels',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<TicketPanelDto[]> => {
+      const rows = await app.prisma.ticketPanel.findMany({
+        where: { guildId: request.guildId!, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+      });
+      return rows.map(toTicketPanelDto);
+    },
+  );
 
   app.post(
     '/:guildId/tickets/panels',
@@ -75,8 +94,17 @@ export default async function ticketsRoutes(app: ZodFastifyInstance): Promise<vo
       const guildId = request.guildId!;
       const session = request.session!;
       const { intakeForm, ...rest } = request.body;
-      const row = await app.prisma.ticketPanel.create({ data: { guildId, ...rest, intakeForm: toNullableJsonInput(intakeForm) } });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'ticket.panel.create', targetType: 'ticket_panel', targetId: row.id, after: { title: row.title } });
+      const row = await app.prisma.ticketPanel.create({
+        data: { guildId, ...rest, intakeForm: toNullableJsonInput(intakeForm) },
+      });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'ticket.panel.create',
+        targetType: 'ticket_panel',
+        targetId: row.id,
+        after: { title: row.title },
+      });
       reply.status(201);
       return toTicketPanelDto(row);
     },
@@ -89,47 +117,92 @@ export default async function ticketsRoutes(app: ZodFastifyInstance): Promise<vo
       const guildId = request.guildId!;
       const session = request.session!;
       const { panelId } = request.params as { panelId: string };
-      const existing = await app.prisma.ticketPanel.findFirst({ where: { id: panelId, guildId, deletedAt: null } });
+      const existing = await app.prisma.ticketPanel.findFirst({
+        where: { id: panelId, guildId, deletedAt: null },
+      });
       if (!existing) throw new NotFoundError('Ticket panel not found.');
 
       const { intakeForm, ...rest } = request.body;
       const updated = await app.prisma.ticketPanel.update({
         where: { id: panelId },
-        data: { ...rest, ...(intakeForm !== undefined ? { intakeForm: toNullableJsonInput(intakeForm) } : {}) },
+        data: {
+          ...rest,
+          ...(intakeForm !== undefined ? { intakeForm: toNullableJsonInput(intakeForm) } : {}),
+        },
       });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'ticket.panel.update', targetType: 'ticket_panel', targetId: panelId });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'ticket.panel.update',
+        targetType: 'ticket_panel',
+        targetId: panelId,
+      });
       return toTicketPanelDto(updated);
     },
   );
 
-  app.delete('/:guildId/tickets/panels/:panelId', { schema: { params: panelParamSchema }, preHandler: requireGuildAccess() }, async (request, reply) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { panelId } = request.params as { panelId: string };
-    const existing = await app.prisma.ticketPanel.findFirst({ where: { id: panelId, guildId, deletedAt: null } });
-    if (!existing) throw new NotFoundError('Ticket panel not found.');
+  app.delete(
+    '/:guildId/tickets/panels/:panelId',
+    { schema: { params: panelParamSchema }, preHandler: requireGuildAccess() },
+    async (request, reply) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { panelId } = request.params as { panelId: string };
+      const existing = await app.prisma.ticketPanel.findFirst({
+        where: { id: panelId, guildId, deletedAt: null },
+      });
+      if (!existing) throw new NotFoundError('Ticket panel not found.');
 
-    await app.prisma.ticketPanel.update({ where: { id: panelId }, data: { deletedAt: new Date() } });
-    await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'ticket.panel.delete', targetType: 'ticket_panel', targetId: panelId });
-    reply.status(204);
-    return null;
-  });
+      await app.prisma.ticketPanel.update({ where: { id: panelId }, data: { deletedAt: new Date() } });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'ticket.panel.delete',
+        targetType: 'ticket_panel',
+        targetId: panelId,
+      });
+      reply.status(204);
+      return null;
+    },
+  );
 
-  app.post('/:guildId/tickets/panels/:panelId/post', { schema: { params: panelParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { panelId } = request.params as { panelId: string };
-    const existing = await app.prisma.ticketPanel.findFirst({ where: { id: panelId, guildId, deletedAt: null } });
-    if (!existing) throw new NotFoundError('Ticket panel not found.');
+  app.post(
+    '/:guildId/tickets/panels/:panelId/post',
+    { schema: { params: panelParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { panelId } = request.params as { panelId: string };
+      const existing = await app.prisma.ticketPanel.findFirst({
+        where: { id: panelId, guildId, deletedAt: null },
+      });
+      if (!existing) throw new NotFoundError('Ticket panel not found.');
 
-    await app.queues.botActions().add('bot-action', { type: 'tickets.postPanel', guildId, payload: { panelId }, requestedBy: session.userId });
-    await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'ticket.panel.post', targetType: 'ticket_panel', targetId: panelId });
-    return { ok: true, queued: true };
-  });
+      await app.queues
+        .botActions()
+        .add('bot-action', {
+          type: 'tickets.postPanel',
+          guildId,
+          payload: { panelId },
+          requestedBy: session.userId,
+        });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'ticket.panel.post',
+        targetType: 'ticket_panel',
+        targetId: panelId,
+      });
+      return { ok: true, queued: true };
+    },
+  );
 
   app.get(
     '/:guildId/tickets/queue',
-    { schema: { params: guildIdParamSchema, querystring: queueQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: queueQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<Paginated<TicketQueueItemDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit, status, assigneeId, tag } = request.query;
@@ -150,14 +223,24 @@ export default async function ticketsRoutes(app: ZodFastifyInstance): Promise<vo
     },
   );
 
-  app.get('/:guildId/tickets/:ticketId', { schema: { params: ticketParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<TicketDetailDto> => {
-    const guildId = request.guildId!;
-    const { ticketId } = request.params as { ticketId: string };
-    const row = await app.prisma.ticket.findFirst({ where: { id: ticketId, guildId }, include: { participants: { orderBy: { createdAt: 'asc' } } } });
-    if (!row) throw new NotFoundError('Ticket not found.');
-    const transcript = await app.prisma.ticketTranscript.findUnique({ where: { ticketId }, select: { id: true } });
-    return toTicketDetailDto(row, transcript !== null);
-  });
+  app.get(
+    '/:guildId/tickets/:ticketId',
+    { schema: { params: ticketParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<TicketDetailDto> => {
+      const guildId = request.guildId!;
+      const { ticketId } = request.params as { ticketId: string };
+      const row = await app.prisma.ticket.findFirst({
+        where: { id: ticketId, guildId },
+        include: { participants: { orderBy: { createdAt: 'asc' } } },
+      });
+      if (!row) throw new NotFoundError('Ticket not found.');
+      const transcript = await app.prisma.ticketTranscript.findUnique({
+        where: { ticketId },
+        select: { id: true },
+      });
+      return toTicketDetailDto(row, transcript !== null);
+    },
+  );
 
   app.post(
     '/:guildId/tickets/:ticketId/close',
@@ -180,7 +263,14 @@ export default async function ticketsRoutes(app: ZodFastifyInstance): Promise<vo
         payload: { ticketId, closedBy: session.userId, reason: request.body.reason },
         requestedBy: session.userId,
       });
-      await writeDashboardAudit(app.prisma, { guildId, actorId: session.userId, action: 'ticket.close', targetType: 'ticket', targetId: ticketId, reason: request.body.reason });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: 'ticket.close',
+        targetType: 'ticket',
+        targetId: ticketId,
+        reason: request.body.reason,
+      });
       reply.status(202);
       return { ok: true, queued: true };
     },
@@ -196,7 +286,10 @@ export default async function ticketsRoutes(app: ZodFastifyInstance): Promise<vo
       const existing = await app.prisma.ticket.findFirst({ where: { id: ticketId, guildId } });
       if (!existing) throw new NotFoundError('Ticket not found.');
 
-      const updated = await app.prisma.ticket.update({ where: { id: ticketId }, data: { assigneeId: request.body.assigneeId } });
+      const updated = await app.prisma.ticket.update({
+        where: { id: ticketId },
+        data: { assigneeId: request.body.assigneeId },
+      });
       await writeDashboardAudit(app.prisma, {
         guildId,
         actorId: session.userId,
@@ -211,7 +304,10 @@ export default async function ticketsRoutes(app: ZodFastifyInstance): Promise<vo
 
   app.get(
     '/:guildId/tickets/:ticketId/transcript',
-    { schema: { params: ticketParamSchema, querystring: transcriptQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: ticketParamSchema, querystring: transcriptQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request, reply) => {
       const guildId = request.guildId!;
       const { ticketId } = request.params as { ticketId: string };
@@ -229,7 +325,10 @@ export default async function ticketsRoutes(app: ZodFastifyInstance): Promise<vo
 
       reply.header('Content-Type', 'text/html; charset=utf-8');
       reply.header('Content-Disposition', `attachment; filename="${filename}.html"`);
-      return reply.send(transcript.htmlContent ?? '<!doctype html><title>No transcript</title><p>No HTML transcript was generated for this ticket.</p>');
+      return reply.send(
+        transcript.htmlContent ??
+          '<!doctype html><title>No transcript</title><p>No HTML transcript was generated for this ticket.</p>',
+      );
     },
   );
 }

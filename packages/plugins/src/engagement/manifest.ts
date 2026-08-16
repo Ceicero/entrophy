@@ -64,14 +64,50 @@ export const manifest = defineManifest({
   version: '0.1.0',
   defaultEnabled: true,
   permissions: [
-    { permission: PermissionFlagsBits.ManageRoles, feature: 'level-up role rewards', optional: true, fallback: 'Level-ups still announce; role rewards are skipped and logged.' },
-    { permission: PermissionFlagsBits.ManageChannels, feature: 'temporary voice channels', optional: true, fallback: 'Members can still join a hub channel; the bot cannot create/rename/delete their temp channel.' },
-    { permission: PermissionFlagsBits.MoveMembers, feature: 'temporary voice channels (moving the creator into their new channel)', optional: true, fallback: 'The temp channel is still created; the member has to move into it themselves.' },
-    { permission: PermissionFlagsBits.SendMessages, feature: 'level-up announcements, starboard posts', optional: false, fallback: 'Announcements/starboard posts silently fail to send; nothing else is affected.' },
-    { permission: PermissionFlagsBits.EmbedLinks, feature: 'starboard posts, leaderboard/rank embeds', optional: false, fallback: 'Falls back to plain text where possible.' },
-    { permission: PermissionFlagsBits.ReadMessageHistory, feature: 'starboard (reading reaction counts on older messages)', optional: true, fallback: 'Starboard may miss reactions added to messages the bot has not seen since restart.' },
+    {
+      permission: PermissionFlagsBits.ManageRoles,
+      feature: 'level-up role rewards',
+      optional: true,
+      fallback: 'Level-ups still announce; role rewards are skipped and logged.',
+    },
+    {
+      permission: PermissionFlagsBits.ManageChannels,
+      feature: 'temporary voice channels',
+      optional: true,
+      fallback:
+        'Members can still join a hub channel; the bot cannot create/rename/delete their temp channel.',
+    },
+    {
+      permission: PermissionFlagsBits.MoveMembers,
+      feature: 'temporary voice channels (moving the creator into their new channel)',
+      optional: true,
+      fallback: 'The temp channel is still created; the member has to move into it themselves.',
+    },
+    {
+      permission: PermissionFlagsBits.SendMessages,
+      feature: 'level-up announcements, starboard posts',
+      optional: false,
+      fallback: 'Announcements/starboard posts silently fail to send; nothing else is affected.',
+    },
+    {
+      permission: PermissionFlagsBits.EmbedLinks,
+      feature: 'starboard posts, leaderboard/rank embeds',
+      optional: false,
+      fallback: 'Falls back to plain text where possible.',
+    },
+    {
+      permission: PermissionFlagsBits.ReadMessageHistory,
+      feature: 'starboard (reading reaction counts on older messages)',
+      optional: true,
+      fallback: 'Starboard may miss reactions added to messages the bot has not seen since restart.',
+    },
   ],
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMessageReactions, GatewayIntentBits.GuildVoiceStates],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.GuildVoiceStates,
+  ],
   // Message content is never read for XP (message events fire on any eligible message regardless of content) —
   // only the starboard optionally quotes message content, and only when this intent is enabled (SPEC.md §G).
   privilegedIntents: ['MessageContent'],

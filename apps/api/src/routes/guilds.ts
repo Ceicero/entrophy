@@ -6,7 +6,10 @@ import { getCachedUserGuilds, hasManageAccess } from '../lib/discord';
 import { requireAuth, requireGuildAccess } from '../lib/guild-access';
 import { guildIdParamSchema } from '../lib/schemas';
 
-function toGuildConfigDto(guildId: string, data: Awaited<ReturnType<ZodFastifyInstance['configStore']['getGuildConfig']>>): GuildConfigDto {
+function toGuildConfigDto(
+  guildId: string,
+  data: Awaited<ReturnType<ZodFastifyInstance['configStore']['getGuildConfig']>>,
+): GuildConfigDto {
   return {
     guildId,
     locale: data.locale,
@@ -53,45 +56,61 @@ export default async function guildsRoutes(app: ZodFastifyInstance): Promise<voi
     });
     const botPresentIds = new Set(knownGuilds.map((g) => g.id));
 
-    return manageable.map(
-      (g): GuildSummary => ({
-        id: g.id,
-        name: g.name,
-        iconUrl: g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.${g.icon.startsWith('a_') ? 'gif' : 'png'}` : null,
-        botPresent: botPresentIds.has(g.id),
-        canManage: true,
-        owner: g.owner,
-      }),
-    );
-  });
-
-  app.get('/:guildId', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request) => {
-    const guildId = request.guildId!;
-    const [guild, config, manifests, pluginStateRows] = await Promise.all([
-      app.prisma.guild.findUnique({ where: { id: guildId } }),
-      app.configStore.getGuildConfig(guildId),
-      Promise.resolve(app.registry.listManifests()),
-      app.prisma.pluginState.findMany({ where: { guildId } }),
-    ]);
-
-    const enabledByPlugin = new Map(pluginStateRows.map((row) => [row.pluginId, row.enabled]));
-    const enabledCount = manifests.filter((m) => m.alwaysEnabled || (enabledByPlugin.get(m.id) ?? m.defaultEnabled)).length;
-
-    return {
-      guild: guild
-        ? { id: guild.id, name: guild.name, memberCount: guild.memberCount, ownerId: guild.ownerId, joinedAt: guild.joinedAt.toISOString() }
+    return manageable.map((g): GuildSummary => ({
+      id: g.id,
+      name: g.name,
+      iconUrl: g.icon
+        ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.${g.icon.startsWith('a_') ? 'gif' : 'png'}`
         : null,
-      config: toGuildConfigDto(guildId, config),
-      pluginCount: manifests.length,
-      pluginsEnabled: enabledCount,
-    };
+      botPresent: botPresentIds.has(g.id),
+      canManage: true,
+      owner: g.owner,
+    }));
   });
 
-  app.get('/:guildId/config', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<GuildConfigDto> => {
-    const guildId = request.guildId!;
-    const config = await app.configStore.getGuildConfig(guildId);
-    return toGuildConfigDto(guildId, config);
-  });
+  app.get(
+    '/:guildId',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request) => {
+      const guildId = request.guildId!;
+      const [guild, config, manifests, pluginStateRows] = await Promise.all([
+        app.prisma.guild.findUnique({ where: { id: guildId } }),
+        app.configStore.getGuildConfig(guildId),
+        Promise.resolve(app.registry.listManifests()),
+        app.prisma.pluginState.findMany({ where: { guildId } }),
+      ]);
+
+      const enabledByPlugin = new Map(pluginStateRows.map((row) => [row.pluginId, row.enabled]));
+      const enabledCount = manifests.filter(
+        (m) => m.alwaysEnabled || (enabledByPlugin.get(m.id) ?? m.defaultEnabled),
+      ).length;
+
+      return {
+        guild: guild
+          ? {
+              id: guild.id,
+              name: guild.name,
+              memberCount: guild.memberCount,
+              ownerId: guild.ownerId,
+              joinedAt: guild.joinedAt.toISOString(),
+            }
+          : null,
+        config: toGuildConfigDto(guildId, config),
+        pluginCount: manifests.length,
+        pluginsEnabled: enabledCount,
+      };
+    },
+  );
+
+  app.get(
+    '/:guildId/config',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<GuildConfigDto> => {
+      const guildId = request.guildId!;
+      const config = await app.configStore.getGuildConfig(guildId);
+      return toGuildConfigDto(guildId, config);
+    },
+  );
 
   app.patch(
     '/:guildId/config',
@@ -100,7 +119,10 @@ export default async function guildsRoutes(app: ZodFastifyInstance): Promise<voi
       const guildId = request.guildId!;
       const session = request.session!;
       // `configStore.updateGuildConfig` writes its own audit entry (before/after, source 'dashboard').
-      const after = await app.configStore.updateGuildConfig(guildId, request.body, { id: session.userId, source: 'dashboard' });
+      const after = await app.configStore.updateGuildConfig(guildId, request.body, {
+        id: session.userId,
+        source: 'dashboard',
+      });
       return toGuildConfigDto(guildId, after);
     },
   );

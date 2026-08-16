@@ -61,7 +61,12 @@ export function SettingsTab() {
     if (!draft) return;
     update.mutate(draft, {
       onSuccess: () => toast({ title: 'Settings saved', variant: 'success' }),
-      onError: (err) => toast({ title: 'Could not save settings', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not save settings',
+          description: err instanceof ApiClientError ? err.message : 'Please try again.',
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -94,7 +99,8 @@ export function SettingsTab() {
 
       {draft.dryRun ? (
         <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
-          🧪 Guild-wide dry-run is <strong>on</strong> — every rule logs matches without taking real action, regardless of each rule&apos;s own dry-run switch.
+          🧪 Guild-wide dry-run is <strong>on</strong> — every rule logs matches without taking real action,
+          regardless of each rule&apos;s own dry-run switch.
         </div>
       ) : null}
 
@@ -106,9 +112,15 @@ export function SettingsTab() {
           <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
             <div>
               <p className="text-sm font-medium">Guild-wide dry-run</p>
-              <p className="text-xs text-muted-foreground">ORed with each rule&apos;s own dry-run — either being on means "log only".</p>
+              <p className="text-xs text-muted-foreground">
+                ORed with each rule&apos;s own dry-run — either being on means "log only".
+              </p>
             </div>
-            <Switch checked={draft.dryRun} onCheckedChange={(v) => set('dryRun', v)} disabled={update.isPending} />
+            <Switch
+              checked={draft.dryRun}
+              onCheckedChange={(v) => set('dryRun', v)}
+              disabled={update.isPending}
+            />
           </div>
         </CardContent>
       </Card>
@@ -118,11 +130,27 @@ export function SettingsTab() {
           <CardTitle>Channels &amp; roles</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label="Alert channel" hint='Where the "alert staff" action and review-queue embeds post.'>
-            <DiscordChannelSelect guildId={guildId} value={draft.alertChannelId} onChange={(v) => set('alertChannelId', v)} disabled={update.isPending} />
+          <FormField
+            label="Alert channel"
+            hint='Where the "alert staff" action and review-queue embeds post.'
+          >
+            <DiscordChannelSelect
+              guildId={guildId}
+              value={draft.alertChannelId}
+              onChange={(v) => set('alertChannelId', v)}
+              disabled={update.isPending}
+            />
           </FormField>
-          <FormField label="Quarantine role" hint='Assigned by the "quarantine" action and raid-lockdown quarantine.'>
-            <DiscordRoleSelect guildId={guildId} value={draft.quarantineRoleId} onChange={(v) => set('quarantineRoleId', v)} disabled={update.isPending} />
+          <FormField
+            label="Quarantine role"
+            hint='Assigned by the "quarantine" action and raid-lockdown quarantine.'
+          >
+            <DiscordRoleSelect
+              guildId={guildId}
+              value={draft.quarantineRoleId}
+              onChange={(v) => set('quarantineRoleId', v)}
+              disabled={update.isPending}
+            />
           </FormField>
         </CardContent>
       </Card>
@@ -135,11 +163,20 @@ export function SettingsTab() {
           <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
             <div>
               <p className="text-sm font-medium">Exempt staff</p>
-              <p className="text-xs text-muted-foreground">Members at or above the helper staff level are exempt from every rule.</p>
+              <p className="text-xs text-muted-foreground">
+                Members at or above the helper staff level are exempt from every rule.
+              </p>
             </div>
-            <Switch checked={draft.exemptStaff} onCheckedChange={(v) => set('exemptStaff', v)} disabled={update.isPending} />
+            <Switch
+              checked={draft.exemptStaff}
+              onCheckedChange={(v) => set('exemptStaff', v)}
+              disabled={update.isPending}
+            />
           </div>
-          <FormField label="Default timeout (minutes)" hint='Used when a "timeout" action doesn&apos;t specify its own duration.'>
+          <FormField
+            label="Default timeout (minutes)"
+            hint='Used when a "timeout" action doesn&apos;t specify its own duration.'
+          >
             <input
               type="number"
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
@@ -160,8 +197,15 @@ export function SettingsTab() {
           <CardTitle>Raid lockdown</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label="Response" hint="Additional guild-wide response to a RAID_DETECTION match. Never bans automatically.">
-            <Select value={draft.raidLockdown} onValueChange={(v) => set('raidLockdown', v as AutomodPluginConfig['raidLockdown'])} disabled={update.isPending}>
+          <FormField
+            label="Response"
+            hint="Additional guild-wide response to a RAID_DETECTION match. Never bans automatically."
+          >
+            <Select
+              value={draft.raidLockdown}
+              onValueChange={(v) => set('raidLockdown', v as AutomodPluginConfig['raidLockdown'])}
+              disabled={update.isPending}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

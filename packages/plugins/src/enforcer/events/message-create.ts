@@ -31,7 +31,11 @@ export const messageCreateHandler: PluginEventHandler<'messageCreate'> = {
       const host = ctx.services.get('host');
       const guildConfig = host ? await host.getGuildConfig(message.guildId) : null;
       if (guildConfig) {
-        const staffRoleIds = new Set([...guildConfig.adminRoleIds, ...guildConfig.modRoleIds, ...guildConfig.helperRoleIds]);
+        const staffRoleIds = new Set([
+          ...guildConfig.adminRoleIds,
+          ...guildConfig.modRoleIds,
+          ...guildConfig.helperRoleIds,
+        ]);
         isStaff = memberRoleIds.some((id) => staffRoleIds.has(id));
       }
       if (isStaff) return;

@@ -100,7 +100,9 @@ describe('verifyTwitchEventSubSignature', () => {
   it('rejects a stale timestamp beyond the 10-minute tolerance', () => {
     const timestamp = new Date(Date.now() - 20 * 60 * 1000).toISOString();
     const signatureHeader = sign(timestamp);
-    expect(verifyTwitchEventSubSignature({ messageId, timestamp, body, secret, signatureHeader })).toBe(false);
+    expect(verifyTwitchEventSubSignature({ messageId, timestamp, body, secret, signatureHeader })).toBe(
+      false,
+    );
   });
 
   it('rejects a wrong signature', () => {
@@ -124,7 +126,9 @@ describe('verifyDiscordInteractionSignature', () => {
     const signatureHex = edSign(null, message, privateKey).toString('hex');
 
     expect(verifyDiscordInteractionSignature(publicKeyHex, signatureHex, timestamp, body)).toBe(true);
-    expect(verifyDiscordInteractionSignature(publicKeyHex, signatureHex, timestamp, '{"type":2}')).toBe(false);
+    expect(verifyDiscordInteractionSignature(publicKeyHex, signatureHex, timestamp, '{"type":2}')).toBe(
+      false,
+    );
     expect(verifyDiscordInteractionSignature(publicKeyHex, signatureHex, '9999999999', body)).toBe(false);
   });
 

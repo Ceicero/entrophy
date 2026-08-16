@@ -3,7 +3,10 @@ import { assertStaffLevel, errorEmbed, infoEmbed, successEmbed, type CommandCont
 
 type ExemptKind = 'role' | 'channel' | 'user' | 'domain';
 
-const FIELD_BY_KIND: Record<ExemptKind, 'exemptRoleIds' | 'exemptChannelIds' | 'exemptUserIds' | 'trustedDomains'> = {
+const FIELD_BY_KIND: Record<
+  ExemptKind,
+  'exemptRoleIds' | 'exemptChannelIds' | 'exemptUserIds' | 'trustedDomains'
+> = {
   role: 'exemptRoleIds',
   channel: 'exemptChannelIds',
   user: 'exemptUserIds',
@@ -12,7 +15,9 @@ const FIELD_BY_KIND: Record<ExemptKind, 'exemptRoleIds' | 'exemptChannelIds' | '
 
 async function resolveRule(c: CommandContext) {
   const ruleId = c.interaction.options.getString('rule', true);
-  const rule = await c.ctx.prisma.automodRule.findFirst({ where: { id: ruleId, guildId: c.guildId, deletedAt: null } });
+  const rule = await c.ctx.prisma.automodRule.findFirst({
+    where: { id: ruleId, guildId: c.guildId, deletedAt: null },
+  });
   if (!rule) throw new NotFoundError(c.t('automod.errors.ruleNotFound', { rule: ruleId }));
   return rule;
 }
@@ -47,11 +52,17 @@ export async function handleExemptAdd(c: CommandContext): Promise<void> {
 
   const current = rule[field] as string[];
   if (current.includes(value)) {
-    await c.interaction.reply({ embeds: [errorEmbed(c.t('automod.exempt.alreadyPresent'))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('automod.exempt.alreadyPresent'))],
+      ephemeral: true,
+    });
     return;
   }
 
-  const updated = await c.ctx.prisma.automodRule.update({ where: { id: rule.id }, data: { [field]: [...current, value] } });
+  const updated = await c.ctx.prisma.automodRule.update({
+    where: { id: rule.id },
+    data: { [field]: [...current, value] },
+  });
 
   await c.ctx.audit({
     guildId: c.guildId,
@@ -65,7 +76,10 @@ export async function handleExemptAdd(c: CommandContext): Promise<void> {
     source: 'bot',
   });
 
-  await c.interaction.reply({ embeds: [successEmbed(c.t('automod.exempt.added', { kind, value }))], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [successEmbed(c.t('automod.exempt.added', { kind, value }))],
+    ephemeral: true,
+  });
 }
 
 export async function handleExemptRemove(c: CommandContext): Promise<void> {
@@ -96,7 +110,10 @@ export async function handleExemptRemove(c: CommandContext): Promise<void> {
     source: 'bot',
   });
 
-  await c.interaction.reply({ embeds: [successEmbed(c.t('automod.exempt.removed', { kind, value }))], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [successEmbed(c.t('automod.exempt.removed', { kind, value }))],
+    ephemeral: true,
+  });
 }
 
 export async function handleExemptList(c: CommandContext): Promise<void> {
@@ -107,5 +124,8 @@ export async function handleExemptList(c: CommandContext): Promise<void> {
     `Users: ${rule.exemptUserIds.length > 0 ? rule.exemptUserIds.map((id) => `<@${id}>`).join(', ') : '_none_'}`,
     `Trusted domains: ${rule.trustedDomains.length > 0 ? rule.trustedDomains.join(', ') : '_none_'}`,
   ];
-  await c.interaction.reply({ embeds: [infoEmbed(c.t('automod.exempt.listTitle', { name: rule.name }), lines.join('\n'))], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [infoEmbed(c.t('automod.exempt.listTitle', { name: rule.name }), lines.join('\n'))],
+    ephemeral: true,
+  });
 }

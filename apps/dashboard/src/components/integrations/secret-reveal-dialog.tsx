@@ -1,7 +1,15 @@
 'use client';
 
 import { AlertTriangle } from 'lucide-react';
-import { Button, CodeBlock, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@entrophy/ui';
+import {
+  Button,
+  CodeBlock,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@entrophy/ui';
 
 export interface SecretRevealDialogProps {
   open: boolean;
@@ -22,7 +30,10 @@ export function SecretRevealDialog({ open, onOpenChange, title, url, secret }: S
 
         <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning-foreground">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>Save this now — the secret is shown only once and can&apos;t be retrieved again. If you lose it, delete this endpoint and create a new one.</p>
+          <p>
+            Save this now — the secret is shown only once and can&apos;t be retrieved again. If you lose it,
+            delete this endpoint and create a new one.
+          </p>
         </div>
 
         {url ? (

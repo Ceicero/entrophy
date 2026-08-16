@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { formatSteamNewsEmbed, type SteamNewsItem } from '../formatters/steam';
-import { claimAlertOnce, markConnectionError, markConnectionSynced, readAlertConfig, sendConnectionAlert } from './util';
+import {
+  claimAlertOnce,
+  markConnectionError,
+  markConnectionSynced,
+  readAlertConfig,
+  sendConnectionAlert,
+} from './util';
 import type { IntegrationProviderDef } from './types';
 
 const API_BASE = 'https://api.steampowered.com/ISteamNews/GetNewsForApp/v0002';
@@ -8,7 +14,11 @@ const API_BASE = 'https://api.steampowered.com/ISteamNews/GetNewsForApp/v0002';
 export const steamConfigSchema = z.object({
   target: z.string().trim().regex(/^\d+$/, 'Must be a numeric Steam app id.'),
   channelId: z.string().regex(/^\d{17,20}$/),
-  roleId: z.string().regex(/^\d{17,20}$/).nullable().optional(),
+  roleId: z
+    .string()
+    .regex(/^\d{17,20}$/)
+    .nullable()
+    .optional(),
   template: z.string().max(300).nullable().optional(),
   appName: z.string().max(100).nullable().optional(),
 });
@@ -36,7 +46,13 @@ export const steamProvider: IntegrationProviderDef = {
     const raw = (connection.config as Record<string, unknown> | null) ?? {};
     const appName = typeof raw.appName === 'string' ? raw.appName : undefined;
 
-    const params = new URLSearchParams({ appid: config.target, count: '5', maxlength: '400', format: 'json', key: apiKey });
+    const params = new URLSearchParams({
+      appid: config.target,
+      count: '5',
+      maxlength: '400',
+      format: 'json',
+      key: apiKey,
+    });
     const res = await fetch(`${API_BASE}/?${params.toString()}`);
     if (!res.ok) {
       await markConnectionError(ctx, connection.id, `Steam news request failed (${res.status}).`);

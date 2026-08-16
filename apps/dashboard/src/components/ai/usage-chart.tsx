@@ -1,7 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import { Bar, BarChart, CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import type { AiUsageDailyPointDto } from '@entrophy/types/ai';
 import { EmptyState } from '@entrophy/ui';
 
@@ -27,7 +37,15 @@ interface TooltipPayloadEntry {
   color: string;
 }
 
-function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipPayloadEntry[]; label?: string }) {
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadEntry[];
+  label?: string;
+}) {
   if (!active || !payload || payload.length === 0) return null;
   const total = payload.reduce((sum, entry) => sum + entry.value, 0);
   return (
@@ -42,7 +60,9 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
           <span className="tabular-nums">{entry.value.toLocaleString()}</span>
         </p>
       ))}
-      <p className="mt-1 border-t border-border pt-1 font-medium tabular-nums">Total: {total.toLocaleString()}</p>
+      <p className="mt-1 border-t border-border pt-1 font-medium tabular-nums">
+        Total: {total.toLocaleString()}
+      </p>
     </div>
   );
 }
@@ -50,10 +70,19 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 /** Monochrome stacked daily token usage (prompt vs. completion), with a dashed reference line at the server's daily budget (ARCHITECTURE.md §20: greyscale series, dashed/dotted differentiation). */
 export function UsageChart({ daily, dailyTokenBudget }: UsageChartProps) {
   if (daily.length === 0) {
-    return <EmptyState title="No AI usage yet" description="Once /ask, /summarize, /draft, or /mod-assist are used, daily token usage will show up here." />;
+    return (
+      <EmptyState
+        title="No AI usage yet"
+        description="Once /ask, /summarize, /draft, or /mod-assist are used, daily token usage will show up here."
+      />
+    );
   }
 
-  const data = daily.map((d) => ({ date: formatShortDate(d.date), Prompt: d.promptTokens, Completion: d.completionTokens }));
+  const data = daily.map((d) => ({
+    date: formatShortDate(d.date),
+    Prompt: d.promptTokens,
+    Completion: d.completionTokens,
+  }));
   const maxDailyTotal = Math.max(...daily.map((d) => d.totalTokens), 0);
   const showBudgetLine = dailyTokenBudget > 0 && dailyTokenBudget <= maxDailyTotal * 3;
 
@@ -63,19 +92,40 @@ export function UsageChart({ daily, dailyTokenBudget }: UsageChartProps) {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} barCategoryGap={4}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-            <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={{ stroke: 'hsl(var(--border))' }} />
-            <YAxis tickFormatter={formatTokens} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} width={40} />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+              tickLine={false}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
+            />
+            <YAxis
+              tickFormatter={formatTokens}
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+              tickLine={false}
+              axisLine={false}
+              width={40}
+            />
             <Tooltip content={<ChartTooltip />} cursor={{ fill: 'hsl(var(--muted))' }} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Bar dataKey="Prompt" stackId="tokens" fill="hsl(var(--foreground))" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="Completion" stackId="tokens" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
+            <Bar
+              dataKey="Completion"
+              stackId="tokens"
+              fill="hsl(var(--muted-foreground))"
+              radius={[4, 4, 0, 0]}
+            />
             {showBudgetLine ? (
               <ReferenceLine
                 y={dailyTokenBudget}
                 stroke="hsl(var(--foreground))"
                 strokeDasharray="6 4"
                 strokeWidth={1.5}
-                label={{ value: 'Daily budget', position: 'insideTopRight', fontSize: 11, fill: 'hsl(var(--foreground))' }}
+                label={{
+                  value: 'Daily budget',
+                  position: 'insideTopRight',
+                  fontSize: 11,
+                  fill: 'hsl(var(--foreground))',
+                }}
               />
             ) : null}
           </BarChart>

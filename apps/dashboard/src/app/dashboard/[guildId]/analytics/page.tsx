@@ -4,8 +4,33 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Lock } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, PageHeader, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from '@entrophy/ui';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Skeleton,
+} from '@entrophy/ui';
 import { useAnalytics, type AnalyticsRange } from '../../../../lib/queries';
 import { ErrorState } from '../../../../components/error-state';
 import { ApiClientError } from '../../../../lib/api';
@@ -23,6 +48,13 @@ export default function AnalyticsPage() {
   const { data, isLoading, error, refetch } = useAnalytics(guildId, range);
 
   const dataCollectionDisabled = error instanceof ApiClientError && error.code === 'data_collection_disabled';
+  // The daily collection job that populates these charts isn't built yet (see docs/ROADMAP.md) — data
+  // collection can be turned on, but no rows will actually appear behind it. Show that honestly instead of
+  // three permanently-empty charts once it's on.
+  const hasAnyData = Boolean(
+    data &&
+    (data.memberGrowth.length > 0 || data.moderationVolume.length > 0 || data.messageActivity.length > 0),
+  );
 
   return (
     <div className="space-y-6">
@@ -49,7 +81,7 @@ export default function AnalyticsPage() {
         <EmptyState
           icon={<Lock />}
           title="Analytics is off for this server"
-          description="Turn on analytics data collection in Settings to see member growth, moderation volume, and message activity here. No message content is ever collected."
+          description="Turn on analytics data collection in Settings. No message content is ever collected — only counts."
           action={
             <Button asChild>
               <Link href={`/dashboard/${guildId}/settings`}>Go to Settings</Link>
@@ -64,6 +96,11 @@ export default function AnalyticsPage() {
             <Skeleton key={i} className="h-72 w-full" />
           ))}
         </div>
+      ) : !hasAnyData ? (
+        <EmptyState
+          title="No analytics data yet"
+          description="Analytics collection is not available in this version yet, so nothing has been recorded for this server. This will start filling in automatically once the collection job ships — no action needed here."
+        />
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
@@ -74,12 +111,40 @@ export default function AnalyticsPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.memberGrowth}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" tickFormatter={(d: string) => formatDate(d)} fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(d: string) => formatDate(d)}
+                    fontSize={11}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
                   <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip labelFormatter={(d) => formatDate(String(d))} contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
+                  <Tooltip
+                    labelFormatter={(d) => formatDate(String(d))}
+                    contentStyle={{
+                      background: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="joins" stroke="hsl(var(--foreground))" strokeWidth={2} dot={false} name="Joins" />
-                  <Line type="monotone" dataKey="leaves" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 3" dot={false} name="Leaves" />
+                  <Line
+                    type="monotone"
+                    dataKey="joins"
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={2}
+                    dot={false}
+                    name="Joins"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="leaves"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={2}
+                    strokeDasharray="4 3"
+                    dot={false}
+                    name="Leaves"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -93,9 +158,22 @@ export default function AnalyticsPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.moderationVolume}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" tickFormatter={(d: string) => formatDate(d)} fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(d: string) => formatDate(d)}
+                    fontSize={11}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
                   <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip labelFormatter={(d) => formatDate(String(d))} contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
+                  <Tooltip
+                    labelFormatter={(d) => formatDate(String(d))}
+                    contentStyle={{
+                      background: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
                   <Bar dataKey="count" fill="hsl(var(--foreground))" radius={[3, 3, 0, 0]} name="Cases" />
                 </BarChart>
               </ResponsiveContainer>
@@ -110,10 +188,30 @@ export default function AnalyticsPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.messageActivity}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" tickFormatter={(d: string) => formatDate(d)} fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(d: string) => formatDate(d)}
+                    fontSize={11}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
                   <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip labelFormatter={(d) => formatDate(String(d))} contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
-                  <Line type="monotone" dataKey="count" stroke="hsl(var(--foreground))" strokeWidth={2} dot={false} name="Messages" />
+                  <Tooltip
+                    labelFormatter={(d) => formatDate(String(d))}
+                    contentStyle={{
+                      background: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={2}
+                    dot={false}
+                    name="Messages"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>

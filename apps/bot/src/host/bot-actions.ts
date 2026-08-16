@@ -56,7 +56,9 @@ export interface BotActionsWorkerDeps {
 async function handleGuildRefresh(deps: BotActionsWorkerDeps, guildId: string): Promise<void> {
   const guild = await deps.client.guilds.fetch(guildId).catch(() => null);
   if (!guild) {
-    throw new Error(`bot-actions: guild "${guildId}" is not reachable (bot may not be a member, or the id is invalid).`);
+    throw new Error(
+      `bot-actions: guild "${guildId}" is not reachable (bot may not be a member, or the id is invalid).`,
+    );
   }
   await ensureGuild(deps.prisma, {
     id: guild.id,
@@ -98,7 +100,9 @@ async function dispatchBotAction(deps: BotActionsWorkerDeps, job: Job<BotActionJ
       { type, guildId, service: target.service, method: target.method },
       'bot-actions: target service/method is not registered (owning plugin likely disabled, unavailable, or not yet built)',
     );
-    throw new Error(`Action "${type}" is not available right now: the "${target.service}" plugin does not implement "${target.method}".`);
+    throw new Error(
+      `Action "${type}" is not available right now: the "${target.service}" plugin does not implement "${target.method}".`,
+    );
   }
 
   await (method as (...args: unknown[]) => unknown).call(service, { guildId, payload, requestedBy });
@@ -112,7 +116,10 @@ export function createBotActionsWorker(deps: BotActionsWorkerDeps): Worker<BotAc
   });
 
   worker.on('failed', (job, err) => {
-    deps.logger.error({ jobId: job?.id, type: job?.data.type, guildId: job?.data.guildId, err: err.message }, 'bot-actions job failed');
+    deps.logger.error(
+      { jobId: job?.id, type: job?.data.type, guildId: job?.data.guildId, err: err.message },
+      'bot-actions job failed',
+    );
   });
   worker.on('error', (err) => {
     deps.logger.error({ err }, 'bot-actions worker error');

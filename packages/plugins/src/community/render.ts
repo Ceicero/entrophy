@@ -1,8 +1,16 @@
 // discord.js embed/component builders for the community plugin. Kept separate from service.ts (which stays
 // discord.js-free) so the pure tally/eligibility/vote logic can be unit-tested without a gateway.
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } from 'discord.js';
-import { BRAND, discordTimestamp, truncate } from '@entrophy/core';
-import type { EventRsvp, Giveaway, Poll, PollOption, PollVote, Suggestion, CommunityEvent } from '@entrophy/database';
+import { BRAND, brandIconUrl, discordTimestamp, env, truncate } from '@entrophy/core';
+import type {
+  EventRsvp,
+  Giveaway,
+  Poll,
+  PollOption,
+  PollVote,
+  Suggestion,
+  CommunityEvent,
+} from '@entrophy/database';
 import { brandEmbed, buildCustomId } from '../sdk';
 import { tallyPoll, type PollOptionTally } from './service';
 
@@ -26,12 +34,21 @@ export function buildPollEmbed(poll: Poll, tallies: PollOptionTally[]) {
 
   const lines = tallies.map((t, i) => {
     const pct = total > 0 ? Math.round((t.votes / total) * 100) : 0;
-    const voters = t.voterIds && t.voterIds.length > 0 ? `\n> ${t.voterIds.slice(0, 10).map((id) => `<@${id}>`).join(', ')}${t.voterIds.length > 10 ? ` +${t.voterIds.length - 10} more` : ''}` : '';
+    const voters =
+      t.voterIds && t.voterIds.length > 0
+        ? `\n> ${t.voterIds
+            .slice(0, 10)
+            .map((id) => `<@${id}>`)
+            .join(', ')}${t.voterIds.length > 10 ? ` +${t.voterIds.length - 10} more` : ''}`
+        : '';
     return `**${i + 1}. ${t.label}** — ${t.votes} vote${t.votes === 1 ? '' : 's'} (${pct}%)\n${renderBar(t.votes, max)}${voters}`;
   });
 
   const status = poll.closed ? 'Closed' : poll.endsAt ? `Ends ${discordTimestamp(poll.endsAt, 'R')}` : 'Open';
-  const flags = [poll.anonymous ? 'anonymous' : 'public votes', poll.multiSelect ? 'multiple choice' : 'single choice'].join(' · ');
+  const flags = [
+    poll.anonymous ? 'anonymous' : 'public votes',
+    poll.multiSelect ? 'multiple choice' : 'single choice',
+  ].join(' · ');
 
   return brandEmbed()
     .setTitle(poll.question)
@@ -41,10 +58,14 @@ export function buildPollEmbed(poll: Poll, tallies: PollOptionTally[]) {
       { name: 'Total votes', value: String(total), inline: true },
       { name: 'Settings', value: flags, inline: true },
     ])
-    .setFooter({ text: `${BRAND.name} · Poll #${poll.id.slice(-6)}` });
+    .setFooter({ text: `${BRAND.name} · Poll #${poll.id.slice(-6)}`, iconURL: brandIconUrl(env) });
 }
 
-export function buildPollComponents(pollId: string, options: PollOption[], closed: boolean): ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] {
+export function buildPollComponents(
+  pollId: string,
+  options: PollOption[],
+  closed: boolean,
+): ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] {
   if (closed) return [];
   const sorted = [...options].sort((a, b) => a.position - b.position);
 
@@ -65,7 +86,13 @@ export function buildPollComponents(pollId: string, options: PollOption[], close
   const select = new StringSelectMenuBuilder()
     .setCustomId(buildCustomId('community', 'vote-select', pollId))
     .setPlaceholder('Choose an option to vote')
-    .addOptions(sorted.map((opt, i) => ({ label: truncate(`${i + 1}. ${opt.label}`, 100), value: opt.id, emoji: opt.emoji ?? undefined })));
+    .addOptions(
+      sorted.map((opt, i) => ({
+        label: truncate(`${i + 1}. ${opt.label}`, 100),
+        value: opt.id,
+        emoji: opt.emoji ?? undefined,
+      })),
+    );
 
   return [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select)];
 }
@@ -82,30 +109,53 @@ export function buildGiveawayEmbed(giveaway: Giveaway, entryCount: number) {
   const fields: EmbedField[] = [
     { name: 'Winners', value: String(giveaway.winnerCount), inline: true },
     { name: 'Entries', value: String(entryCount), inline: true },
-    { name: giveaway.ended ? 'Ended' : 'Ends', value: discordTimestamp(giveaway.endsAt, giveaway.ended ? 'f' : 'R'), inline: true },
+    {
+      name: giveaway.ended ? 'Ended' : 'Ends',
+      value: discordTimestamp(giveaway.endsAt, giveaway.ended ? 'f' : 'R'),
+      inline: true,
+    },
   ];
-  if (giveaway.requiredRoleIds.length > 0) fields.push({ name: 'Required role', value: giveaway.requiredRoleIds.map((id) => `<@&${id}>`).join(', '), inline: false });
-  if (giveaway.minAccountAgeDays) fields.push({ name: 'Min. account age', value: `${giveaway.minAccountAgeDays} days`, inline: true });
+  if (giveaway.requiredRoleIds.length > 0)
+    fields.push({
+      name: 'Required role',
+      value: giveaway.requiredRoleIds.map((id) => `<@&${id}>`).join(', '),
+      inline: false,
+    });
+  if (giveaway.minAccountAgeDays)
+    fields.push({ name: 'Min. account age', value: `${giveaway.minAccountAgeDays} days`, inline: true });
   if (giveaway.minLevel) fields.push({ name: 'Min. level', value: String(giveaway.minLevel), inline: true });
   if (giveaway.ended) {
     fields.push({
       name: 'Winners',
-      value: giveaway.winnerIds.length > 0 ? giveaway.winnerIds.map((id) => `<@${id}>`).join(', ') : '_No eligible entries — no winner drawn._',
+      value:
+        giveaway.winnerIds.length > 0
+          ? giveaway.winnerIds.map((id) => `<@${id}>`).join(', ')
+          : '_No eligible entries — no winner drawn._',
       inline: false,
     });
   }
 
   return brandEmbed()
     .setTitle(giveaway.ended ? `🎉 Giveaway ended: ${giveaway.prize}` : `🎉 Giveaway: ${giveaway.prize}`)
-    .setDescription(giveaway.ended ? 'This giveaway has ended.' : `Click **Enter** below to join. Hosted by <@${giveaway.hostId}>.`)
+    .setDescription(
+      giveaway.ended
+        ? 'This giveaway has ended.'
+        : `Click **Enter** below to join. Hosted by <@${giveaway.hostId}>.`,
+    )
     .addFields(fields);
 }
 
-export function buildGiveawayComponents(giveawayId: string, ended: boolean): ActionRowBuilder<ButtonBuilder>[] {
+export function buildGiveawayComponents(
+  giveawayId: string,
+  ended: boolean,
+): ActionRowBuilder<ButtonBuilder>[] {
   if (ended) return [];
   return [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId(buildCustomId('community', 'gw-enter', giveawayId)).setLabel('🎉 Enter').setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('community', 'gw-enter', giveawayId))
+        .setLabel('🎉 Enter')
+        .setStyle(ButtonStyle.Success),
     ),
   ];
 }
@@ -140,8 +190,14 @@ export function buildSuggestionEmbed(suggestion: Suggestion) {
 export function buildSuggestionComponents(suggestionId: string): ActionRowBuilder<ButtonBuilder>[] {
   return [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId(buildCustomId('community', 'sugg-vote', suggestionId, 'up')).setLabel('👍').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(buildCustomId('community', 'sugg-vote', suggestionId, 'down')).setLabel('👎').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('community', 'sugg-vote', suggestionId, 'up'))
+        .setLabel('👍')
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('community', 'sugg-vote', suggestionId, 'down'))
+        .setLabel('👎')
+        .setStyle(ButtonStyle.Secondary),
     ),
   ];
 }
@@ -170,7 +226,11 @@ export function buildEventEmbed(event: CommunityEvent, counts: RsvpCounts, cance
   ];
   if (event.endsAt) fields.push({ name: 'Ends', value: discordTimestamp(event.endsAt, 'F'), inline: true });
   fields.push({ name: 'Host', value: `<@${event.hostId}>`, inline: true });
-  fields.push({ name: 'RSVPs', value: `✅ Going: ${counts.going} · ❔ Maybe: ${counts.maybe} · ❌ Declined: ${counts.declined}`, inline: false });
+  fields.push({
+    name: 'RSVPs',
+    value: `✅ Going: ${counts.going} · ❔ Maybe: ${counts.maybe} · ❌ Declined: ${counts.declined}`,
+    inline: false,
+  });
 
   return brandEmbed()
     .setTitle(cancelled ? `🚫 Cancelled: ${event.title}` : `📅 ${event.title}`)
@@ -182,9 +242,18 @@ export function buildEventComponents(eventId: string, cancelled: boolean): Actio
   if (cancelled) return [];
   return [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder().setCustomId(buildCustomId('community', 'rsvp', eventId, 'going')).setLabel('✅ Going').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId(buildCustomId('community', 'rsvp', eventId, 'maybe')).setLabel('❔ Maybe').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(buildCustomId('community', 'rsvp', eventId, 'declined')).setLabel('❌ Can\'t go').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('community', 'rsvp', eventId, 'going'))
+        .setLabel('✅ Going')
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('community', 'rsvp', eventId, 'maybe'))
+        .setLabel('❔ Maybe')
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId(buildCustomId('community', 'rsvp', eventId, 'declined'))
+        .setLabel("❌ Can't go")
+        .setStyle(ButtonStyle.Danger),
     ),
   ];
 }

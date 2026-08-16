@@ -7,10 +7,26 @@ import { useSession } from '../lib/session';
 import { API_BASE_URL } from '../lib/api';
 
 const FEATURES = [
-  { icon: Gavel, title: 'Moderation with receipts', body: 'Case IDs, hierarchy checks, and an admin enforcer that keeps every action bookkept and appealable.' },
-  { icon: ShieldCheck, title: 'Compliance by default', body: 'Free entry, no wagering, least-privilege permissions, and blind jury voting enforced at the database.' },
-  { icon: Boxes, title: 'Modular plugins', body: 'Enable exactly what your server needs — moderation, tickets, roles, engagement, and more — per guild.' },
-  { icon: ScrollText, title: 'A transparent audit trail', body: 'Every configuration change and plugin toggle is logged and searchable from this dashboard.' },
+  {
+    icon: Gavel,
+    title: 'Moderation with receipts',
+    body: 'Case IDs, hierarchy checks, and an admin enforcer that keeps every action bookkept and appealable.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Compliance by default',
+    body: 'Least-privilege permissions, privacy-first defaults, and every config change audit-logged.',
+  },
+  {
+    icon: Boxes,
+    title: 'Modular plugins',
+    body: 'Enable exactly what your server needs — moderation, tickets, roles, engagement, and more — per guild.',
+  },
+  {
+    icon: ScrollText,
+    title: 'A transparent audit trail',
+    body: 'Every configuration change and plugin toggle is logged and searchable from this dashboard.',
+  },
 ];
 
 export default function LandingPage() {
@@ -33,10 +49,12 @@ export default function LandingPage() {
       </header>
 
       <section className="flex flex-1 flex-col items-center justify-center gap-6 py-20 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">A modular, compliance-first Discord bot platform</h1>
+        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+          A modular, compliance-first Discord bot platform
+        </h1>
         <p className="max-w-2xl text-balance text-muted-foreground sm:text-lg">
-          Entrophy gives your server moderation, automod, tickets, roles, engagement, and an admin enforcer workflow —
-          all configurable per guild, all logged, none of it hidden from you.
+          Entrophy gives your server moderation, automod, tickets, roles, engagement, and an admin enforcer
+          workflow — all configurable per guild, all logged, none of it hidden from you.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           {status === 'authenticated' ? (

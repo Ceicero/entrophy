@@ -44,26 +44,46 @@ export const captchaPollJob: PluginJob = {
         if (!token) continue;
 
         const pendingKey = redisKey('verify', 'pending', token);
-        const [doneValue, pendingValue] = await Promise.all([ctx.redis.get(doneKey), ctx.redis.get(pendingKey)]);
+        const [doneValue, pendingValue] = await Promise.all([
+          ctx.redis.get(doneKey),
+          ctx.redis.get(pendingKey),
+        ]);
         const tokenContext = parseTokenContext(pendingValue) ?? parseTokenContext(doneValue);
 
         await ctx.redis.del(doneKey, pendingKey);
 
         if (!tokenContext) {
-          ctx.logger.warn({ token }, 'roles: captcha-poll found a done token with no resolvable guild/user context');
+          ctx.logger.warn(
+            { token },
+            'roles: captcha-poll found a done token with no resolvable guild/user context',
+          );
           continue;
         }
 
         const roles = ctx.services.get('roles');
         if (!roles) {
-          ctx.logger.warn({ token, guildId: tokenContext.guildId }, 'roles: captcha-poll could not grant the verified role — roles service unavailable');
+          ctx.logger.warn(
+            { token, guildId: tokenContext.guildId },
+            'roles: captcha-poll could not grant the verified role — roles service unavailable',
+          );
           continue;
         }
 
         try {
-          await roles.verifyMember({ guildId: tokenContext.guildId, userId: tokenContext.userId, method: 'captcha' });
+          await roles.verifyMember({
+            guildId: tokenContext.guildId,
+            userId: tokenContext.userId,
+            method: 'captcha',
+          });
         } catch (err) {
-          ctx.logger.error({ err: err instanceof Error ? err.message : String(err), guildId: tokenContext.guildId, userId: tokenContext.userId }, 'roles: captcha-poll failed to verify member');
+          ctx.logger.error(
+            {
+              err: err instanceof Error ? err.message : String(err),
+              guildId: tokenContext.guildId,
+              userId: tokenContext.userId,
+            },
+            'roles: captcha-poll failed to verify member',
+          );
         }
       }
     } while (cursor !== '0');

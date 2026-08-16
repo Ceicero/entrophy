@@ -4,7 +4,11 @@ import { buildLedgerEmbed } from './embeds';
 import type { EnforcerConfig } from './manifest';
 import { withNextRecordNumber } from './service';
 
-async function fetchLedgerChannel(ctx: PluginContext, guild: Guild, config: EnforcerConfig): Promise<TextChannel | null> {
+async function fetchLedgerChannel(
+  ctx: PluginContext,
+  guild: Guild,
+  config: EnforcerConfig,
+): Promise<TextChannel | null> {
   if (!config.ledgerChannelId) return null;
   const channel = await guild.channels.fetch(config.ledgerChannelId).catch(() => null);
   if (!channel || channel.type !== ChannelType.GuildText) return null;
@@ -18,7 +22,9 @@ async function fetchLedgerChannel(ctx: PluginContext, guild: Guild, config: Enfo
  */
 export function registerAppealListeners(ctx: PluginContext): void {
   ctx.events.on('moderation.appealOpened', async (payload) => {
-    const decision = await ctx.prisma.enforcerRecord.findFirst({ where: { guildId: payload.guildId, kind: 'DECISION', caseId: payload.caseId } });
+    const decision = await ctx.prisma.enforcerRecord.findFirst({
+      where: { guildId: payload.guildId, kind: 'DECISION', caseId: payload.caseId },
+    });
     if (!decision) return;
 
     const config = await ctx.getConfig<EnforcerConfig>(payload.guildId);
@@ -57,7 +63,9 @@ export function registerAppealListeners(ctx: PluginContext): void {
   });
 
   ctx.events.on('moderation.appealDecided', async (payload) => {
-    const decision = await ctx.prisma.enforcerRecord.findFirst({ where: { guildId: payload.guildId, kind: 'DECISION', caseId: payload.caseId } });
+    const decision = await ctx.prisma.enforcerRecord.findFirst({
+      where: { guildId: payload.guildId, kind: 'DECISION', caseId: payload.caseId },
+    });
     if (!decision) return;
 
     const config = await ctx.getConfig<EnforcerConfig>(payload.guildId);

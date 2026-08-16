@@ -2,7 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Paginated, RolePanelDto } from '@entrophy/types';
-import type { OnboardingConfigDto, RoleGroupDto, RolePersistenceDto, VerificationRequestDto, VerificationSettingsDto, WelcomeGoodbyeDto } from '@entrophy/types/roles';
+import type {
+  OnboardingConfigDto,
+  RoleGroupDto,
+  RolePersistenceDto,
+  VerificationRequestDto,
+  VerificationSettingsDto,
+  WelcomeGoodbyeDto,
+} from '@entrophy/types/roles';
 import { apiFetch } from './api';
 
 export const rolesQueryKeys = {
@@ -10,7 +17,8 @@ export const rolesQueryKeys = {
   groups: (guildId: string) => ['guilds', guildId, 'roles', 'groups'] as const,
   welcome: (guildId: string) => ['guilds', guildId, 'roles', 'welcome'] as const,
   goodbye: (guildId: string) => ['guilds', guildId, 'roles', 'goodbye'] as const,
-  verificationSettings: (guildId: string) => ['guilds', guildId, 'roles', 'verification', 'settings'] as const,
+  verificationSettings: (guildId: string) =>
+    ['guilds', guildId, 'roles', 'verification', 'settings'] as const,
   verificationQueue: (guildId: string) => ['guilds', guildId, 'roles', 'verification', 'queue'] as const,
   onboarding: (guildId: string) => ['guilds', guildId, 'roles', 'onboarding'] as const,
   persistence: (guildId: string) => ['guilds', guildId, 'roles', 'persistence'] as const,
@@ -21,7 +29,11 @@ export const rolesQueryKeys = {
 // ---------------------------------------------------------------------------
 
 export function useRolePanels(guildId: string | undefined) {
-  return useQuery({ queryKey: rolesQueryKeys.panels(guildId ?? ''), queryFn: () => apiFetch<RolePanelDto[]>(`/guilds/${guildId}/roles/panels`), enabled: Boolean(guildId) });
+  return useQuery({
+    queryKey: rolesQueryKeys.panels(guildId ?? ''),
+    queryFn: () => apiFetch<RolePanelDto[]>(`/guilds/${guildId}/roles/panels`),
+    enabled: Boolean(guildId),
+  });
 }
 
 export interface RolePanelOptionInput {
@@ -45,7 +57,8 @@ export interface RolePanelInput {
 export function useCreateRolePanel(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: RolePanelInput) => apiFetch<RolePanelDto>(`/guilds/${guildId}/roles/panels`, { method: 'POST', body: input }),
+    mutationFn: (input: RolePanelInput) =>
+      apiFetch<RolePanelDto>(`/guilds/${guildId}/roles/panels`, { method: 'POST', body: input }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: rolesQueryKeys.panels(guildId) }),
   });
 }
@@ -62,7 +75,8 @@ export function useUpdateRolePanel(guildId: string) {
 export function useDeleteRolePanel(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (panelId: string) => apiFetch<void>(`/guilds/${guildId}/roles/panels/${panelId}`, { method: 'DELETE' }),
+    mutationFn: (panelId: string) =>
+      apiFetch<void>(`/guilds/${guildId}/roles/panels/${panelId}`, { method: 'DELETE' }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: rolesQueryKeys.panels(guildId) }),
   });
 }
@@ -70,7 +84,10 @@ export function useDeleteRolePanel(guildId: string) {
 export function usePostRolePanel(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (panelId: string) => apiFetch<{ ok: boolean; queued: boolean }>(`/guilds/${guildId}/roles/panels/${panelId}/post`, { method: 'POST' }),
+    mutationFn: (panelId: string) =>
+      apiFetch<{ ok: boolean; queued: boolean }>(`/guilds/${guildId}/roles/panels/${panelId}/post`, {
+        method: 'POST',
+      }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: rolesQueryKeys.panels(guildId) }),
   });
 }
@@ -80,7 +97,11 @@ export function usePostRolePanel(guildId: string) {
 // ---------------------------------------------------------------------------
 
 export function useRoleGroups(guildId: string | undefined) {
-  return useQuery({ queryKey: rolesQueryKeys.groups(guildId ?? ''), queryFn: () => apiFetch<RoleGroupDto[]>(`/guilds/${guildId}/roles/groups`), enabled: Boolean(guildId) });
+  return useQuery({
+    queryKey: rolesQueryKeys.groups(guildId ?? ''),
+    queryFn: () => apiFetch<RoleGroupDto[]>(`/guilds/${guildId}/roles/groups`),
+    enabled: Boolean(guildId),
+  });
 }
 
 export interface RoleGroupInput {
@@ -93,7 +114,8 @@ export interface RoleGroupInput {
 export function useCreateRoleGroup(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: RoleGroupInput) => apiFetch<RoleGroupDto>(`/guilds/${guildId}/roles/groups`, { method: 'POST', body: input }),
+    mutationFn: (input: RoleGroupInput) =>
+      apiFetch<RoleGroupDto>(`/guilds/${guildId}/roles/groups`, { method: 'POST', body: input }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: rolesQueryKeys.groups(guildId) }),
   });
 }
@@ -110,7 +132,8 @@ export function useUpdateRoleGroup(guildId: string) {
 export function useDeleteRoleGroup(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (groupId: string) => apiFetch<void>(`/guilds/${guildId}/roles/groups/${groupId}`, { method: 'DELETE' }),
+    mutationFn: (groupId: string) =>
+      apiFetch<void>(`/guilds/${guildId}/roles/groups/${groupId}`, { method: 'DELETE' }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: rolesQueryKeys.groups(guildId) }),
   });
 }
@@ -122,38 +145,56 @@ export function useDeleteRoleGroup(guildId: string) {
 export type WelcomeGoodbyePatch = Partial<WelcomeGoodbyeDto>;
 
 export function useWelcomeConfig(guildId: string | undefined) {
-  return useQuery({ queryKey: rolesQueryKeys.welcome(guildId ?? ''), queryFn: () => apiFetch<WelcomeGoodbyeDto>(`/guilds/${guildId}/roles/welcome`), enabled: Boolean(guildId) });
+  return useQuery({
+    queryKey: rolesQueryKeys.welcome(guildId ?? ''),
+    queryFn: () => apiFetch<WelcomeGoodbyeDto>(`/guilds/${guildId}/roles/welcome`),
+    enabled: Boolean(guildId),
+  });
 }
 
 export function useUpdateWelcomeConfig(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (patch: WelcomeGoodbyePatch) => apiFetch<WelcomeGoodbyeDto>(`/guilds/${guildId}/roles/welcome`, { method: 'PUT', body: patch }),
+    mutationFn: (patch: WelcomeGoodbyePatch) =>
+      apiFetch<WelcomeGoodbyeDto>(`/guilds/${guildId}/roles/welcome`, { method: 'PUT', body: patch }),
     onSuccess: (data) => queryClient.setQueryData(rolesQueryKeys.welcome(guildId), data),
   });
 }
 
 export function useTestWelcome(guildId: string) {
   return useMutation({
-    mutationFn: (channelId?: string) => apiFetch<{ ok: boolean; queued: boolean }>(`/guilds/${guildId}/roles/welcome/test`, { method: 'POST', body: { channelId } }),
+    mutationFn: (channelId?: string) =>
+      apiFetch<{ ok: boolean; queued: boolean }>(`/guilds/${guildId}/roles/welcome/test`, {
+        method: 'POST',
+        body: { channelId },
+      }),
   });
 }
 
 export function useGoodbyeConfig(guildId: string | undefined) {
-  return useQuery({ queryKey: rolesQueryKeys.goodbye(guildId ?? ''), queryFn: () => apiFetch<WelcomeGoodbyeDto>(`/guilds/${guildId}/roles/goodbye`), enabled: Boolean(guildId) });
+  return useQuery({
+    queryKey: rolesQueryKeys.goodbye(guildId ?? ''),
+    queryFn: () => apiFetch<WelcomeGoodbyeDto>(`/guilds/${guildId}/roles/goodbye`),
+    enabled: Boolean(guildId),
+  });
 }
 
 export function useUpdateGoodbyeConfig(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (patch: WelcomeGoodbyePatch) => apiFetch<WelcomeGoodbyeDto>(`/guilds/${guildId}/roles/goodbye`, { method: 'PUT', body: patch }),
+    mutationFn: (patch: WelcomeGoodbyePatch) =>
+      apiFetch<WelcomeGoodbyeDto>(`/guilds/${guildId}/roles/goodbye`, { method: 'PUT', body: patch }),
     onSuccess: (data) => queryClient.setQueryData(rolesQueryKeys.goodbye(guildId), data),
   });
 }
 
 export function useTestGoodbye(guildId: string) {
   return useMutation({
-    mutationFn: (channelId?: string) => apiFetch<{ ok: boolean; queued: boolean }>(`/guilds/${guildId}/roles/goodbye/test`, { method: 'POST', body: { channelId } }),
+    mutationFn: (channelId?: string) =>
+      apiFetch<{ ok: boolean; queued: boolean }>(`/guilds/${guildId}/roles/goodbye/test`, {
+        method: 'POST',
+        body: { channelId },
+      }),
   });
 }
 
@@ -172,7 +213,11 @@ export function useVerificationSettings(guildId: string | undefined) {
 export function useUpdateVerificationSettings(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (patch: Partial<VerificationSettingsDto>) => apiFetch<VerificationSettingsDto>(`/guilds/${guildId}/roles/verification/settings`, { method: 'PUT', body: patch }),
+    mutationFn: (patch: Partial<VerificationSettingsDto>) =>
+      apiFetch<VerificationSettingsDto>(`/guilds/${guildId}/roles/verification/settings`, {
+        method: 'PUT',
+        body: patch,
+      }),
     onSuccess: (data) => queryClient.setQueryData(rolesQueryKeys.verificationSettings(guildId), data),
   });
 }
@@ -191,8 +236,12 @@ export function useDecideVerification(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ requestId, approve, note }: { requestId: string; approve: boolean; note?: string }) =>
-      apiFetch<{ ok: boolean; queued: boolean }>(`/guilds/${guildId}/roles/verification/${requestId}/decide`, { method: 'POST', body: { approve, note } }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: rolesQueryKeys.verificationQueue(guildId) }),
+      apiFetch<{ ok: boolean; queued: boolean }>(
+        `/guilds/${guildId}/roles/verification/${requestId}/decide`,
+        { method: 'POST', body: { approve, note } },
+      ),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: rolesQueryKeys.verificationQueue(guildId) }),
   });
 }
 
@@ -201,13 +250,18 @@ export function useDecideVerification(guildId: string) {
 // ---------------------------------------------------------------------------
 
 export function useOnboardingConfig(guildId: string | undefined) {
-  return useQuery({ queryKey: rolesQueryKeys.onboarding(guildId ?? ''), queryFn: () => apiFetch<OnboardingConfigDto>(`/guilds/${guildId}/roles/onboarding`), enabled: Boolean(guildId) });
+  return useQuery({
+    queryKey: rolesQueryKeys.onboarding(guildId ?? ''),
+    queryFn: () => apiFetch<OnboardingConfigDto>(`/guilds/${guildId}/roles/onboarding`),
+    enabled: Boolean(guildId),
+  });
 }
 
 export function useUpdateOnboardingConfig(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (patch: Partial<OnboardingConfigDto>) => apiFetch<OnboardingConfigDto>(`/guilds/${guildId}/roles/onboarding`, { method: 'PUT', body: patch }),
+    mutationFn: (patch: Partial<OnboardingConfigDto>) =>
+      apiFetch<OnboardingConfigDto>(`/guilds/${guildId}/roles/onboarding`, { method: 'PUT', body: patch }),
     onSuccess: (data) => queryClient.setQueryData(rolesQueryKeys.onboarding(guildId), data),
   });
 }
@@ -219,14 +273,21 @@ export function useUpdateOnboardingConfig(guildId: string) {
 export type RolePersistenceStatusDto = RolePersistenceDto & { disclosure: string };
 
 export function useRolePersistence(guildId: string | undefined) {
-  return useQuery({ queryKey: rolesQueryKeys.persistence(guildId ?? ''), queryFn: () => apiFetch<RolePersistenceStatusDto>(`/guilds/${guildId}/roles/persistence`), enabled: Boolean(guildId) });
+  return useQuery({
+    queryKey: rolesQueryKeys.persistence(guildId ?? ''),
+    queryFn: () => apiFetch<RolePersistenceStatusDto>(`/guilds/${guildId}/roles/persistence`),
+    enabled: Boolean(guildId),
+  });
 }
 
 export function useSetRolePersistence(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: { enabled: boolean; maxDays?: number; acknowledge?: boolean }) =>
-      apiFetch<RolePersistenceStatusDto>(`/guilds/${guildId}/roles/persistence`, { method: 'POST', body: input }),
+      apiFetch<RolePersistenceStatusDto>(`/guilds/${guildId}/roles/persistence`, {
+        method: 'POST',
+        body: input,
+      }),
     onSuccess: (data) => queryClient.setQueryData(rolesQueryKeys.persistence(guildId), data),
   });
 }

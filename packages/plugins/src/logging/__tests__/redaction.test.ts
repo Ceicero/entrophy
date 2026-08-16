@@ -3,7 +3,9 @@ import { redactText, testRedactionPatterns } from '../redaction';
 
 describe('redactText — default patterns', () => {
   it('redacts an email address', () => {
-    expect(redactText('contact me at brandon.simonds@tutamail.com please')).toBe('contact me at [redacted:email] please');
+    expect(redactText('contact me at brandon.simonds@tutamail.com please')).toBe(
+      'contact me at [redacted:email] please',
+    );
   });
 
   it('redacts a US-style phone number', () => {
@@ -16,7 +18,9 @@ describe('redactText — default patterns', () => {
   });
 
   it('redacts a credit-card-shaped digit run', () => {
-    expect(redactText('card 4111 1111 1111 1111 expires soon')).toBe('card [redacted:credit_card] expires soon');
+    expect(redactText('card 4111 1111 1111 1111 expires soon')).toBe(
+      'card [redacted:credit_card] expires soon',
+    );
   });
 
   it('redacts an IPv4 address', () => {
@@ -24,13 +28,17 @@ describe('redactText — default patterns', () => {
   });
 
   it('leaves ordinary text untouched', () => {
-    expect(redactText('the quick brown fox jumps over the lazy dog')).toBe('the quick brown fox jumps over the lazy dog');
+    expect(redactText('the quick brown fox jumps over the lazy dog')).toBe(
+      'the quick brown fox jumps over the lazy dog',
+    );
   });
 });
 
 describe('redactText — custom patterns', () => {
   it('applies a valid custom regex pattern on top of the defaults', () => {
-    expect(redactText('the secret codeword is PINEAPPLE today', ['pineapple'])).toBe('the secret codeword is [redacted:custom1] today');
+    expect(redactText('the secret codeword is PINEAPPLE today', ['pineapple'])).toBe(
+      'the secret codeword is [redacted:custom1] today',
+    );
   });
 
   it('applies multiple custom patterns, numbered in order', () => {

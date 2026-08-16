@@ -32,13 +32,14 @@ export const siteCopy = {
       },
       {
         title: 'A record you can show sponsors',
-        body: 'Every moderation action, every Enforcer decision, and every donation dollar is written to an append-only, exportable record — useful the moment a community grows past "just friends".',
+        body: 'Every moderation action and every Enforcer decision is written to an append-only, exportable record — useful the moment a community grows past "just friends".',
       },
     ],
   },
   trust: {
     title: 'Trust & compliance',
-    intro: 'The moat here is trust, not features. Entrophy is built so a server owner never has to just take our word for it.',
+    intro:
+      'The moat here is trust, not features. Entrophy is built so a server owner never has to just take our word for it.',
     points: [
       {
         title: 'Never Administrator',
@@ -46,14 +47,14 @@ export const siteCopy = {
       },
       {
         title: 'Privacy-first defaults',
-        body: 'Message content is never stored unless a feature explicitly needs it and a server admin turns it on. Logging and Enforcer context capture default to metadata only.',
+        body: 'Logging defaults to metadata only — message content is never stored unless a feature explicitly needs it and a server admin turns it on. Enforcer stores a sanitized excerpt and a short context snapshot for each flag because moderators must be able to review it later; that’s disclosed in the plugin, and context capture can be switched off in settings.',
       },
       {
         title: 'Ledgered moderation',
         body: 'Every moderation case and every Enforcer flag/decision gets an immutable case or record number, exportable as CSV, searchable by staff.',
       },
       {
-        title: 'Blind, tamper-evident jury of one system',
+        title: 'Full audit trail',
         body: 'Config changes, plugin enables/disables, and dashboard actions all write to a full audit trail — "who changed this, and when" always has an answer.',
       },
       {

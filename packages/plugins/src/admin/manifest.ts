@@ -16,7 +16,7 @@ export const manifest = defineManifest({
   id: 'admin',
   name: 'Admin',
   description:
-    'Guided server setup, core configuration, plugin enable/disable, permission auditing, and bot health — the platform\'s always-on control plane.',
+    "Guided server setup, core configuration, plugin enable/disable, permission auditing, and bot health — the platform's always-on control plane.",
   category: 'admin',
   version: '0.1.0',
   defaultEnabled: true,

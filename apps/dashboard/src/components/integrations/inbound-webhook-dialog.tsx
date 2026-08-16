@@ -49,13 +49,23 @@ export function InboundWebhookDialog({ guildId, open, onOpenChange, onCreated }:
   function handleSubmit() {
     if (!valid) return;
     create.mutate(
-      { name: name.trim(), provider, channelId, events: provider === 'generic' && template.trim() ? [template.trim()] : [] },
+      {
+        name: name.trim(),
+        provider,
+        channelId,
+        events: provider === 'generic' && template.trim() ? [template.trim()] : [],
+      },
       {
         onSuccess: (result) => {
           onOpenChange(false);
           onCreated(result);
         },
-        onError: (err) => toast({ title: 'Could not create webhook', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+        onError: (err) =>
+          toast({
+            title: 'Could not create webhook',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -69,11 +79,20 @@ export function InboundWebhookDialog({ guildId, open, onOpenChange, onCreated }:
 
         <div className="space-y-4">
           <FormField label="Name" required>
-            <Input value={name} maxLength={100} onChange={(e) => setName(e.target.value)} disabled={create.isPending} />
+            <Input
+              value={name}
+              maxLength={100}
+              onChange={(e) => setName(e.target.value)}
+              disabled={create.isPending}
+            />
           </FormField>
 
           <FormField label="Source" hint="GitHub events are pre-formatted; generic accepts any JSON payload.">
-            <Select value={provider} onValueChange={(v) => setProvider(v as 'generic' | 'github')} disabled={create.isPending}>
+            <Select
+              value={provider}
+              onValueChange={(v) => setProvider(v as 'generic' | 'github')}
+              disabled={create.isPending}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -85,12 +104,27 @@ export function InboundWebhookDialog({ guildId, open, onOpenChange, onCreated }:
           </FormField>
 
           <FormField label="Channel" required>
-            <DiscordChannelSelect guildId={guildId} value={channelId} onChange={setChannelId} disabled={create.isPending} />
+            <DiscordChannelSelect
+              guildId={guildId}
+              value={channelId}
+              onChange={setChannelId}
+              disabled={create.isPending}
+            />
           </FormField>
 
           {provider === 'generic' ? (
-            <FormField label="Message template" hint={'Optional. {dot.path} placeholders read from the JSON payload — leave blank for a raw preview.'}>
-              <Input value={template} maxLength={1500} onChange={(e) => setTemplate(e.target.value)} disabled={create.isPending} />
+            <FormField
+              label="Message template"
+              hint={
+                'Optional. {dot.path} placeholders read from the JSON payload — leave blank for a raw preview.'
+              }
+            >
+              <Input
+                value={template}
+                maxLength={1500}
+                onChange={(e) => setTemplate(e.target.value)}
+                disabled={create.isPending}
+              />
             </FormField>
           ) : null}
         </div>

@@ -110,7 +110,7 @@ describe('GuildConfigStore', () => {
     expect(await redis.get('entrophy:guildcfg:g1')).toBeNull();
   });
 
-  it('invalidate(guildId, pluginId) clears only that plugin\'s cache', async () => {
+  it("invalidate(guildId, pluginId) clears only that plugin's cache", async () => {
     const registry = buildModerationRegistry();
     const redis = new RedisMock();
     const { prisma } = createPrismaStub();
@@ -141,7 +141,9 @@ describe('GuildConfigStore', () => {
     const { prisma } = createPrismaStub();
     const store = new GuildConfigStore(prisma, redis, registry);
 
-    await expect(store.setEnabled('g1', 'admin', false, { id: 'u1', source: 'bot' })).rejects.toThrow(/always enabled/i);
+    await expect(store.setEnabled('g1', 'admin', false, { id: 'u1', source: 'bot' })).rejects.toThrow(
+      /always enabled/i,
+    );
   });
 
   it('getGuildConfig returns platform defaults when no row exists, without writing one', async () => {
@@ -152,6 +154,8 @@ describe('GuildConfigStore', () => {
 
     const config = await store.getGuildConfig('g1');
     expect(config).toMatchObject({ guildId: 'g1', locale: 'en', timezone: 'UTC', fastActions: false });
-    expect(calls.some((c) => c.model === 'guildConfig' && (c.method === 'create' || c.method === 'upsert'))).toBe(false);
+    expect(
+      calls.some((c) => c.model === 'guildConfig' && (c.method === 'create' || c.method === 'upsert')),
+    ).toBe(false);
   });
 });

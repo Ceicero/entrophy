@@ -16,7 +16,8 @@
     "test": "vitest run --passWithNoTests",
     "export:commands": "tsx scripts/export-commands.ts",
     "export:permissions": "tsx scripts/export-permissions.ts",
-    "registry:sanity": "tsx scripts/registry-sanity.ts"
+    "registry:sanity": "tsx scripts/registry-sanity.ts",
+    "check:i18n": "tsx scripts/check-i18n.ts"
   },
   "dependencies": {
     "discord.js": "^14.17.3",

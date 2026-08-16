@@ -43,7 +43,16 @@ function dismissToast(id: string) {
 function addToast(options: ToastOptions): string {
   const id = options.id ?? `toast_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const duration = options.duration ?? 5000;
-  toasts = [...toasts, { id, title: options.title, description: options.description, variant: options.variant ?? 'default', duration }];
+  toasts = [
+    ...toasts,
+    {
+      id,
+      title: options.title,
+      description: options.description,
+      variant: options.variant ?? 'default',
+      duration,
+    },
+  ];
   emit();
   if (duration > 0) {
     setTimeout(() => dismissToast(id), duration);

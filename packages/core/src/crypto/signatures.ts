@@ -18,7 +18,12 @@ export interface VerifyHmacOptions {
 }
 
 /** Verifies an HMAC-SHA256 hex signature over `payload`. Never throws on malformed input. */
-export function verifyHmacSha256(payload: string | Buffer, secret: string, signatureHex: string, options: VerifyHmacOptions = {}): boolean {
+export function verifyHmacSha256(
+  payload: string | Buffer,
+  secret: string,
+  signatureHex: string,
+  options: VerifyHmacOptions = {},
+): boolean {
   try {
     if (!secret || !signatureHex) return false;
     let sig = signatureHex.trim();
@@ -34,7 +39,11 @@ export function verifyHmacSha256(payload: string | Buffer, secret: string, signa
 }
 
 /** Verifies a GitHub webhook `X-Hub-Signature-256` header (`sha256=<hex>`). */
-export function verifyGithubSignature(payload: string | Buffer, secret: string, signatureHeader: string): boolean {
+export function verifyGithubSignature(
+  payload: string | Buffer,
+  secret: string,
+  signatureHeader: string,
+): boolean {
   return verifyHmacSha256(payload, secret, signatureHeader, { prefix: 'sha256=' });
 }
 
@@ -67,7 +76,9 @@ export function verifyStripeSignature(
     const bodyStr = payload instanceof Buffer ? payload.toString('utf8') : payload;
     const signedPayload = `${timestamp}.${bodyStr}`;
     const expected = createHmac('sha256', secret).update(signedPayload).digest('hex');
-    return v1Signatures.some((sig) => /^[0-9a-fA-F]+$/.test(sig) && timingSafeEqualStr(sig.toLowerCase(), expected.toLowerCase()));
+    return v1Signatures.some(
+      (sig) => /^[0-9a-fA-F]+$/.test(sig) && timingSafeEqualStr(sig.toLowerCase(), expected.toLowerCase()),
+    );
   } catch {
     return false;
   }

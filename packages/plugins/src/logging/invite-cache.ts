@@ -31,7 +31,11 @@ export async function readInviteSnapshot(redis: Redis, guildId: string): Promise
 }
 
 /** Overwrites the cached invite-use snapshot for `guildId`. */
-export async function writeInviteSnapshot(redis: Redis, guildId: string, snapshot: InviteUseSnapshot[]): Promise<void> {
+export async function writeInviteSnapshot(
+  redis: Redis,
+  guildId: string,
+  snapshot: InviteUseSnapshot[],
+): Promise<void> {
   await redis.set(cacheKey(guildId), JSON.stringify(snapshot), 'EX', CACHE_TTL_SECONDS);
 }
 
@@ -42,7 +46,10 @@ export async function writeInviteSnapshot(redis: Redis, guildId: string, snapsho
  * unavailable, or nothing changed). If multiple invites increased at once (a race between two joins), the
  * largest delta wins — a reasonable best-effort tiebreak for a feature that is inherently best-effort.
  */
-export function diffInviteUses(before: InviteUseSnapshot[], after: InviteUseSnapshot[]): InviteUseDiff | null {
+export function diffInviteUses(
+  before: InviteUseSnapshot[],
+  after: InviteUseSnapshot[],
+): InviteUseDiff | null {
   const beforeUses = new Map(before.map((invite) => [invite.code, invite.uses]));
   let best: InviteUseDiff | null = null;
 

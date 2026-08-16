@@ -11,12 +11,22 @@ const LOOKAHEAD_HOURS = 24;
 export const microsoftCalendarConfigSchema = z.object({
   target: z.string().max(200).nullable().optional().default(''),
   channelId: z.string().regex(/^\d{17,20}$/),
-  roleId: z.string().regex(/^\d{17,20}$/).nullable().optional(),
+  roleId: z
+    .string()
+    .regex(/^\d{17,20}$/)
+    .nullable()
+    .optional(),
   template: z.string().max(300).nullable().optional(),
 });
 
 interface GraphEventsResponse {
-  value?: { id: string; subject?: string; webLink?: string; start?: { dateTime?: string }; location?: { displayName?: string } }[];
+  value?: {
+    id: string;
+    subject?: string;
+    webLink?: string;
+    start?: { dateTime?: string };
+    location?: { displayName?: string };
+  }[];
 }
 
 function eventEmbed(item: NonNullable<GraphEventsResponse['value']>[number]): AlertEmbedData {
@@ -28,7 +38,9 @@ function eventEmbed(item: NonNullable<GraphEventsResponse['value']>[number]): Al
     url: item.webLink,
     description: startTs ? `Starts <t:${startTs}:F> (<t:${startTs}:R>)` : 'Upcoming event',
     color: MICROSOFT_BLUE,
-    fields: item.location?.displayName ? [{ name: 'Location', value: truncate(item.location.displayName, EMBED_LIMITS.fieldValue) }] : [],
+    fields: item.location?.displayName
+      ? [{ name: 'Location', value: truncate(item.location.displayName, EMBED_LIMITS.fieldValue) }]
+      : [],
     footer: 'Microsoft 365 Calendar',
   };
 }
@@ -43,7 +55,11 @@ export const microsoftCalendarProvider: IntegrationProviderDef = {
   async poll(ctx, connection) {
     const accessToken = await getValidAccessToken(ctx, 'microsoft_calendar', connection);
     if (!accessToken) {
-      await markConnectionError(ctx, connection.id, 'Microsoft 365 Calendar is not authorized (connect again from the dashboard).');
+      await markConnectionError(
+        ctx,
+        connection.id,
+        'Microsoft 365 Calendar is not authorized (connect again from the dashboard).',
+      );
       return;
     }
 

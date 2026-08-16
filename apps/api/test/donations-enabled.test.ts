@@ -96,14 +96,22 @@ describe('POST /donations/checkout (Stripe configured)', () => {
       metadata: { kind: 'donation', donationId: 'donation-1' },
     });
     expect(payload.line_items).toEqual([
-      { price_data: { currency: 'usd', unit_amount: 2500, product_data: { name: 'Entrophy donation' } }, quantity: 1 },
+      {
+        price_data: { currency: 'usd', unit_amount: 2500, product_data: { name: 'Entrophy donation' } },
+        quantity: 1,
+      },
     ]);
 
     // A PENDING Donation row is created before the Stripe call, then updated with the real session id after.
     const createCall = prismaCalls.find((c) => c.model === 'donation' && c.method === 'create');
-    expect(createCall?.args[0]).toMatchObject({ data: { amountCents: 2500, currency: 'usd', status: 'PENDING' } });
+    expect(createCall?.args[0]).toMatchObject({
+      data: { amountCents: 2500, currency: 'usd', status: 'PENDING' },
+    });
     const updateCall = prismaCalls.find((c) => c.model === 'donation' && c.method === 'update');
-    expect(updateCall?.args[0]).toMatchObject({ where: { id: 'donation-1' }, data: { stripeSessionId: 'cs_test_donation_1' } });
+    expect(updateCall?.args[0]).toMatchObject({
+      where: { id: 'donation-1' },
+      data: { stripeSessionId: 'cs_test_donation_1' },
+    });
 
     await app.close();
   });

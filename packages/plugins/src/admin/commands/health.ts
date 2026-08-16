@@ -50,7 +50,9 @@ export const command: PluginCommand = {
     for (const manifest of manifests) {
       const health = await host.getPluginHealth(manifest.id);
       const status = health?.status ?? 'disabled';
-      pluginLines.push(`${healthEmoji(status)} **${manifest.name}**: ${health ? status : 'no health check reported'}${health?.details ? ` — ${health.details}` : ''}`);
+      pluginLines.push(
+        `${healthEmoji(status)} **${manifest.name}**: ${health ? status : 'no health check reported'}${health?.details ? ` — ${health.details}` : ''}`,
+      );
     }
 
     const embed = brandEmbed()

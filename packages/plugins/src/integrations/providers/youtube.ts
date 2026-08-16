@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { formatYoutubeUploadEmbed } from '../formatters/youtube';
-import { claimAlertOnce, markConnectionError, markConnectionSynced, readAlertConfig, sendConnectionAlert } from './util';
+import {
+  claimAlertOnce,
+  markConnectionError,
+  markConnectionSynced,
+  readAlertConfig,
+  sendConnectionAlert,
+} from './util';
 import type { IntegrationProviderDef } from './types';
 
 const API_BASE = 'https://www.googleapis.com/youtube/v3';
@@ -8,7 +14,11 @@ const API_BASE = 'https://www.googleapis.com/youtube/v3';
 export const youtubeConfigSchema = z.object({
   target: z.string().trim().min(1).max(100), // YouTube channel id (UC...)
   channelId: z.string().regex(/^\d{17,20}$/),
-  roleId: z.string().regex(/^\d{17,20}$/).nullable().optional(),
+  roleId: z
+    .string()
+    .regex(/^\d{17,20}$/)
+    .nullable()
+    .optional(),
   template: z.string().max(300).nullable().optional(),
   /** Cached to avoid spending API quota re-resolving the uploads playlist id every poll. */
   uploadsPlaylistId: z.string().nullable().optional(),
@@ -18,11 +28,22 @@ interface YoutubeChannelsResponse {
   items: { contentDetails?: { relatedPlaylists?: { uploads?: string } } }[];
 }
 interface YoutubePlaylistItemsResponse {
-  items: { snippet: { title: string; channelTitle: string; publishedAt: string; description?: string; resourceId: { videoId: string }; thumbnails?: { medium?: { url?: string } } } }[];
+  items: {
+    snippet: {
+      title: string;
+      channelTitle: string;
+      publishedAt: string;
+      description?: string;
+      resourceId: { videoId: string };
+      thumbnails?: { medium?: { url?: string } };
+    };
+  }[];
 }
 
 async function resolveUploadsPlaylistId(apiKey: string, channelId: string): Promise<string | null> {
-  const res = await fetch(`${API_BASE}/channels?part=contentDetails&id=${encodeURIComponent(channelId)}&key=${apiKey}`);
+  const res = await fetch(
+    `${API_BASE}/channels?part=contentDetails&id=${encodeURIComponent(channelId)}&key=${apiKey}`,
+  );
   if (!res.ok) return null;
   const json = (await res.json()) as YoutubeChannelsResponse;
   return json.items[0]?.contentDetails?.relatedPlaylists?.uploads ?? null;
@@ -51,14 +72,23 @@ export const youtubeProvider: IntegrationProviderDef = {
     if (!uploadsPlaylistId) {
       uploadsPlaylistId = await resolveUploadsPlaylistId(apiKey, config.target);
       if (!uploadsPlaylistId) {
-        await markConnectionError(ctx, connection.id, `Could not resolve a YouTube channel for id "${config.target}".`);
+        await markConnectionError(
+          ctx,
+          connection.id,
+          `Could not resolve a YouTube channel for id "${config.target}".`,
+        );
         return;
       }
-      await ctx.prisma.integrationConnection.update({ where: { id: connection.id }, data: { config: { ...raw, uploadsPlaylistId } } });
+      await ctx.prisma.integrationConnection.update({
+        where: { id: connection.id },
+        data: { config: { ...raw, uploadsPlaylistId } },
+      });
     }
 
     // playlistItems quota cost is 1 unit/call (vs 100 for search.list) — this is the quota-conscious way to poll uploads.
-    const res = await fetch(`${API_BASE}/playlistItems?part=snippet&maxResults=5&playlistId=${encodeURIComponent(uploadsPlaylistId)}&key=${apiKey}`);
+    const res = await fetch(
+      `${API_BASE}/playlistItems?part=snippet&maxResults=5&playlistId=${encodeURIComponent(uploadsPlaylistId)}&key=${apiKey}`,
+    );
     if (!res.ok) {
       await markConnectionError(ctx, connection.id, `YouTube playlistItems request failed (${res.status}).`);
       return;

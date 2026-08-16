@@ -68,11 +68,23 @@ describe('checkModerationTarget', () => {
     const targetHigher = actorOf('target-2', 20);
 
     expect(
-      checkModerationTarget({ actor, target: targetEqual, botMember, guildOwnerId: GUILD_OWNER_ID, botOwnerIds: [] }),
+      checkModerationTarget({
+        actor,
+        target: targetEqual,
+        botMember,
+        guildOwnerId: GUILD_OWNER_ID,
+        botOwnerIds: [],
+      }),
     ).toEqual({ ok: false, reason: 'target_higher_or_equal_than_actor' });
 
     expect(
-      checkModerationTarget({ actor, target: targetHigher, botMember, guildOwnerId: GUILD_OWNER_ID, botOwnerIds: [] }),
+      checkModerationTarget({
+        actor,
+        target: targetHigher,
+        botMember,
+        guildOwnerId: GUILD_OWNER_ID,
+        botOwnerIds: [],
+      }),
     ).toEqual({ ok: false, reason: 'target_higher_or_equal_than_actor' });
   });
 

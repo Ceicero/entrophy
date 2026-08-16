@@ -13,7 +13,10 @@ export default function EnforcerPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Enforcer" description="Policy-driven, hands-off moderation: flag, decide, and keep an immutable ledger." />
+      <PageHeader
+        title="Enforcer"
+        description="Policy-driven, hands-off moderation: flag, decide, and keep an immutable ledger."
+      />
 
       <Tabs defaultValue="overview">
         <TabsList>

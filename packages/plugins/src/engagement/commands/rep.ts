@@ -1,5 +1,12 @@
 import { SlashCommandBuilder, userMention } from 'discord.js';
-import { assertStaffLevel, brandEmbed, errorEmbed, listEmbed, successEmbed, type PluginCommand } from '../../sdk';
+import {
+  assertStaffLevel,
+  brandEmbed,
+  errorEmbed,
+  listEmbed,
+  successEmbed,
+  type PluginCommand,
+} from '../../sdk';
 import type { EngagementConfig } from '../manifest';
 import { canGiveRep, takeRepCooldown } from '../service';
 
@@ -12,7 +19,9 @@ const data = new SlashCommandBuilder()
       .setName('give')
       .setDescription('Give a member reputation.')
       .addUserOption((opt) => opt.setName('user').setDescription('Who to thank.').setRequired(true))
-      .addStringOption((opt) => opt.setName('reason').setDescription('Optional short reason.').setMaxLength(200)),
+      .addStringOption((opt) =>
+        opt.setName('reason').setDescription('Optional short reason.').setMaxLength(200),
+      ),
   )
   .addSubcommand((sub) =>
     sub
@@ -26,7 +35,9 @@ const data = new SlashCommandBuilder()
       .setName('revoke')
       .setDescription('Remove reputation from a member (admin).')
       .addUserOption((opt) => opt.setName('user').setDescription('Member to adjust.').setRequired(true))
-      .addIntegerOption((opt) => opt.setName('amount').setDescription('Amount to remove.').setMinValue(1).setRequired(true))
+      .addIntegerOption((opt) =>
+        opt.setName('amount').setDescription('Amount to remove.').setMinValue(1).setRequired(true),
+      )
       .addStringOption((opt) => opt.setName('reason').setDescription('Why.').setMaxLength(200)),
   );
 
@@ -56,29 +67,53 @@ export const command: PluginCommand = {
         return;
       }
 
-      const cooldown = await takeRepCooldown(c.ctx.redis, c.guildId, c.interaction.user.id, config.rep.cooldownHours);
+      const cooldown = await takeRepCooldown(
+        c.ctx.redis,
+        c.guildId,
+        c.interaction.user.id,
+        config.rep.cooldownHours,
+      );
       if (!cooldown.ok) {
         const resetAt = Math.floor((Date.now() + cooldown.retryAfterMs) / 1000);
-        await c.interaction.reply({ embeds: [errorEmbed(c.t('errors.repCooldown', { resetAt }))], ephemeral: true });
+        await c.interaction.reply({
+          embeds: [errorEmbed(c.t('errors.repCooldown', { resetAt }))],
+          ephemeral: true,
+        });
         return;
       }
 
       await c.ctx.prisma.reputationEvent.create({
-        data: { guildId: c.guildId, fromUserId: c.interaction.user.id, toUserId: target.id, amount: 1, reason: reason ?? null },
+        data: {
+          guildId: c.guildId,
+          fromUserId: c.interaction.user.id,
+          toUserId: target.id,
+          amount: 1,
+          reason: reason ?? null,
+        },
       });
 
-      await c.interaction.reply({ embeds: [successEmbed(c.t('rep.give.success', { user: userMention(target.id) }))], ephemeral: false });
+      await c.interaction.reply({
+        embeds: [successEmbed(c.t('rep.give.success', { user: userMention(target.id) }))],
+        ephemeral: false,
+      });
       return;
     }
 
     if (sub === 'check') {
       const target = c.interaction.options.getUser('user') ?? c.interaction.user;
-      const agg = await c.ctx.prisma.reputationEvent.aggregate({ where: { guildId: c.guildId, toUserId: target.id }, _sum: { amount: true }, _count: true });
+      const agg = await c.ctx.prisma.reputationEvent.aggregate({
+        where: { guildId: c.guildId, toUserId: target.id },
+        _sum: { amount: true },
+        _count: true,
+      });
       const total = agg._sum.amount ?? 0;
       const embed = brandEmbed()
         .setTitle(c.t('rep.check.title', { name: target.username }))
         .setThumbnail(target.displayAvatarURL())
-        .addFields({ name: 'Reputation', value: String(total), inline: true }, { name: 'Times thanked', value: String(agg._count), inline: true });
+        .addFields(
+          { name: 'Reputation', value: String(total), inline: true },
+          { name: 'Times thanked', value: String(agg._count), inline: true },
+        );
       await c.interaction.reply({ embeds: [embed], ephemeral: false });
       return;
     }
@@ -96,7 +131,10 @@ export const command: PluginCommand = {
         positive.length > 0
           ? positive.map((g, i) => `**#${i + 1}** ${userMention(g.toUserId)} — ${g._sum.amount} reputation`)
           : [c.t('rep.leaderboard.empty')];
-      await c.interaction.reply({ embeds: [listEmbed(c.t('rep.leaderboard.title'), lines)], ephemeral: false });
+      await c.interaction.reply({
+        embeds: [listEmbed(c.t('rep.leaderboard.title'), lines)],
+        ephemeral: false,
+      });
       return;
     }
 
@@ -107,7 +145,13 @@ export const command: PluginCommand = {
     const reason = c.interaction.options.getString('reason') ?? undefined;
 
     await c.ctx.prisma.reputationEvent.create({
-      data: { guildId: c.guildId, fromUserId: c.interaction.user.id, toUserId: target.id, amount: -amount, reason: reason ? `Revoked: ${reason}` : 'Revoked by staff' },
+      data: {
+        guildId: c.guildId,
+        fromUserId: c.interaction.user.id,
+        toUserId: target.id,
+        amount: -amount,
+        reason: reason ? `Revoked: ${reason}` : 'Revoked by staff',
+      },
     });
     await c.ctx.audit({
       guildId: c.guildId,
@@ -120,6 +164,9 @@ export const command: PluginCommand = {
       source: 'bot',
     });
 
-    await c.interaction.reply({ embeds: [successEmbed(c.t('rep.revoke.success', { amount, user: userMention(target.id) }))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [successEmbed(c.t('rep.revoke.success', { amount, user: userMention(target.id) }))],
+      ephemeral: true,
+    });
   },
 };

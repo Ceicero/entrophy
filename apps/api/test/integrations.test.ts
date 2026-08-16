@@ -17,13 +17,25 @@ function integrationConnectionOverrides() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake, args shape mirrors Prisma's generated types
       create: async (args: any) => {
         const id = `conn${nextId++}`;
-        const row = { id, createdAt: new Date(), updatedAt: new Date(), lastSyncAt: null, lastError: null, externalAccountId: null, externalAccountName: null, deletedAt: null, ...args.data };
+        const row = {
+          id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastSyncAt: null,
+          lastError: null,
+          externalAccountId: null,
+          externalAccountName: null,
+          deletedAt: null,
+          ...args.data,
+        };
         rows.set(id, row);
         return row;
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       findMany: async (args: any) => {
-        let list = [...rows.values()].filter((r) => r.guildId === args?.where?.guildId && r.deletedAt === null);
+        let list = [...rows.values()].filter(
+          (r) => r.guildId === args?.where?.guildId && r.deletedAt === null,
+        );
         const providerFilter = args?.where?.provider;
         if (providerFilter) {
           if (typeof providerFilter === 'string') list = list.filter((r) => r.provider === providerFilter);
@@ -32,7 +44,13 @@ function integrationConnectionOverrides() {
         return list;
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      findFirst: async (args: any) => [...rows.values()].find((r) => r.id === args.where.id && r.guildId === args.where.guildId && (args.where.deletedAt === undefined || r.deletedAt === args.where.deletedAt)) ?? null,
+      findFirst: async (args: any) =>
+        [...rows.values()].find(
+          (r) =>
+            r.id === args.where.id &&
+            r.guildId === args.where.guildId &&
+            (args.where.deletedAt === undefined || r.deletedAt === args.where.deletedAt),
+        ) ?? null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       update: async (args: any) => {
         const existing = rows.get(args.where.id)!;
@@ -53,14 +71,32 @@ function webhookEndpointOverrides() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       create: async (args: any) => {
         const id = `hook${nextId++}`;
-        const row = { id, createdAt: new Date(), updatedAt: new Date(), failureCount: 0, lastDeliveryAt: null, enabled: true, channelId: null, url: null, deletedAt: null, ...args.data };
+        const row = {
+          id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          failureCount: 0,
+          lastDeliveryAt: null,
+          enabled: true,
+          channelId: null,
+          url: null,
+          deletedAt: null,
+          ...args.data,
+        };
         rows.set(id, row);
         return row;
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      findMany: async (args: any) => [...rows.values()].filter((r) => r.guildId === args?.where?.guildId && r.direction === args?.where?.direction && r.deletedAt === null),
+      findMany: async (args: any) =>
+        [...rows.values()].filter(
+          (r) =>
+            r.guildId === args?.where?.guildId &&
+            r.direction === args?.where?.direction &&
+            r.deletedAt === null,
+        ),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      findFirst: async (args: any) => [...rows.values()].find((r) => r.id === args.where.id && r.guildId === args.where.guildId) ?? null,
+      findFirst: async (args: any) =>
+        [...rows.values()].find((r) => r.id === args.where.id && r.guildId === args.where.guildId) ?? null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       update: async (args: any) => {
         const existing = rows.get(args.where.id)!;
@@ -83,12 +119,27 @@ async function setupAuthedApp(overrides: PrismaStubOverrides) {
 describe('GET /guilds/:guildId/integrations/providers', () => {
   it('returns availability for all 10 providers', async () => {
     const { app, cookieHeader } = await setupAuthedApp(guildOverrides());
-    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/integrations/providers`, headers: { cookie: cookieHeader } });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/providers`,
+      headers: { cookie: cookieHeader },
+    });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { id: string; available: boolean }[];
     expect(body).toHaveLength(10);
     expect(body.map((p) => p.id)).toEqual(
-      expect.arrayContaining(['twitch', 'youtube', 'github', 'reddit', 'steam', 'google_calendar', 'microsoft_calendar', 'notion', 'stripe', 'generic_webhook']),
+      expect.arrayContaining([
+        'twitch',
+        'youtube',
+        'github',
+        'reddit',
+        'steam',
+        'google_calendar',
+        'microsoft_calendar',
+        'notion',
+        'stripe',
+        'generic_webhook',
+      ]),
     );
     await app.close();
   });
@@ -108,7 +159,11 @@ describe('alert connections', () => {
     const created = create.json() as { id: string; target: string };
     expect(created.target).toBe('shroud');
 
-    const list = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/integrations/alerts`, headers: { cookie: cookieHeader } });
+    const list = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/alerts`,
+      headers: { cookie: cookieHeader },
+    });
     expect(list.statusCode).toBe(200);
     expect(list.json()).toHaveLength(1);
 
@@ -119,7 +174,11 @@ describe('alert connections', () => {
     });
     expect(del.statusCode).toBe(204);
 
-    const listAfter = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/integrations/alerts`, headers: { cookie: cookieHeader } });
+    const listAfter = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/alerts`,
+      headers: { cookie: cookieHeader },
+    });
     expect(listAfter.json()).toHaveLength(0);
 
     await app.close();
@@ -146,13 +205,21 @@ describe('outbound webhooks', () => {
       method: 'POST',
       url: `/guilds/${GUILD_ID}/integrations/outbound`,
       headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
-      payload: { name: 'my hook', url: 'https://example.com/hook', events: ['moderation.caseCreated', 'ticket.opened'] },
+      payload: {
+        name: 'my hook',
+        url: 'https://example.com/hook',
+        events: ['moderation.caseCreated', 'ticket.opened'],
+      },
     });
     expect(create.statusCode).toBe(201);
     const created = create.json() as { id: string; secret: string };
     expect(created.secret).toBeTruthy();
 
-    const list = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/integrations/outbound`, headers: { cookie: cookieHeader } });
+    const list = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/outbound`,
+      headers: { cookie: cookieHeader },
+    });
     expect(list.json()).toHaveLength(1);
 
     const test = await app.inject({
@@ -161,9 +228,12 @@ describe('outbound webhooks', () => {
       headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
     });
     expect(test.statusCode).toBe(200);
-    expect(queues.calls.some((c) => c.queue === 'bot-actions' && (c.data as { type: string }).type === 'integrations.testWebhook')).toBe(true);
+    expect(
+      queues.calls.some(
+        (c) => c.queue === 'bot-actions' && (c.data as { type: string }).type === 'integrations.testWebhook',
+      ),
+    ).toBe(true);
 
     await app.close();
   });
 });
-

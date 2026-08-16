@@ -23,7 +23,11 @@ import {
   useToast,
 } from '@entrophy/ui';
 import type { EngagementConfigDto, LevelProfileDto } from '@entrophy/types/engagement';
-import { useEngagementConfig, useLevelLeaderboard, useUpdateEngagementConfig } from '../../lib/engagement-queries';
+import {
+  useEngagementConfig,
+  useLevelLeaderboard,
+  useUpdateEngagementConfig,
+} from '../../lib/engagement-queries';
 import { DataTable, type DataTableColumn } from '../data-table';
 import { DiscordChannelSelect } from '../discord-selects';
 import { MultiRolePicker } from '../multi-role-picker';
@@ -56,7 +60,10 @@ export function LevelingTab({ guildId }: { guildId: string }) {
 
   const leaderboard = useLevelLeaderboard(guildId, cursor);
 
-  function set<K extends keyof EngagementConfigDto['leveling']>(key: K, value: EngagementConfigDto['leveling'][K]) {
+  function set<K extends keyof EngagementConfigDto['leveling']>(
+    key: K,
+    value: EngagementConfigDto['leveling'][K],
+  ) {
     setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
 
@@ -67,7 +74,11 @@ export function LevelingTab({ guildId }: { guildId: string }) {
       {
         onSuccess: () => toast({ title: 'Leveling settings saved', variant: 'success' }),
         onError: (err) =>
-          toast({ title: 'Could not save', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+          toast({
+            title: 'Could not save',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
@@ -83,7 +94,10 @@ export function LevelingTab({ guildId }: { guildId: string }) {
     );
   }
 
-  const channelMode: string = draft.levelUpChannel === 'current' || draft.levelUpChannel === 'dm' || draft.levelUpChannel === 'none' ? draft.levelUpChannel : 'channel';
+  const channelMode: string =
+    draft.levelUpChannel === 'current' || draft.levelUpChannel === 'dm' || draft.levelUpChannel === 'none'
+      ? draft.levelUpChannel
+      : 'channel';
   const dirty = data ? JSON.stringify(draft) !== JSON.stringify(data.leveling) : false;
 
   const filteredRows = (leaderboard.data?.items ?? []).filter((row) => row.userId.includes(search.trim()));
@@ -109,32 +123,72 @@ export function LevelingTab({ guildId }: { guildId: string }) {
           <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
             <div>
               <p className="text-sm font-medium">Leveling enabled</p>
-              <p className="text-xs text-muted-foreground">Turn message/voice XP off without losing anyone&apos;s progress.</p>
+              <p className="text-xs text-muted-foreground">
+                Turn message/voice XP off without losing anyone&apos;s progress.
+              </p>
             </div>
-            <Switch checked={draft.enabled} onCheckedChange={(v) => set('enabled', v)} disabled={update.isPending} />
+            <Switch
+              checked={draft.enabled}
+              onCheckedChange={(v) => set('enabled', v)}
+              disabled={update.isPending}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <FormField label="Min XP / message">
-              <Input type="number" min={1} value={draft.xpPerMessageMin} onChange={(e) => set('xpPerMessageMin', Number(e.target.value))} />
+              <Input
+                type="number"
+                min={1}
+                value={draft.xpPerMessageMin}
+                onChange={(e) => set('xpPerMessageMin', Number(e.target.value))}
+              />
             </FormField>
             <FormField label="Max XP / message">
-              <Input type="number" min={1} value={draft.xpPerMessageMax} onChange={(e) => set('xpPerMessageMax', Number(e.target.value))} />
+              <Input
+                type="number"
+                min={1}
+                value={draft.xpPerMessageMax}
+                onChange={(e) => set('xpPerMessageMax', Number(e.target.value))}
+              />
             </FormField>
             <FormField label="Cooldown (s)" hint="Anti-farming.">
-              <Input type="number" min={0} value={draft.xpCooldownSeconds} onChange={(e) => set('xpCooldownSeconds', Number(e.target.value))} />
+              <Input
+                type="number"
+                min={0}
+                value={draft.xpCooldownSeconds}
+                onChange={(e) => set('xpCooldownSeconds', Number(e.target.value))}
+              />
             </FormField>
             <FormField label="Max XP / hour">
-              <Input type="number" min={1} value={draft.maxXpPerHour} onChange={(e) => set('maxXpPerHour', Number(e.target.value))} />
+              <Input
+                type="number"
+                min={1}
+                value={draft.maxXpPerHour}
+                onChange={(e) => set('maxXpPerHour', Number(e.target.value))}
+              />
             </FormField>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField label="Voice XP / minute" hint="0 disables voice XP. Requires 2+ unmuted humans in the channel.">
-              <Input type="number" min={0} value={draft.voiceXpPerMinute} onChange={(e) => set('voiceXpPerMinute', Number(e.target.value))} />
+            <FormField
+              label="Voice XP / minute"
+              hint="0 disables voice XP. Requires 2+ unmuted humans in the channel."
+            >
+              <Input
+                type="number"
+                min={0}
+                value={draft.voiceXpPerMinute}
+                onChange={(e) => set('voiceXpPerMinute', Number(e.target.value))}
+              />
             </FormField>
-            <FormField label="Reward mode" hint="Stack keeps every earned role; replace keeps only the highest.">
-              <Select value={draft.rewardMode} onValueChange={(v) => set('rewardMode', v as 'stack' | 'replace')}>
+            <FormField
+              label="Reward mode"
+              hint="Stack keeps every earned role; replace keeps only the highest."
+            >
+              <Select
+                value={draft.rewardMode}
+                onValueChange={(v) => set('rewardMode', v as 'stack' | 'replace')}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -150,7 +204,18 @@ export function LevelingTab({ guildId }: { guildId: string }) {
             <FormField label="Level-up announcement">
               <Select
                 value={channelMode}
-                onValueChange={(v) => set('levelUpChannel', v === 'channel' ? (draft.levelUpChannel === 'current' || draft.levelUpChannel === 'dm' || draft.levelUpChannel === 'none' ? '' : draft.levelUpChannel) : v)}
+                onValueChange={(v) =>
+                  set(
+                    'levelUpChannel',
+                    v === 'channel'
+                      ? draft.levelUpChannel === 'current' ||
+                        draft.levelUpChannel === 'dm' ||
+                        draft.levelUpChannel === 'none'
+                        ? ''
+                        : draft.levelUpChannel
+                      : v,
+                  )
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -166,21 +231,44 @@ export function LevelingTab({ guildId }: { guildId: string }) {
             </FormField>
             {channelMode === 'channel' ? (
               <FormField label="Channel">
-                <DiscordChannelSelect guildId={guildId} value={draft.levelUpChannel === 'current' || draft.levelUpChannel === 'dm' || draft.levelUpChannel === 'none' ? null : draft.levelUpChannel} onChange={(v) => set('levelUpChannel', v ?? '')} />
+                <DiscordChannelSelect
+                  guildId={guildId}
+                  value={
+                    draft.levelUpChannel === 'current' ||
+                    draft.levelUpChannel === 'dm' ||
+                    draft.levelUpChannel === 'none'
+                      ? null
+                      : draft.levelUpChannel
+                  }
+                  onChange={(v) => set('levelUpChannel', v ?? '')}
+                />
               </FormField>
             ) : null}
           </div>
 
           <FormField label="Level-up message" hint="{user} and {level} are replaced.">
-            <Textarea value={draft.levelUpMessage} onChange={(e) => set('levelUpMessage', e.target.value)} rows={2} maxLength={500} />
+            <Textarea
+              value={draft.levelUpMessage}
+              onChange={(e) => set('levelUpMessage', e.target.value)}
+              rows={2}
+              maxLength={500}
+            />
           </FormField>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField label="Ignored channels" hint="No XP is earned for activity in these channels.">
-              <MultiChannelPicker guildId={guildId} value={draft.ignoredChannelIds} onChange={(v) => set('ignoredChannelIds', v)} />
+              <MultiChannelPicker
+                guildId={guildId}
+                value={draft.ignoredChannelIds}
+                onChange={(v) => set('ignoredChannelIds', v)}
+              />
             </FormField>
             <FormField label="Ignored roles" hint="Members with any of these roles never earn XP.">
-              <MultiRolePicker guildId={guildId} value={draft.ignoredRoleIds} onChange={(v) => set('ignoredRoleIds', v)} />
+              <MultiRolePicker
+                guildId={guildId}
+                value={draft.ignoredRoleIds}
+                onChange={(v) => set('ignoredRoleIds', v)}
+              />
             </FormField>
           </div>
         </CardContent>
@@ -199,7 +287,12 @@ export function LevelingTab({ guildId }: { guildId: string }) {
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle>Leaderboard</CardTitle>
           <div className="flex items-center gap-2">
-            <Input placeholder="Search by user ID…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-56" />
+            <Input
+              placeholder="Search by user ID…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-56"
+            />
             <Button size="sm" variant="outline" onClick={() => setXpDialogOpen(true)}>
               <Trophy className="h-4 w-4" />
               Adjust XP
@@ -209,10 +302,25 @@ export function LevelingTab({ guildId }: { guildId: string }) {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
             <StatCard label="Ranked members" value={(leaderboard.data?.items.length ?? 0).toLocaleString()} />
-            <StatCard label="Top level" value={Math.max(0, ...(leaderboard.data?.items.map((r) => r.level) ?? [0]))} />
-            <StatCard label="Total XP shown" value={(leaderboard.data?.items.reduce((sum, r) => sum + r.xp, 0) ?? 0).toLocaleString()} />
+            <StatCard
+              label="Top level"
+              value={Math.max(0, ...(leaderboard.data?.items.map((r) => r.level) ?? [0]))}
+            />
+            <StatCard
+              label="Total XP shown"
+              value={(leaderboard.data?.items.reduce((sum, r) => sum + r.xp, 0) ?? 0).toLocaleString()}
+            />
           </div>
-          <DataTable columns={columns} rows={filteredRows} rowKey={(r) => r.userId} loading={leaderboard.isLoading} error={leaderboard.error} onRetry={() => leaderboard.refetch()} emptyTitle="No ranked members yet" emptyDescription="The leaderboard fills in once members start earning XP." />
+          <DataTable
+            columns={columns}
+            rows={filteredRows}
+            rowKey={(r) => r.userId}
+            loading={leaderboard.isLoading}
+            error={leaderboard.error}
+            onRetry={() => leaderboard.refetch()}
+            emptyTitle="No ranked members yet"
+            emptyDescription="The leaderboard fills in once members start earning XP."
+          />
           <Pagination
             hasPrevious={cursorHistory.length > 0}
             hasNext={Boolean(leaderboard.data?.nextCursor)}

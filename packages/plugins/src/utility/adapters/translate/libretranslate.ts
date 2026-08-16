@@ -41,13 +41,17 @@ export class LibreTranslateAdapter implements TranslateAdapter {
         }),
       });
     } catch (err) {
-      throw new TranslateAdapterError(`Could not reach LibreTranslate: ${err instanceof Error ? err.message : String(err)}`);
+      throw new TranslateAdapterError(
+        `Could not reach LibreTranslate: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     const data = (await response.json().catch(() => ({}))) as LibreTranslateResponse;
 
     if (!response.ok) {
-      throw new TranslateAdapterError(`LibreTranslate returned an error (${response.status})${data.error ? `: ${data.error}` : '.'}`);
+      throw new TranslateAdapterError(
+        `LibreTranslate returned an error (${response.status})${data.error ? `: ${data.error}` : '.'}`,
+      );
     }
     if (!data.translatedText) {
       throw new TranslateAdapterError('LibreTranslate returned no translation.');

@@ -14,13 +14,20 @@ export type DurationParseResult = { ok: true; ms: number } | { ok: false; error:
 export function parseTimeoutDuration(input: string): DurationParseResult {
   const ms = parseDuration(input);
   if (ms === null || ms <= 0) {
-    return { ok: false, error: `"${input}" isn't a valid duration. Use a combination like \`10m\`, \`2h\`, or \`1h30m\`.` };
+    return {
+      ok: false,
+      error: `"${input}" isn't a valid duration. Use a combination like \`10m\`, \`2h\`, or \`1h30m\`.`,
+    };
   }
   if (ms < MIN_TIMEOUT_MS) {
     return { ok: false, error: 'Timeout duration must be at least 5 seconds.' };
   }
   if (ms > MAX_TIMEOUT_MS) {
-    return { ok: false, error: 'Timeouts cannot exceed 28 days — Discord enforces this limit. Use `/mod ban` with a duration for longer removals.' };
+    return {
+      ok: false,
+      error:
+        'Timeouts cannot exceed 28 days — Discord enforces this limit. Use `/mod ban` with a duration for longer removals.',
+    };
   }
   return { ok: true, ms };
 }
@@ -29,13 +36,19 @@ export function parseTimeoutDuration(input: string): DurationParseResult {
 export function parseTempBanDuration(input: string): DurationParseResult {
   const ms = parseDuration(input);
   if (ms === null || ms <= 0) {
-    return { ok: false, error: `"${input}" isn't a valid duration. Use a combination like \`1d\`, \`2w\`, or \`30d\`.` };
+    return {
+      ok: false,
+      error: `"${input}" isn't a valid duration. Use a combination like \`1d\`, \`2w\`, or \`30d\`.`,
+    };
   }
   if (ms < MIN_TEMP_BAN_MS) {
     return { ok: false, error: 'Temporary ban duration must be at least 1 minute.' };
   }
   if (ms > MAX_TEMP_BAN_MS) {
-    return { ok: false, error: 'Temporary ban duration cannot exceed 1 year. Leave the duration off for a permanent ban.' };
+    return {
+      ok: false,
+      error: 'Temporary ban duration cannot exceed 1 year. Leave the duration off for a permanent ban.',
+    };
   }
   return { ok: true, ms };
 }

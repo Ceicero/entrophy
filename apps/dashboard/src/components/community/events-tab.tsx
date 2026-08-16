@@ -20,7 +20,8 @@ export function EventsTab({ guildId }: { guildId: string }) {
         const started = new Date(e.startsAt).getTime() <= Date.now();
         return (
           <span>
-            {new Date(e.startsAt).toLocaleString()} {started ? <Badge variant="secondary">Started</Badge> : null}
+            {new Date(e.startsAt).toLocaleString()}{' '}
+            {started ? <Badge variant="secondary">Started</Badge> : null}
           </span>
         );
       },
@@ -35,7 +36,11 @@ export function EventsTab({ guildId }: { guildId: string }) {
         </span>
       ),
     },
-    { key: 'discordEvent', header: 'Discord event', render: (e) => (e.discordEventId ? <Badge variant="outline">Linked</Badge> : '—') },
+    {
+      key: 'discordEvent',
+      header: 'Discord event',
+      render: (e) => (e.discordEventId ? <Badge variant="outline">Linked</Badge> : '—'),
+    },
   ];
 
   return (

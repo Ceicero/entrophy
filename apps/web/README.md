@@ -9,16 +9,16 @@ monochrome component set under `src/components/` and calls the public API direct
 
 ## Pages
 
-| Route | What it is |
-|---|---|
-| `/` | Hero, "Add to Discord" / "Open dashboard" CTAs, feature overview grid, why-gaming-communities, Enforcer teaser, trust & compliance, donate CTA |
-| `/features` | Every plugin: headline, why gaming communities love it, full command table — all anchored on one page |
-| `/features/[pluginId]` | Same content, one plugin per page (statically generated from `src/data/commands.json`) |
-| `/enforcer` | Admin Enforcer spotlight: workflow diagram, a mock ledger entry, privacy/transparency notes, FAQ |
-| `/donate` | Stripe-powered donation page: presets + custom amount → hosted Stripe Checkout |
-| `/donate/thanks`, `/donate/cancelled` | Post-checkout landing pages (generic; never call Stripe from the client) |
-| `/privacy`, `/terms` | Template legal pages, clearly labelled as templates for the operator to review |
-| `not-found` | 404 page |
+| Route                                 | What it is                                                                                                                                     |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                   | Hero, "Add to Discord" / "Open dashboard" CTAs, feature overview grid, why-gaming-communities, Enforcer teaser, trust & compliance, donate CTA |
+| `/features`                           | Every plugin: headline, why gaming communities love it, full command table — all anchored on one page                                          |
+| `/features/[pluginId]`                | Same content, one plugin per page (statically generated from `src/data/commands.json`)                                                         |
+| `/enforcer`                           | Admin Enforcer spotlight: workflow diagram, a mock ledger entry, privacy/transparency notes, FAQ                                               |
+| `/donate`                             | Stripe-powered donation page: presets + custom amount → hosted Stripe Checkout                                                                 |
+| `/donate/thanks`, `/donate/cancelled` | Post-checkout landing pages (generic; never call Stripe from the client)                                                                       |
+| `/privacy`, `/terms`                  | Template legal pages, clearly labelled as templates for the operator to review                                                                 |
+| `not-found`                           | 404 page                                                                                                                                       |
 
 Command documentation is **generated, never hand-maintained** — see "Data" below.
 

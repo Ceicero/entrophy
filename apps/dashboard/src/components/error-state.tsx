@@ -22,7 +22,13 @@ export function ErrorState({ error, onRetry, title = 'Something went wrong' }: E
       icon={<AlertTriangle />}
       title={title}
       description={description}
-      action={onRetry ? <Button variant="outline" onClick={onRetry}>Try again</Button> : undefined}
+      action={
+        onRetry ? (
+          <Button variant="outline" onClick={onRetry}>
+            Try again
+          </Button>
+        ) : undefined
+      }
     />
   );
 }

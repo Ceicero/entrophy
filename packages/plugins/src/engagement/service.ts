@@ -78,7 +78,10 @@ export interface XpAwardResult {
   reason?: 'cooldown' | 'hourly_cap';
 }
 
-export type MessageXpConfig = Pick<EngagementLevelingConfig, 'xpPerMessageMin' | 'xpPerMessageMax' | 'xpCooldownSeconds' | 'maxXpPerHour'>;
+export type MessageXpConfig = Pick<
+  EngagementLevelingConfig,
+  'xpPerMessageMin' | 'xpPerMessageMax' | 'xpCooldownSeconds' | 'maxXpPerHour'
+>;
 
 /**
  * Attempts to award message XP to `userId` in `guildId`: enforces the per-user cooldown (Redis
@@ -151,7 +154,12 @@ function voiceSessionKey(guildId: string, userId: string): string {
 }
 
 /** Starts (or restarts) a user's voice-XP session clock. Idempotent — calling it again just resets the start time. */
-export async function startVoiceSession(redis: Redis, guildId: string, userId: string, atMs = Date.now()): Promise<void> {
+export async function startVoiceSession(
+  redis: Redis,
+  guildId: string,
+  userId: string,
+  atMs = Date.now(),
+): Promise<void> {
   await redis.set(voiceSessionKey(guildId, userId), String(atMs));
 }
 
@@ -164,7 +172,12 @@ export async function hasVoiceSession(redis: Redis, guildId: string, userId: str
  * Stops a user's voice-XP session (if any) and returns the whole minutes elapsed since it started.
  * Returns 0 (no-op) if the user had no open session.
  */
-export async function stopVoiceSession(redis: Redis, guildId: string, userId: string, atMs = Date.now()): Promise<number> {
+export async function stopVoiceSession(
+  redis: Redis,
+  guildId: string,
+  userId: string,
+  atMs = Date.now(),
+): Promise<number> {
   const key = voiceSessionKey(guildId, userId);
   const raw = await redis.get(key);
   if (raw === null) return 0;
@@ -199,7 +212,12 @@ export interface RewardPlan {
  * level (never removes). `'replace'` keeps only the single highest-level reward the member has
  * earned, removing any lower reward roles they're currently holding.
  */
-export function computeLevelRewardPlan(currentRoleIds: string[], rewards: RewardDef[], atLevel: number, mode: EngagementRewardMode): RewardPlan {
+export function computeLevelRewardPlan(
+  currentRoleIds: string[],
+  rewards: RewardDef[],
+  atLevel: number,
+  mode: EngagementRewardMode,
+): RewardPlan {
   const applicable = rewards.filter((r) => r.level <= atLevel);
 
   if (mode === 'stack') {
@@ -211,7 +229,9 @@ export function computeLevelRewardPlan(currentRoleIds: string[], rewards: Reward
 
   const highest = applicable.reduce((best, r) => (r.level > best.level ? r : best));
   const allRewardRoleIds = new Set(rewards.map((r) => r.roleId));
-  const toRemove = [...new Set(currentRoleIds.filter((id) => allRewardRoleIds.has(id) && id !== highest.roleId))];
+  const toRemove = [
+    ...new Set(currentRoleIds.filter((id) => allRewardRoleIds.has(id) && id !== highest.roleId)),
+  ];
   const toAdd = currentRoleIds.includes(highest.roleId) ? [] : [highest.roleId];
   return { toAdd, toRemove };
 }
@@ -241,7 +261,12 @@ function repCooldownKey(guildId: string, fromUserId: string): string {
  * the giver (not giver+target), one successful `take` also guarantees "at most one rep given to any
  * single target per day from the same giver" whenever `cooldownHours >= 24`.
  */
-export async function takeRepCooldown(redis: Redis, guildId: string, fromUserId: string, cooldownHours: number): Promise<CooldownOutcome> {
+export async function takeRepCooldown(
+  redis: Redis,
+  guildId: string,
+  fromUserId: string,
+  cooldownHours: number,
+): Promise<CooldownOutcome> {
   const key = repCooldownKey(guildId, fromUserId);
   const ttlMs = Math.max(1, cooldownHours) * 3_600_000;
   const acquired = await redis.set(key, '1', 'PX', ttlMs, 'NX');
@@ -262,7 +287,12 @@ export type StarboardAction = 'none' | 'post' | 'update' | 'remove';
  * crossing back down below it after being posted removes; staying posted with a changed count
  * updates the embed's star count; anything else is a no-op.
  */
-export function decideStarboardAction(isPosted: boolean, previousCount: number, newCount: number, threshold: number): StarboardAction {
+export function decideStarboardAction(
+  isPosted: boolean,
+  previousCount: number,
+  newCount: number,
+  threshold: number,
+): StarboardAction {
   if (newCount < threshold) {
     return isPosted ? 'remove' : 'none';
   }
@@ -271,7 +301,11 @@ export function decideStarboardAction(isPosted: boolean, previousCount: number, 
 }
 
 /** Counts distinct eligible reactors (bots already excluded by the caller), optionally excluding the message author. */
-export function countEligibleReactors(reactorUserIds: string[], authorId: string, ignoreSelfStar: boolean): number {
+export function countEligibleReactors(
+  reactorUserIds: string[],
+  authorId: string,
+  ignoreSelfStar: boolean,
+): number {
   const set = new Set(reactorUserIds);
   if (ignoreSelfStar) set.delete(authorId);
   return set.size;

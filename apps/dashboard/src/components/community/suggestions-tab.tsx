@@ -25,7 +25,13 @@ import { ApiClientError } from '../../lib/api';
 import { useCommunitySuggestions, useUpdateSuggestionStatus } from '../../lib/community-queries';
 import { DataTable, type DataTableColumn } from '../data-table';
 
-const STATUS_OPTIONS: SuggestionDto['status'][] = ['PENDING', 'CONSIDERING', 'APPROVED', 'DENIED', 'IMPLEMENTED'];
+const STATUS_OPTIONS: SuggestionDto['status'][] = [
+  'PENDING',
+  'CONSIDERING',
+  'APPROVED',
+  'DENIED',
+  'IMPLEMENTED',
+];
 const STATUS_LABEL: Record<SuggestionDto['status'], string> = {
   PENDING: 'Pending',
   CONSIDERING: 'Considering',
@@ -33,7 +39,10 @@ const STATUS_LABEL: Record<SuggestionDto['status'], string> = {
   DENIED: 'Denied',
   IMPLEMENTED: 'Implemented',
 };
-const STATUS_BADGE: Record<SuggestionDto['status'], 'default' | 'secondary' | 'success' | 'destructive' | 'outline'> = {
+const STATUS_BADGE: Record<
+  SuggestionDto['status'],
+  'default' | 'secondary' | 'success' | 'destructive' | 'outline'
+> = {
   PENDING: 'outline',
   CONSIDERING: 'secondary',
   APPROVED: 'success',
@@ -45,7 +54,11 @@ export function SuggestionsTab({ guildId }: { guildId: string }) {
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [cursorStack, setCursorStack] = React.useState<(string | undefined)[]>([undefined]);
   const cursor = cursorStack[cursorStack.length - 1];
-  const { data, isLoading, error, refetch } = useCommunitySuggestions(guildId, statusFilter === 'all' ? undefined : statusFilter, cursor);
+  const { data, isLoading, error, refetch } = useCommunitySuggestions(
+    guildId,
+    statusFilter === 'all' ? undefined : statusFilter,
+    cursor,
+  );
   const updateStatus = useUpdateSuggestionStatus(guildId);
   const { toast } = useToast();
 
@@ -68,17 +81,38 @@ export function SuggestionsTab({ guildId }: { guildId: string }) {
           toast({ title: `Suggestion #${editing.number} updated`, variant: 'success' });
           setEditing(null);
         },
-        onError: (err) => toast({ title: 'Could not update', description: err instanceof ApiClientError ? err.message : 'Please try again.', variant: 'destructive' }),
+        onError: (err) =>
+          toast({
+            title: 'Could not update',
+            description: err instanceof ApiClientError ? err.message : 'Please try again.',
+            variant: 'destructive',
+          }),
       },
     );
   }
 
   const columns: DataTableColumn<SuggestionDto>[] = [
     { key: 'number', header: '#', render: (s) => `#${s.number}` },
-    { key: 'content', header: 'Suggestion', render: (s) => <span>{s.content.length > 80 ? `${s.content.slice(0, 80)}…` : s.content}</span> },
-    { key: 'status', header: 'Status', render: (s) => <Badge variant={STATUS_BADGE[s.status]}>{STATUS_LABEL[s.status]}</Badge> },
+    {
+      key: 'content',
+      header: 'Suggestion',
+      render: (s) => <span>{s.content.length > 80 ? `${s.content.slice(0, 80)}…` : s.content}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (s) => <Badge variant={STATUS_BADGE[s.status]}>{STATUS_LABEL[s.status]}</Badge>,
+    },
     { key: 'votes', header: 'Votes', render: (s) => `👍 ${s.upvotes} · 👎 ${s.downvotes}` },
-    { key: 'edit', header: '', render: (s) => <Button size="sm" variant="outline" onClick={() => openEditor(s)}>Update</Button> },
+    {
+      key: 'edit',
+      header: '',
+      render: (s) => (
+        <Button size="sm" variant="outline" onClick={() => openEditor(s)}>
+          Update
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -130,7 +164,10 @@ export function SuggestionsTab({ guildId }: { guildId: string }) {
               <p className="rounded-md border border-border bg-muted/40 p-3 text-sm">{editing.content}</p>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Status</label>
-                <Select value={draftStatus} onValueChange={(v) => setDraftStatus(v as SuggestionDto['status'])}>
+                <Select
+                  value={draftStatus}
+                  onValueChange={(v) => setDraftStatus(v as SuggestionDto['status'])}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -145,7 +182,12 @@ export function SuggestionsTab({ guildId }: { guildId: string }) {
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Staff note (optional)</label>
-                <Textarea value={draftNote} onChange={(e) => setDraftNote(e.target.value)} rows={3} placeholder="Shown on the suggestion, and DMed to the author if enabled." />
+                <Textarea
+                  value={draftNote}
+                  onChange={(e) => setDraftNote(e.target.value)}
+                  rows={3}
+                  placeholder="Shown on the suggestion, and DMed to the author if enabled."
+                />
               </div>
             </div>
           ) : null}

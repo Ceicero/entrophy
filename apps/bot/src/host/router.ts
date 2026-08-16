@@ -56,11 +56,19 @@ async function replyError(interaction: RepliableInteraction, message: string, lo
  * `AppError` such as `PermissionError`/`ValidationError`, whose message was already written for end users at
  * the throw site — see `assertStaffLevel`/`hierarchyGuard`/`assertBotPermissions`). Never leaks a stack trace.
  */
-function messageForThrown(err: unknown, t: TFunction, logger: Logger, context: Record<string, unknown>): string {
+function messageForThrown(
+  err: unknown,
+  t: TFunction,
+  logger: Logger,
+  context: Record<string, unknown>,
+): string {
   if (isAppError(err) && err.expose) {
     return err.message;
   }
-  logger.error({ ...context, err: err instanceof Error ? err.message : String(err) }, 'router: handler threw an unexpected error');
+  logger.error(
+    { ...context, err: err instanceof Error ? err.message : String(err) },
+    'router: handler threw an unexpected error',
+  );
   return t('errors.generic');
 }
 
@@ -97,7 +105,18 @@ async function checkAndConsume(params: {
   commandNameForCooldown?: string;
   cooldown?: { seconds: number; scope: 'user' | 'guild' | 'channel' };
 }): Promise<boolean> {
-  const { interaction, host, logger, t, requirement, staffLevel, actorPermissionsBitfield, userId, guild, channel } = params;
+  const {
+    interaction,
+    host,
+    logger,
+    t,
+    requirement,
+    staffLevel,
+    actorPermissionsBitfield,
+    userId,
+    guild,
+    channel,
+  } = params;
 
   const evalResult = evaluateRequirement({
     requirement,
@@ -120,7 +139,11 @@ async function checkAndConsume(params: {
     }
   }
 
-  const globalResult = await host.globalRateLimiter.consume(globalLimiterKey(userId), GLOBAL_LIMIT, GLOBAL_WINDOW_MS);
+  const globalResult = await host.globalRateLimiter.consume(
+    globalLimiterKey(userId),
+    GLOBAL_LIMIT,
+    GLOBAL_WINDOW_MS,
+  );
   if (!globalResult.allowed) {
     await replyError(interaction, t('errors.rate_limited'), logger);
     return false;
@@ -134,7 +157,11 @@ async function checkAndConsume(params: {
     });
     const result = await host.cooldowns.take(key, params.cooldown.seconds);
     if (!result.ok) {
-      await replyError(interaction, t('errors.cooldown', { seconds: Math.max(1, Math.ceil(result.retryAfterMs / 1000)) }), logger);
+      await replyError(
+        interaction,
+        t('errors.cooldown', { seconds: Math.max(1, Math.ceil(result.retryAfterMs / 1000)) }),
+        logger,
+      );
       return false;
     }
   }
@@ -157,7 +184,11 @@ async function checkPluginGate(params: {
 
   const availability = host.availability.get(pluginId);
   if (!availability?.available) {
-    await replyError(interaction, t('errors.plugin_unavailable', { plugin: pluginName, reason: availability?.reason ?? 'unknown' }), logger);
+    await replyError(
+      interaction,
+      t('errors.plugin_unavailable', { plugin: pluginName, reason: availability?.reason ?? 'unknown' }),
+      logger,
+    );
     return false;
   }
 
@@ -173,7 +204,11 @@ async function checkPluginGate(params: {
 }
 
 /** Top-level `interactionCreate` dispatcher (ARCHITECTURE.md §9). */
-export async function routeInteraction(interaction: Interaction, host: LoadedHost, logger: Logger): Promise<void> {
+export async function routeInteraction(
+  interaction: Interaction,
+  host: LoadedHost,
+  logger: Logger,
+): Promise<void> {
   if (interaction.isChatInputCommand()) {
     await handleCommand(interaction, host, logger);
     return;
@@ -192,7 +227,11 @@ export async function routeInteraction(interaction: Interaction, host: LoadedHos
   }
 }
 
-async function handleCommand(interaction: ChatInputCommandInteraction, host: LoadedHost, logger: Logger): Promise<void> {
+async function handleCommand(
+  interaction: ChatInputCommandInteraction,
+  host: LoadedHost,
+  logger: Logger,
+): Promise<void> {
   const entry = host.commands.get(interaction.commandName);
   if (!entry) {
     await replyError(interaction, coreT('errors.not_found', { thing: 'Command' }), logger);
@@ -233,7 +272,11 @@ async function handleCommand(interaction: ChatInputCommandInteraction, host: Loa
     member: interaction.member,
     guildOwnerId: interaction.guild.ownerId,
     botOwnerIds: host.botOwnerIds,
-    staffRoles: { adminRoleIds: guildConfig.adminRoleIds, modRoleIds: guildConfig.modRoleIds, helperRoleIds: guildConfig.helperRoleIds },
+    staffRoles: {
+      adminRoleIds: guildConfig.adminRoleIds,
+      modRoleIds: guildConfig.modRoleIds,
+      helperRoleIds: guildConfig.helperRoleIds,
+    },
   });
 
   const channel = interaction.channel && 'guild' in interaction.channel ? interaction.channel : null;
@@ -260,17 +303,25 @@ async function handleCommand(interaction: ChatInputCommandInteraction, host: Loa
     staffLevel,
     locale: interaction.locale,
     t,
-    config: <T,>() => ctx.getConfig<T>(interaction.guildId),
+    config: <T>() => ctx.getConfig<T>(interaction.guildId),
   };
 
   try {
     await command.execute(commandContext);
   } catch (err) {
-    await replyError(interaction, messageForThrown(err, t, logger, { plugin: pluginId, command: interaction.commandName }), logger);
+    await replyError(
+      interaction,
+      messageForThrown(err, t, logger, { plugin: pluginId, command: interaction.commandName }),
+      logger,
+    );
   }
 }
 
-async function handleContextMenu(interaction: ContextMenuCommandInteraction, host: LoadedHost, logger: Logger): Promise<void> {
+async function handleContextMenu(
+  interaction: ContextMenuCommandInteraction,
+  host: LoadedHost,
+  logger: Logger,
+): Promise<void> {
   // `ContextMenuCommandInteraction` (the umbrella class type) doesn't structurally satisfy `RepliableInteraction`,
   // which is a union of its two concrete subclasses (`Message`/`UserContextMenuCommandInteraction`) — reply/followUp
   // behave identically on both, so this is a safe narrowing cast, same pattern used elsewhere for interaction
@@ -319,7 +370,11 @@ async function handleContextMenu(interaction: ContextMenuCommandInteraction, hos
     member: interaction.member,
     guildOwnerId: interaction.guild.ownerId,
     botOwnerIds: host.botOwnerIds,
-    staffRoles: { adminRoleIds: guildConfig.adminRoleIds, modRoleIds: guildConfig.modRoleIds, helperRoleIds: guildConfig.helperRoleIds },
+    staffRoles: {
+      adminRoleIds: guildConfig.adminRoleIds,
+      modRoleIds: guildConfig.modRoleIds,
+      helperRoleIds: guildConfig.helperRoleIds,
+    },
   });
 
   const channel = interaction.channel && 'guild' in interaction.channel ? interaction.channel : null;
@@ -346,17 +401,25 @@ async function handleContextMenu(interaction: ContextMenuCommandInteraction, hos
     staffLevel,
     locale: interaction.locale,
     t,
-    config: <T,>() => ctx.getConfig<T>(interaction.guildId),
+    config: <T>() => ctx.getConfig<T>(interaction.guildId),
   };
 
   try {
     await command.executeContextMenu(contextMenuContext);
   } catch (err) {
-    await replyError(repliable, messageForThrown(err, t, logger, { plugin: pluginId, command: interaction.commandName }), logger);
+    await replyError(
+      repliable,
+      messageForThrown(err, t, logger, { plugin: pluginId, command: interaction.commandName }),
+      logger,
+    );
   }
 }
 
-async function handleAutocomplete(interaction: AutocompleteInteraction, host: LoadedHost, logger: Logger): Promise<void> {
+async function handleAutocomplete(
+  interaction: AutocompleteInteraction,
+  host: LoadedHost,
+  logger: Logger,
+): Promise<void> {
   const respondEmpty = async () => {
     try {
       await interaction.respond([]);
@@ -387,7 +450,11 @@ async function handleAutocomplete(interaction: AutocompleteInteraction, host: Lo
     member: interaction.member,
     guildOwnerId: interaction.guild.ownerId,
     botOwnerIds: host.botOwnerIds,
-    staffRoles: { adminRoleIds: guildConfig.adminRoleIds, modRoleIds: guildConfig.modRoleIds, helperRoleIds: guildConfig.helperRoleIds },
+    staffRoles: {
+      adminRoleIds: guildConfig.adminRoleIds,
+      modRoleIds: guildConfig.modRoleIds,
+      helperRoleIds: guildConfig.helperRoleIds,
+    },
   });
 
   const autocompleteContext: AutocompleteContext = {
@@ -397,13 +464,16 @@ async function handleAutocomplete(interaction: AutocompleteInteraction, host: Lo
     staffLevel,
     locale: interaction.locale,
     t,
-    config: <T,>() => ctx.getConfig<T>(interaction.guildId),
+    config: <T>() => ctx.getConfig<T>(interaction.guildId),
   };
 
   try {
     await command.autocomplete(autocompleteContext);
   } catch (err) {
-    logger.error({ plugin: plugin.manifest.id, command: interaction.commandName, err }, 'autocomplete handler threw');
+    logger.error(
+      { plugin: plugin.manifest.id, command: interaction.commandName, err },
+      'autocomplete handler threw',
+    );
     await respondEmpty();
   }
 }
@@ -416,7 +486,11 @@ function componentKindOf(interaction: AnyComponentInteraction): 'button' | 'sele
   return 'select';
 }
 
-async function handleComponent(interaction: AnyComponentInteraction, host: LoadedHost, logger: Logger): Promise<void> {
+async function handleComponent(
+  interaction: AnyComponentInteraction,
+  host: LoadedHost,
+  logger: Logger,
+): Promise<void> {
   const parsed = parseCustomId(interaction.customId);
   const entry = host.components.get(`${parsed.pluginId}:${parsed.action}`);
 
@@ -465,7 +539,11 @@ async function handleComponent(interaction: AnyComponentInteraction, host: Loade
     member: interaction.member,
     guildOwnerId: interaction.guild.ownerId,
     botOwnerIds: host.botOwnerIds,
-    staffRoles: { adminRoleIds: guildConfig.adminRoleIds, modRoleIds: guildConfig.modRoleIds, helperRoleIds: guildConfig.helperRoleIds },
+    staffRoles: {
+      adminRoleIds: guildConfig.adminRoleIds,
+      modRoleIds: guildConfig.modRoleIds,
+      helperRoleIds: guildConfig.helperRoleIds,
+    },
   });
 
   const channel = interaction.channel && 'guild' in interaction.channel ? interaction.channel : null;
@@ -493,13 +571,17 @@ async function handleComponent(interaction: AnyComponentInteraction, host: Loade
     staffLevel,
     locale: interaction.locale,
     t,
-    config: <T,>() => ctx.getConfig<T>(interaction.guildId),
+    config: <T>() => ctx.getConfig<T>(interaction.guildId),
     args: parsed.args,
   };
 
   try {
     await handler.handler(componentContext);
   } catch (err) {
-    await replyError(interaction, messageForThrown(err, t, logger, { plugin: pluginId, action: parsed.action }), logger);
+    await replyError(
+      interaction,
+      messageForThrown(err, t, logger, { plugin: pluginId, action: parsed.action }),
+      logger,
+    );
   }
 }

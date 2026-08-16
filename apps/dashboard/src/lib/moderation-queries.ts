@@ -2,15 +2,24 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ModerationCaseDto, ModerationWarningDto, Paginated } from '@entrophy/types';
-import type { ModerationAppealDto, ModerationNoteDto, ModerationSettingsDto } from '@entrophy/types/moderation';
+import type {
+  ModerationAppealDto,
+  ModerationNoteDto,
+  ModerationSettingsDto,
+} from '@entrophy/types/moderation';
 import { apiFetch, toQueryString } from './api';
 
 export const moderationQueryKeys = {
-  cases: (guildId: string, filters: CasesFilters) => ['guilds', guildId, 'moderation', 'cases', filters] as const,
-  case: (guildId: string, caseNumber: number) => ['guilds', guildId, 'moderation', 'cases', caseNumber] as const,
-  warnings: (guildId: string, userId?: string) => ['guilds', guildId, 'moderation', 'warnings', userId ?? null] as const,
-  notes: (guildId: string, userId?: string) => ['guilds', guildId, 'moderation', 'notes', userId ?? null] as const,
-  appeals: (guildId: string, status?: string) => ['guilds', guildId, 'moderation', 'appeals', status ?? null] as const,
+  cases: (guildId: string, filters: CasesFilters) =>
+    ['guilds', guildId, 'moderation', 'cases', filters] as const,
+  case: (guildId: string, caseNumber: number) =>
+    ['guilds', guildId, 'moderation', 'cases', caseNumber] as const,
+  warnings: (guildId: string, userId?: string) =>
+    ['guilds', guildId, 'moderation', 'warnings', userId ?? null] as const,
+  notes: (guildId: string, userId?: string) =>
+    ['guilds', guildId, 'moderation', 'notes', userId ?? null] as const,
+  appeals: (guildId: string, status?: string) =>
+    ['guilds', guildId, 'moderation', 'appeals', status ?? null] as const,
   settings: (guildId: string) => ['guilds', guildId, 'moderation', 'settings'] as const,
 };
 
@@ -29,7 +38,10 @@ export interface CasesFilters {
 export function useModerationCases(guildId: string | undefined, filters: CasesFilters = {}) {
   return useQuery({
     queryKey: moderationQueryKeys.cases(guildId ?? '', filters),
-    queryFn: () => apiFetch<Paginated<ModerationCaseDto>>(`/guilds/${guildId}/moderation/cases${toQueryString({ ...filters })}`),
+    queryFn: () =>
+      apiFetch<Paginated<ModerationCaseDto>>(
+        `/guilds/${guildId}/moderation/cases${toQueryString({ ...filters })}`,
+      ),
     enabled: Boolean(guildId),
   });
 }
@@ -46,7 +58,10 @@ export function useUpdateCaseReason(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ caseNumber, reason }: { caseNumber: number; reason: string }) =>
-      apiFetch<ModerationCaseDto>(`/guilds/${guildId}/moderation/cases/${caseNumber}`, { method: 'PATCH', body: { reason } }),
+      apiFetch<ModerationCaseDto>(`/guilds/${guildId}/moderation/cases/${caseNumber}`, {
+        method: 'PATCH',
+        body: { reason },
+      }),
     onSuccess: (data) => {
       queryClient.setQueryData(moderationQueryKeys.case(guildId, data.caseNumber), data);
       void queryClient.invalidateQueries({ queryKey: ['guilds', guildId, 'moderation', 'cases'] });
@@ -65,7 +80,10 @@ export function moderationCasesExportCsvUrl(guildId: string): string {
 export function useModerationWarnings(guildId: string | undefined, userId?: string) {
   return useQuery({
     queryKey: moderationQueryKeys.warnings(guildId ?? '', userId),
-    queryFn: () => apiFetch<Paginated<ModerationWarningDto>>(`/guilds/${guildId}/moderation/warnings${toQueryString({ userId, limit: 100 })}`),
+    queryFn: () =>
+      apiFetch<Paginated<ModerationWarningDto>>(
+        `/guilds/${guildId}/moderation/warnings${toQueryString({ userId, limit: 100 })}`,
+      ),
     enabled: Boolean(guildId),
   });
 }
@@ -77,7 +95,10 @@ export function useModerationWarnings(guildId: string | undefined, userId?: stri
 export function useModerationNotes(guildId: string | undefined, userId?: string) {
   return useQuery({
     queryKey: moderationQueryKeys.notes(guildId ?? '', userId),
-    queryFn: () => apiFetch<Paginated<ModerationNoteDto>>(`/guilds/${guildId}/moderation/notes${toQueryString({ userId, limit: 100 })}`),
+    queryFn: () =>
+      apiFetch<Paginated<ModerationNoteDto>>(
+        `/guilds/${guildId}/moderation/notes${toQueryString({ userId, limit: 100 })}`,
+      ),
     enabled: Boolean(guildId && userId),
   });
 }
@@ -96,7 +117,8 @@ export function useCreateModerationNote(guildId: string) {
 export function useDeleteModerationNote(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (noteId: string) => apiFetch<void>(`/guilds/${guildId}/moderation/notes/${noteId}`, { method: 'DELETE' }),
+    mutationFn: (noteId: string) =>
+      apiFetch<void>(`/guilds/${guildId}/moderation/notes/${noteId}`, { method: 'DELETE' }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['guilds', guildId, 'moderation', 'notes'] });
     },
@@ -110,7 +132,10 @@ export function useDeleteModerationNote(guildId: string) {
 export function useModerationAppeals(guildId: string | undefined, status?: string) {
   return useQuery({
     queryKey: moderationQueryKeys.appeals(guildId ?? '', status),
-    queryFn: () => apiFetch<Paginated<ModerationAppealDto>>(`/guilds/${guildId}/moderation/appeals${toQueryString({ status, limit: 50 })}`),
+    queryFn: () =>
+      apiFetch<Paginated<ModerationAppealDto>>(
+        `/guilds/${guildId}/moderation/appeals${toQueryString({ status, limit: 50 })}`,
+      ),
     enabled: Boolean(guildId),
   });
 }
@@ -118,8 +143,19 @@ export function useModerationAppeals(guildId: string | undefined, status?: strin
 export function useDecideAppeal(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ appealId, accept, decisionNote }: { appealId: string; accept: boolean; decisionNote?: string }) =>
-      apiFetch<ModerationAppealDto>(`/guilds/${guildId}/moderation/appeals/${appealId}/decide`, { method: 'POST', body: { accept, decisionNote } }),
+    mutationFn: ({
+      appealId,
+      accept,
+      decisionNote,
+    }: {
+      appealId: string;
+      accept: boolean;
+      decisionNote?: string;
+    }) =>
+      apiFetch<ModerationAppealDto>(`/guilds/${guildId}/moderation/appeals/${appealId}/decide`, {
+        method: 'POST',
+        body: { accept, decisionNote },
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['guilds', guildId, 'moderation', 'appeals'] });
     },
@@ -142,7 +178,10 @@ export function useUpdateModerationSettings(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (patch: Partial<ModerationSettingsDto>) =>
-      apiFetch<ModerationSettingsDto>(`/guilds/${guildId}/moderation/settings`, { method: 'PUT', body: patch }),
+      apiFetch<ModerationSettingsDto>(`/guilds/${guildId}/moderation/settings`, {
+        method: 'PUT',
+        body: patch,
+      }),
     onSuccess: (data) => {
       queryClient.setQueryData(moderationQueryKeys.settings(guildId), data);
     },

@@ -2,7 +2,16 @@
 
 import * as React from 'react';
 import type { TicketQueueItemDto } from '@entrophy/types/tickets';
-import { Badge, Input, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@entrophy/ui';
+import {
+  Badge,
+  Input,
+  Pagination,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@entrophy/ui';
 import { formatRelativeTime } from '../../lib/format';
 import { useTicketQueue, type TicketQueueFilters } from '../../lib/tickets-queries';
 import { DataTable, type DataTableColumn } from '../data-table';
@@ -25,7 +34,11 @@ export function TicketsQueueTab({ guildId }: TicketsQueueTabProps) {
   const [cursorStack, setCursorStack] = React.useState<(string | undefined)[]>([]);
   const [selectedTicketId, setSelectedTicketId] = React.useState<string | null>(null);
 
-  const filters: TicketQueueFilters = { status: status === 'ALL' ? undefined : status, tag: tag.trim() || undefined, cursor };
+  const filters: TicketQueueFilters = {
+    status: status === 'ALL' ? undefined : status,
+    tag: tag.trim() || undefined,
+    cursor,
+  };
   const { data, isLoading, error, refetch } = useTicketQueue(guildId, filters);
 
   React.useEffect(() => {
@@ -51,8 +64,16 @@ export function TicketsQueueTab({ guildId }: TicketsQueueTabProps) {
   const columns: DataTableColumn<TicketQueueItemDto>[] = [
     { key: 'number', header: '#', render: (t) => `#${t.number}` },
     { key: 'opener', header: 'Opener', render: (t) => t.openerId },
-    { key: 'subject', header: 'Subject', render: (t) => t.subject ?? <span className="text-muted-foreground">—</span> },
-    { key: 'assignee', header: 'Assignee', render: (t) => t.assigneeId ?? <span className="text-muted-foreground">Unassigned</span> },
+    {
+      key: 'subject',
+      header: 'Subject',
+      render: (t) => t.subject ?? <span className="text-muted-foreground">—</span>,
+    },
+    {
+      key: 'assignee',
+      header: 'Assignee',
+      render: (t) => t.assigneeId ?? <span className="text-muted-foreground">Unassigned</span>,
+    },
     {
       key: 'tags',
       header: 'Tags',
@@ -72,10 +93,21 @@ export function TicketsQueueTab({ guildId }: TicketsQueueTabProps) {
     {
       key: 'sla',
       header: 'SLA',
-      render: (t) => (t.status === 'OPEN' && t.slaDueAt ? <Badge variant={t.slaBreached ? 'destructive' : 'outline'}>{t.slaBreached ? 'Breached' : 'On track'}</Badge> : <span className="text-muted-foreground">—</span>),
+      render: (t) =>
+        t.status === 'OPEN' && t.slaDueAt ? (
+          <Badge variant={t.slaBreached ? 'destructive' : 'outline'}>
+            {t.slaBreached ? 'Breached' : 'On track'}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
     },
     { key: 'age', header: 'Opened', render: (t) => formatRelativeTime(t.createdAt) },
-    { key: 'status', header: 'Status', render: (t) => <Badge variant={t.status === 'OPEN' ? 'success' : 'outline'}>{t.status}</Badge> },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (t) => <Badge variant={t.status === 'OPEN' ? 'success' : 'outline'}>{t.status}</Badge>,
+    },
   ];
 
   return (
@@ -93,7 +125,12 @@ export function TicketsQueueTab({ guildId }: TicketsQueueTabProps) {
             ))}
           </SelectContent>
         </Select>
-        <Input placeholder="Filter by tag…" value={tag} onChange={(e) => setTag(e.target.value)} className="w-48" />
+        <Input
+          placeholder="Filter by tag…"
+          value={tag}
+          onChange={(e) => setTag(e.target.value)}
+          className="w-48"
+        />
       </div>
 
       <DataTable
@@ -119,7 +156,11 @@ export function TicketsQueueTab({ guildId }: TicketsQueueTabProps) {
         />
       ) : null}
 
-      <TicketDetailDrawer guildId={guildId} ticketId={selectedTicketId} onOpenChange={(open) => !open && setSelectedTicketId(null)} />
+      <TicketDetailDrawer
+        guildId={guildId}
+        ticketId={selectedTicketId}
+        onOpenChange={(open) => !open && setSelectedTicketId(null)}
+      />
     </div>
   );
 }

@@ -14,7 +14,10 @@ export default function CommunityPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Community" description="Polls, giveaways, the suggestion box, scheduled announcements, and events." />
+      <PageHeader
+        title="Community"
+        description="Polls, giveaways, the suggestion box, scheduled announcements, and events."
+      />
 
       <Tabs defaultValue="overview">
         <TabsList>

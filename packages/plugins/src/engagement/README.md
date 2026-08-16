@@ -6,6 +6,7 @@ temporary voice channels (SPEC.md §G subset; ARCHITECTURE.md §7.1 row `engagem
 ## What it does
 
 ### Leveling
+
 - **Message XP**: `config.leveling.xpPerMessageMin`..`xpPerMessageMax` (default 15–25) per eligible
   message, gated by a per-user cooldown (`xpCooldownSeconds`, default 60s) and a rolling-hour cap
   (`maxXpPerHour`, default 600). Never reads message content — only that a non-bot, non-ignored
@@ -28,14 +29,16 @@ temporary voice channels (SPEC.md §G subset; ARCHITECTURE.md §7.1 row `engagem
 - Emits the platform `level.up` event on every level-up (message or voice).
 
 ### Reputation
+
 - `/rep give <user> [reason]` — 1 reputation per giver per cooldown window
-  (`config.rep.cooldownHours`, default 24h; enforced by a Redis `SET NX PX` on the *giver*, which
+  (`config.rep.cooldownHours`, default 24h; enforced by a Redis `SET NX PX` on the _giver_, which
   also guarantees "at most one rep to any single target per day from the same giver" whenever the
   cooldown is 24h or more). Can't self-rep.
 - `/rep check [user]`, `/rep leaderboard`, `/rep revoke <user> <amount>` (admin — writes a negative
   `ReputationEvent`, never deletes history).
 
 ### Starboard
+
 - `messageReactionAdd`/`Remove` (partials-aware) on `config.starboard.emoji` (default ⭐). Posts to
   `config.starboard.channelId` once eligible-reactor count reaches `config.starboard.threshold`
   (default 5), updates the embed as the count changes, and removes the post if it drops back below
@@ -45,6 +48,7 @@ temporary voice channels (SPEC.md §G subset; ARCHITECTURE.md §7.1 row `engagem
   and attachment count only.
 
 ### Temporary voice channels
+
 - `config.tempVoice.hubChannelIds` — joining a hub creates a personal voice channel (name from
   `config.tempVoice.nameTemplate`, `{user}` placeholder; under `config.tempVoice.categoryId` or the
   hub's own category) and moves the member in. `TempVoiceChannel` tracks ownership.
@@ -54,20 +58,20 @@ temporary voice channels (SPEC.md §G subset; ARCHITECTURE.md §7.1 row `engagem
 
 ## Commands
 
-| Command | Notes |
-|---|---|
-| `/level rank [user]` | Public. Progress bar + rank position. |
-| `/level leaderboard [page]` | Public, paginated (10/page) with Previous/Next buttons. |
-| `/level config` | Moderator+. View-only. |
-| `/level xp give\|remove\|set <user> <amount>` | Admin. Audited. |
-| `/level rewards add\|remove\|list\|sync` | Admin. `sync` recomputes rewards for every ranked member. |
-| `/level ignore add\|remove <channel\|role>` | Admin. Exactly one of channel/role per call. |
-| `/level reset <user?>` | Admin. Confirmation prompt (skipped if `fastActions` is on). Omit `user` to reset everyone. |
-| `/rep give\|check\|leaderboard` | Public. |
-| `/rep revoke <user> <amount>` | Admin. |
-| `/starboard set channel\|threshold\|emoji\|selfstar`, `/starboard status` | Admin (`ManageGuild`). |
-| `/tempvoice setup <hub> [category] [name-template]` | Admin. |
-| `/tempvoice lock\|unlock\|limit\|rename\|claim\|kick\|permit` | Anyone currently in their own temp channel. |
+| Command                                                                   | Notes                                                                                       |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `/level rank [user]`                                                      | Public. Progress bar + rank position.                                                       |
+| `/level leaderboard [page]`                                               | Public, paginated (10/page) with Previous/Next buttons.                                     |
+| `/level config`                                                           | Moderator+. View-only.                                                                      |
+| `/level xp give\|remove\|set <user> <amount>`                             | Admin. Audited.                                                                             |
+| `/level rewards add\|remove\|list\|sync`                                  | Admin. `sync` recomputes rewards for every ranked member.                                   |
+| `/level ignore add\|remove <channel\|role>`                               | Admin. Exactly one of channel/role per call.                                                |
+| `/level reset <user?>`                                                    | Admin. Confirmation prompt (skipped if `fastActions` is on). Omit `user` to reset everyone. |
+| `/rep give\|check\|leaderboard`                                           | Public.                                                                                     |
+| `/rep revoke <user> <amount>`                                             | Admin.                                                                                      |
+| `/starboard set channel\|threshold\|emoji\|selfstar`, `/starboard status` | Admin (`ManageGuild`).                                                                      |
+| `/tempvoice setup <hub> [category] [name-template]`                       | Admin.                                                                                      |
+| `/tempvoice lock\|unlock\|limit\|rename\|claim\|kick\|permit`             | Anyone currently in their own temp channel.                                                 |
 
 ## Config keys
 
@@ -76,14 +80,14 @@ See `manifest.ts`'s `configSchema` for the full shape/defaults (`leveling`, `rep
 
 ## Permissions
 
-| Permission | Feature | Optional | Fallback |
-|---|---|---|---|
-| Manage Roles | Level-up role rewards | Yes | Level-ups still announce; role grant/remove is skipped and logged. |
-| Manage Channels | Temp voice channel create/rename/delete | Yes | Hub still exists; the bot can't create/manage the personal channel. |
-| Move Members | Moving the creator into their new temp channel | Yes | Channel is still created; the member moves in manually. |
-| Send Messages | Level-up announcements, starboard posts | No | Silently fails to send; nothing else breaks. |
-| Embed Links | Rank/leaderboard/starboard embeds | No | — |
-| Read Message History | Starboard reaction counts on older messages | Yes | May miss reactions added while the bot was offline. |
+| Permission           | Feature                                        | Optional | Fallback                                                            |
+| -------------------- | ---------------------------------------------- | -------- | ------------------------------------------------------------------- |
+| Manage Roles         | Level-up role rewards                          | Yes      | Level-ups still announce; role grant/remove is skipped and logged.  |
+| Manage Channels      | Temp voice channel create/rename/delete        | Yes      | Hub still exists; the bot can't create/manage the personal channel. |
+| Move Members         | Moving the creator into their new temp channel | Yes      | Channel is still created; the member moves in manually.             |
+| Send Messages        | Level-up announcements, starboard posts        | No       | Silently fails to send; nothing else breaks.                        |
+| Embed Links          | Rank/leaderboard/starboard embeds              | No       | —                                                                   |
+| Read Message History | Starboard reaction counts on older messages    | Yes      | May miss reactions added while the bot was offline.                 |
 
 No privileged intents are required for the plugin to function; `MessageContent` (privileged, optional)
 only upgrades the starboard embed to include a content excerpt when the guild has it enabled.

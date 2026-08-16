@@ -7,10 +7,23 @@ import sensible from '@fastify/sensible';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import Fastify from 'fastify';
-import { jsonSchemaTransform, serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
+import {
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from 'fastify-type-provider-zod';
 import type Redis from 'ioredis';
 import type { Logger } from 'pino';
-import { ConfigError, createLogger, createPlatformEvents, createRedis, env, isProduction, toPublicError } from '@entrophy/core';
+import {
+  ConfigError,
+  createLogger,
+  createPlatformEvents,
+  createRedis,
+  env,
+  isProduction,
+  toPublicError,
+} from '@entrophy/core';
 import { prisma as sharedPrisma, type PrismaClient } from '@entrophy/database';
 import { createGuildConfigStore } from './lib/config-store';
 import { csrfProtection } from './lib/csrf';
@@ -148,14 +161,24 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   // etc, below) is registered, or those routes keep using Fastify's built-in defaults regardless of what's
   // set here afterwards.
   app.setNotFoundHandler((request, reply) => {
-    reply.status(404).send({ error: { code: 'not_found', message: `Route ${request.method} ${request.url} not found.` } });
+    reply
+      .status(404)
+      .send({ error: { code: 'not_found', message: `Route ${request.method} ${request.url} not found.` } });
   });
 
   app.setErrorHandler((err, request, reply) => {
     // fastify-type-provider-zod's validatorCompiler doesn't throw a raw ZodError (which `toPublicError`
     // knows how to shape) — Fastify wraps its per-issue output into a standard `FST_ERR_VALIDATION` error
     // with an `err.validation` array instead. Normalize that into the same `validation_error` 400 shape.
-    const validation = (err as { validation?: { message: string; instancePath: string; params?: { issue?: { path?: (string | number)[] } } }[] }).validation;
+    const validation = (
+      err as {
+        validation?: {
+          message: string;
+          instancePath: string;
+          params?: { issue?: { path?: (string | number)[] } };
+        }[];
+      }
+    ).validation;
     if (Array.isArray(validation)) {
       const body = {
         error: {

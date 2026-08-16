@@ -19,7 +19,10 @@ export const panelCreateModalHandler: ComponentHandler = {
     const pending = pendingId ? await pendingStore.take<PendingPanelCreate>(pendingId) : null;
 
     if (!pending) {
-      await c.interaction.reply({ embeds: [errorEmbed('That panel-creation session expired. Run `/roles panel create` again.')], ephemeral: true });
+      await c.interaction.reply({
+        embeds: [errorEmbed('That panel-creation session expired. Run `/roles panel create` again.')],
+        ephemeral: true,
+      });
       return;
     }
 
@@ -51,7 +54,11 @@ export const panelCreateModalHandler: ComponentHandler = {
     });
 
     await (c.interaction as unknown as { reply: (opts: unknown) => Promise<unknown> }).reply({
-      embeds: [successEmbed(`Created **${created.title}**. Add options with \`/roles panel option-add\`, then \`/roles panel post\`.`)],
+      embeds: [
+        successEmbed(
+          `Created **${created.title}**. Add options with \`/roles panel option-add\`, then \`/roles panel post\`.`,
+        ),
+      ],
       ephemeral: true,
     });
   },

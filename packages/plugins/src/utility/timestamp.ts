@@ -42,7 +42,16 @@ const DATE_TIME_FORMATS = [
   'd MMMM yyyy HH:mm',
 ];
 
-const DATE_ONLY_FORMATS = ['yyyy-MM-dd', 'yyyy/MM/dd', 'MM/dd/yyyy', 'M/d/yyyy', 'MMMM d, yyyy', 'MMMM d yyyy', 'MMM d, yyyy', 'd MMMM yyyy'];
+const DATE_ONLY_FORMATS = [
+  'yyyy-MM-dd',
+  'yyyy/MM/dd',
+  'MM/dd/yyyy',
+  'M/d/yyyy',
+  'MMMM d, yyyy',
+  'MMMM d yyyy',
+  'MMM d, yyyy',
+  'd MMMM yyyy',
+];
 
 const TIME_ONLY_FORMATS = ['HH:mm:ss', 'HH:mm', 'h:mm a', 'h a', 'ha'];
 
@@ -67,7 +76,9 @@ export function parseTimestampInput(rawInput: string, zone = DEFAULT_ZONE): Date
     throw new TimestampParseError('Please provide a date/time to parse.');
   }
   if (!isValidIanaTimezone(zone)) {
-    throw new TimestampParseError(`"${zone}" is not a recognized IANA timezone (e.g. "America/New_York", "Europe/London", "UTC").`);
+    throw new TimestampParseError(
+      `"${zone}" is not a recognized IANA timezone (e.g. "America/New_York", "Europe/London", "UTC").`,
+    );
   }
 
   const iso = DateTime.fromISO(text, { zone });

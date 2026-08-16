@@ -38,7 +38,12 @@ describe('discord channel/role pickers', () => {
     const GUILD_ID = '777777777777777772';
     env.DISCORD_TOKEN = undefined; // any Discord call would 503, proving the cache was used
     const { app, redis, headers } = await authedApp(GUILD_ID);
-    await redis.set(redisKey('guildchannels', GUILD_ID), JSON.stringify([{ id: '1', name: 'general', type: 0 }]), 'EX', 60);
+    await redis.set(
+      redisKey('guildchannels', GUILD_ID),
+      JSON.stringify([{ id: '1', name: 'general', type: 0 }]),
+      'EX',
+      60,
+    );
 
     const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/discord/channels`, headers });
     expect(res.statusCode).toBe(200);
@@ -81,7 +86,11 @@ describe('discord channel/role pickers', () => {
 
     const { app, headers } = await authedApp(GUILD_ID);
 
-    const channels = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/discord/channels`, headers });
+    const channels = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/discord/channels`,
+      headers,
+    });
     expect(channels.statusCode).toBe(200);
     expect(channels.json()).toEqual([
       { id: '10', name: 'general', type: 0 },
@@ -108,7 +117,10 @@ describe('discord channel/role pickers', () => {
   it('returns 502 when Discord rejects the bot-token request', async () => {
     const GUILD_ID = '777777777777777774';
     env.DISCORD_TOKEN = 'test-bot-token';
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 403 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('nope', { status: 403 })),
+    );
     const { app, headers } = await authedApp(GUILD_ID);
 
     const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/discord/roles`, headers });

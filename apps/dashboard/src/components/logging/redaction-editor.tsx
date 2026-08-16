@@ -3,7 +3,19 @@
 import * as React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { LoggingConfigDto } from '@entrophy/types/logging';
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, FormField, Input, Textarea, useToast } from '@entrophy/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  FormField,
+  Input,
+  Textarea,
+  useToast,
+} from '@entrophy/ui';
 import { useRedactionTest } from '../../lib/logging-queries';
 import { ApiClientError } from '../../lib/api';
 
@@ -41,7 +53,14 @@ export function RedactionEditor({ guildId, draft, onChange, disabled }: Redactio
   function runTest() {
     test.mutate(
       { text: testText },
-      { onError: (err) => toast({ title: 'Test failed', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }) },
+      {
+        onError: (err) =>
+          toast({
+            title: 'Test failed',
+            description: err instanceof ApiClientError ? err.message : undefined,
+            variant: 'destructive',
+          }),
+      },
     );
   }
 
@@ -51,8 +70,9 @@ export function RedactionEditor({ guildId, draft, onChange, disabled }: Redactio
         <CardHeader>
           <CardTitle>Custom redaction patterns</CardTitle>
           <CardDescription>
-            Built-in patterns (always on, in every server): email addresses, phone numbers, Discord tokens, credit-card-like numbers, IPv4
-            addresses. Add your own regex below — patterns run case-insensitively.
+            Built-in patterns (always on, in every server): email addresses, phone numbers, Discord tokens,
+            credit-card-like numbers, IPv4 addresses. Add your own regex below — patterns run
+            case-insensitively.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -77,11 +97,20 @@ export function RedactionEditor({ guildId, draft, onChange, disabled }: Redactio
           ) : (
             <ul className="space-y-1.5">
               {draft.redactionPatterns.map((pattern, i) => (
-                <li key={pattern} className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
+                <li
+                  key={pattern}
+                  className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
+                >
                   <code className="truncate text-xs">
                     {i + 1}. {pattern}
                   </code>
-                  <Button size="sm" variant="ghost" onClick={() => removePattern(pattern)} disabled={disabled} aria-label={`Remove pattern ${i + 1}`}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => removePattern(pattern)}
+                    disabled={disabled}
+                    aria-label={`Remove pattern ${i + 1}`}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </li>
@@ -94,7 +123,10 @@ export function RedactionEditor({ guildId, draft, onChange, disabled }: Redactio
       <Card>
         <CardHeader>
           <CardTitle>Test redaction</CardTitle>
-          <CardDescription>Runs against the patterns currently saved on the server (save changes above first to test unsaved edits).</CardDescription>
+          <CardDescription>
+            Runs against the patterns currently saved on the server (save changes above first to test unsaved
+            edits).
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <FormField label="Sample text">
@@ -107,7 +139,9 @@ export function RedactionEditor({ guildId, draft, onChange, disabled }: Redactio
           {test.data ? (
             <div className="space-y-2 pt-2">
               <FormField label="Redacted result">
-                <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">{test.data.redacted}</div>
+                <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
+                  {test.data.redacted}
+                </div>
               </FormField>
               <div className="flex flex-wrap gap-1.5">
                 {test.data.matches.map((m) => (

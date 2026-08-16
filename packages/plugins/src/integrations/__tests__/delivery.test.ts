@@ -59,7 +59,12 @@ describe('attemptOutboundDelivery', () => {
     });
     const endpoint = makeEndpoint({ url: 'https://127.0.0.1:9999/hook' });
 
-    const result = await attemptOutboundDelivery(ctx, endpoint as never, { event: 'moderation.caseCreated' }, 1);
+    const result = await attemptOutboundDelivery(
+      ctx,
+      endpoint as never,
+      { event: 'moderation.caseCreated' },
+      1,
+    );
 
     expect(result.delivered).toBe(false);
     expect(result.error).toBeTruthy();
@@ -77,13 +82,28 @@ describe('attemptOutboundDelivery', () => {
     const endpointUpdates: unknown[] = [];
     const { ctx } = createTestContext({
       prismaOverrides: {
-        webhookDelivery: { create: async (args: unknown) => { deliveryCreates.push(args); return {}; } },
-        webhookEndpoint: { update: async (args: unknown) => { endpointUpdates.push(args); return { failureCount: 0, enabled: true }; } },
+        webhookDelivery: {
+          create: async (args: unknown) => {
+            deliveryCreates.push(args);
+            return {};
+          },
+        },
+        webhookEndpoint: {
+          update: async (args: unknown) => {
+            endpointUpdates.push(args);
+            return { failureCount: 0, enabled: true };
+          },
+        },
       },
     });
 
     const endpoint = makeEndpoint();
-    const result = await attemptOutboundDelivery(ctx, endpoint as never, { event: 'moderation.caseCreated' }, 1);
+    const result = await attemptOutboundDelivery(
+      ctx,
+      endpoint as never,
+      { event: 'moderation.caseCreated' },
+      1,
+    );
 
     expect(result.delivered).toBe(true);
     expect(result.status).toBe(200);
@@ -105,7 +125,8 @@ describe('attemptOutboundDelivery', () => {
           update: async (args: unknown) => {
             const data = (args as { data: Record<string, unknown> }).data;
             if ('enabled' in data && data.enabled === false) disabled = true;
-            if ('failureCount' in data) return { failureCount: OUTBOUND_AUTO_DISABLE_THRESHOLD, enabled: true };
+            if ('failureCount' in data)
+              return { failureCount: OUTBOUND_AUTO_DISABLE_THRESHOLD, enabled: true };
             return { failureCount: OUTBOUND_AUTO_DISABLE_THRESHOLD, enabled: !disabled };
           },
         },
@@ -113,7 +134,12 @@ describe('attemptOutboundDelivery', () => {
     });
 
     const endpoint = makeEndpoint({ failureCount: OUTBOUND_AUTO_DISABLE_THRESHOLD - 1 });
-    const result = await attemptOutboundDelivery(ctx, endpoint as never, { event: 'moderation.caseCreated' }, 1);
+    const result = await attemptOutboundDelivery(
+      ctx,
+      endpoint as never,
+      { event: 'moderation.caseCreated' },
+      1,
+    );
 
     expect(result.delivered).toBe(false);
     expect(disabled).toBe(true);

@@ -66,10 +66,18 @@ export interface ModAssistCaseSummary {
   recentReasons: string[];
 }
 
-export function buildModAssistPrompt(target: string, caseSummary: ModAssistCaseSummary, extraContext?: string): string {
+export function buildModAssistPrompt(
+  target: string,
+  caseSummary: ModAssistCaseSummary,
+  extraContext?: string,
+): string {
   const summaryText = [
     `Total prior cases: ${caseSummary.totalCases}`,
-    `By type: ${Object.entries(caseSummary.byType).map(([type, count]) => `${type}=${count}`).join(', ') || 'none'}`,
+    `By type: ${
+      Object.entries(caseSummary.byType)
+        .map(([type, count]) => `${type}=${count}`)
+        .join(', ') || 'none'
+    }`,
     `Recent reasons: ${caseSummary.recentReasons.length > 0 ? caseSummary.recentReasons.join(' | ') : 'none recorded'}`,
   ].join('\n');
 

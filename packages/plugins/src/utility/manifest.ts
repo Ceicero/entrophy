@@ -18,35 +18,47 @@ export type UtilityConfig = z.infer<typeof configSchema>;
 export const manifest = defineManifest({
   id: 'utility',
   name: 'Utility',
-  description: 'General-purpose utility commands: user/server info, timestamps, an embed builder, AFK, translation, weather, and bot health.',
+  description:
+    'General-purpose utility commands: user/server info, timestamps, an embed builder, AFK, translation, weather, and bot health.',
   category: 'utility',
   version: '0.1.0',
   defaultEnabled: true,
   permissions: [
     {
       permission: PermissionFlagsBits.ViewChannel,
-      feature: 'help / userinfo / serverinfo / avatar / banner / roleinfo / channelinfo / timestamp / timezone / calculator / afk / translate / weather / status',
+      feature:
+        'help / userinfo / serverinfo / avatar / banner / roleinfo / channelinfo / timestamp / timezone / calculator / afk / translate / weather / status',
       optional: false,
-      fallback: 'Interaction responses are delivered over the interaction token, so no channel-level permission is required for these read-only commands.',
+      fallback:
+        'Interaction responses are delivered over the interaction token, so no channel-level permission is required for these read-only commands.',
     },
     {
       permission: PermissionFlagsBits.EmbedLinks,
       feature: 'Rich embeds in command replies',
       optional: true,
-      fallback: 'Without Embed Links the bot can still reply, but Discord may render embeds as plain links in some contexts.',
+      fallback:
+        'Without Embed Links the bot can still reply, but Discord may render embeds as plain links in some contexts.',
     },
     {
       permission: PermissionFlagsBits.ManageMessages,
       feature: '/embed builder (send to channel)',
       optional: false,
-      fallback: 'The command is hidden from members without Manage Messages by default (setDefaultMemberPermissions); "Send to channel" additionally checks the bot can send/embed in the target channel.',
+      fallback:
+        'The command is hidden from members without Manage Messages by default (setDefaultMemberPermissions); "Send to channel" additionally checks the bot can send/embed in the target channel.',
     },
   ],
   intents: [],
   // Automatic AFK-mention replies only need to see who was @mentioned, which arrives on every message
   // regardless of the Message Content intent; nothing in this plugin reads message text.
   requiredEnv: [],
-  optionalEnv: ['TRANSLATE_PROVIDER', 'DEEPL_API_KEY', 'LIBRETRANSLATE_URL', 'LIBRETRANSLATE_API_KEY', 'WEATHER_PROVIDER', 'OPENWEATHERMAP_API_KEY'],
+  optionalEnv: [
+    'TRANSLATE_PROVIDER',
+    'DEEPL_API_KEY',
+    'LIBRETRANSLATE_URL',
+    'LIBRETRANSLATE_API_KEY',
+    'WEATHER_PROVIDER',
+    'OPENWEATHERMAP_API_KEY',
+  ],
   configSchema,
   // Deliberately no `dashboard` entry: utility is configured entirely through the plugin config drawer
   // (auto-generated from `configSchema`) on `/dashboard/[guildId]/plugins`, per this build task's explicit

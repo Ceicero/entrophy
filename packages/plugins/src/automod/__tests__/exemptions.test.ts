@@ -5,28 +5,42 @@ const baseRule = { exemptRoleIds: ['role1'], exemptChannelIds: ['chan1'], exempt
 
 describe('isExempt', () => {
   it('is not exempt by default', () => {
-    expect(isExempt(baseRule, { userId: 'u2', channelId: 'c2', roleIds: [], isStaff: false }, true)).toBe(false);
+    expect(isExempt(baseRule, { userId: 'u2', channelId: 'c2', roleIds: [], isStaff: false }, true)).toBe(
+      false,
+    );
   });
 
   it('exempts a listed user id', () => {
-    expect(isExempt(baseRule, { userId: 'user1', channelId: 'c2', roleIds: [], isStaff: false }, true)).toBe(true);
+    expect(isExempt(baseRule, { userId: 'user1', channelId: 'c2', roleIds: [], isStaff: false }, true)).toBe(
+      true,
+    );
   });
 
   it('exempts a listed channel', () => {
-    expect(isExempt(baseRule, { userId: 'u2', channelId: 'chan1', roleIds: [], isStaff: false }, true)).toBe(true);
+    expect(isExempt(baseRule, { userId: 'u2', channelId: 'chan1', roleIds: [], isStaff: false }, true)).toBe(
+      true,
+    );
   });
 
   it('exempts a listed role', () => {
-    expect(isExempt(baseRule, { userId: 'u2', channelId: 'c2', roleIds: ['role1'], isStaff: false }, true)).toBe(true);
+    expect(
+      isExempt(baseRule, { userId: 'u2', channelId: 'c2', roleIds: ['role1'], isStaff: false }, true),
+    ).toBe(true);
   });
 
   it('exempts staff only when exemptStaff is true and the actor is staff', () => {
-    expect(isExempt(baseRule, { userId: 'u2', channelId: 'c2', roleIds: [], isStaff: true }, true)).toBe(true);
-    expect(isExempt(baseRule, { userId: 'u2', channelId: 'c2', roleIds: [], isStaff: true }, false)).toBe(false);
+    expect(isExempt(baseRule, { userId: 'u2', channelId: 'c2', roleIds: [], isStaff: true }, true)).toBe(
+      true,
+    );
+    expect(isExempt(baseRule, { userId: 'u2', channelId: 'c2', roleIds: [], isStaff: true }, false)).toBe(
+      false,
+    );
   });
 
   it('does not exempt when channelId is null and no other exemption applies', () => {
-    expect(isExempt(baseRule, { userId: 'u2', channelId: null, roleIds: [], isStaff: false }, true)).toBe(false);
+    expect(isExempt(baseRule, { userId: 'u2', channelId: null, roleIds: [], isStaff: false }, true)).toBe(
+      false,
+    );
   });
 });
 

@@ -31,7 +31,9 @@ test.describe('features page', () => {
     expect(commands.plugins.length).toBeGreaterThan(0);
 
     for (const plugin of commands.plugins) {
-      await expect(page.locator(`#${plugin.id}`).getByRole('heading', { name: plugin.name, level: 2 })).toBeVisible();
+      await expect(
+        page.locator(`#${plugin.id}`).getByRole('heading', { name: plugin.name, level: 2 }),
+      ).toBeVisible();
     }
   });
 });

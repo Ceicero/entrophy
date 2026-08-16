@@ -14,9 +14,10 @@ export default function TermsPage() {
   return (
     <Section eyebrow="Legal" title="Terms of service">
       <Glass className="mb-8 p-5 text-sm leading-relaxed text-grey-3">
-        <strong className="text-grey-6">This is a template.</strong> It reflects Entrophy&apos;s default behavior (no wagering, non-refundable
-        donations, etc.) but the operator running this deployment (currently shown as &ldquo;{DEFAULT_OPERATOR}&rdquo;, contact
-        &ldquo;{DEFAULT_CONTACT_EMAIL}&rdquo;) should review it before relying on it as a legal document.
+        <strong className="text-grey-6">This is a template.</strong> It reflects Entrophy&apos;s default
+        behavior (no wagering, non-refundable donations, etc.) but the operator running this deployment
+        (currently shown as &ldquo;{DEFAULT_OPERATOR}&rdquo;, contact &ldquo;{DEFAULT_CONTACT_EMAIL}&rdquo;)
+        should review it before relying on it as a legal document.
       </Glass>
       <div className="space-y-8">
         {sections.map((section) => (

@@ -24,7 +24,9 @@ describe('isElevatedPermissionBitfield / checkRoleAssignable', () => {
   });
 
   it('does not flag a plain role with no elevated permissions', () => {
-    expect(isElevatedPermissionBitfield(PermissionFlagsBits.SendMessages | PermissionFlagsBits.ViewChannel)).toBe(false);
+    expect(
+      isElevatedPermissionBitfield(PermissionFlagsBits.SendMessages | PermissionFlagsBits.ViewChannel),
+    ).toBe(false);
   });
 
   it('rejects an elevated role by default', () => {
@@ -60,24 +62,52 @@ describe('isElevatedPermissionBitfield / checkRoleAssignable', () => {
     expect(result).toEqual({ ok: false, reason: 'managed' });
   });
 
-  it('rejects a role at or above the bot\'s own top role', () => {
-    const atBotPosition = checkRoleAssignable({ permissionsBitfield: 0n, position: 10, managed: false, botTopRolePosition: 10, allowElevatedRoles: false });
-    const aboveBotPosition = checkRoleAssignable({ permissionsBitfield: 0n, position: 12, managed: false, botTopRolePosition: 10, allowElevatedRoles: false });
+  it("rejects a role at or above the bot's own top role", () => {
+    const atBotPosition = checkRoleAssignable({
+      permissionsBitfield: 0n,
+      position: 10,
+      managed: false,
+      botTopRolePosition: 10,
+      allowElevatedRoles: false,
+    });
+    const aboveBotPosition = checkRoleAssignable({
+      permissionsBitfield: 0n,
+      position: 12,
+      managed: false,
+      botTopRolePosition: 10,
+      allowElevatedRoles: false,
+    });
     expect(atBotPosition).toEqual({ ok: false, reason: 'hierarchy' });
     expect(aboveBotPosition).toEqual({ ok: false, reason: 'hierarchy' });
   });
 
   it('allows a safe, low-position, unmanaged, non-elevated role', () => {
-    const result = checkRoleAssignable({ permissionsBitfield: PermissionFlagsBits.SendMessages, position: 2, managed: false, botTopRolePosition: 10, allowElevatedRoles: false });
+    const result = checkRoleAssignable({
+      permissionsBitfield: PermissionFlagsBits.SendMessages,
+      position: 2,
+      managed: false,
+      botTopRolePosition: 10,
+      allowElevatedRoles: false,
+    });
     expect(result).toEqual({ ok: true });
   });
 });
 
 describe('renderTemplate / renderTemplateDeep', () => {
-  const vars = { user: 'Alex', 'user.tag': 'Alex#0001', 'user.id': '123', server: 'Test Server', memberCount: 42, mention: '<@123>' };
+  const vars = {
+    user: 'Alex',
+    'user.tag': 'Alex#0001',
+    'user.id': '123',
+    server: 'Test Server',
+    memberCount: 42,
+    mention: '<@123>',
+  };
 
   it('substitutes every known template token', () => {
-    const out = renderTemplate('Welcome {user} ({user.tag} / {user.id}) to {server}! We now have {memberCount} members. Say hi {mention}.', vars);
+    const out = renderTemplate(
+      'Welcome {user} ({user.tag} / {user.id}) to {server}! We now have {memberCount} members. Say hi {mention}.',
+      vars,
+    );
     expect(out).toBe('Welcome Alex (Alex#0001 / 123) to Test Server! We now have 42 members. Say hi <@123>.');
   });
 
@@ -86,7 +116,7 @@ describe('renderTemplate / renderTemplateDeep', () => {
     expect(out).toBe('Hello Alex, your {unknownVar} stays as-is.');
   });
 
-  it('does not recursively re-substitute a variable\'s own value (no injection via a var containing another token)', () => {
+  it("does not recursively re-substitute a variable's own value (no injection via a var containing another token)", () => {
     const injected = renderTemplate('{user}', { ...vars, user: '{server}' });
     expect(injected).toBe('{server}');
   });
@@ -98,10 +128,20 @@ describe('renderTemplate / renderTemplateDeep', () => {
 
   it('renderTemplateDeep renders every string field of a nested embed object', () => {
     const out = renderTemplateDeep(
-      { title: 'Hi {user}', fields: [{ name: 'Server', value: '{server}' }], footer: { text: '{memberCount} members' }, color: 0xffffff },
+      {
+        title: 'Hi {user}',
+        fields: [{ name: 'Server', value: '{server}' }],
+        footer: { text: '{memberCount} members' },
+        color: 0xffffff,
+      },
       vars,
     );
-    expect(out).toEqual({ title: 'Hi Alex', fields: [{ name: 'Server', value: 'Test Server' }], footer: { text: '42 members' }, color: 0xffffff });
+    expect(out).toEqual({
+      title: 'Hi Alex',
+      fields: [{ name: 'Server', value: 'Test Server' }],
+      footer: { text: '42 members' },
+      color: 0xffffff,
+    });
   });
 });
 
@@ -179,7 +219,12 @@ describe('filterPersistableRoles', () => {
   });
 
   it('returns an empty array when nothing is safe to persist', () => {
-    const result = filterPersistableRoles({ roleIds: ['everyone', 'elevated1'], elevatedRoleIds: new Set(['elevated1']), managedRoleIds: new Set(), everyoneRoleId: 'everyone' });
+    const result = filterPersistableRoles({
+      roleIds: ['everyone', 'elevated1'],
+      elevatedRoleIds: new Set(['elevated1']),
+      managedRoleIds: new Set(),
+      everyoneRoleId: 'everyone',
+    });
     expect(result).toEqual([]);
   });
 });
@@ -225,7 +270,11 @@ describe('onboarding progress', () => {
 
   it('parseOnboardingProgress round-trips a well-formed value', () => {
     const value = { customSteps: { step1: true }, verifiedAt: '2026-01-01T00:00:00Z' };
-    expect(parseOnboardingProgress(value)).toEqual({ customSteps: { step1: true }, verifiedAt: '2026-01-01T00:00:00Z', rolesPickedAt: undefined });
+    expect(parseOnboardingProgress(value)).toEqual({
+      customSteps: { step1: true },
+      verifiedAt: '2026-01-01T00:00:00Z',
+      rolesPickedAt: undefined,
+    });
   });
 
   it('buildOnboardingChecklist reports done/not-done for built-in and custom steps', () => {
@@ -233,8 +282,15 @@ describe('onboarding progress', () => {
       rulesConfigured: true,
       rulesAcceptedAt: new Date(),
       verificationEnabled: true,
-      progress: { customSteps: { intro: true }, verifiedAt: undefined, rolesPickedAt: '2026-01-01T00:00:00Z' },
-      customStepDefs: [{ id: 'intro', label: 'Say hi' }, { id: 'other', label: 'Other step' }],
+      progress: {
+        customSteps: { intro: true },
+        verifiedAt: undefined,
+        rolesPickedAt: '2026-01-01T00:00:00Z',
+      },
+      customStepDefs: [
+        { id: 'intro', label: 'Say hi' },
+        { id: 'other', label: 'Other step' },
+      ],
     });
 
     expect(items.find((i) => i.id === '__rules__')).toMatchObject({ done: true });

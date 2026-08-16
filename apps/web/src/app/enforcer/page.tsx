@@ -8,7 +8,8 @@ import { enforcerWorkflow, enforcerPrivacyPoints, enforcerFaq } from '../../cont
 
 export const metadata: Metadata = {
   title: 'Admin Enforcer',
-  description: 'How Entrophy\'s policy-driven, hands-off moderation works: flag, review, decide, ledger, appeal.',
+  description:
+    "How Entrophy's policy-driven, hands-off moderation works: flag, review, decide, ledger, appeal.",
 };
 
 export default function EnforcerPage() {
@@ -25,7 +26,10 @@ export default function EnforcerPage() {
       </Section>
 
       <Section eyebrow="How it works" title="Flag → review → decide → ledger → appeal">
-        <ol className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Enforcer workflow steps">
+        <ol
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          aria-label="Enforcer workflow steps"
+        >
           {enforcerWorkflow.map((step) => (
             <li key={step.title}>
               <Glass className="h-full p-6">
@@ -43,7 +47,11 @@ export default function EnforcerPage() {
         </Glass>
       </Section>
 
-      <Section eyebrow="Bookkeeping" title="What the ledger actually looks like" subtitle="A real ledger entry (illustrative — names and content below are examples, not real data) posted to a staff-only channel the bot alone can write to.">
+      <Section
+        eyebrow="Bookkeeping"
+        title="What the ledger actually looks like"
+        subtitle="A real ledger entry (illustrative — names and content below are examples, not real data) posted to a staff-only channel the bot alone can write to."
+      >
         <div className="max-w-xl">
           <EmbedMock
             author="Entrophy — Enforcer ledger"
@@ -80,22 +88,54 @@ export default function EnforcerPage() {
 }
 
 function EnforcerDiagram() {
-  const steps = ['Message / manual flag', 'Policy match', 'Flag-queue embed', 'Moderator reviews context', 'Decision executed', 'Ledger entry'];
+  const steps = [
+    'Message / manual flag',
+    'Policy match',
+    'Flag-queue embed',
+    'Moderator reviews context',
+    'Decision executed',
+    'Ledger entry',
+  ];
   return (
-    <svg viewBox="0 0 1180 160" className="min-w-[900px]" role="img" aria-label="Diagram: message flows through policy match, flag queue, moderator review, decision, and ledger entry">
+    <svg
+      viewBox="0 0 1180 160"
+      className="min-w-[900px]"
+      role="img"
+      aria-label="Diagram: message flows through policy match, flag queue, moderator review, decision, and ledger entry"
+    >
       <title>Enforcer workflow diagram</title>
       {steps.map((label, i) => {
         const x = 20 + i * 200;
         return (
           <g key={label}>
-            <rect x={x} y={50} width={170} height={60} rx={12} fill="none" stroke="var(--grey-4)" strokeWidth={1.5} />
+            <rect
+              x={x}
+              y={50}
+              width={170}
+              height={60}
+              rx={12}
+              fill="none"
+              stroke="var(--grey-4)"
+              strokeWidth={1.5}
+            />
             <foreignObject x={x} y={50} width={170} height={60}>
-              <div className="flex h-full items-center justify-center px-2 text-center text-xs text-grey-6" style={{ fontFamily: 'inherit' }}>
+              <div
+                className="flex h-full items-center justify-center px-2 text-center text-xs text-grey-6"
+                style={{ fontFamily: 'inherit' }}
+              >
                 {label}
               </div>
             </foreignObject>
             {i < steps.length - 1 && (
-              <line x1={x + 170} y1={80} x2={x + 200} y2={80} stroke="var(--grey-3)" strokeWidth={1.5} markerEnd="url(#arrow)" />
+              <line
+                x1={x + 170}
+                y1={80}
+                x2={x + 200}
+                y2={80}
+                stroke="var(--grey-3)"
+                strokeWidth={1.5}
+                markerEnd="url(#arrow)"
+              />
             )}
           </g>
         );

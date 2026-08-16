@@ -58,7 +58,13 @@ export interface GithubWorkflowRunPayload {
   action?: string;
   repository?: GithubRepo;
   sender?: GithubUser;
-  workflow_run?: { name?: string; html_url?: string; conclusion?: string | null; status?: string; head_branch?: string };
+  workflow_run?: {
+    name?: string;
+    html_url?: string;
+    conclusion?: string | null;
+    status?: string;
+    head_branch?: string;
+  };
 }
 
 function branchFromRef(ref?: string): string {
@@ -82,7 +88,12 @@ function formatPush(payload: GithubPushPayload): AlertEmbedData | null {
   const commits = payload.commits ?? [];
   if (commits.length === 0) return null;
   const branch = branchFromRef(payload.ref);
-  const lines = commits.slice(0, 5).map((c) => `[\`${(c.id ?? '').slice(0, 7)}\`](${c.url ?? '#'}) ${(c.message ?? '').split('\n')[0]} — ${c.author?.name ?? 'unknown'}`);
+  const lines = commits
+    .slice(0, 5)
+    .map(
+      (c) =>
+        `[\`${(c.id ?? '').slice(0, 7)}\`](${c.url ?? '#'}) ${(c.message ?? '').split('\n')[0]} — ${c.author?.name ?? 'unknown'}`,
+    );
   return {
     ...baseEmbed(payload),
     title: `${commits.length} new commit${commits.length === 1 ? '' : 's'} to ${branch}`,
@@ -94,7 +105,8 @@ function formatPush(payload: GithubPushPayload): AlertEmbedData | null {
 function formatPullRequest(payload: GithubPullRequestPayload): AlertEmbedData | null {
   const pr = payload.pull_request;
   if (!pr) return null;
-  const verb = payload.action === 'closed' ? (pr.merged ? 'merged' : 'closed') : (payload.action ?? 'updated');
+  const verb =
+    payload.action === 'closed' ? (pr.merged ? 'merged' : 'closed') : (payload.action ?? 'updated');
   return {
     ...baseEmbed(payload),
     title: `Pull request #${pr.number} ${verb}: ${pr.title ?? ''}`,
@@ -130,7 +142,10 @@ function formatStar(payload: GithubStarPayload): AlertEmbedData | null {
     ...baseEmbed(payload),
     title: `⭐ New star from ${payload.sender?.login ?? 'someone'}`,
     url: payload.repository?.html_url,
-    description: payload.repository?.stargazers_count !== undefined ? `${payload.repository.stargazers_count} total stars` : undefined,
+    description:
+      payload.repository?.stargazers_count !== undefined
+        ? `${payload.repository.stargazers_count} total stars`
+        : undefined,
   } as AlertEmbedData;
 }
 
@@ -146,7 +161,14 @@ function formatWorkflowRun(payload: GithubWorkflowRunPayload): AlertEmbedData | 
 }
 
 /** GitHub event types this formatter recognizes and produces an embed for by default. */
-export const SUPPORTED_GITHUB_EVENTS = ['push', 'pull_request', 'issues', 'release', 'star', 'workflow_run'] as const;
+export const SUPPORTED_GITHUB_EVENTS = [
+  'push',
+  'pull_request',
+  'issues',
+  'release',
+  'star',
+  'workflow_run',
+] as const;
 export type SupportedGithubEvent = (typeof SUPPORTED_GITHUB_EVENTS)[number];
 
 /**

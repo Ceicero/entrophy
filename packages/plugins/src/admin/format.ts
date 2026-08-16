@@ -21,7 +21,9 @@ export function describeMissingBotPermissions(guild: Guild, manifests: PluginMan
       const missing = missingPermissions(have, [bit]);
       if (missing.length === 0) continue;
       const optionalNote = doc.optional ? ' (optional)' : '';
-      warnings.push(`**${manifest.name}** — missing **${describePermission(bit)}**${optionalNote} for ${doc.feature}. ${doc.fallback}`);
+      warnings.push(
+        `**${manifest.name}** — missing **${describePermission(bit)}**${optionalNote} for ${doc.feature}. ${doc.fallback}`,
+      );
     }
   }
 

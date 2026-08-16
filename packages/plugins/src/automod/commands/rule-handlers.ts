@@ -16,7 +16,12 @@ import {
   type CommandContext,
 } from '../../sdk';
 import { testRuleWithText } from '../engine';
-import { AUTOMOD_RULE_TYPES, automodActionTypeSchema, automodRuleConfigSchema, type AutomodRuleTypeValue } from '../schemas';
+import {
+  AUTOMOD_RULE_TYPES,
+  automodActionTypeSchema,
+  automodRuleConfigSchema,
+  type AutomodRuleTypeValue,
+} from '../schemas';
 import { ruleDetailEmbed, ruleListLine } from './format';
 import { ACTION_TYPE_LABELS, RULE_TYPE_LABELS } from './rule-labels';
 import { buildRuleConfigModal, readModalFieldValues } from './rule-modal';
@@ -33,7 +38,9 @@ interface CreatePendingPayload {
 
 async function resolveRuleByOption(c: CommandContext) {
   const ruleId = c.interaction.options.getString('rule', true);
-  const rule = await c.ctx.prisma.automodRule.findFirst({ where: { id: ruleId, guildId: c.guildId, deletedAt: null } });
+  const rule = await c.ctx.prisma.automodRule.findFirst({
+    where: { id: ruleId, guildId: c.guildId, deletedAt: null },
+  });
   if (!rule) throw new NotFoundError(c.t('automod.errors.ruleNotFound', { rule: ruleId }));
   return rule;
 }
@@ -50,7 +57,10 @@ export async function handleRuleCreate(c: CommandContext): Promise<void> {
     return;
   }
   if (actionType === 'timeout' && !timeoutMinutes) {
-    await c.interaction.reply({ embeds: [errorEmbed(c.t('automod.errors.timeoutMinutesRequired'))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('automod.errors.timeoutMinutesRequired'))],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -74,7 +84,10 @@ export async function handleRuleCreateModalSubmit(c: ComponentContext, pendingId
     return;
   }
 
-  const rawValues = readModalFieldValues(payload.type, c.interaction as unknown as { fields: { getTextInputValue: (id: string) => string } });
+  const rawValues = readModalFieldValues(
+    payload.type,
+    c.interaction as unknown as { fields: { getTextInputValue: (id: string) => string } },
+  );
 
   let config;
   try {
@@ -135,7 +148,10 @@ export async function handleRuleList(c: CommandContext): Promise<void> {
   });
 
   if (rules.length === 0) {
-    await c.interaction.reply({ embeds: [infoEmbed(c.t('automod.rule.listTitle'), c.t('automod.rule.listEmpty'))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [infoEmbed(c.t('automod.rule.listTitle'), c.t('automod.rule.listEmpty'))],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -151,7 +167,10 @@ export async function handleRuleView(c: CommandContext): Promise<void> {
 export async function handleRuleToggle(c: CommandContext): Promise<void> {
   assertStaffLevel(c.staffLevel, 'moderator', c.t);
   const rule = await resolveRuleByOption(c);
-  const updated = await c.ctx.prisma.automodRule.update({ where: { id: rule.id }, data: { enabled: !rule.enabled } });
+  const updated = await c.ctx.prisma.automodRule.update({
+    where: { id: rule.id },
+    data: { enabled: !rule.enabled },
+  });
 
   await c.ctx.audit({
     guildId: c.guildId,
@@ -166,7 +185,11 @@ export async function handleRuleToggle(c: CommandContext): Promise<void> {
   });
 
   await c.interaction.reply({
-    embeds: [successEmbed(c.t(updated.enabled ? 'automod.rule.enabled' : 'automod.rule.disabled', { name: updated.name }))],
+    embeds: [
+      successEmbed(
+        c.t(updated.enabled ? 'automod.rule.enabled' : 'automod.rule.disabled', { name: updated.name }),
+      ),
+    ],
     ephemeral: true,
   });
 }
@@ -185,13 +208,21 @@ export async function handleRuleEdit(c: CommandContext): Promise<void> {
 }
 
 export async function handleRuleEditModalSubmit(c: ComponentContext, ruleId: string): Promise<void> {
-  const rule = await c.ctx.prisma.automodRule.findFirst({ where: { id: ruleId, guildId: c.guildId, deletedAt: null } });
+  const rule = await c.ctx.prisma.automodRule.findFirst({
+    where: { id: ruleId, guildId: c.guildId, deletedAt: null },
+  });
   if (!rule) {
-    await c.interaction.reply({ embeds: [errorEmbed(c.t('automod.errors.ruleNotFound', { rule: ruleId }))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('automod.errors.ruleNotFound', { rule: ruleId }))],
+      ephemeral: true,
+    });
     return;
   }
 
-  const rawValues = readModalFieldValues(rule.type as AutomodRuleTypeValue, c.interaction as unknown as { fields: { getTextInputValue: (id: string) => string } });
+  const rawValues = readModalFieldValues(
+    rule.type as AutomodRuleTypeValue,
+    c.interaction as unknown as { fields: { getTextInputValue: (id: string) => string } },
+  );
 
   let config;
   try {
@@ -219,7 +250,10 @@ export async function handleRuleEditModalSubmit(c: ComponentContext, ruleId: str
     source: 'bot',
   });
 
-  await c.interaction.reply({ embeds: [successEmbed(c.t('automod.rule.updated', { name: updated.name }))], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [successEmbed(c.t('automod.rule.updated', { name: updated.name }))],
+    ephemeral: true,
+  });
 }
 
 export async function handleRuleDelete(c: CommandContext): Promise<void> {
@@ -232,34 +266,45 @@ export async function handleRuleDelete(c: CommandContext): Promise<void> {
     pluginId: 'automod',
     action: 'rule-delete',
     ownerId: c.interaction.user.id,
-    embed: infoEmbed(c.t('automod.rule.deleteConfirmTitle'), c.t('automod.rule.deleteConfirmBody', { name: rule.name })),
+    embed: infoEmbed(
+      c.t('automod.rule.deleteConfirmTitle'),
+      c.t('automod.rule.deleteConfirmBody', { name: rule.name }),
+    ),
     payload: { ruleId: rule.id, name: rule.name },
     fastActions: false,
   });
 }
 
-export const ruleDeleteConfirmHandlers: ComponentHandler[] = registerConfirmHandlers<{ ruleId: string; name: string }>(
-  'rule-delete',
-  async (c, payload) => {
-    const existing = await c.ctx.prisma.automodRule.findFirst({ where: { id: payload.ruleId, guildId: c.guildId, deletedAt: null } });
-    if (!existing) {
-      await c.interaction.followUp({ embeds: [errorEmbed(c.t('automod.errors.ruleNotFound', { rule: payload.ruleId }))], ephemeral: true });
-      return;
-    }
-    await c.ctx.prisma.automodRule.update({ where: { id: payload.ruleId }, data: { deletedAt: new Date() } });
-    await c.ctx.audit({
-      guildId: c.guildId,
-      actorId: c.interaction.user.id,
-      actorType: 'user',
-      action: AuditAction.AutomodRuleDelete,
-      targetType: 'automod_rule',
-      targetId: payload.ruleId,
-      before: { name: payload.name },
-      source: 'bot',
+export const ruleDeleteConfirmHandlers: ComponentHandler[] = registerConfirmHandlers<{
+  ruleId: string;
+  name: string;
+}>('rule-delete', async (c, payload) => {
+  const existing = await c.ctx.prisma.automodRule.findFirst({
+    where: { id: payload.ruleId, guildId: c.guildId, deletedAt: null },
+  });
+  if (!existing) {
+    await c.interaction.followUp({
+      embeds: [errorEmbed(c.t('automod.errors.ruleNotFound', { rule: payload.ruleId }))],
+      ephemeral: true,
     });
-    await c.interaction.followUp({ embeds: [successEmbed(c.t('automod.rule.deleted', { name: payload.name }))], ephemeral: true });
-  },
-);
+    return;
+  }
+  await c.ctx.prisma.automodRule.update({ where: { id: payload.ruleId }, data: { deletedAt: new Date() } });
+  await c.ctx.audit({
+    guildId: c.guildId,
+    actorId: c.interaction.user.id,
+    actorType: 'user',
+    action: AuditAction.AutomodRuleDelete,
+    targetType: 'automod_rule',
+    targetId: payload.ruleId,
+    before: { name: payload.name },
+    source: 'bot',
+  });
+  await c.interaction.followUp({
+    embeds: [successEmbed(c.t('automod.rule.deleted', { name: payload.name }))],
+    ephemeral: true,
+  });
+});
 
 export async function handleRuleTest(c: CommandContext): Promise<void> {
   const rule = await resolveRuleByOption(c);
@@ -267,7 +312,10 @@ export async function handleRuleTest(c: CommandContext): Promise<void> {
 
   const parsed = automodRuleConfigSchema.safeParse(rule.config);
   if (!parsed.success) {
-    await c.interaction.reply({ embeds: [errorEmbed(c.t('automod.errors.invalidStoredConfig'))], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('automod.errors.invalidStoredConfig'))],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -292,12 +340,20 @@ export async function ruleAutocomplete(c: AutocompleteContext): Promise<void> {
       orderBy: { priority: 'asc' },
       take: 200,
     });
-    const matches = rules.filter((r) => r.name.toLowerCase().includes(query) || r.type.toLowerCase().includes(query)).slice(0, 25);
+    const matches = rules
+      .filter((r) => r.name.toLowerCase().includes(query) || r.type.toLowerCase().includes(query))
+      .slice(0, 25);
     await c.interaction.respond(matches.map((r) => ({ name: `${r.name} (${r.type})`, value: r.id })));
     return;
   }
   await c.interaction.respond([]);
 }
 
-export const RULE_TYPE_CHOICES = AUTOMOD_RULE_TYPES.map((type) => ({ name: RULE_TYPE_LABELS[type], value: type }));
-export const RULE_ACTION_CHOICES = automodActionTypeSchema.options.map((type) => ({ name: ACTION_TYPE_LABELS[type] ?? type, value: type }));
+export const RULE_TYPE_CHOICES = AUTOMOD_RULE_TYPES.map((type) => ({
+  name: RULE_TYPE_LABELS[type],
+  value: type,
+}));
+export const RULE_ACTION_CHOICES = automodActionTypeSchema.options.map((type) => ({
+  name: ACTION_TYPE_LABELS[type] ?? type,
+  value: type,
+}));

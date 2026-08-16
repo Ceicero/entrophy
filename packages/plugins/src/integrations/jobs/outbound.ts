@@ -20,13 +20,21 @@ export const outboundJob: PluginJob<OutboundJobData> = {
   concurrency: 5,
   async processor(ctx, job) {
     const { endpointId, guildId, payload } = job.data;
-    const endpoint = await ctx.prisma.webhookEndpoint.findFirst({ where: { id: endpointId, guildId, direction: 'OUTBOUND', deletedAt: null } });
+    const endpoint = await ctx.prisma.webhookEndpoint.findFirst({
+      where: { id: endpointId, guildId, direction: 'OUTBOUND', deletedAt: null },
+    });
     if (!endpoint) {
-      ctx.logger.warn({ endpointId, guildId }, 'integrations: outbound job for a missing/deleted endpoint, dropping');
+      ctx.logger.warn(
+        { endpointId, guildId },
+        'integrations: outbound job for a missing/deleted endpoint, dropping',
+      );
       return;
     }
     if (!endpoint.enabled) {
-      ctx.logger.info({ endpointId, guildId }, 'integrations: outbound job for a disabled endpoint, dropping');
+      ctx.logger.info(
+        { endpointId, guildId },
+        'integrations: outbound job for a disabled endpoint, dropping',
+      );
       return;
     }
 

@@ -20,7 +20,9 @@ export class DeeplTranslateAdapter implements TranslateAdapter {
   ) {}
 
   private get baseUrl(): string {
-    return this.apiKey.trim().endsWith(':fx') ? 'https://api-free.deepl.com/v2/translate' : 'https://api.deepl.com/v2/translate';
+    return this.apiKey.trim().endsWith(':fx')
+      ? 'https://api-free.deepl.com/v2/translate'
+      : 'https://api.deepl.com/v2/translate';
   }
 
   async translate(text: string, to: string, from?: string): Promise<TranslateResult> {
@@ -40,7 +42,9 @@ export class DeeplTranslateAdapter implements TranslateAdapter {
         body: body.toString(),
       });
     } catch (err) {
-      throw new TranslateAdapterError(`Could not reach DeepL: ${err instanceof Error ? err.message : String(err)}`);
+      throw new TranslateAdapterError(
+        `Could not reach DeepL: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     if (!response.ok) {
@@ -51,7 +55,9 @@ export class DeeplTranslateAdapter implements TranslateAdapter {
       } catch {
         // Non-JSON error body; ignore.
       }
-      throw new TranslateAdapterError(`DeepL returned an error (${response.status})${detail ? `: ${detail}` : '.'}`);
+      throw new TranslateAdapterError(
+        `DeepL returned an error (${response.status})${detail ? `: ${detail}` : '.'}`,
+      );
     }
 
     const data = (await response.json()) as DeeplResponse;

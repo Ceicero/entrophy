@@ -1,8 +1,22 @@
 // Button-driven ticket creation from a posted panel: `tickets:open:<panelId>` opens directly, or — when the
 // panel has an intake form — shows a modal (`tickets:open-modal:<pendingId>`) first.
-import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, type ButtonInteraction, type ModalSubmitInteraction } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  type ButtonInteraction,
+  type ModalSubmitInteraction,
+} from 'discord.js';
 import { ValidationError } from '@entrophy/core';
-import { PendingStore, buildCustomId, errorEmbed, successEmbed, type ComponentContext, type ComponentHandler } from '../../sdk';
+import {
+  PendingStore,
+  buildCustomId,
+  errorEmbed,
+  successEmbed,
+  type ComponentContext,
+  type ComponentHandler,
+} from '../../sdk';
 import { validateIntakeAnswers } from '../intake';
 import type { TicketIntakeField, TicketsConfig } from '../manifest';
 import { openTicket } from '../service';
@@ -17,7 +31,9 @@ async function replyEphemeralError(c: ComponentContext, message: string): Promis
 }
 
 async function assertUnderOpenLimit(c: ComponentContext, config: TicketsConfig): Promise<boolean> {
-  const openCount = await c.ctx.prisma.ticket.count({ where: { guildId: c.guildId, openerId: c.interaction.user.id, status: 'OPEN' } });
+  const openCount = await c.ctx.prisma.ticket.count({
+    where: { guildId: c.guildId, openerId: c.interaction.user.id, status: 'OPEN' },
+  });
   if (openCount < config.maxOpenPerUser) return true;
   await replyEphemeralError(
     c,
@@ -36,7 +52,9 @@ const openHandler: ComponentHandler = {
     const [panelId] = c.args;
     const interaction = c.interaction as ButtonInteraction<'cached'>;
 
-    const panel = await c.ctx.prisma.ticketPanel.findFirst({ where: { id: panelId, guildId: c.guildId, deletedAt: null } });
+    const panel = await c.ctx.prisma.ticketPanel.findFirst({
+      where: { id: panelId, guildId: c.guildId, deletedAt: null },
+    });
     if (!panel) {
       await replyEphemeralError(c, 'This ticket panel no longer exists.');
       return;
@@ -50,7 +68,9 @@ const openHandler: ComponentHandler = {
       const pendingStore = new PendingStore(c.ctx.redis);
       const pendingId = await pendingStore.put({ panelId: panel.id } satisfies OpenPendingPayload, 300);
 
-      const modal = new ModalBuilder().setCustomId(buildCustomId('tickets', 'open-modal', pendingId)).setTitle(panel.title.slice(0, 45) || 'Open a ticket');
+      const modal = new ModalBuilder()
+        .setCustomId(buildCustomId('tickets', 'open-modal', pendingId))
+        .setTitle(panel.title.slice(0, 45) || 'Open a ticket');
       for (const [index, field] of intakeForm.slice(0, 5).entries()) {
         modal.addComponents(
           new ActionRowBuilder<TextInputBuilder>().addComponents(
@@ -67,9 +87,21 @@ const openHandler: ComponentHandler = {
     }
 
     await interaction.deferReply({ ephemeral: true });
-    const ticket = await openTicket(c.ctx, { guildId: c.guildId, openerId: interaction.user.id, subject: null, intake: null, panel });
-    const location = ticket.channelId ? `<#${ticket.channelId}>` : ticket.threadId ? `<#${ticket.threadId}>` : 'a new location';
-    await interaction.editReply({ embeds: [successEmbed(`Opened ticket #${ticket.number} in ${location}.`)] });
+    const ticket = await openTicket(c.ctx, {
+      guildId: c.guildId,
+      openerId: interaction.user.id,
+      subject: null,
+      intake: null,
+      panel,
+    });
+    const location = ticket.channelId
+      ? `<#${ticket.channelId}>`
+      : ticket.threadId
+        ? `<#${ticket.threadId}>`
+        : 'a new location';
+    await interaction.editReply({
+      embeds: [successEmbed(`Opened ticket #${ticket.number} in ${location}.`)],
+    });
   },
 };
 
@@ -88,7 +120,9 @@ const openModalHandler: ComponentHandler = {
       return;
     }
 
-    const panel = await c.ctx.prisma.ticketPanel.findFirst({ where: { id: pending.panelId, guildId: c.guildId, deletedAt: null } });
+    const panel = await c.ctx.prisma.ticketPanel.findFirst({
+      where: { id: pending.panelId, guildId: c.guildId, deletedAt: null },
+    });
     if (!panel) {
       await replyEphemeralError(c, 'This ticket panel no longer exists.');
       return;
@@ -115,9 +149,21 @@ const openModalHandler: ComponentHandler = {
     }
 
     await interaction.deferReply({ ephemeral: true });
-    const ticket = await openTicket(c.ctx, { guildId: c.guildId, openerId: interaction.user.id, subject: null, intake: answers, panel });
-    const location = ticket.channelId ? `<#${ticket.channelId}>` : ticket.threadId ? `<#${ticket.threadId}>` : 'a new location';
-    await interaction.editReply({ embeds: [successEmbed(`Opened ticket #${ticket.number} in ${location}.`)] });
+    const ticket = await openTicket(c.ctx, {
+      guildId: c.guildId,
+      openerId: interaction.user.id,
+      subject: null,
+      intake: answers,
+      panel,
+    });
+    const location = ticket.channelId
+      ? `<#${ticket.channelId}>`
+      : ticket.threadId
+        ? `<#${ticket.threadId}>`
+        : 'a new location';
+    await interaction.editReply({
+      embeds: [successEmbed(`Opened ticket #${ticket.number} in ${location}.`)],
+    });
   },
 };
 

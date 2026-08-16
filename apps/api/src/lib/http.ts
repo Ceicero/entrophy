@@ -9,4 +9,10 @@ import type { Logger } from 'pino';
  * — or Fastify's zod type provider can't infer `request.body`/`query`/`params` from each route's `schema`,
  * and `app.register(...)` back in `app.ts` fails to typecheck against the real (pino-logger, zod-provider) instance.
  */
-export type ZodFastifyInstance = FastifyInstance<RawServerDefault, IncomingMessage, ServerResponse<IncomingMessage>, Logger, ZodTypeProvider>;
+export type ZodFastifyInstance = FastifyInstance<
+  RawServerDefault,
+  IncomingMessage,
+  ServerResponse<IncomingMessage>,
+  Logger,
+  ZodTypeProvider
+>;

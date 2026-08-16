@@ -14,7 +14,10 @@ export const configSchema = z.object({
   enabledKinds: z.array(logKindSchema).default([...ALL_LOG_KINDS]),
   storeEvents: z.boolean().default(true),
   retentionDays: z.number().int().min(1).max(3650).default(90),
-  redactionPatterns: z.array(z.string().min(1).max(REDACTION_PATTERN_MAX_LENGTH)).max(REDACTION_PATTERN_MAX).default([]),
+  redactionPatterns: z
+    .array(z.string().min(1).max(REDACTION_PATTERN_MAX_LENGTH))
+    .max(REDACTION_PATTERN_MAX)
+    .default([]),
   /** Effective only together with `GuildConfig.logMessageContent` (core, guild-wide) — both must be on for message content to appear in edit/delete logs. */
   captureContent: z.boolean().default(false),
 });
@@ -30,13 +33,43 @@ export const manifest = defineManifest({
   version: '0.1.0',
   defaultEnabled: true,
   permissions: [
-    { permission: PermissionFlagsBits.ViewChannel, feature: 'posting log embeds to configured log channels', optional: false, fallback: 'that channel is skipped and an error is logged' },
-    { permission: PermissionFlagsBits.SendMessages, feature: 'posting log embeds to configured log channels', optional: false, fallback: 'that channel is skipped and an error is logged' },
-    { permission: PermissionFlagsBits.EmbedLinks, feature: 'rich log embeds (title/fields/jump links)', optional: false, fallback: 'Discord blocks the send entirely, so the log embed is dropped' },
-    { permission: PermissionFlagsBits.ReadMessageHistory, feature: 'live message-edit/delete diffing and invite-use context', optional: true, fallback: 'edits/deletes are still logged from cached data only' },
-    { permission: PermissionFlagsBits.ManageGuild, feature: 'invite-use attribution on member join (`invite.use`)', optional: true, fallback: 'member joins are still logged, just without which invite was used' },
+    {
+      permission: PermissionFlagsBits.ViewChannel,
+      feature: 'posting log embeds to configured log channels',
+      optional: false,
+      fallback: 'that channel is skipped and an error is logged',
+    },
+    {
+      permission: PermissionFlagsBits.SendMessages,
+      feature: 'posting log embeds to configured log channels',
+      optional: false,
+      fallback: 'that channel is skipped and an error is logged',
+    },
+    {
+      permission: PermissionFlagsBits.EmbedLinks,
+      feature: 'rich log embeds (title/fields/jump links)',
+      optional: false,
+      fallback: 'Discord blocks the send entirely, so the log embed is dropped',
+    },
+    {
+      permission: PermissionFlagsBits.ReadMessageHistory,
+      feature: 'live message-edit/delete diffing and invite-use context',
+      optional: true,
+      fallback: 'edits/deletes are still logged from cached data only',
+    },
+    {
+      permission: PermissionFlagsBits.ManageGuild,
+      feature: 'invite-use attribution on member join (`invite.use`)',
+      optional: true,
+      fallback: 'member joins are still logged, just without which invite was used',
+    },
   ],
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildInvites],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildInvites,
+  ],
   privilegedIntents: ['GuildMembers', 'MessageContent'],
   requiredEnv: [],
   configSchema,

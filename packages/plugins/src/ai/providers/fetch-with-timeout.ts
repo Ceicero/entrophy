@@ -20,12 +20,16 @@ export async function fetchWithTimeout(
   externalSignal?.addEventListener('abort', onExternalAbort);
 
   try {
-    return await fetch(url, { ...rest, signal: controller.signal });
+    // `redirect: 'error'` unless the caller explicitly overrides it — providers must never silently follow a
+    // redirect to a different (potentially private/internal) host after the URL has already passed SSRF checks.
+    return await fetch(url, { redirect: 'error', ...rest, signal: controller.signal });
   } catch (err) {
     if (controller.signal.aborted) {
       throw new ExternalServiceError('The AI provider took too long to respond. Try again in a moment.');
     }
-    throw new ExternalServiceError(`Could not reach the AI provider: ${err instanceof Error ? err.message : String(err)}`);
+    throw new ExternalServiceError(
+      `Could not reach the AI provider: ${err instanceof Error ? err.message : String(err)}`,
+    );
   } finally {
     clearTimeout(timeout);
     externalSignal?.removeEventListener('abort', onExternalAbort);

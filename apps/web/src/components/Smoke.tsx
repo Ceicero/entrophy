@@ -12,12 +12,60 @@ interface BlobSpec {
 }
 
 const BLOBS: BlobSpec[] = [
-  { top: '-10%', left: '5%', size: 640, opacity: 0.16, animation: 'smoke-drift-a', duration: '95s', delay: '0s' },
-  { top: '10%', left: '60%', size: 560, opacity: 0.12, animation: 'smoke-drift-b', duration: '110s', delay: '-15s' },
-  { top: '55%', left: '-8%', size: 520, opacity: 0.1, animation: 'smoke-drift-c', duration: '80s', delay: '-30s' },
-  { top: '65%', left: '55%', size: 620, opacity: 0.14, animation: 'smoke-drift-a', duration: '120s', delay: '-45s' },
-  { top: '30%', left: '30%', size: 460, opacity: 0.08, animation: 'smoke-drift-b', duration: '70s', delay: '-10s' },
-  { top: '-5%', left: '80%', size: 500, opacity: 0.1, animation: 'smoke-drift-c', duration: '100s', delay: '-60s' },
+  {
+    top: '-10%',
+    left: '5%',
+    size: 640,
+    opacity: 0.16,
+    animation: 'smoke-drift-a',
+    duration: '95s',
+    delay: '0s',
+  },
+  {
+    top: '10%',
+    left: '60%',
+    size: 560,
+    opacity: 0.12,
+    animation: 'smoke-drift-b',
+    duration: '110s',
+    delay: '-15s',
+  },
+  {
+    top: '55%',
+    left: '-8%',
+    size: 520,
+    opacity: 0.1,
+    animation: 'smoke-drift-c',
+    duration: '80s',
+    delay: '-30s',
+  },
+  {
+    top: '65%',
+    left: '55%',
+    size: 620,
+    opacity: 0.14,
+    animation: 'smoke-drift-a',
+    duration: '120s',
+    delay: '-45s',
+  },
+  {
+    top: '30%',
+    left: '30%',
+    size: 460,
+    opacity: 0.08,
+    animation: 'smoke-drift-b',
+    duration: '70s',
+    delay: '-10s',
+  },
+  {
+    top: '-5%',
+    left: '80%',
+    size: 500,
+    opacity: 0.1,
+    animation: 'smoke-drift-c',
+    duration: '100s',
+    delay: '-60s',
+  },
 ];
 
 export function Smoke() {

@@ -30,6 +30,8 @@ export const deleteChannelJob: PluginJob<DeleteChannelJobData> = {
     const channel = await guild.channels.fetch(channelId).catch(() => null);
     if (!channel || channel.type !== ChannelType.GuildText) return;
 
-    await channel.delete(`Ticket #${ticket.number} closed`).catch((err) => ctx.logger.warn({ err, ticketId }, 'tickets: failed to delete closed ticket channel'));
+    await channel
+      .delete(`Ticket #${ticket.number} closed`)
+      .catch((err) => ctx.logger.warn({ err, ticketId }, 'tickets: failed to delete closed ticket channel'));
   },
 };

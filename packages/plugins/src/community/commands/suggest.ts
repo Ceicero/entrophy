@@ -38,7 +38,9 @@ const data = new SlashCommandBuilder()
   .setName('suggest')
   .setDescription('Submit a suggestion for staff to review.')
   .setDMPermission(false)
-  .addStringOption((opt) => opt.setName('text').setDescription('Your suggestion').setRequired(true).setMaxLength(1500));
+  .addStringOption((opt) =>
+    opt.setName('text').setDescription('Your suggestion').setRequired(true).setMaxLength(1500),
+  );
 
 export const command: PluginCommand = {
   data,
@@ -67,20 +69,34 @@ export const command: PluginCommand = {
       content,
     }));
 
-    const message = await channel.send({ embeds: [buildSuggestionEmbed(suggestion)], components: buildSuggestionComponents(suggestion.id) });
+    const message = await channel.send({
+      embeds: [buildSuggestionEmbed(suggestion)],
+      components: buildSuggestionComponents(suggestion.id),
+    });
 
     let threadId: string | null = null;
     if (config.suggestions.threads && message.thread === null) {
       try {
-        const thread = await message.startThread({ name: `Suggestion #${suggestion.number}`.slice(0, 100), autoArchiveDuration: 1440 });
+        const thread = await message.startThread({
+          name: `Suggestion #${suggestion.number}`.slice(0, 100),
+          autoArchiveDuration: 1440,
+        });
         threadId = thread.id;
       } catch {
         // Threads may be unavailable (missing permission, or the channel doesn't support them); the suggestion still posts.
       }
     }
 
-    await ctx.prisma.suggestion.update({ where: { id: suggestion.id }, data: { messageId: message.id, threadId } });
+    await ctx.prisma.suggestion.update({
+      where: { id: suggestion.id },
+      data: { messageId: message.id, threadId },
+    });
 
-    await interaction.reply({ embeds: [successEmbed(t('suggest.submitted', { number: suggestion.number, channel: `<#${channel.id}>` }))], ephemeral: true });
+    await interaction.reply({
+      embeds: [
+        successEmbed(t('suggest.submitted', { number: suggestion.number, channel: `<#${channel.id}>` })),
+      ],
+      ephemeral: true,
+    });
   },
 };

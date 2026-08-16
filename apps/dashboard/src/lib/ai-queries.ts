@@ -1,7 +1,12 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AiSettingsDto, AiSettingsPatchDto, AiTestResultDto, AiUsageSummaryDto } from '@entrophy/types/ai';
+import type {
+  AiSettingsDto,
+  AiSettingsPatchDto,
+  AiTestResultDto,
+  AiUsageSummaryDto,
+} from '@entrophy/types/ai';
 import { apiFetch, toQueryString } from './api';
 
 /** Query keys for the `ai` plugin's dashboard page — kept separate from the shared `queryKeys` in `queries.ts` (not editing that shared file per ownership). */
@@ -23,7 +28,8 @@ export function useAiSettings(guildId: string | undefined) {
 export function useUpdateAiSettings(guildId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (patch: AiSettingsPatchDto) => apiFetch<AiSettingsDto>(`/guilds/${guildId}/ai/settings`, { method: 'PUT', body: patch }),
+    mutationFn: (patch: AiSettingsPatchDto) =>
+      apiFetch<AiSettingsDto>(`/guilds/${guildId}/ai/settings`, { method: 'PUT', body: patch }),
     onSuccess: (data) => {
       queryClient.setQueryData(aiQueryKeys.settings(guildId), data);
     },

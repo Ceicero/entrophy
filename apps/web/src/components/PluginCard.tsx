@@ -19,7 +19,9 @@ export function PluginCard({ plugin, copy }: PluginCardProps) {
     >
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-lg font-semibold text-grey-7">{plugin.name}</h3>
-        <Badge tone={plugin.defaultEnabled ? 'solid' : 'outline'}>{plugin.defaultEnabled ? 'On by default' : 'Opt-in'}</Badge>
+        <Badge tone={plugin.defaultEnabled ? 'solid' : 'outline'}>
+          {plugin.defaultEnabled ? 'On by default' : 'Opt-in'}
+        </Badge>
       </div>
       <p className="text-sm leading-relaxed text-grey-3">{copy.headline}</p>
       <div className="mt-1 flex flex-wrap gap-1.5">
@@ -28,7 +30,9 @@ export function PluginCard({ plugin, copy }: PluginCardProps) {
         ))}
       </div>
       <div className="mt-auto flex items-center justify-between pt-3 text-xs text-grey-2">
-        <span>{commandCount} command{commandCount === 1 ? '' : 's'}</span>
+        <span>
+          {commandCount} command{commandCount === 1 ? '' : 's'}
+        </span>
         <span className="text-grey-4 transition-transform group-hover:translate-x-0.5">View details →</span>
       </div>
     </Link>

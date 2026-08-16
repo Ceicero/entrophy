@@ -19,7 +19,7 @@ disabled per guild, since it's what lets staff configure and manage every other 
 - **`/plugin status [plugin]`** — enabled/available/degraded state, health, missing bot permissions, and
   privileged intents for one plugin or every plugin.
 - **`/plugin list`** — every plugin, grouped by category, with an enabled/disabled marker.
-- **`/permissions audit`** — for every *enabled* plugin, diffs its declared bot permissions against what the bot
+- **`/permissions audit`** — for every _enabled_ plugin, diffs its declared bot permissions against what the bot
   actually has in this guild; also warns if the bot's highest role is at or below a configured staff role
   (hierarchy risk), and if a plugin needing a privileged intent (e.g. Message Content) is enabled without it.
 - **`/health`** — gateway ping, uptime, guild count, memory, Redis ping, a `SELECT 1` database check, and each
@@ -29,11 +29,11 @@ disabled per guild, since it's what lets staff configure and manage every other 
 
 Admin's own `PluginConfig` (`admin.*`) is intentionally small:
 
-| Key | Type | Default | Notes |
-|---|---|---|---|
-| `fastActions` | boolean | `false` | Mirrors `GuildConfig.fastActions` (the authoritative copy other plugins read). |
-| `setupCompleted` | boolean | `false` | Set by `/setup wizard` on completion. |
-| `staffChannelId` | string \| null | `null` | Mirrors `GuildConfig.staffChannelId`. |
+| Key              | Type           | Default | Notes                                                                          |
+| ---------------- | -------------- | ------- | ------------------------------------------------------------------------------ |
+| `fastActions`    | boolean        | `false` | Mirrors `GuildConfig.fastActions` (the authoritative copy other plugins read). |
+| `setupCompleted` | boolean        | `false` | Set by `/setup wizard` on completion.                                          |
+| `staffChannelId` | string \| null | `null`  | Mirrors `GuildConfig.staffChannelId`.                                          |
 
 Everything else staff actually configure day-to-day — staff role ids, locale, timezone, mod-log channel — lives
 in the core `GuildConfig` table (`guild.*` keys via `/config set`), not in this plugin's own config. `admin`
@@ -55,13 +55,13 @@ plain text; see `redactForAudit` in `@entrophy/database`).
 
 ## Staff level requirements
 
-| Command | Minimum staff level |
-|---|---|
-| `/setup wizard`, `/setup status` | admin |
-| `/config view\|set\|reset` | admin |
-| `/plugin enable\|disable\|status\|list` | admin |
-| `/permissions audit` | admin |
-| `/health` | moderator |
+| Command                                 | Minimum staff level |
+| --------------------------------------- | ------------------- |
+| `/setup wizard`, `/setup status`        | admin               |
+| `/config view\|set\|reset`              | admin               |
+| `/plugin enable\|disable\|status\|list` | admin               |
+| `/permissions audit`                    | admin               |
+| `/health`                               | moderator           |
 
 ## Files
 

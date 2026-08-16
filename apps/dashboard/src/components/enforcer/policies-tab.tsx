@@ -3,14 +3,33 @@
 import * as React from 'react';
 import { FlaskConical, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { EnforcerPolicyDto } from '@entrophy/types';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, PageHeader, Switch, useToast } from '@entrophy/ui';
-import { useDeleteEnforcerPolicy, useEnforcerPolicies, useTestEnforcerPolicy, useUpdateEnforcerPolicy } from '../../lib/enforcer-queries';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  PageHeader,
+  Switch,
+  useToast,
+} from '@entrophy/ui';
+import {
+  useDeleteEnforcerPolicy,
+  useEnforcerPolicies,
+  useTestEnforcerPolicy,
+  useUpdateEnforcerPolicy,
+} from '../../lib/enforcer-queries';
 import { DataTable, type DataTableColumn } from '../data-table';
 import { ConfirmDialog } from '../confirm-dialog';
 import { ApiClientError } from '../../lib/api';
 import { PolicyEditorDialog } from './policy-editor-dialog';
 
-const SEVERITY_BADGE: Record<EnforcerPolicyDto['severity'], 'secondary' | 'default' | 'warning' | 'destructive'> = {
+const SEVERITY_BADGE: Record<
+  EnforcerPolicyDto['severity'],
+  'secondary' | 'default' | 'warning' | 'destructive'
+> = {
   LOW: 'secondary',
   MEDIUM: 'default',
   HIGH: 'warning',
@@ -45,7 +64,14 @@ export function PoliciesTab({ guildId }: PoliciesTabProps) {
   function toggleEnabled(policy: EnforcerPolicyDto) {
     update.mutate(
       { policyId: policy.id, patch: { enabled: !policy.enabled } },
-      { onError: (err) => toast({ title: 'Could not toggle policy', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }) },
+      {
+        onError: (err) =>
+          toast({
+            title: 'Could not toggle policy',
+            description: err instanceof ApiClientError ? err.message : undefined,
+            variant: 'destructive',
+          }),
+      },
     );
   }
   function confirmDelete() {
@@ -55,7 +81,12 @@ export function PoliciesTab({ guildId }: PoliciesTabProps) {
         toast({ title: 'Policy deleted', variant: 'success' });
         setDeleteTarget(null);
       },
-      onError: (err) => toast({ title: 'Could not delete policy', description: err instanceof ApiClientError ? err.message : undefined, variant: 'destructive' }),
+      onError: (err) =>
+        toast({
+          title: 'Could not delete policy',
+          description: err instanceof ApiClientError ? err.message : undefined,
+          variant: 'destructive',
+        }),
     });
   }
 
@@ -63,11 +94,21 @@ export function PoliciesTab({ guildId }: PoliciesTabProps) {
     {
       key: 'enabled',
       header: 'On',
-      render: (p) => <Switch checked={p.enabled} onCheckedChange={() => toggleEnabled(p)} disabled={update.isPending} />,
+      render: (p) => (
+        <Switch checked={p.enabled} onCheckedChange={() => toggleEnabled(p)} disabled={update.isPending} />
+      ),
     },
     { key: 'name', header: 'Name', render: (p) => <span className="font-medium">{p.name}</span> },
-    { key: 'severity', header: 'Severity', render: (p) => <Badge variant={SEVERITY_BADGE[p.severity]}>{p.severity}</Badge> },
-    { key: 'matchers', header: 'Matchers', render: (p) => `${p.matchers.length} matcher${p.matchers.length === 1 ? '' : 's'}` },
+    {
+      key: 'severity',
+      header: 'Severity',
+      render: (p) => <Badge variant={SEVERITY_BADGE[p.severity]}>{p.severity}</Badge>,
+    },
+    {
+      key: 'matchers',
+      header: 'Matchers',
+      render: (p) => `${p.matchers.length} matcher${p.matchers.length === 1 ? '' : 's'}`,
+    },
     { key: 'suggestedAction', header: 'Suggested action', render: (p) => p.suggestedAction ?? '—' },
     {
       key: 'actions',
@@ -104,14 +145,25 @@ export function PoliciesTab({ guildId }: PoliciesTabProps) {
         }
       />
 
-      <DataTable columns={columns} rows={policies} rowKey={(p) => p.id} loading={isLoading} error={error} onRetry={() => refetch()} emptyTitle="No policies yet" emptyDescription="Create one, or import a starter pack with /enforcer policy import." />
+      <DataTable
+        columns={columns}
+        rows={policies}
+        rowKey={(p) => p.id}
+        loading={isLoading}
+        error={error}
+        onRetry={() => refetch()}
+        emptyTitle="No policies yet"
+        emptyDescription="Create one, or import a starter pack with /enforcer policy import."
+      />
 
       <Card>
         <CardHeader>
           <CardTitle>Test box</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">Pick a policy above with the flask icon, then try sample text against it — nothing is flagged.</p>
+          <p className="text-sm text-muted-foreground">
+            Pick a policy above with the flask icon, then try sample text against it — nothing is flagged.
+          </p>
           {testPolicyId ? (
             <div className="flex gap-2">
               <Input
@@ -119,10 +171,14 @@ export function PoliciesTab({ guildId }: PoliciesTabProps) {
                 value={testText}
                 onChange={(e) => setTestText(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && testText.trim()) test.mutate({ policyId: testPolicyId, text: testText });
+                  if (e.key === 'Enter' && testText.trim())
+                    test.mutate({ policyId: testPolicyId, text: testText });
                 }}
               />
-              <Button onClick={() => test.mutate({ policyId: testPolicyId, text: testText })} disabled={!testText.trim() || test.isPending}>
+              <Button
+                onClick={() => test.mutate({ policyId: testPolicyId, text: testText })}
+                disabled={!testText.trim() || test.isPending}
+              >
                 {test.isPending ? 'Testing…' : 'Test'}
               </Button>
             </div>
@@ -135,7 +191,8 @@ export function PoliciesTab({ guildId }: PoliciesTabProps) {
                 <ul className="space-y-1">
                   {testResult.matches.map((m, i) => (
                     <li key={i}>
-                      <Badge variant="default">Match</Badge> {m.policyName} ({m.severity}) — {m.matcherSummary}
+                      <Badge variant="default">Match</Badge> {m.policyName} ({m.severity}) —{' '}
+                      {m.matcherSummary}
                     </li>
                   ))}
                 </ul>
@@ -147,7 +204,12 @@ export function PoliciesTab({ guildId }: PoliciesTabProps) {
         </CardContent>
       </Card>
 
-      <PolicyEditorDialog guildId={guildId} open={editorOpen} onOpenChange={setEditorOpen} policy={editingPolicy} />
+      <PolicyEditorDialog
+        guildId={guildId}
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        policy={editingPolicy}
+      />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

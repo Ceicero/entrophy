@@ -1,4 +1,13 @@
-import { ChannelType, PermissionFlagsBits, type Guild, type GuildBasedChannel, type OverwriteResolvable, type Role, type TextChannel, type ThreadChannel } from 'discord.js';
+import {
+  ChannelType,
+  PermissionFlagsBits,
+  type Guild,
+  type GuildBasedChannel,
+  type OverwriteResolvable,
+  type Role,
+  type TextChannel,
+  type ThreadChannel,
+} from 'discord.js';
 import { chunk } from '../sdk';
 
 function delay(ms: number): Promise<void> {
@@ -6,7 +15,11 @@ function delay(ms: number): Promise<void> {
 }
 
 /** Builds the `@everyone`/staff-role/bot permission overwrite set for the ledger channel (ARCHITECTURE.md §19). */
-function ledgerOverwrites(guild: Guild, visibility: 'staff' | 'everyone', staffRoleIds: string[]): OverwriteResolvable[] {
+function ledgerOverwrites(
+  guild: Guild,
+  visibility: 'staff' | 'everyone',
+  staffRoleIds: string[],
+): OverwriteResolvable[] {
   const botId = guild.members.me?.id;
   const overwrites: OverwriteResolvable[] = [
     {
@@ -22,12 +35,20 @@ function ledgerOverwrites(guild: Guild, visibility: 'staff' | 'everyone', staffR
     },
   ];
   for (const roleId of new Set(staffRoleIds)) {
-    overwrites.push({ id: roleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory] });
+    overwrites.push({
+      id: roleId,
+      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
+    });
   }
   if (botId) {
     overwrites.push({
       id: botId,
-      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.ReadMessageHistory],
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.ReadMessageHistory,
+      ],
     });
   }
   return overwrites;
@@ -36,14 +57,28 @@ function ledgerOverwrites(guild: Guild, visibility: 'staff' | 'everyone', staffR
 /** The flag-queue channel is always staff-only (it's where mods act on live flags) regardless of ledger visibility. */
 function flagQueueOverwrites(guild: Guild, staffRoleIds: string[]): OverwriteResolvable[] {
   const botId = guild.members.me?.id;
-  const overwrites: OverwriteResolvable[] = [{ id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] }];
+  const overwrites: OverwriteResolvable[] = [
+    { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+  ];
   for (const roleId of new Set(staffRoleIds)) {
-    overwrites.push({ id: roleId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
+    overwrites.push({
+      id: roleId,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ReadMessageHistory,
+      ],
+    });
   }
   if (botId) {
     overwrites.push({
       id: botId,
-      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.ReadMessageHistory],
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.ReadMessageHistory,
+      ],
     });
   }
   return overwrites;
@@ -71,13 +106,23 @@ export async function ensureTextChannel(options: EnsureChannelOptions): Promise<
 }
 
 /** Applies (or re-applies, for `/enforcer setup` → "repair channel") the ledger channel's permission overwrites. */
-export async function applyLedgerOverwrites(channel: TextChannel, visibility: 'staff' | 'everyone', staffRoleIds: string[]): Promise<void> {
-  await channel.permissionOverwrites.set(ledgerOverwrites(channel.guild, visibility, staffRoleIds), 'Enforcer: ledger channel overwrites');
+export async function applyLedgerOverwrites(
+  channel: TextChannel,
+  visibility: 'staff' | 'everyone',
+  staffRoleIds: string[],
+): Promise<void> {
+  await channel.permissionOverwrites.set(
+    ledgerOverwrites(channel.guild, visibility, staffRoleIds),
+    'Enforcer: ledger channel overwrites',
+  );
 }
 
 /** Applies (or re-applies) the flag-queue channel's permission overwrites. */
 export async function applyFlagQueueOverwrites(channel: TextChannel, staffRoleIds: string[]): Promise<void> {
-  await channel.permissionOverwrites.set(flagQueueOverwrites(channel.guild, staffRoleIds), 'Enforcer: flag-queue channel overwrites');
+  await channel.permissionOverwrites.set(
+    flagQueueOverwrites(channel.guild, staffRoleIds),
+    'Enforcer: flag-queue channel overwrites',
+  );
 }
 
 export interface EnsureMuteRoleOptions {
@@ -106,11 +151,15 @@ const CHANNEL_BATCH_DELAY_MS = 1000;
  * the bot can manage, in small batches with a short delay between them to stay rate-limit friendly
  * (ARCHITECTURE.md §19's "/enforcer setup" mute-role step).
  */
-export async function applyMuteRoleToChannels(guild: Guild, role: Role): Promise<{ applied: number; failed: number }> {
+export async function applyMuteRoleToChannels(
+  guild: Guild,
+  role: Role,
+): Promise<{ applied: number; failed: number }> {
   // Threads are text-based but don't carry their own `permissionOverwrites` (they inherit the parent
   // channel's), so they must be excluded explicitly even though `isTextBased()` alone would include them.
   const manageable = [...guild.channels.cache.values()].filter(
-    (channel): channel is Exclude<GuildBasedChannel, ThreadChannel> => !channel.isThread() && channel.manageable && (channel.isTextBased() || channel.isVoiceBased()),
+    (channel): channel is Exclude<GuildBasedChannel, ThreadChannel> =>
+      !channel.isThread() && channel.manageable && (channel.isTextBased() || channel.isVoiceBased()),
   );
   const batches = chunk(manageable, CHANNEL_BATCH_SIZE);
 

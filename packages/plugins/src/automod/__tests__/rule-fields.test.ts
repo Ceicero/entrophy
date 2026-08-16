@@ -8,12 +8,21 @@ describe('parseRuleFieldValues', () => {
   });
 
   it('parses boolean and csv fields for INVITE_LINKS', () => {
-    const config = parseRuleFieldValues('INVITE_LINKS', { allowOwnServerInvites: 'false', allowedInviteCodes: 'abc, def ,ghi' });
-    expect(config).toEqual({ type: 'INVITE_LINKS', allowOwnServerInvites: false, allowedInviteCodes: ['abc', 'def', 'ghi'] });
+    const config = parseRuleFieldValues('INVITE_LINKS', {
+      allowOwnServerInvites: 'false',
+      allowedInviteCodes: 'abc, def ,ghi',
+    });
+    expect(config).toEqual({
+      type: 'INVITE_LINKS',
+      allowOwnServerInvites: false,
+      allowedInviteCodes: ['abc', 'def', 'ghi'],
+    });
   });
 
   it('throws a friendly error for an out-of-range number', () => {
-    expect(() => parseRuleFieldValues('MESSAGE_FREQUENCY', { maxMessages: '9999', windowSeconds: '10' })).toThrow();
+    expect(() =>
+      parseRuleFieldValues('MESSAGE_FREQUENCY', { maxMessages: '9999', windowSeconds: '10' }),
+    ).toThrow();
   });
 
   it('throws for an invalid regex pattern (catastrophic backtracking)', () => {
@@ -26,6 +35,8 @@ describe('parseRuleFieldValues', () => {
   });
 
   it('requires at least one word for WORD_FILTER', () => {
-    expect(() => parseRuleFieldValues('WORD_FILTER', { words: '', wholeWord: 'true', caseSensitive: 'false' })).toThrow();
+    expect(() =>
+      parseRuleFieldValues('WORD_FILTER', { words: '', wholeWord: 'true', caseSensitive: 'false' }),
+    ).toThrow();
   });
 });

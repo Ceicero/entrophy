@@ -44,23 +44,50 @@ const data = new SlashCommandBuilder()
     sub
       .setName('open')
       .setDescription('Open a new support ticket.')
-      .addStringOption((opt) => opt.setName('subject').setDescription('A short summary of what you need help with').setRequired(false).setMaxLength(200)),
+      .addStringOption((opt) =>
+        opt
+          .setName('subject')
+          .setDescription('A short summary of what you need help with')
+          .setRequired(false)
+          .setMaxLength(200),
+      ),
   )
   .addSubcommand((sub) =>
     sub
       .setName('close')
       .setDescription('Close this ticket.')
-      .addStringOption((opt) => opt.setName('reason').setDescription('Why this ticket is being closed').setRequired(false).setMaxLength(1000)),
+      .addStringOption((opt) =>
+        opt
+          .setName('reason')
+          .setDescription('Why this ticket is being closed')
+          .setRequired(false)
+          .setMaxLength(1000),
+      ),
   )
-  .addSubcommand((sub) => sub.setName('add').setDescription('Add a user to this ticket.').addUserOption((opt) => opt.setName('user').setDescription('User to add').setRequired(true)))
   .addSubcommand((sub) =>
-    sub.setName('remove').setDescription('Remove a user from this ticket.').addUserOption((opt) => opt.setName('user').setDescription('User to remove').setRequired(true)),
+    sub
+      .setName('add')
+      .setDescription('Add a user to this ticket.')
+      .addUserOption((opt) => opt.setName('user').setDescription('User to add').setRequired(true)),
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName('remove')
+      .setDescription('Remove a user from this ticket.')
+      .addUserOption((opt) => opt.setName('user').setDescription('User to remove').setRequired(true)),
   )
   .addSubcommand((sub) =>
     sub
       .setName('transcript')
       .setDescription('Get a ticket transcript (sent to you privately).')
-      .addIntegerOption((opt) => opt.setName('number').setDescription("Ticket number (defaults to this channel's ticket)").setRequired(false).setMinValue(1).setAutocomplete(true))
+      .addIntegerOption((opt) =>
+        opt
+          .setName('number')
+          .setDescription("Ticket number (defaults to this channel's ticket)")
+          .setRequired(false)
+          .setMinValue(1)
+          .setAutocomplete(true),
+      )
       .addStringOption((opt) =>
         opt
           .setName('format')
@@ -73,19 +100,43 @@ const data = new SlashCommandBuilder()
     sub
       .setName('assign')
       .setDescription('Assign this ticket to a staff member.')
-      .addUserOption((opt) => opt.setName('user').setDescription('Staff member to assign (omit to unassign)').setRequired(false)),
+      .addUserOption((opt) =>
+        opt.setName('user').setDescription('Staff member to assign (omit to unassign)').setRequired(false),
+      ),
   )
   .addSubcommandGroup((group) =>
     group
       .setName('tag')
       .setDescription("Manage this ticket's tags.")
-      .addSubcommand((sub) => sub.setName('add').setDescription('Add a tag.').addStringOption((opt) => opt.setName('tag').setDescription('Tag text').setRequired(true).setMaxLength(32)))
       .addSubcommand((sub) =>
-        sub.setName('remove').setDescription('Remove a tag.').addStringOption((opt) => opt.setName('tag').setDescription('Tag text').setRequired(true).setMaxLength(32)),
+        sub
+          .setName('add')
+          .setDescription('Add a tag.')
+          .addStringOption((opt) =>
+            opt.setName('tag').setDescription('Tag text').setRequired(true).setMaxLength(32),
+          ),
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('remove')
+          .setDescription('Remove a tag.')
+          .addStringOption((opt) =>
+            opt.setName('tag').setDescription('Tag text').setRequired(true).setMaxLength(32),
+          ),
       ),
   )
   .addSubcommand((sub) =>
-    sub.setName('reopen').setDescription('Reopen a recently-closed ticket.').addIntegerOption((opt) => opt.setName('number').setDescription('Ticket number').setRequired(true).setMinValue(1).setAutocomplete(true)),
+    sub
+      .setName('reopen')
+      .setDescription('Reopen a recently-closed ticket.')
+      .addIntegerOption((opt) =>
+        opt
+          .setName('number')
+          .setDescription('Ticket number')
+          .setRequired(true)
+          .setMinValue(1)
+          .setAutocomplete(true),
+      ),
   )
   .addSubcommand((sub) => sub.setName('config').setDescription('View the tickets configuration.'))
   .addSubcommandGroup((group) =>
@@ -99,25 +150,76 @@ const data = new SlashCommandBuilder()
           .addChannelOption((opt) =>
             // Private threads (thread mode) are a GUILD_TEXT-only Discord feature, so the panel channel is
             // restricted to plain text channels regardless of which mode ends up chosen.
-            opt.setName('channel').setDescription('Channel to post the panel in').setRequired(true).addChannelTypes(ChannelType.GuildText),
+            opt
+              .setName('channel')
+              .setDescription('Channel to post the panel in')
+              .setRequired(true)
+              .addChannelTypes(ChannelType.GuildText),
           )
           .addStringOption((opt) =>
             opt
               .setName('mode')
               .setDescription('How tickets from this panel are opened')
               .setRequired(true)
-              .addChoices({ name: 'Private channel', value: 'CHANNEL' }, { name: 'Private thread', value: 'THREAD' }),
+              .addChoices(
+                { name: 'Private channel', value: 'CHANNEL' },
+                { name: 'Private thread', value: 'THREAD' },
+              ),
           )
-          .addChannelOption((opt) => opt.setName('category').setDescription('Category new ticket channels are created under (channel mode)').setRequired(false).addChannelTypes(ChannelType.GuildCategory))
-          .addRoleOption((opt) => opt.setName('support_role_1').setDescription('Support role with access to tickets from this panel').setRequired(false))
-          .addRoleOption((opt) => opt.setName('support_role_2').setDescription('Second support role').setRequired(false))
-          .addRoleOption((opt) => opt.setName('support_role_3').setDescription('Third support role').setRequired(false))
-          .addIntegerOption((opt) => opt.setName('sla_minutes').setDescription('Minutes before an unanswered ticket is flagged overdue (overrides the default)').setRequired(false).setMinValue(1).setMaxValue(43200))
-          .addBooleanOption((opt) => opt.setName('intake').setDescription("Ask the server's configured intake-form questions when opening from this panel").setRequired(false)),
+          .addChannelOption((opt) =>
+            opt
+              .setName('category')
+              .setDescription('Category new ticket channels are created under (channel mode)')
+              .setRequired(false)
+              .addChannelTypes(ChannelType.GuildCategory),
+          )
+          .addRoleOption((opt) =>
+            opt
+              .setName('support_role_1')
+              .setDescription('Support role with access to tickets from this panel')
+              .setRequired(false),
+          )
+          .addRoleOption((opt) =>
+            opt.setName('support_role_2').setDescription('Second support role').setRequired(false),
+          )
+          .addRoleOption((opt) =>
+            opt.setName('support_role_3').setDescription('Third support role').setRequired(false),
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName('sla_minutes')
+              .setDescription(
+                'Minutes before an unanswered ticket is flagged overdue (overrides the default)',
+              )
+              .setRequired(false)
+              .setMinValue(1)
+              .setMaxValue(43200),
+          )
+          .addBooleanOption((opt) =>
+            opt
+              .setName('intake')
+              .setDescription(
+                "Ask the server's configured intake-form questions when opening from this panel",
+              )
+              .setRequired(false),
+          ),
       ),
   );
 
-function ticketMetaOf(ticket: { number: number; guildId: string; openerId: string; subject: string | null; status: string; mode: string; createdAt: Date; closedAt: Date | null; closedBy: string | null; closeReason: string | null; tags: string[]; intake: unknown }): TranscriptTicketMeta {
+function ticketMetaOf(ticket: {
+  number: number;
+  guildId: string;
+  openerId: string;
+  subject: string | null;
+  status: string;
+  mode: string;
+  createdAt: Date;
+  closedAt: Date | null;
+  closedBy: string | null;
+  closeReason: string | null;
+  tags: string[];
+  intake: unknown;
+}): TranscriptTicketMeta {
   return {
     number: ticket.number,
     guildId: ticket.guildId,
@@ -145,8 +247,14 @@ async function handleOpen(c: CommandContext): Promise<void> {
     panel: null,
     parentChannelId: c.interaction.channelId,
   });
-  const location = ticket.channelId ? `<#${ticket.channelId}>` : ticket.threadId ? `<#${ticket.threadId}>` : 'a new location';
-  await c.interaction.editReply({ embeds: [successEmbed(`Opened ticket #${ticket.number} in ${location}.`)] });
+  const location = ticket.channelId
+    ? `<#${ticket.channelId}>`
+    : ticket.threadId
+      ? `<#${ticket.threadId}>`
+      : 'a new location';
+  await c.interaction.editReply({
+    embeds: [successEmbed(`Opened ticket #${ticket.number} in ${location}.`)],
+  });
 }
 
 async function handleClose(c: CommandContext): Promise<void> {
@@ -180,7 +288,13 @@ async function handleClose(c: CommandContext): Promise<void> {
 
   if (result.confirmed) {
     await c.interaction.reply({ embeds: [successEmbed('Closing this ticket…')], ephemeral: true });
-    await closeTicketCore(c.ctx, { guildId: c.guildId, ticketId: ticket.id, closedBy: c.interaction.user.id, reason, source: 'bot' });
+    await closeTicketCore(c.ctx, {
+      guildId: c.guildId,
+      ticketId: ticket.id,
+      closedBy: c.interaction.user.id,
+      reason,
+      source: 'bot',
+    });
   }
 }
 
@@ -192,7 +306,10 @@ async function handleAdd(c: CommandContext): Promise<void> {
   }
   const user = c.interaction.options.getUser('user', true);
   await addTicketParticipant(c.ctx, c.guildId, ticket.id, user.id, c.interaction.user.id);
-  await c.interaction.reply({ embeds: [successEmbed(`Added <@${user.id}> to this ticket.`)], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [successEmbed(`Added <@${user.id}> to this ticket.`)],
+    ephemeral: true,
+  });
 }
 
 async function handleRemove(c: CommandContext): Promise<void> {
@@ -203,16 +320,20 @@ async function handleRemove(c: CommandContext): Promise<void> {
   }
   const user = c.interaction.options.getUser('user', true);
   await removeTicketParticipant(c.ctx, c.guildId, ticket.id, user.id, c.interaction.user.id);
-  await c.interaction.reply({ embeds: [successEmbed(`Removed <@${user.id}> from this ticket.`)], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [successEmbed(`Removed <@${user.id}> from this ticket.`)],
+    ephemeral: true,
+  });
 }
 
 async function handleTranscript(c: CommandContext): Promise<void> {
   const numberOpt = c.interaction.options.getInteger('number', false);
   const format = (c.interaction.options.getString('format', false) ?? 'html') as 'html' | 'json';
 
-  const ticket = numberOpt !== null
-    ? await c.ctx.prisma.ticket.findFirst({ where: { guildId: c.guildId, number: numberOpt } })
-    : await findTicketForChannel(c.ctx, c.guildId, c.interaction.channelId);
+  const ticket =
+    numberOpt !== null
+      ? await c.ctx.prisma.ticket.findFirst({ where: { guildId: c.guildId, number: numberOpt } })
+      : await findTicketForChannel(c.ctx, c.guildId, c.interaction.channelId);
 
   if (!ticket) {
     await c.interaction.reply({ embeds: [errorEmbed('Ticket not found.')], ephemeral: true });
@@ -240,9 +361,13 @@ async function handleTranscript(c: CommandContext): Promise<void> {
 
   const filename = sanitizeFilename(`ticket-${ticket.number}-transcript`);
   if (format === 'json') {
-    await c.interaction.editReply({ files: [{ attachment: Buffer.from(JSON.stringify(json, null, 2), 'utf8'), name: `${filename}.json` }] });
+    await c.interaction.editReply({
+      files: [{ attachment: Buffer.from(JSON.stringify(json, null, 2), 'utf8'), name: `${filename}.json` }],
+    });
   } else {
-    await c.interaction.editReply({ files: [{ attachment: Buffer.from(html, 'utf8'), name: `${filename}.html` }] });
+    await c.interaction.editReply({
+      files: [{ attachment: Buffer.from(html, 'utf8'), name: `${filename}.html` }],
+    });
   }
 }
 
@@ -254,7 +379,10 @@ async function handleAssign(c: CommandContext): Promise<void> {
   }
   const user = c.interaction.options.getUser('user', false);
   await assignTicket(c.ctx, c.guildId, ticket.id, user?.id ?? null, c.interaction.user.id);
-  await c.interaction.reply({ embeds: [successEmbed(user ? `Assigned to <@${user.id}>.` : 'Unassigned this ticket.')], ephemeral: true });
+  await c.interaction.reply({
+    embeds: [successEmbed(user ? `Assigned to <@${user.id}>.` : 'Unassigned this ticket.')],
+    ephemeral: true,
+  });
 }
 
 async function handleTag(c: CommandContext, action: string): Promise<void> {
@@ -264,8 +392,14 @@ async function handleTag(c: CommandContext, action: string): Promise<void> {
     return;
   }
   const tag = c.interaction.options.getString('tag', true);
-  const updated = action === 'add' ? await addTicketTag(c.ctx, c.guildId, ticket.id, tag, c.interaction.user.id) : await removeTicketTag(c.ctx, c.guildId, ticket.id, tag, c.interaction.user.id);
-  await c.interaction.reply({ embeds: [successEmbed(`Tags: ${updated.tags.length > 0 ? updated.tags.join(', ') : '_none_'}`)], ephemeral: true });
+  const updated =
+    action === 'add'
+      ? await addTicketTag(c.ctx, c.guildId, ticket.id, tag, c.interaction.user.id)
+      : await removeTicketTag(c.ctx, c.guildId, ticket.id, tag, c.interaction.user.id);
+  await c.interaction.reply({
+    embeds: [successEmbed(`Tags: ${updated.tags.length > 0 ? updated.tags.join(', ') : '_none_'}`)],
+    ephemeral: true,
+  });
 }
 
 async function handleReopen(c: CommandContext): Promise<void> {
@@ -280,9 +414,19 @@ async function handleReopen(c: CommandContext): Promise<void> {
   }
 
   await c.interaction.deferReply({ ephemeral: true });
-  const updated = await reopenTicketCore(c.ctx, { guildId: c.guildId, ticketId: ticket.id, reopenedBy: c.interaction.user.id });
-  const location = updated.channelId ? `<#${updated.channelId}>` : updated.threadId ? `<#${updated.threadId}>` : 'its original location';
-  await c.interaction.editReply({ embeds: [successEmbed(`Reopened ticket #${updated.number} in ${location}.`)] });
+  const updated = await reopenTicketCore(c.ctx, {
+    guildId: c.guildId,
+    ticketId: ticket.id,
+    reopenedBy: c.interaction.user.id,
+  });
+  const location = updated.channelId
+    ? `<#${updated.channelId}>`
+    : updated.threadId
+      ? `<#${updated.threadId}>`
+      : 'its original location';
+  await c.interaction.editReply({
+    embeds: [successEmbed(`Reopened ticket #${updated.number} in ${location}.`)],
+  });
 }
 
 async function handleConfigView(c: CommandContext): Promise<void> {
@@ -319,7 +463,10 @@ async function handlePanelCreate(c: CommandContext): Promise<void> {
   const intake = c.interaction.options.getBoolean('intake', false) ?? false;
 
   if (mode === 'THREAD' && !('threads' in channel)) {
-    await c.interaction.reply({ embeds: [errorEmbed('Thread-mode panels need a text or announcement channel.')], ephemeral: true });
+    await c.interaction.reply({
+      embeds: [errorEmbed('Thread-mode panels need a text or announcement channel.')],
+      ephemeral: true,
+    });
     return;
   }
 
@@ -341,13 +488,29 @@ async function handlePanelCreate(c: CommandContext): Promise<void> {
     .setTitle('Create a ticket panel')
     .addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(
-        new TextInputBuilder().setCustomId('title').setLabel('Panel title').setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(100),
+        new TextInputBuilder()
+          .setCustomId('title')
+          .setLabel('Panel title')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setMaxLength(100),
       ),
       new ActionRowBuilder<TextInputBuilder>().addComponents(
-        new TextInputBuilder().setCustomId('description').setLabel('Panel description').setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(2000),
+        new TextInputBuilder()
+          .setCustomId('description')
+          .setLabel('Panel description')
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(true)
+          .setMaxLength(2000),
       ),
       new ActionRowBuilder<TextInputBuilder>().addComponents(
-        new TextInputBuilder().setCustomId('buttonLabel').setLabel('Button label').setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(80).setValue('Open a ticket'),
+        new TextInputBuilder()
+          .setCustomId('buttonLabel')
+          .setLabel('Button label')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+          .setMaxLength(80)
+          .setValue('Open a ticket'),
       ),
     );
 
@@ -410,6 +573,11 @@ export const command: PluginCommand = {
     });
     const query = String(focused.value ?? '');
     const matches = tickets.filter((t) => String(t.number).includes(query)).slice(0, 25);
-    await c.interaction.respond(matches.map((t) => ({ name: `#${t.number}${t.subject ? ` — ${t.subject}` : ''} (${t.status})`, value: t.number })));
+    await c.interaction.respond(
+      matches.map((t) => ({
+        name: `#${t.number}${t.subject ? ` — ${t.subject}` : ''} (${t.status})`,
+        value: t.number,
+      })),
+    );
   },
 };

@@ -36,6 +36,10 @@ const decideButtonHandler: ComponentHandler = {
   action: 'decide',
   kind: 'button',
   ownerOnly: false,
+  // Host router requires at least `helper` for anyone to reach the handler at all (Dismiss/View context are
+  // `helper`, ARCHITECTURE.md §19); the explicit `assertStaffLevel(..., 'moderator')` below still gates every
+  // decision except DISMISS.
+  requirement: { staffLevel: 'helper' },
   async handler(c) {
     const [recordId, decisionRaw] = c.args;
     const decision = decisionRaw as Decision;
@@ -49,15 +53,31 @@ const decideButtonHandler: ComponentHandler = {
       const interaction = c.interaction as ButtonInteraction<'cached'>;
       await interaction.deferUpdate();
       const enforcer = c.ctx.services.require('enforcer');
-      const result = await enforcer.decide({ guildId: c.guildId, recordId, decision, moderatorId: interaction.user.id, source: 'bot' });
-      await interaction.followUp({ embeds: [successEmbed(`Recorded **${decision}** on #E-${result.recordNumber}.`)], ephemeral: true });
+      const result = await enforcer.decide({
+        guildId: c.guildId,
+        recordId,
+        decision,
+        moderatorId: interaction.user.id,
+        source: 'bot',
+      });
+      await interaction.followUp({
+        embeds: [successEmbed(`Recorded **${decision}** on #E-${result.recordNumber}.`)],
+        ephemeral: true,
+      });
       return;
     }
 
-    const reasonRequired = Boolean(REQUIRE_REASON_KEY[decision] && config.requireReasonOn.includes(REQUIRE_REASON_KEY[decision]!));
+    const reasonRequired = Boolean(
+      REQUIRE_REASON_KEY[decision] && config.requireReasonOn.includes(REQUIRE_REASON_KEY[decision]!),
+    );
     const rows = [
       new ActionRowBuilder<TextInputBuilder>().addComponents(
-        new TextInputBuilder().setCustomId('reason').setLabel('Reason').setStyle(TextInputStyle.Paragraph).setRequired(reasonRequired).setMaxLength(1000),
+        new TextInputBuilder()
+          .setCustomId('reason')
+          .setLabel('Reason')
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(reasonRequired)
+          .setMaxLength(1000),
       ),
     ];
     if (decision === 'TIMEOUT' || decision === 'MUTE') {
@@ -75,12 +95,20 @@ const decideButtonHandler: ComponentHandler = {
     if (decision === 'BAN') {
       rows.push(
         new ActionRowBuilder<TextInputBuilder>().addComponents(
-          new TextInputBuilder().setCustomId('deleteDays').setLabel('Delete messages from the last N days (0-7)').setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(1),
+          new TextInputBuilder()
+            .setCustomId('deleteDays')
+            .setLabel('Delete messages from the last N days (0-7)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setMaxLength(1),
         ),
       );
     }
 
-    const modal = new ModalBuilder().setCustomId(buildCustomId('enforcer', 'decide-modal', recordId, decision)).setTitle(`${decision} — #E-${recordId.slice(-6)}`).addComponents(...rows);
+    const modal = new ModalBuilder()
+      .setCustomId(buildCustomId('enforcer', 'decide-modal', recordId, decision))
+      .setTitle(`${decision} — #E-${recordId.slice(-6)}`)
+      .addComponents(...rows);
     await (c.interaction as ButtonInteraction<'cached'>).showModal(modal);
   },
 };
@@ -90,6 +118,7 @@ const decideModalHandler: ComponentHandler = {
   action: 'decide-modal',
   kind: 'modal',
   ownerOnly: false,
+  requirement: { staffLevel: 'helper' },
   async handler(c) {
     const [recordId, decisionRaw] = c.args;
     const decision = decisionRaw as Decision;
@@ -108,13 +137,25 @@ const decideModalHandler: ComponentHandler = {
     if (decision === 'BAN') {
       const raw = interaction.fields.getTextInputValue('deleteDays')?.trim();
       const days = raw ? Number(raw) : NaN;
-      if (Number.isFinite(days) && days >= 0) banDeleteMessageSeconds = Math.min(7, Math.floor(days)) * 86_400;
+      if (Number.isFinite(days) && days >= 0)
+        banDeleteMessageSeconds = Math.min(7, Math.floor(days)) * 86_400;
     }
 
     await interaction.deferReply({ ephemeral: true });
     const enforcer = c.ctx.services.require('enforcer');
-    const result = await enforcer.decide({ guildId: c.guildId, recordId, decision, moderatorId: interaction.user.id, reason, durationMs, banDeleteMessageSeconds, source: 'bot' });
-    await interaction.editReply({ embeds: [successEmbed(`Recorded **${decision}** on #E-${result.recordNumber}.`)] });
+    const result = await enforcer.decide({
+      guildId: c.guildId,
+      recordId,
+      decision,
+      moderatorId: interaction.user.id,
+      reason,
+      durationMs,
+      banDeleteMessageSeconds,
+      source: 'bot',
+    });
+    await interaction.editReply({
+      embeds: [successEmbed(`Recorded **${decision}** on #E-${result.recordNumber}.`)],
+    });
   },
 };
 

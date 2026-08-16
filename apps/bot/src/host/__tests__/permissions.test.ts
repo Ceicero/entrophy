@@ -116,7 +116,9 @@ describe('evaluateRequirement', () => {
 
     it('requires ALL declared permissions, not any', () => {
       const result = evaluateRequirement({
-        requirement: { discordPermissions: [PermissionFlagsBits.KickMembers, PermissionFlagsBits.BanMembers] },
+        requirement: {
+          discordPermissions: [PermissionFlagsBits.KickMembers, PermissionFlagsBits.BanMembers],
+        },
         staffLevel: 'member',
         actorPermissionsBitfield: PermissionFlagsBits.KickMembers,
         userId: 'user-1',
@@ -127,7 +129,9 @@ describe('evaluateRequirement', () => {
 
     it('allows when every required permission is present', () => {
       const result = evaluateRequirement({
-        requirement: { discordPermissions: [PermissionFlagsBits.KickMembers, PermissionFlagsBits.BanMembers] },
+        requirement: {
+          discordPermissions: [PermissionFlagsBits.KickMembers, PermissionFlagsBits.BanMembers],
+        },
         staffLevel: 'member',
         actorPermissionsBitfield: PermissionFlagsBits.KickMembers | PermissionFlagsBits.BanMembers,
         userId: 'user-1',
@@ -138,7 +142,10 @@ describe('evaluateRequirement', () => {
   });
 
   describe('staffLevel OR discordPermissions (both declared)', () => {
-    const requirement = { staffLevel: 'admin' as const, discordPermissions: [PermissionFlagsBits.BanMembers] };
+    const requirement = {
+      staffLevel: 'admin' as const,
+      discordPermissions: [PermissionFlagsBits.BanMembers],
+    };
 
     it('passes when only staffLevel is satisfied', () => {
       const result = evaluateRequirement({
@@ -176,10 +183,13 @@ describe('evaluateRequirement', () => {
 });
 
 describe('requirementFailureMessage', () => {
-  const t = (key: string, vars?: Record<string, string | number>) => `${key}${vars ? `:${JSON.stringify(vars)}` : ''}`;
+  const t = (key: string, vars?: Record<string, string | number>) =>
+    `${key}${vars ? `:${JSON.stringify(vars)}` : ''}`;
 
   it('formats bot_owner_only via errors.permission_denied', () => {
-    expect(requirementFailureMessage({ ok: false, reason: 'bot_owner_only' }, t)).toBe('errors.permission_denied');
+    expect(requirementFailureMessage({ ok: false, reason: 'bot_owner_only' }, t)).toBe(
+      'errors.permission_denied',
+    );
   });
 
   it('formats missing_staff_level with the required level interpolated', () => {
@@ -189,9 +199,12 @@ describe('requirementFailureMessage', () => {
   });
 
   it('formats missing_discord_permission with the missing permission names interpolated', () => {
-    expect(requirementFailureMessage({ ok: false, reason: 'missing_discord_permission', permission: 'Ban Members' }, t)).toBe(
-      'errors.missing_discord_permission:{"permission":"Ban Members"}',
-    );
+    expect(
+      requirementFailureMessage(
+        { ok: false, reason: 'missing_discord_permission', permission: 'Ban Members' },
+        t,
+      ),
+    ).toBe('errors.missing_discord_permission:{"permission":"Ban Members"}');
   });
 });
 

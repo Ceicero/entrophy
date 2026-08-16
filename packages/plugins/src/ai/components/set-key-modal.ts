@@ -14,7 +14,10 @@ const MODAL_ACTION = 'config-set-key-modal';
 const API_KEY_FIELD = 'api-key';
 
 /** Opens the "set API key" modal from `/ai config set-key`. The key is never echoed back or logged — only encrypted and stored. */
-export async function openSetKeyModal(interaction: ChatInputCommandInteraction<'cached'>, ownerId: string): Promise<void> {
+export async function openSetKeyModal(
+  interaction: ChatInputCommandInteraction<'cached'>,
+  ownerId: string,
+): Promise<void> {
   const modal = new ModalBuilder()
     .setCustomId(buildCustomId('ai', MODAL_ACTION, ownerId))
     .setTitle('Set AI provider API key');

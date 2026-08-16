@@ -9,8 +9,12 @@ const data = new SlashCommandBuilder()
   .setName('ask')
   .setDescription('Ask the AI assistant a question.')
   .setDMPermission(false)
-  .addStringOption((opt) => opt.setName('question').setDescription('Your question').setRequired(true).setMaxLength(1000))
-  .addBooleanOption((opt) => opt.setName('private').setDescription('Reply so only you can see it (default: off)').setRequired(false));
+  .addStringOption((opt) =>
+    opt.setName('question').setDescription('Your question').setRequired(true).setMaxLength(1000),
+  )
+  .addBooleanOption((opt) =>
+    opt.setName('private').setDescription('Reply so only you can see it (default: off)').setRequired(false),
+  );
 
 export const command: PluginCommand = {
   data,
@@ -40,7 +44,9 @@ export const command: PluginCommand = {
       prompt: buildAskPrompt(question),
     });
 
-    const embed = infoEmbed(c.t('ask.replyTitle'), truncate(result.text, EMBED_LIMITS.description)).setFooter({ text: AI_DISCLOSURE });
+    const embed = infoEmbed(c.t('ask.replyTitle'), truncate(result.text, EMBED_LIMITS.description)).setFooter(
+      { text: AI_DISCLOSURE },
+    );
     await c.interaction.editReply({ embeds: [embed] });
   },
 };

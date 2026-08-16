@@ -19,12 +19,7 @@ registerPluginLocales('automod', { en });
  * from '@entrophy/plugins' so there is one source of truth").
  */
 export const automodRuleSchemas = ruleSchemas;
-export type {
-  AutomodAction,
-  AutomodActionType,
-  AutomodRuleConfig,
-  AutomodRuleTypeValue,
-} from './schemas';
+export type { AutomodAction, AutomodActionType, AutomodRuleConfig, AutomodRuleTypeValue } from './schemas';
 export * from './engine';
 
 export const plugin = definePlugin({
@@ -47,7 +42,10 @@ export const plugin = definePlugin({
       }
       return { status: 'ok', details: `${enabledCount} enabled rule(s) across all guilds.` };
     } catch (err) {
-      return { status: 'degraded', details: err instanceof Error ? err.message : 'Could not query automod rules.' };
+      return {
+        status: 'degraded',
+        details: err instanceof Error ? err.message : 'Could not query automod rules.',
+      };
     }
   },
 });

@@ -43,7 +43,12 @@ export function paginate(params: PaginateParams = {}): PaginateResolved {
  * Builds a `Paginated<T>` response. Callers should fetch `limit + 1` rows and pass all of them here —
  * the extra row (if present) signals there's a next page and is stripped from `items`.
  */
-export function buildPaginated<T>(fetchedItems: T[], limit: number, currentOffset: number, total?: number): Paginated<T> {
+export function buildPaginated<T>(
+  fetchedItems: T[],
+  limit: number,
+  currentOffset: number,
+  total?: number,
+): Paginated<T> {
   const hasMore = fetchedItems.length > limit;
   const items = hasMore ? fetchedItems.slice(0, limit) : fetchedItems;
   const nextCursor = hasMore ? encodeCursor(currentOffset + limit) : null;

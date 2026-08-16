@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { DAILY_COOLDOWN_MS, encodeStreakNote, formatCurrency, parseStreakFromNote, rollDaily, validateGive } from '../service';
+import {
+  DAILY_COOLDOWN_MS,
+  encodeStreakNote,
+  formatCurrency,
+  parseStreakFromNote,
+  rollDaily,
+  validateGive,
+} from '../service';
 
 const config = { dailyMinAmount: 50, dailyMaxAmount: 150, streakBonusPerDay: 10, streakBonusMax: 200 };
 
@@ -77,27 +84,75 @@ describe('validateGive', () => {
   const giveConfig = { giveMinAmount: 1, giveMaxAmount: 1000 };
 
   it('rejects giving to yourself', () => {
-    expect(validateGive({ amount: 10, senderBalance: 100n, config: giveConfig, targetIsSelf: true, targetIsBot: false })).toEqual({ ok: false, reason: 'self' });
+    expect(
+      validateGive({
+        amount: 10,
+        senderBalance: 100n,
+        config: giveConfig,
+        targetIsSelf: true,
+        targetIsBot: false,
+      }),
+    ).toEqual({ ok: false, reason: 'self' });
   });
 
   it('rejects giving to a bot', () => {
-    expect(validateGive({ amount: 10, senderBalance: 100n, config: giveConfig, targetIsSelf: false, targetIsBot: true })).toEqual({ ok: false, reason: 'bot' });
+    expect(
+      validateGive({
+        amount: 10,
+        senderBalance: 100n,
+        config: giveConfig,
+        targetIsSelf: false,
+        targetIsBot: true,
+      }),
+    ).toEqual({ ok: false, reason: 'bot' });
   });
 
   it('enforces the minimum amount', () => {
-    expect(validateGive({ amount: 0, senderBalance: 100n, config: giveConfig, targetIsSelf: false, targetIsBot: false })).toEqual({ ok: false, reason: 'below_min' });
+    expect(
+      validateGive({
+        amount: 0,
+        senderBalance: 100n,
+        config: giveConfig,
+        targetIsSelf: false,
+        targetIsBot: false,
+      }),
+    ).toEqual({ ok: false, reason: 'below_min' });
   });
 
   it('enforces the maximum amount', () => {
-    expect(validateGive({ amount: 1001, senderBalance: 10_000n, config: giveConfig, targetIsSelf: false, targetIsBot: false })).toEqual({ ok: false, reason: 'above_max' });
+    expect(
+      validateGive({
+        amount: 1001,
+        senderBalance: 10_000n,
+        config: giveConfig,
+        targetIsSelf: false,
+        targetIsBot: false,
+      }),
+    ).toEqual({ ok: false, reason: 'above_max' });
   });
 
   it('enforces sufficient balance', () => {
-    expect(validateGive({ amount: 50, senderBalance: 10n, config: giveConfig, targetIsSelf: false, targetIsBot: false })).toEqual({ ok: false, reason: 'insufficient_balance' });
+    expect(
+      validateGive({
+        amount: 50,
+        senderBalance: 10n,
+        config: giveConfig,
+        targetIsSelf: false,
+        targetIsBot: false,
+      }),
+    ).toEqual({ ok: false, reason: 'insufficient_balance' });
   });
 
   it('allows a valid give at the exact balance', () => {
-    expect(validateGive({ amount: 50, senderBalance: 50n, config: giveConfig, targetIsSelf: false, targetIsBot: false })).toEqual({ ok: true });
+    expect(
+      validateGive({
+        amount: 50,
+        senderBalance: 50n,
+        config: giveConfig,
+        targetIsSelf: false,
+        targetIsBot: false,
+      }),
+    ).toEqual({ ok: true });
   });
 });
 

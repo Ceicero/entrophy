@@ -3,20 +3,57 @@
 import * as React from 'react';
 import { Download } from 'lucide-react';
 import type { ModerationCaseDto } from '@entrophy/types';
-import { Badge, Button, Input, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@entrophy/ui';
+import {
+  Badge,
+  Button,
+  Input,
+  Pagination,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@entrophy/ui';
 import { DataTable, type DataTableColumn } from '../data-table';
 import { formatDateTime } from '../../lib/format';
-import { moderationCasesExportCsvUrl, useModerationCases, type CasesFilters } from '../../lib/moderation-queries';
+import {
+  moderationCasesExportCsvUrl,
+  useModerationCases,
+  type CasesFilters,
+} from '../../lib/moderation-queries';
 import { CaseDetailDrawer } from './case-detail-drawer';
 
 const CASE_TYPES = [
-  'WARN', 'TIMEOUT', 'UNTIMEOUT', 'KICK', 'BAN', 'UNBAN', 'SOFTBAN', 'PURGE',
-  'LOCK', 'UNLOCK', 'SLOWMODE', 'NICK', 'ROLE_ADD', 'ROLE_REMOVE', 'QUARANTINE', 'NOTE',
+  'WARN',
+  'TIMEOUT',
+  'UNTIMEOUT',
+  'KICK',
+  'BAN',
+  'UNBAN',
+  'SOFTBAN',
+  'PURGE',
+  'LOCK',
+  'UNLOCK',
+  'SLOWMODE',
+  'NICK',
+  'ROLE_ADD',
+  'ROLE_REMOVE',
+  'QUARANTINE',
+  'NOTE',
 ];
 
-const TYPE_BADGE: Record<string, 'default' | 'secondary' | 'outline' | 'destructive' | 'success' | 'warning'> = {
-  WARN: 'warning', TIMEOUT: 'warning', UNTIMEOUT: 'success', KICK: 'destructive', BAN: 'destructive',
-  UNBAN: 'success', SOFTBAN: 'destructive', PURGE: 'secondary',
+const TYPE_BADGE: Record<
+  string,
+  'default' | 'secondary' | 'outline' | 'destructive' | 'success' | 'warning'
+> = {
+  WARN: 'warning',
+  TIMEOUT: 'warning',
+  UNTIMEOUT: 'success',
+  KICK: 'destructive',
+  BAN: 'destructive',
+  UNBAN: 'success',
+  SOFTBAN: 'destructive',
+  PURGE: 'secondary',
 };
 
 export function CasesTab({ guildId }: { guildId: string }) {
@@ -43,9 +80,21 @@ export function CasesTab({ guildId }: { guildId: string }) {
         </Badge>
       ),
     },
-    { key: 'target', header: 'Target', render: (row) => <span className="font-mono text-xs">{row.targetId}</span> },
-    { key: 'moderator', header: 'Moderator', render: (row) => <span className="font-mono text-xs">{row.moderatorId}</span> },
-    { key: 'reason', header: 'Reason', render: (row) => <span className="truncate">{row.reason ?? '—'}</span> },
+    {
+      key: 'target',
+      header: 'Target',
+      render: (row) => <span className="font-mono text-xs">{row.targetId}</span>,
+    },
+    {
+      key: 'moderator',
+      header: 'Moderator',
+      render: (row) => <span className="font-mono text-xs">{row.moderatorId}</span>,
+    },
+    {
+      key: 'reason',
+      header: 'Reason',
+      render: (row) => <span className="truncate">{row.reason ?? '—'}</span>,
+    },
     { key: 'when', header: 'When', render: (row) => formatDateTime(row.createdAt) },
   ];
 
@@ -58,7 +107,10 @@ export function CasesTab({ guildId }: { guildId: string }) {
           value={filters.targetId ?? ''}
           onChange={(e) => updateFilter({ targetId: e.target.value || undefined })}
         />
-        <Select value={filters.type ?? 'all'} onValueChange={(v) => updateFilter({ type: v === 'all' ? undefined : v })}>
+        <Select
+          value={filters.type ?? 'all'}
+          onValueChange={(v) => updateFilter({ type: v === 'all' ? undefined : v })}
+        >
           <SelectTrigger className="w-44">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
@@ -99,7 +151,11 @@ export function CasesTab({ guildId }: { guildId: string }) {
         onNext={() => data?.nextCursor && setCursorStack((prev) => [...prev, data.nextCursor ?? undefined])}
       />
 
-      <CaseDetailDrawer guildId={guildId} caseRow={selectedCase} onOpenChange={(open) => !open && setSelectedCase(null)} />
+      <CaseDetailDrawer
+        guildId={guildId}
+        caseRow={selectedCase}
+        onOpenChange={(open) => !open && setSelectedCase(null)}
+      />
     </div>
   );
 }

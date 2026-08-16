@@ -42,11 +42,18 @@ const eventParamSchema = guildIdParamSchema.extend({ eventId: z.string().min(1) 
 
 /** `/guilds/:guildId/automod` — rule builder (CRUD, dry-run toggles) + false-positive review queue (ARCHITECTURE.md §10). */
 export default async function automodRoutes(app: ZodFastifyInstance): Promise<void> {
-  app.get('/:guildId/automod/rules', { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() }, async (request): Promise<AutomodRuleDto[]> => {
-    const guildId = request.guildId!;
-    const rows = await app.prisma.automodRule.findMany({ where: { guildId, deletedAt: null }, orderBy: { priority: 'asc' } });
-    return rows.map(toAutomodRuleDto);
-  });
+  app.get(
+    '/:guildId/automod/rules',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<AutomodRuleDto[]> => {
+      const guildId = request.guildId!;
+      const rows = await app.prisma.automodRule.findMany({
+        where: { guildId, deletedAt: null },
+        orderBy: { priority: 'asc' },
+      });
+      return rows.map(toAutomodRuleDto);
+    },
+  );
 
   app.post(
     '/:guildId/automod/rules',
@@ -96,7 +103,9 @@ export default async function automodRoutes(app: ZodFastifyInstance): Promise<vo
       const guildId = request.guildId!;
       const session = request.session!;
       const { ruleId } = request.params as { ruleId: string };
-      const existing = await app.prisma.automodRule.findFirst({ where: { id: ruleId, guildId, deletedAt: null } });
+      const existing = await app.prisma.automodRule.findFirst({
+        where: { id: ruleId, guildId, deletedAt: null },
+      });
       if (!existing) throw new NotFoundError('Automod rule not found.');
 
       const body = request.body;
@@ -131,24 +140,30 @@ export default async function automodRoutes(app: ZodFastifyInstance): Promise<vo
     },
   );
 
-  app.delete('/:guildId/automod/rules/:ruleId', { schema: { params: ruleParamSchema }, preHandler: requireGuildAccess() }, async (request, reply) => {
-    const guildId = request.guildId!;
-    const session = request.session!;
-    const { ruleId } = request.params as { ruleId: string };
-    const existing = await app.prisma.automodRule.findFirst({ where: { id: ruleId, guildId, deletedAt: null } });
-    if (!existing) throw new NotFoundError('Automod rule not found.');
+  app.delete(
+    '/:guildId/automod/rules/:ruleId',
+    { schema: { params: ruleParamSchema }, preHandler: requireGuildAccess() },
+    async (request, reply) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { ruleId } = request.params as { ruleId: string };
+      const existing = await app.prisma.automodRule.findFirst({
+        where: { id: ruleId, guildId, deletedAt: null },
+      });
+      if (!existing) throw new NotFoundError('Automod rule not found.');
 
-    await app.prisma.automodRule.update({ where: { id: ruleId }, data: { deletedAt: new Date() } });
-    await writeDashboardAudit(app.prisma, {
-      guildId,
-      actorId: session.userId,
-      action: AuditAction.AutomodRuleDelete,
-      targetType: 'automod_rule',
-      targetId: ruleId,
-    });
-    reply.status(204);
-    return null;
-  });
+      await app.prisma.automodRule.update({ where: { id: ruleId }, data: { deletedAt: new Date() } });
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.AutomodRuleDelete,
+        targetType: 'automod_rule',
+        targetId: ruleId,
+      });
+      reply.status(204);
+      return null;
+    },
+  );
 
   app.post(
     '/:guildId/automod/rules/:ruleId/dry-run',
@@ -157,10 +172,15 @@ export default async function automodRoutes(app: ZodFastifyInstance): Promise<vo
       const guildId = request.guildId!;
       const session = request.session!;
       const { ruleId } = request.params as { ruleId: string };
-      const existing = await app.prisma.automodRule.findFirst({ where: { id: ruleId, guildId, deletedAt: null } });
+      const existing = await app.prisma.automodRule.findFirst({
+        where: { id: ruleId, guildId, deletedAt: null },
+      });
       if (!existing) throw new NotFoundError('Automod rule not found.');
 
-      const updated = await app.prisma.automodRule.update({ where: { id: ruleId }, data: { dryRun: request.body.dryRun } });
+      const updated = await app.prisma.automodRule.update({
+        where: { id: ruleId },
+        data: { dryRun: request.body.dryRun },
+      });
       await writeDashboardAudit(app.prisma, {
         guildId,
         actorId: session.userId,
@@ -180,7 +200,10 @@ export default async function automodRoutes(app: ZodFastifyInstance): Promise<vo
     async (request) => {
       const guildId = request.guildId!;
       const session = request.session!;
-      const result = await app.prisma.automodRule.updateMany({ where: { guildId, deletedAt: null }, data: { dryRun: request.body.dryRun } });
+      const result = await app.prisma.automodRule.updateMany({
+        where: { guildId, deletedAt: null },
+        data: { dryRun: request.body.dryRun },
+      });
       await writeDashboardAudit(app.prisma, {
         guildId,
         actorId: session.userId,
@@ -195,7 +218,10 @@ export default async function automodRoutes(app: ZodFastifyInstance): Promise<vo
 
   app.get(
     '/:guildId/automod/events',
-    { schema: { params: guildIdParamSchema, querystring: eventsQuerySchema }, preHandler: requireGuildAccess() },
+    {
+      schema: { params: guildIdParamSchema, querystring: eventsQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
     async (request): Promise<Paginated<AutomodEventDto>> => {
       const guildId = request.guildId!;
       const { cursor, limit: rawLimit, reviewStatus } = request.query;
@@ -240,11 +266,20 @@ export default async function automodRoutes(app: ZodFastifyInstance): Promise<vo
 
   app.post(
     '/:guildId/automod/rules/:ruleId/test',
-    { schema: { params: ruleParamSchema, body: ruleTestBodySchema, response: { 200: ruleTestResponseSchema } }, preHandler: requireGuildAccess() },
+    {
+      schema: {
+        params: ruleParamSchema,
+        body: ruleTestBodySchema,
+        response: { 200: ruleTestResponseSchema },
+      },
+      preHandler: requireGuildAccess(),
+    },
     async (request) => {
       const guildId = request.guildId!;
       const { ruleId } = request.params as { ruleId: string };
-      const existing = await app.prisma.automodRule.findFirst({ where: { id: ruleId, guildId, deletedAt: null } });
+      const existing = await app.prisma.automodRule.findFirst({
+        where: { id: ruleId, guildId, deletedAt: null },
+      });
       if (!existing) throw new NotFoundError('Automod rule not found.');
 
       const config = automodRuleConfigSchema.parse(existing.config);

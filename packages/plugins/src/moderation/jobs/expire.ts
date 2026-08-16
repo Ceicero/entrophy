@@ -5,7 +5,14 @@ export interface ExpireJobData {
   caseId: string;
 }
 
-/** Fires once when a specific TIMEOUT or (temp) BAN case's duration elapses (scheduled with `jobId: case:<id>`). */
+/** `metadata.roleId` set by the `enforcer` plugin's timed MUTE (`metadata: { enforcerMute: true, roleId }`). */
+function enforcerMuteRoleId(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const m = metadata as Record<string, unknown>;
+  return m.enforcerMute === true && typeof m.roleId === 'string' ? m.roleId : null;
+}
+
+/** Fires once when a specific TIMEOUT, (temp) BAN, or timed ROLE_ADD (enforcer mute) case's duration elapses (scheduled with `jobId: case:<id>`). */
 export const expireJob: PluginJob<ExpireJobData> = {
   name: 'expire',
   async processor(ctx, job) {
@@ -23,11 +30,30 @@ export const expireJob: PluginJob<ExpireJobData> = {
           await member.timeout(null, `Timeout expired (case #${row.caseNumber})`).catch(() => undefined);
         }
       } else if (row.type === 'BAN') {
-        await service.unban({ guildId: row.guildId, targetId: row.targetId, moderatorId: ctx.client.user.id, reason: `Temporary ban expired (case #${row.caseNumber})`, source: 'SYSTEM' });
+        await service.unban({
+          guildId: row.guildId,
+          targetId: row.targetId,
+          moderatorId: ctx.client.user.id,
+          reason: `Temporary ban expired (case #${row.caseNumber})`,
+          source: 'SYSTEM',
+        });
         return; // unban() already marks BAN cases expired via markExpiredForActiveBan
+      } else if (row.type === 'ROLE_ADD') {
+        const roleId = enforcerMuteRoleId(row.metadata);
+        if (roleId) {
+          const guild = await ctx.client.guilds.fetch(row.guildId).catch(() => null);
+          const member = guild ? await guild.members.fetch(row.targetId).catch(() => null) : null;
+          if (member?.roles.cache.has(roleId)) {
+            await member.roles
+              .remove(roleId, `Mute expired (case #${row.caseNumber})`)
+              .catch(() => undefined);
+          }
+        }
       }
     } finally {
-      await ctx.prisma.moderationCase.update({ where: { id: row.id }, data: { expiredAt: new Date() } }).catch(() => undefined);
+      await ctx.prisma.moderationCase
+        .update({ where: { id: row.id }, data: { expiredAt: new Date() } })
+        .catch(() => undefined);
     }
   },
 };

@@ -6,6 +6,7 @@ import { allPlugins, PluginRegistry, type PrivilegedIntentsEnabled } from '@entr
 import { createClient } from './client';
 import { bullConnectionOptionsFromUrl } from './lib/redis-options';
 import { createBotActionsWorker } from './host/bot-actions';
+import { createDataRequestsWorker } from './host/data-requests';
 import { startHealthServer } from './host/health';
 import { loadPlugins } from './host/loader';
 import { routeInteraction } from './host/router';
@@ -72,7 +73,10 @@ async function main(): Promise<void> {
 
       try {
         const currentIds = new Set(readyClient.guilds.cache.keys());
-        const presentInDb = await prisma.guild.findMany({ where: { botPresent: true }, select: { id: true } });
+        const presentInDb = await prisma.guild.findMany({
+          where: { botPresent: true },
+          select: { id: true },
+        });
         for (const row of presentInDb) {
           if (!currentIds.has(row.id)) {
             await markGuildLeft(prisma, row.id).catch((err: unknown) => {
@@ -119,6 +123,13 @@ async function main(): Promise<void> {
     logger,
   });
 
+  const dataRequestsWorker = createDataRequestsWorker({
+    client,
+    prisma,
+    connection: bullConnectionOptions,
+    logger,
+  });
+
   const healthServer = startHealthServer({
     port: env.BOT_HEALTH_PORT ?? DEFAULT_HEALTH_PORT,
     client,
@@ -143,6 +154,11 @@ async function main(): Promise<void> {
       await botActionsWorker.close();
     } catch (err) {
       logger.error({ err }, 'error closing bot-actions worker');
+    }
+    try {
+      await dataRequestsWorker.close();
+    } catch (err) {
+      logger.error({ err }, 'error closing data-requests worker');
     }
     try {
       await jobWorkers.close();
