@@ -28,6 +28,12 @@ COPY --from=deps /app /app
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# NEXT_PUBLIC_* values are inlined by `next build`, so they must be present at BUILD time.
+# Railway/Render populate declared ARGs from the service's environment variables.
+ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+ARG COOKIE_DOMAIN
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    COOKIE_DOMAIN=${COOKIE_DOMAIN}
 RUN node scripts/sync-brand.mjs
 RUN pnpm --filter @entrophy/dashboard build
 
