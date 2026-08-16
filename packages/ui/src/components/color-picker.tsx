@@ -25,7 +25,7 @@ export function ColorPicker({ value, onChange, className, disabled }: ColorPicke
     <div className={cn('flex items-center gap-2', className)}>
       <input
         type="color"
-        value={HEX_RE.test(value) ? value : '#6366f1'}
+        value={HEX_RE.test(value) ? value : '#e5e5e5'}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         className="h-9 w-10 shrink-0 cursor-pointer rounded-md border border-input bg-background p-1 disabled:cursor-not-allowed disabled:opacity-50"
@@ -39,7 +39,7 @@ export function ColorPicker({ value, onChange, className, disabled }: ColorPicke
           if (HEX_RE.test(text)) onChange(text);
           else setText(value);
         }}
-        placeholder="#6366f1"
+        placeholder="#e5e5e5"
         className="font-mono uppercase"
         maxLength={7}
       />

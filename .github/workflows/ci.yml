@@ -75,6 +75,11 @@ jobs:
           pnpm commands:export
           git diff --exit-code -- docs/commands.json docs/invite.json apps/web/src/data/commands.json
 
+      - name: Export permissions matrix (fails if docs/PERMISSIONS.md is stale)
+        run: |
+          pnpm docs:permissions
+          git diff --exit-code -- docs/PERMISSIONS.md
+
       - name: Run migrations against service database
         env:
           DATABASE_URL: postgresql://entrophy:entrophy@localhost:5432/entrophy

@@ -22,7 +22,7 @@ export interface EmbedPreviewFooter {
 export interface EmbedPreviewData {
   title?: string;
   description?: string;
-  /** Hex color, e.g. `#6366f1`. */
+  /** Hex color, e.g. `#e5e5e5`. */
   color?: string;
   fields?: EmbedPreviewField[];
   author?: EmbedPreviewAuthor;

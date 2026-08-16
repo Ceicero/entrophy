@@ -15,6 +15,7 @@
     "lint": "eslint --config ../../eslint.config.js src",
     "test": "vitest run --passWithNoTests",
     "export:commands": "tsx scripts/export-commands.ts",
+    "export:permissions": "tsx scripts/export-permissions.ts",
     "registry:sanity": "tsx scripts/registry-sanity.ts"
   },
   "dependencies": {

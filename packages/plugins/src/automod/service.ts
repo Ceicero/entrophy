@@ -11,7 +11,7 @@ import {
   type Message,
   type PartialMessage,
 } from 'discord.js';
-import { Cooldowns, redisKey, sanitizeEmbedText, truncate } from '@entrophy/core';
+import { BRAND, Cooldowns, redisKey, sanitizeEmbedText, truncate } from '@entrophy/core';
 import type { AutomodEvent, AutomodRule, Prisma } from '@entrophy/database';
 import { buildCustomId, resolveTextChannel, type PluginContext } from '../sdk';
 import type { AutomodConfig } from './manifest';
@@ -108,7 +108,9 @@ function alertEmbed(params: {
 }): EmbedBuilder {
   const { rule, userId, channelId, result, excerpt, actionOutcomes, dryRun } = params;
   const embed = new EmbedBuilder()
-    .setColor(dryRun ? 0xa3a3a3 : 0xef4444)
+    // dry-run alerts are informational, not a real enforcement action, so they get the neutral brand color
+    // rather than the destructive red used for an actual (non-dry-run) automod trigger.
+    .setColor(dryRun ? BRAND.color : 0xef4444)
     .setTitle(`${dryRun ? '[DRY RUN] ' : ''}Automod: ${rule.name}`)
     .setDescription(result.reason ? truncate(result.reason, 2000) : 'A configured rule matched.')
     .addFields(

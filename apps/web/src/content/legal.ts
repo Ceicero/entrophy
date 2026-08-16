@@ -54,7 +54,7 @@ export function privacyPolicy(operator: string, contactEmail: string): LegalSect
     {
       title: '7. Third parties',
       paragraphs: [
-        `${operator} shares data only with the services required to operate the features you use — Discord (the platform itself), Stripe (donations only), and any optional integration a server administrator explicitly connects (for example Twitch or GitHub). No data is sold.`,
+        `${operator} shares data only with the services required to operate the features you use — Discord (the platform itself), Stripe (donations only), and any optional integration a server administrator explicitly connects (for example Twitch, GitHub, an AI provider for the AI assistant plugin, or a translation/weather provider for the utility plugin). No data is sold.`,
       ],
     },
     {
@@ -64,13 +64,19 @@ export function privacyPolicy(operator: string, contactEmail: string): LegalSect
       ],
     },
     {
-      title: '9. Changes to this policy',
+      title: '9. Children',
+      paragraphs: [
+        `Entrophy runs on Discord, which requires users to be at least 13 years old under Discord's own Terms of Service. ${operator} does not knowingly collect data from anyone below that age, and relies on Discord's own age requirements rather than collecting separate age verification.`,
+      ],
+    },
+    {
+      title: '10. Changes to this policy',
       paragraphs: [
         'This policy may be updated as features change. Material changes will be reflected here with an updated effective date.',
       ],
     },
     {
-      title: '10. Contact',
+      title: '11. Contact',
       paragraphs: [`Questions about this policy: ${contactEmail}.`],
     },
   ];

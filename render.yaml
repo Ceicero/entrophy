@@ -1,0 +1,264 @@
+# Render Blueprint — alternative to the recommended Railway path (see infra/DEPLOYMENT.md §2 for
+# Railway, §3 for how to use this file). Render reads this automatically when you create a
+# "Blueprint" from this repo. See docs/ARCHITECTURE.md §21 and §21a for the domain layout this
+# assumes (entrophybot.com / app.entrophybot.com / api.entrophybot.com).
+#
+# Every envVar marked `sync: false` is a secret Render will prompt you for when you apply this
+# blueprint (or that you fill in later under that service's Environment tab) — nothing secret is
+# committed here. Custom domains (entrophybot.com, app.entrophybot.com, api.entrophybot.com) are not
+# set by this file; add them per-service in the Render dashboard under Settings → Custom Domains
+# after the first deploy, per infra/DEPLOYMENT.md §3.
+
+databases:
+  - name: entrophy-postgres
+    databaseName: entrophy
+    user: entrophy
+    plan: starter
+
+services:
+  # Managed Redis-compatible store (Render "Key Value"). Used for sessions, cache, and BullMQ queues
+  # — never a system of record, so it needs no backup plan (see infra/DEPLOYMENT.md §8).
+  - type: keyvalue
+    name: entrophy-redis
+    plan: starter
+    ipAllowList: [] # no external access needed; only api/bot (in this same Render account) connect
+
+  # --- apps/api — Fastify REST API, Discord OAuth, webhook receivers -------------------------------
+  - type: web
+    name: api
+    runtime: docker
+    dockerfilePath: ./infra/docker/Dockerfile.api
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    preDeployCommand: pnpm db:migrate
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: DATABASE_URL
+        fromDatabase:
+          name: entrophy-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: entrophy-redis
+          property: connectionString
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_OAUTH_REDIRECT_URI
+        value: https://api.entrophybot.com/auth/discord/callback
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ENCRYPTION_KEY_PREVIOUS
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: API_PORT
+        value: '3001'
+      - key: API_BASE_URL
+        value: https://api.entrophybot.com
+      - key: DASHBOARD_URL
+        value: https://app.entrophybot.com
+      - key: WEB_URL
+        value: https://entrophybot.com
+      - key: COOKIE_DOMAIN
+        value: .entrophybot.com
+      - key: SESSION_COOKIE_SAMESITE
+        value: lax
+      - key: TRUST_PROXY
+        value: 'true'
+      - key: E2E_TEST_MODE
+        value: 'false'
+      - key: PUBLIC_WEBHOOK_BASE_URL
+        value: https://api.entrophybot.com
+      - key: BOT_OWNER_IDS
+        sync: false
+      # --- optional integrations; leave blank in the Render dashboard to keep a feature disabled ---
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: DONATION_PRESETS_CENTS
+        value: '300,500,1000,2500,5000'
+      - key: DONATION_MIN_CENTS
+        value: '100'
+      - key: DONATION_MAX_CENTS
+        value: '50000'
+      - key: TWITCH_CLIENT_ID
+        sync: false
+      - key: TWITCH_CLIENT_SECRET
+        sync: false
+      - key: TWITCH_EVENTSUB_SECRET
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      - key: REDDIT_USER_AGENT
+        sync: false
+      - key: STEAM_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: MICROSOFT_CLIENT_ID
+        sync: false
+      - key: MICROSOFT_CLIENT_SECRET
+        sync: false
+      - key: NOTION_CLIENT_ID
+        sync: false
+      - key: NOTION_CLIENT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: TRANSLATE_PROVIDER
+        value: none
+      - key: DEEPL_API_KEY
+        sync: false
+      - key: LIBRETRANSLATE_URL
+        sync: false
+      - key: LIBRETRANSLATE_API_KEY
+        sync: false
+      - key: WEATHER_PROVIDER
+        value: none
+      - key: OPENWEATHERMAP_API_KEY
+        sync: false
+      - key: CAPTCHA_PROVIDER
+        value: none
+      - key: HCAPTCHA_SITE_KEY
+        sync: false
+      - key: HCAPTCHA_SECRET
+        sync: false
+      - key: TURNSTILE_SITE_KEY
+        sync: false
+      - key: TURNSTILE_SECRET
+        sync: false
+      - key: MEDIA_PROVIDER
+        value: none
+
+  # --- apps/dashboard — Next.js admin dashboard ----------------------------------------------------
+  - type: web
+    name: dashboard
+    runtime: docker
+    dockerfilePath: ./infra/docker/Dockerfile.dashboard
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://api.entrophybot.com
+
+  # --- apps/web — public marketing website -----------------------------------------------------------
+  # NEXT_PUBLIC_* vars must be present at *build* time (Next.js inlines them into the JS bundle) —
+  # Render passes every envVar below into the Docker build as a build ARG in addition to setting it
+  # at runtime, which is exactly what infra/docker/Dockerfile.web's `ARG NEXT_PUBLIC_*` lines expect.
+  - type: web
+    name: web
+    runtime: docker
+    dockerfilePath: ./infra/docker/Dockerfile.web
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://api.entrophybot.com
+      - key: NEXT_PUBLIC_DASHBOARD_URL
+        value: https://app.entrophybot.com
+      - key: NEXT_PUBLIC_DISCORD_CLIENT_ID
+        sync: false
+      - key: NEXT_PUBLIC_INVITE_PERMISSIONS
+        sync: false
+      - key: NEXT_PUBLIC_SUPPORT_SERVER_URL
+        sync: false
+
+  # --- apps/bot — Discord gateway process + BullMQ workers -------------------------------------------
+  # Worker, not a web service: it has no HTTP surface Render should route public traffic to (its
+  # `/health` endpoint on BOT_HEALTH_PORT is for the Docker HEALTHCHECK in Dockerfile.bot and manual
+  # debugging only — see infra/railway/README.md for the same reasoning applied to Railway). Render
+  # worker services have no healthCheckPath option; Render restarts the process if it exits, same as
+  # any worker.
+  - type: worker
+    name: bot
+    runtime: docker
+    dockerfilePath: ./infra/docker/Dockerfile.bot
+    dockerContext: .
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: DATABASE_URL
+        fromDatabase:
+          name: entrophy-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: entrophy-redis
+          property: connectionString
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ENCRYPTION_KEY_PREVIOUS
+        sync: false
+      - key: BOT_OWNER_IDS
+        sync: false
+      - key: DEV_GUILD_ID
+        sync: false
+      - key: BOT_HEALTH_PORT
+        value: '3002'
+      - key: ENABLE_MESSAGE_CONTENT_INTENT
+        value: 'false'
+      - key: ENABLE_GUILD_MEMBERS_INTENT
+        value: 'true'
+      - key: ENABLE_GUILD_PRESENCES_INTENT
+        value: 'false'
+      # optional integrations bot-side jobs may use — same names as the api service above
+      - key: TWITCH_CLIENT_ID
+        sync: false
+      - key: TWITCH_CLIENT_SECRET
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: STEAM_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: MICROSOFT_CLIENT_ID
+        sync: false
+      - key: MICROSOFT_CLIENT_SECRET
+        sync: false
+      - key: NOTION_CLIENT_ID
+        sync: false
+      - key: NOTION_CLIENT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: TRANSLATE_PROVIDER
+        value: none
+      - key: WEATHER_PROVIDER
+        value: none
+      - key: MEDIA_PROVIDER
+        value: none

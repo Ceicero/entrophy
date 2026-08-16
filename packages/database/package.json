@@ -16,8 +16,9 @@
     "validate": "prisma validate",
     "seed": "tsx prisma/seed.ts",
     "studio": "prisma studio",
+    "reencrypt:secrets": "tsx scripts/reencrypt-secrets.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint --config ../../eslint.config.js src prisma",
+    "lint": "eslint --config ../../eslint.config.js src prisma scripts",
     "test": "vitest run --passWithNoTests"
   },
   "prisma": {
@@ -25,7 +26,8 @@
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
-    "@entrophy/types": "workspace:*"
+    "@entrophy/types": "workspace:*",
+    "@entrophy/core": "workspace:*"
   },
   "devDependencies": {
     "prisma": "^6.2.1",
