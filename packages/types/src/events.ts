@@ -41,6 +41,33 @@ export interface PlatformEventMap {
   'level.up': { guildId: string; userId: string; level: number };
   'plugin.error': { pluginId: PluginId; guildId?: string; error: string; context?: unknown };
   'webhook.deliveryFailed': { guildId: string; endpointId: string; status?: number; error: string };
+  'moderation.appealOpened': { guildId: string; appealId: string; caseId: string; caseNumber: number; userId: string };
+  'moderation.appealDecided': {
+    guildId: string;
+    appealId: string;
+    caseId: string;
+    caseNumber: number;
+    userId: string;
+    accepted: boolean;
+    reviewerId: string;
+  };
+  'enforcer.flagged': {
+    guildId: string;
+    recordId: string;
+    recordNumber: number;
+    userId: string;
+    policyId?: string;
+    source: string;
+  };
+  'enforcer.decided': {
+    guildId: string;
+    recordId: string;
+    recordNumber: number;
+    userId: string;
+    decision: string;
+    moderatorId: string;
+    caseId?: string;
+  };
 }
 
 /** Union of all platform event names. */

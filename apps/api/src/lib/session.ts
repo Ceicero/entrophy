@@ -83,12 +83,18 @@ export function decryptRefreshToken(session: SessionData): string {
   return decryptSecret(session.refreshTokenEnc);
 }
 
-/** Sets the signed, httpOnly `sid` cookie for a newly created session. */
+/**
+ * Sets the signed, httpOnly `sid` cookie for a newly created session. `sameSite`/`secure` follow
+ * `env.SESSION_COOKIE_SAMESITE` (ARCHITECTURE.md §21): `none` forces `secure: true` regardless of `NODE_ENV`
+ * (required for cross-site cookies to be accepted at all) — `app.ts` refuses to start in that mode unless
+ * `API_BASE_URL` looks like https, so this is never reached over plain http when `sameSite` is `none`.
+ */
 export function setSessionCookie(reply: FastifyReply, sid: string): void {
+  const sameSite = env.SESSION_COOKIE_SAMESITE;
   reply.setCookie(SESSION_COOKIE_NAME, sid, {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: isProduction,
+    sameSite,
+    secure: sameSite === 'none' ? true : isProduction,
     domain: env.COOKIE_DOMAIN || undefined,
     path: '/',
     maxAge: SESSION_TTL_SECONDS,

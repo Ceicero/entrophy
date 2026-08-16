@@ -220,6 +220,7 @@
                 "admin",
                 "moderation",
                 "automod",
+                "enforcer",
                 "logging",
                 "tickets",
                 "roles",
@@ -263,6 +264,7 @@
                 "admin",
                 "moderation",
                 "automod",
+                "enforcer",
                 "logging",
                 "tickets",
                 "roles",
@@ -306,6 +308,7 @@
                 "admin",
                 "moderation",
                 "automod",
+                "enforcer",
                 "logging",
                 "tickets",
                 "roles",
@@ -358,6 +361,7 @@
                 "admin",
                 "moderation",
                 "automod",
+                "enforcer",
                 "logging",
                 "tickets",
                 "roles",
@@ -401,6 +405,7 @@
                 "admin",
                 "moderation",
                 "automod",
+                "enforcer",
                 "logging",
                 "tickets",
                 "roles",
@@ -4276,6 +4281,26 @@
         }
       }
     },
+    "/guilds/{guildId}/enforcer/settings": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/integrations/{provider}/callback": {
       "get": {
         "parameters": [
@@ -4313,6 +4338,15 @@
             "required": true
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/donations/presets": {
+      "get": {
         "responses": {
           "200": {
             "description": "Default Response"

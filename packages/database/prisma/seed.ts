@@ -12,6 +12,7 @@ const PLUGIN_DEFAULTS: { id: string; enabled: boolean }[] = [
   { id: 'admin', enabled: true },
   { id: 'moderation', enabled: true },
   { id: 'automod', enabled: true },
+  { id: 'enforcer', enabled: false },
   { id: 'logging', enabled: true },
   { id: 'tickets', enabled: false },
   { id: 'roles', enabled: false },
@@ -59,6 +60,26 @@ async function main(): Promise<void> {
         trustedDomains: [],
         cooldownSeconds: 0,
         priority: 0,
+        createdBy: SEED_ACTOR_ID,
+      },
+    });
+  }
+
+  const existingPolicy = await prisma.enforcerPolicy.findFirst({
+    where: { guildId: guild.id, name: 'Invite links (seed example)', deletedAt: null },
+  });
+  if (!existingPolicy) {
+    await prisma.enforcerPolicy.create({
+      data: {
+        guildId: guild.id,
+        name: 'Invite links (seed example)',
+        description: 'Flags messages containing Discord invite links for moderator review.',
+        enabled: false,
+        severity: 'LOW',
+        matchers: [{ type: 'invite', value: '*' }],
+        channelIds: [],
+        exemptRoleIds: [],
+        exemptChannelIds: [],
         createdBy: SEED_ACTOR_ID,
       },
     });

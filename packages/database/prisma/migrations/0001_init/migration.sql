@@ -58,6 +58,24 @@ CREATE TYPE "WebhookDirection" AS ENUM ('INBOUND', 'OUTBOUND');
 -- CreateEnum
 CREATE TYPE "DataRequestType" AS ENUM ('EXPORT', 'DELETE');
 
+-- CreateEnum
+CREATE TYPE "DonationStatus" AS ENUM ('PENDING', 'PAID', 'FAILED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "PolicySeverity" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+
+-- CreateEnum
+CREATE TYPE "EnforcerRecordKind" AS ENUM ('FLAG', 'DECISION', 'APPEAL_OPENED', 'APPEAL_DECIDED', 'NOTE');
+
+-- CreateEnum
+CREATE TYPE "EnforcerFlagStatus" AS ENUM ('PENDING', 'ACTIONED', 'DISMISSED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "EnforcerSource" AS ENUM ('AUTO', 'MANUAL', 'AI_ASSIST', 'DASHBOARD');
+
+-- CreateEnum
+CREATE TYPE "EnforcerDecision" AS ENUM ('WARN', 'TIMEOUT', 'MUTE', 'UNMUTE', 'KICK', 'BAN', 'DISMISS');
+
 -- CreateTable
 CREATE TABLE "Guild" (
     "id" TEXT NOT NULL,
@@ -908,6 +926,77 @@ CREATE TABLE "GuildAnalyticsDaily" (
     CONSTRAINT "GuildAnalyticsDaily_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Donation" (
+    "id" TEXT NOT NULL,
+    "stripeSessionId" TEXT NOT NULL,
+    "stripePaymentIntentId" TEXT,
+    "amountCents" INTEGER NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'usd',
+    "status" "DonationStatus" NOT NULL DEFAULT 'PENDING',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "paidAt" TIMESTAMP(3),
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Donation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EnforcerPolicy" (
+    "id" TEXT NOT NULL,
+    "guildId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "severity" "PolicySeverity" NOT NULL DEFAULT 'MEDIUM',
+    "matchers" JSONB NOT NULL,
+    "channelIds" TEXT[],
+    "exemptRoleIds" TEXT[],
+    "exemptChannelIds" TEXT[],
+    "suggestedAction" "EnforcerDecision",
+    "createdBy" TEXT NOT NULL,
+    "updatedBy" TEXT,
+    "deletedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EnforcerPolicy_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EnforcerRecord" (
+    "id" TEXT NOT NULL,
+    "guildId" TEXT NOT NULL,
+    "recordNumber" INTEGER NOT NULL,
+    "kind" "EnforcerRecordKind" NOT NULL,
+    "status" "EnforcerFlagStatus",
+    "userId" TEXT NOT NULL,
+    "channelId" TEXT,
+    "messageId" TEXT,
+    "messageJumpUrl" TEXT,
+    "policyId" TEXT,
+    "policyName" TEXT,
+    "matcherSummary" TEXT,
+    "riskScore" DOUBLE PRECISION,
+    "aiExplanation" TEXT,
+    "excerpt" TEXT,
+    "contextSnapshot" JSONB,
+    "source" "EnforcerSource" NOT NULL,
+    "flaggedBy" TEXT,
+    "decision" "EnforcerDecision",
+    "decidedBy" TEXT,
+    "decidedAt" TIMESTAMP(3),
+    "decisionReason" TEXT,
+    "durationMs" INTEGER,
+    "caseId" TEXT,
+    "parentRecordId" TEXT,
+    "ledgerMessageId" TEXT,
+    "flagMessageId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EnforcerRecord_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "GuildConfig_guildId_key" ON "GuildConfig"("guildId");
 
@@ -1184,6 +1273,30 @@ CREATE INDEX "GuildAnalyticsDaily_guildId_idx" ON "GuildAnalyticsDaily"("guildId
 -- CreateIndex
 CREATE UNIQUE INDEX "GuildAnalyticsDaily_guildId_date_key" ON "GuildAnalyticsDaily"("guildId", "date");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Donation_stripeSessionId_key" ON "Donation"("stripeSessionId");
+
+-- CreateIndex
+CREATE INDEX "EnforcerPolicy_guildId_enabled_idx" ON "EnforcerPolicy"("guildId", "enabled");
+
+-- CreateIndex
+CREATE INDEX "EnforcerPolicy_guildId_idx" ON "EnforcerPolicy"("guildId");
+
+-- CreateIndex
+CREATE INDEX "EnforcerRecord_guildId_userId_createdAt_idx" ON "EnforcerRecord"("guildId", "userId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "EnforcerRecord_guildId_kind_createdAt_idx" ON "EnforcerRecord"("guildId", "kind", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "EnforcerRecord_guildId_status_idx" ON "EnforcerRecord"("guildId", "status");
+
+-- CreateIndex
+CREATE INDEX "EnforcerRecord_guildId_policyId_idx" ON "EnforcerRecord"("guildId", "policyId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EnforcerRecord_guildId_recordNumber_key" ON "EnforcerRecord"("guildId", "recordNumber");
+
 -- AddForeignKey
 ALTER TABLE "GuildConfig" ADD CONSTRAINT "GuildConfig_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -1345,4 +1458,16 @@ ALTER TABLE "AiUsage" ADD CONSTRAINT "AiUsage_guildId_fkey" FOREIGN KEY ("guildI
 
 -- AddForeignKey
 ALTER TABLE "GuildAnalyticsDaily" ADD CONSTRAINT "GuildAnalyticsDaily_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EnforcerPolicy" ADD CONSTRAINT "EnforcerPolicy_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EnforcerRecord" ADD CONSTRAINT "EnforcerRecord_guildId_fkey" FOREIGN KEY ("guildId") REFERENCES "Guild"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EnforcerRecord" ADD CONSTRAINT "EnforcerRecord_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "EnforcerPolicy"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EnforcerRecord" ADD CONSTRAINT "EnforcerRecord_caseId_fkey" FOREIGN KEY ("caseId") REFERENCES "ModerationCase"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 

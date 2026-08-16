@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { FastifyRequest } from 'fastify';
+import type Stripe from 'stripe';
 import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
 import {
@@ -14,6 +15,7 @@ import {
   verifyTwitchEventSubSignature,
 } from '@entrophy/core';
 import { Prisma } from '@entrophy/database';
+import { handleStripeDonationEvent } from '../lib/donations';
 
 const endpointParamSchema = z.object({ endpointId: z.string().min(1) });
 
@@ -111,16 +113,21 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
       throw invalidSignature();
     }
 
-    const event = safeJsonParse(raw) as { id?: string; type?: string };
+    const event = safeJsonParse(raw) as Stripe.Event & { id?: string; type?: string };
     if (!event.id) throw new ValidationError('Stripe event is missing an id.');
 
     const isNew = await claimEventOnce(app, 'stripe', event.id);
     if (isNew) {
-      await app.queues.integrationsInbound().add('stripe', {
-        provider: 'stripe',
-        eventType: event.type ?? 'unknown',
-        payload: event,
-      });
+      // Donation checkout events are handled here directly (ARCHITECTURE.md §18) and never forwarded to the
+      // generic integrations queue — only non-donation Stripe events (role-reward payments, etc.) are.
+      const wasDonationEvent = await handleStripeDonationEvent(app.prisma, event);
+      if (!wasDonationEvent) {
+        await app.queues.integrationsInbound().add('stripe', {
+          provider: 'stripe',
+          eventType: event.type ?? 'unknown',
+          payload: event,
+        });
+      }
     }
 
     reply.status(202);

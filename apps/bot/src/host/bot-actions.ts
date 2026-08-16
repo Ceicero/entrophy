@@ -11,10 +11,14 @@ export const BOT_ACTIONS_QUEUE_NAME = 'bot-actions';
 export type BotActionType =
   | 'roles.postPanel'
   | 'roles.testWelcome'
+  | 'roles.verificationDecision'
   | 'tickets.postPanel'
+  | 'tickets.close'
   | 'moderation.exportCases'
   | 'integrations.testWebhook'
   | 'ai.test'
+  | 'enforcer.decide'
+  | 'enforcer.repairChannels'
   | 'guild.refresh';
 
 export interface BotActionJobData {
@@ -28,10 +32,14 @@ export interface BotActionJobData {
 const DISPATCH_TABLE: Partial<Record<BotActionType, { service: keyof ServiceMap; method: string }>> = {
   'roles.postPanel': { service: 'roles', method: 'postPanel' },
   'roles.testWelcome': { service: 'roles', method: 'testWelcome' },
+  'roles.verificationDecision': { service: 'roles', method: 'verificationDecision' },
   'tickets.postPanel': { service: 'tickets', method: 'postPanel' },
+  'tickets.close': { service: 'tickets', method: 'closeTicketFromDashboard' },
   'moderation.exportCases': { service: 'moderation', method: 'exportCases' },
   'integrations.testWebhook': { service: 'integrations', method: 'testWebhook' },
   'ai.test': { service: 'ai', method: 'test' },
+  'enforcer.decide': { service: 'enforcer', method: 'decide' },
+  'enforcer.repairChannels': { service: 'enforcer', method: 'repairChannels' },
 };
 
 export interface BotActionsWorkerDeps {
@@ -64,7 +72,7 @@ async function handleGuildRefresh(deps: BotActionsWorkerDeps, guildId: string): 
 /**
  * Dispatches one `bot-actions` job to the owning plugin's cross-plugin service (ARCHITECTURE.md §9). Every
  * non-`guild.refresh` type is looked up dynamically against `ServiceMap`, because none of the plugins that will
- * eventually implement these methods (`roles`, `tickets`, `moderation`, `integrations`, `ai`) are built yet — they
+ * eventually implement these methods (`roles`, `tickets`, `moderation`, `integrations`, `ai`, `enforcer`) are built yet — they
  * are still SDK stubs with no `onLoad`/no registered service. Once a plugin registers its service with the
  * relevant method (module-augmenting `ServiceMap` per ARCHITECTURE.md §7.5), this dispatch starts working for it
  * with no change needed here; until then it fails the job with a clear, non-crashing message.

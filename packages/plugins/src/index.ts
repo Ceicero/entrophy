@@ -1,6 +1,7 @@
 import admin from './admin';
 import moderation from './moderation';
 import automod from './automod';
+import enforcer from './enforcer';
 import logging from './logging';
 import tickets from './tickets';
 import roles from './roles';
@@ -18,6 +19,7 @@ export const allPlugins: Plugin[] = [
   admin,
   moderation,
   automod,
+  enforcer,
   logging,
   tickets,
   roles,

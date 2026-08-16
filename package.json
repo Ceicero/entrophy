@@ -19,6 +19,8 @@
     "db:migrate:dev": "pnpm --filter @entrophy/database migrate:dev",
     "db:seed": "pnpm --filter @entrophy/database seed",
     "commands:register": "pnpm --filter @entrophy/bot register",
+    "commands:export": "pnpm --filter @entrophy/plugins export:commands",
+    "brand:sync": "node scripts/sync-brand.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

@@ -1,10 +1,21 @@
 /** Product branding constants used across embeds, dashboard, and README generation. */
 export const BRAND = {
   name: 'Entrophy',
-  color: 0x6366f1,
+  color: 0xe5e5e5,
   tagline: 'The modular, compliance-first Discord bot',
   docsUrl: 'https://github.com/',
+  siteUrl: 'https://entrophybot.com',
 } as const;
+
+/**
+ * Builds the public URL of the brand logo (skull) for use as an embed author/footer icon,
+ * or `undefined` when `env.WEB_URL` is not set (embeds then omit the icon rather than link
+ * to a URL that may not exist). See docs/ARCHITECTURE.md §22.
+ */
+export function brandIconUrl(env: { WEB_URL?: string; BRAND_LOGO_PATH?: string }): string | undefined {
+  if (!env.WEB_URL) return undefined;
+  return `${env.WEB_URL}${env.BRAND_LOGO_PATH ?? '/brand/entrophy-skull.jpg'}`;
+}
 
 /** Discord embed field/content limits (bytes are UTF-16 code units per Discord's API docs). */
 export const EMBED_LIMITS = {

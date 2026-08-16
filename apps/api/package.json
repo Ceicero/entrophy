@@ -25,6 +25,7 @@
     "ioredis": "^5.4.2",
     "bullmq": "^5.34.0",
     "pino": "^9.6.0",
+    "stripe": "^17.5.0",
     "@entrophy/core": "workspace:*",
     "@entrophy/database": "workspace:*",
     "@entrophy/plugins": "workspace:*",

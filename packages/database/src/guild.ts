@@ -112,3 +112,19 @@ export async function withNextCaseNumber<T>(
   }
   throw lastError;
 }
+
+/**
+ * Computes the next EnforcerRecord.recordNumber for a guild as `MAX(recordNumber) + 1`,
+ * mirroring `nextCaseNumber`. Same race-window caveat: correctness is enforced by the
+ * `@@unique([guildId, recordNumber])` constraint, not by this read alone. Callers MUST
+ * retry on a Prisma P2002 violation the same way `withNextCaseNumber` does.
+ */
+export async function nextEnforcerRecordNumber(prisma: PrismaClient, guildId: string): Promise<number> {
+  return prisma.$transaction(async (tx) => {
+    const agg = await tx.enforcerRecord.aggregate({
+      where: { guildId },
+      _max: { recordNumber: true },
+    });
+    return (agg._max.recordNumber ?? 0) + 1;
+  });
+}

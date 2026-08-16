@@ -1,0 +1,55 @@
+# apps/web — Next.js 15 public marketing website, built with `next build` (output: 'standalone').
+FROM node:22-alpine AS deps
+
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml .npmrc tsconfig.base.json ./
+COPY apps/bot/package.json ./apps/bot/package.json
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/dashboard/package.json ./apps/dashboard/package.json
+COPY apps/web/package.json ./apps/web/package.json
+COPY packages/types/package.json ./packages/types/package.json
+COPY packages/core/package.json ./packages/core/package.json
+COPY packages/database/package.json ./packages/database/package.json
+COPY packages/plugins/package.json ./packages/plugins/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
+
+RUN pnpm install --frozen-lockfile || pnpm install
+
+FROM node:22-alpine AS build
+
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+
+WORKDIR /app
+
+COPY --from=deps /app /app
+COPY . .
+
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN node scripts/sync-brand.mjs
+RUN pnpm --filter @entrophy/web build
+
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup -S entrophy && adduser -S entrophy -G entrophy
+
+COPY --from=build /app/apps/web/.next/standalone ./
+COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build /app/apps/web/public ./apps/web/public
+
+RUN chown -R entrophy:entrophy /app
+USER entrophy
+
+EXPOSE 3003
+
+HEALTHCHECK --interval=15s --timeout=5s --retries=5 --start-period=10s \
+  CMD wget -qO- http://localhost:3003/ || exit 1
+
+CMD ["node", "apps/web/server.js"]

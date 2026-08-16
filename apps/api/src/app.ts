@@ -10,7 +10,7 @@ import Fastify from 'fastify';
 import { jsonSchemaTransform, serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
 import type Redis from 'ioredis';
 import type { Logger } from 'pino';
-import { createLogger, createPlatformEvents, createRedis, env, isProduction, toPublicError } from '@entrophy/core';
+import { ConfigError, createLogger, createPlatformEvents, createRedis, env, isProduction, toPublicError } from '@entrophy/core';
 import { prisma as sharedPrisma, type PrismaClient } from '@entrophy/database';
 import { createGuildConfigStore } from './lib/config-store';
 import { csrfProtection } from './lib/csrf';
@@ -36,6 +36,8 @@ import analyticsRoutes from './routes/analytics';
 import privacyRoutes from './routes/privacy';
 import discordRoutes from './routes/discord';
 import webhooksRoutes from './routes/webhooks';
+import enforcerRoutes from './routes/enforcer';
+import donationsRoutes from './routes/donations';
 
 export interface BuildAppDeps {
   prisma?: PrismaClient;
@@ -50,7 +52,24 @@ export interface BuildAppDeps {
  * so tests can pass a fake Prisma client and `ioredis-mock` instead of touching real infrastructure
  * (ARCHITECTURE.md §10).
  */
+/**
+ * Cross-site cookies (`SESSION_COOKIE_SAMESITE=none`) require the session cookie to be `Secure`, which browsers
+ * only honor over https — so refuse to start rather than silently issue a cookie the browser will drop
+ * (ARCHITECTURE.md §21). A bare hostname (no scheme, e.g. local testing shorthand) is treated as non-https.
+ */
+function assertSameSiteNoneIsServeable(): void {
+  if (env.SESSION_COOKIE_SAMESITE !== 'none') return;
+  if (!env.API_BASE_URL || !env.API_BASE_URL.startsWith('https://')) {
+    throw new ConfigError(
+      'SESSION_COOKIE_SAMESITE=none requires API_BASE_URL to be an https:// URL (cross-site cookies must be Secure). ' +
+        `Got API_BASE_URL=${env.API_BASE_URL ?? '(unset)'}.`,
+    );
+  }
+}
+
 export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInstance> {
+  assertSameSiteNoneIsServeable();
+
   const prisma = deps.prisma ?? sharedPrisma;
   const redis = deps.redis ?? createRedis(env.REDIS_URL ?? 'redis://localhost:6379');
   const queues = deps.queues ?? new QueueRegistry(redis);
@@ -78,8 +97,9 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
     contentSecurityPolicy: false, // this process only ever serves JSON + the swagger UI at /docs
   });
 
+  const corsAllowlist = [env.DASHBOARD_URL, env.WEB_URL].filter((url): url is string => Boolean(url));
   await app.register(cors, {
-    origin: env.DASHBOARD_URL ? [env.DASHBOARD_URL] : false,
+    origin: corsAllowlist.length > 0 ? corsAllowlist : false,
     credentials: true,
   });
 
@@ -196,7 +216,9 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   await app.register(analyticsRoutes, { prefix: '/guilds' });
   await app.register(privacyRoutes, { prefix: '/guilds' });
   await app.register(discordRoutes, { prefix: '/guilds' });
+  await app.register(enforcerRoutes, { prefix: '/guilds' });
   await app.register(oauthIntegrationsRoutes, { prefix: '/integrations' });
+  await app.register(donationsRoutes, { prefix: '/donations' });
   await app.register(webhooksRoutes, { prefix: '/webhooks', bodyLimit: 5 * 1024 * 1024 });
 
   app.addHook('onClose', async () => {

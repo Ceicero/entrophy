@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sidebar, SidebarNavItem, SidebarSection, Badge } from '@entrophy/ui';
 import { NAV } from './nav';
+import { BrandWordmark } from './brand-wordmark';
 import { GuildSwitcher } from './guild-switcher';
 import { usePlugins } from '../lib/queries';
 
@@ -19,7 +20,16 @@ export function AppSidebar({ guildId, mobileOpen, onMobileOpenChange }: AppSideb
   const { data: plugins } = usePlugins(guildId);
 
   return (
-    <Sidebar mobileOpen={mobileOpen} onMobileOpenChange={onMobileOpenChange} header={<GuildSwitcher currentGuildId={guildId} />}>
+    <Sidebar
+      mobileOpen={mobileOpen}
+      onMobileOpenChange={onMobileOpenChange}
+      header={
+        <div className="flex flex-col gap-3">
+          <BrandWordmark />
+          <GuildSwitcher currentGuildId={guildId} />
+        </div>
+      }
+    >
       <SidebarSection>
         {NAV.map((item) => {
           const href = item.href(guildId);

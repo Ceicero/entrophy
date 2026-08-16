@@ -1,0 +1,8 @@
+{
+  "clientIdEnv": "DISCORD_CLIENT_ID",
+  "permissions": "1504198388950",
+  "scopes": [
+    "bot",
+    "applications.commands"
+  ]
+}

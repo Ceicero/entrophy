@@ -70,6 +70,11 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Export commands (fails if docs/commands.json is stale)
+        run: |
+          pnpm commands:export
+          git diff --exit-code -- docs/commands.json docs/invite.json apps/web/src/data/commands.json
+
       - name: Run migrations against service database
         env:
           DATABASE_URL: postgresql://entrophy:entrophy@localhost:5432/entrophy
@@ -78,6 +83,10 @@ jobs:
       - name: Build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
+          NEXT_PUBLIC_DASHBOARD_URL: http://localhost:3000
+          NEXT_PUBLIC_DISCORD_CLIENT_ID: ''
+          NEXT_PUBLIC_INVITE_PERMISSIONS: ''
+          NEXT_PUBLIC_SUPPORT_SERVER_URL: ''
         run: pnpm build
 
   e2e:

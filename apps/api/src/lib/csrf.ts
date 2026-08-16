@@ -18,6 +18,7 @@ function isExempt(url: string): boolean {
 function allowedOrigins(): string[] {
   const origins: string[] = [];
   if (env.DASHBOARD_URL) origins.push(env.DASHBOARD_URL);
+  if (env.WEB_URL) origins.push(env.WEB_URL);
   return origins;
 }
 

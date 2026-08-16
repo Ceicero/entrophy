@@ -107,6 +107,19 @@ export const RETENTION_TARGETS: RetentionTarget[] = [
       return result.count;
     },
   },
+  {
+    // Enforcer records follow the moderation-case retention policy (they are
+    // the same kind of compliance ledger). Donation is never purged (see
+    // ARCHITECTURE.md §18) and intentionally has no target here.
+    name: 'enforcerRecord',
+    policyField: 'moderationCaseDays',
+    async purge(prisma, guildId, cutoff) {
+      const result = await prisma.enforcerRecord.deleteMany({
+        where: { guildId, createdAt: { lt: cutoff } },
+      });
+      return result.count;
+    },
+  },
 ];
 
 /** Runs every retention target for a guild against its policy, skipping targets whose policy field is null (= keep forever). Returns rows affected per target. */

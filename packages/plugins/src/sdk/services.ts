@@ -52,6 +52,29 @@ export interface ListCasesResult {
   nextCursor: string | null;
 }
 
+/** Input to `moderation.openAppeal` (ARCHITECTURE.md §19). */
+export interface OpenAppealInput {
+  guildId: string;
+  userId: string;
+  caseNumber?: number;
+  caseId?: string;
+  content: string;
+  source: 'bot' | 'dashboard';
+}
+
+export interface OpenAppealResult {
+  appealId: string;
+}
+
+export interface ExportCasesOptions {
+  since?: Date;
+}
+
+export interface ExportCasesResult {
+  csv: string;
+  count: number;
+}
+
 /** Cross-plugin moderation actions, registered by the `moderation` plugin in `onLoad`. */
 export interface ModerationService {
   createCase(input: CreateModerationCaseInput): Promise<ModerationCase>;
@@ -59,6 +82,12 @@ export interface ModerationService {
   timeout(input: TimeoutInput): Promise<ModerationCase>;
   getCase(guildId: string, caseNumber: number): Promise<ModerationCase | null>;
   listCases(input: ListCasesInput): Promise<ListCasesResult>;
+  /** Opens an appeal through the moderation plugin's appeal workflow (used by `enforcer` and the dashboard). */
+  openAppeal(input: OpenAppealInput): Promise<OpenAppealResult>;
+  /** Alias of `getCase` with the ARCHITECTURE.md §19 name; looks a case up by its per-guild case number. */
+  getCaseByNumber(guildId: string, caseNumber: number): Promise<ModerationCase | null>;
+  /** Exports a guild's moderation cases as CSV, optionally limited to cases created since a given time. */
+  exportCases(guildId: string, opts?: ExportCasesOptions): Promise<ExportCasesResult>;
 }
 
 /** Log event kinds the `logging` plugin routes to configured channels (ARCHITECTURE.md §7.5). */
@@ -123,6 +152,10 @@ export interface CreateTicketInput {
 export interface TicketsService {
   createTicket(input: CreateTicketInput): Promise<{ id: string; number: number }>;
   closeTicket(guildId: string, ticketId: string, closedBy: string, reason?: string): Promise<void>;
+  /** Posts (or re-posts) a ticket panel message to its configured channel. */
+  postPanel(guildId: string, panelId: string): Promise<void>;
+  /** Closes a ticket initiated from the dashboard (as opposed to a Discord interaction). */
+  closeTicketFromDashboard(guildId: string, ticketId: string, closedBy: string, reason?: string): Promise<void>;
 }
 
 export interface AssignRolesInput {
@@ -139,15 +172,31 @@ export interface VerifyMemberInput {
   method: string;
 }
 
+export interface VerificationDecisionInput {
+  guildId: string;
+  requestId: string;
+  approve: boolean;
+  reviewerId: string;
+  note?: string;
+}
+
 /** Registered by the `roles` plugin. */
 export interface RolesService {
   assignRoles(input: AssignRolesInput): Promise<void>;
   verifyMember(input: VerifyMemberInput): Promise<void>;
+  /** Posts (or re-posts) a role panel message to its configured channel. */
+  postPanel(guildId: string, panelId: string, requestedBy?: string): Promise<void>;
+  /** Sends a preview of the guild's configured welcome message, optionally to a specific channel. */
+  testWelcome(guildId: string, requestedBy: string, channelId?: string): Promise<void>;
+  /** Approves or denies a pending verification request from staff review (bot or dashboard). */
+  verificationDecision(input: VerificationDecisionInput): Promise<void>;
 }
 
 /** Registered by the `integrations` plugin. */
 export interface IntegrationsService {
   sendOutbound(guildId: string, endpointId: string, payload: unknown): Promise<{ delivered: boolean; error?: string }>;
+  /** Sends a synthetic test payload through a configured outbound webhook endpoint. */
+  testWebhook(guildId: string, endpointId: string): Promise<{ delivered: boolean; error?: string }>;
 }
 
 export interface AiCompleteInput {
@@ -170,6 +219,49 @@ export interface AiCompleteResult {
 /** Registered by the `ai` plugin. */
 export interface AiService {
   complete(input: AiCompleteInput): Promise<AiCompleteResult>;
+  /** Round-trips a trivial prompt against the configured provider to verify credentials/connectivity. */
+  test(guildId: string): Promise<{ ok: boolean; detail?: string }>;
+}
+
+/** Input to `enforcer.decide` (ARCHITECTURE.md §19). */
+export interface EnforcerDecideInput {
+  guildId: string;
+  recordId: string;
+  decision: 'WARN' | 'TIMEOUT' | 'MUTE' | 'UNMUTE' | 'KICK' | 'BAN' | 'DISMISS';
+  moderatorId: string;
+  reason?: string;
+  durationMs?: number;
+  banDeleteMessageSeconds?: number;
+  source: 'bot' | 'dashboard';
+}
+
+export interface EnforcerDecideResult {
+  recordNumber: number;
+}
+
+/** Input to `enforcer.flag` (ARCHITECTURE.md §19). */
+export interface EnforcerFlagInput {
+  guildId: string;
+  userId: string;
+  moderatorId?: string;
+  reason?: string;
+  policyId?: string;
+  channelId?: string;
+  messageId?: string;
+  source: 'MANUAL' | 'DASHBOARD';
+}
+
+export interface EnforcerFlagResult {
+  recordId: string;
+  recordNumber: number;
+}
+
+/** Registered by the `enforcer` plugin. */
+export interface EnforcerService {
+  decide(input: EnforcerDecideInput): Promise<EnforcerDecideResult>;
+  flag(input: EnforcerFlagInput): Promise<EnforcerFlagResult>;
+  /** Re-applies the ledger/flag-queue channel permission overwrites (`/enforcer setup` → "repair channel"). */
+  repairChannels(guildId: string): Promise<void>;
 }
 
 export interface HostEnableActor {
@@ -221,6 +313,7 @@ export interface ServiceMap {
   integrations: IntegrationsService;
   ai: AiService;
   host: HostService;
+  enforcer: EnforcerService;
 }
 
 /** Registry of cross-plugin services. Consumers call `.get(key)` and no-op gracefully when the provider isn't loaded. */

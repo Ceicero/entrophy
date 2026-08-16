@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Monochrome palette (ARCHITECTURE.md §17). Nothing else — no colour accents anywhere on the website. */
+:root {
+  --ink-0: #050505;
+  --ink-1: #0a0a0a;
+  --ink-2: #111111;
+  --ink-3: #171717;
+  --ink-4: #1f1f1f;
+  --ink-5: #262626;
+  --ink-6: #333333;
+  --ink-7: #404040;
+  --grey-1: #525252;
+  --grey-2: #737373;
+  --grey-3: #8a8a8a;
+  --grey-4: #a3a3a3;
+  --grey-5: #bdbdbd;
+  --grey-6: #d4d4d4;
+  --grey-7: #e5e5e5;
+  --paper: #fafafa;
+}
+
+/* Dark-by-default (ARCHITECTURE.md §O): the palette itself is dark, so bare :root above already IS the default
+   look. An explicit light choice (`data-theme="light"`) swaps to the paper/ink-on-light pairing. */
+body {
+  background: var(--ink-0);
+  color: var(--grey-7);
+  font-family: ui-sans-serif, -apple-system, 'Segoe UI', Inter, Roboto, sans-serif;
+}
+
+html[data-theme='light'] body {
+  background: var(--paper);
+  color: var(--ink-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

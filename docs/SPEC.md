@@ -222,6 +222,70 @@ Authenticated web dashboard using Discord OAuth:
 - Export/delete server data controls
 - Responsive design and dark mode
 
+### M. PUBLIC WEBSITE & STRIPE DONATIONS
+
+Entrophy ships a public marketing website (separate from the admin dashboard).
+
+Requirements:
+- **Theme: black, grey and white only.** No colour accents anywhere on the website — status/hover states are expressed
+  through luminance, borders and blur. "Smoky UI": layered soft radial-gradient smoke that drifts slowly (CSS only,
+  respects `prefers-reduced-motion`), frosted-glass cards (`backdrop-blur`, hairline white/10 borders), a faint grain
+  overlay, generous whitespace, thin clean type. Sleek and clean; no clutter.
+- Pages: Home (hero, "Add to Discord", "Open dashboard", feature overview, why-gaming-communities section, trust &
+  compliance section, donation CTA, footer), **Features & Commands** (every plugin: what it does, *why it's great for
+  gaming communities*, and a table of every command/subcommand with description, who can use it and an example),
+  **Enforcer** spotlight page (how flag → decision → ledger → appeal works, and the privacy/transparency claims),
+  **Donate** (Stripe), Privacy (template), Terms (template).
+- **Donations**: Stripe-powered donation button with preset amounts and a custom one-time amount. Hosted Stripe Checkout
+  (no card data ever touches Entrophy servers). Clear disclosure: donations fund hosting/development, are one-time,
+  non-refundable, grant no perks or in-game advantages, and are not tax-deductible unless the operator states otherwise.
+  If Stripe is not configured the page says so instead of failing.
+- Command documentation on the website is **generated from the real plugin registry** (never hand-maintained lists) so it
+  cannot drift from the bot.
+- Responsive, accessible (WCAG AA contrast within the monochrome palette), dark-by-default (the palette is dark; a light
+  variant is optional and also monochrome).
+
+### N. ADMIN ENFORCER (POLICY-DRIVEN, HANDS-OFF MODERATION)
+
+Goal: the bot is an **admin enforcer for moderators** — moderators' hands stay off the suspect's screen. Given a server
+policy, the bot flags possible violations; a moderator reviews the exact chat context and tells the bot what to do; the
+bot performs the action and communicates with the user; **everything is bookkept** in a read-only ledger channel and in
+the database, searchable and appealable. Motivations: privacy (moderators never DM or confront the suspect directly),
+transparency (a complete, immutable-by-policy record), and professional, consistent moderation for any server.
+
+Requirements:
+- Server admins define **policies** (name, plain-language description shown to mods and to the user on action, severity,
+  matchers: keywords/phrases/regex (validated for catastrophic patterns)/link domains/invites/mention counts/attachment
+  types, optional AI category (assistive only), scope channels, exemptions, suggested action).
+- **Automatic flagging** of messages matching a policy (requires the Message Content privileged intent; without it the
+  plugin runs in manual mode). **Manual flagging** by staff via a message context-menu command ("Flag for review") and
+  `/enforcer flag` for non-message behaviour.
+- Each flag creates a **pending record** and posts an embed to a staff-only flag-queue channel with buttons:
+  Warn · Timeout · Mute · Kick · Ban · Dismiss · View context · Suspect history. Timeout/Mute/Kick/Ban open a modal
+  for reason (and duration where relevant). Decisions are executed **through the moderation plugin** (cases, hierarchy
+  checks, DM notice with record id + how to appeal). Two moderators cannot act on the same flag twice.
+- **View context** shows the messages around the flagged one (live fetch when still available; a stored snapshot taken
+  at flag time as fallback) so the moderator can read that exact chat.
+- **Bookkeeping ledger**: a read-only channel (bot writes; nobody else can post) receives an entry for **every flag and
+  every action**: record number, user ID, time, action taken, who decided, policy matched, and context (sanitised
+  excerpt + jump link). Ledger visibility is staff-only by default, optionally server-wide for transparency. Records are
+  also stored in the database (source of truth) with retention following the moderation-case policy.
+- `/enforcer search` (by user, kind, decision, policy, since) and `/enforcer record <#>` over the ledger data;
+  `/enforcer history <user>` summary; CSV export for admins.
+- **Appeals**: `/enforcer appeal <record #>` (and the moderation plugin's `/appeal <case #>`) open an appeal through
+  the moderation plugin's appeal workflow; appeal opened/decided entries are written to the ledger.
+- Optional AI assistance only annotates a flag with a risk score/explanation labelled *assistive — not a decision*;
+  it never decides or acts.
+- Privacy: message excerpts/context snapshots are stored only because this feature needs them; this is disclosed in
+  `/plugin status`, the dashboard, and the plugin README; captureContext can be turned off (then only jump links).
+- Dashboard: policies editor, flag queue with the same decisions, ledger table with search/filter/export, settings.
+
+### O. MONOCHROME BRAND
+
+The product brand is monochrome (black/grey/white). The dashboard uses the same monochrome tokens for surfaces and
+primary actions; semantic status colours (success/warning/destructive) remain for usability in the admin dashboard
+only. Discord embeds use a light-grey brand colour bar; success/error embeds keep green/red.
+
 ## DATABASE DESIGN
 Prisma models for at least: Guild, GuildConfig, PluginState, UserProfile, ModerationCase, ModerationWarning, ModerationNote, AutomodRule, AutomodEvent, AuditLog, Ticket, TicketParticipant, TicketTranscript, RolePanel, RolePanelOption, ScheduledJob, Reminder, Giveaway, Poll, PollVote, Suggestion, LevelProfile, ReputationEvent, IntegrationConnection, OAuthToken, WebhookEndpoint, DataRetentionPolicy.
 

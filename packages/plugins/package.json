@@ -13,7 +13,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint --config ../../eslint.config.js src",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "export:commands": "tsx scripts/export-commands.ts"
   },
   "dependencies": {
     "discord.js": "^14.17.3",
@@ -33,6 +34,7 @@
     "vitest": "^3.0.0",
     "@types/node": "^22.10.0",
     "@types/luxon": "^3.4.2",
-    "ioredis-mock": "^8.9.0"
+    "ioredis-mock": "^8.9.0",
+    "tsx": "^4.19.2"
   }
 }

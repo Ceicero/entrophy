@@ -1,0 +1,283 @@
+{
+  "plugins": [
+    {
+      "id": "admin",
+      "name": "Admin",
+      "description": "Guided server setup, core configuration, plugin enable/disable, permission auditing, and bot health — the platform's always-on control plane.",
+      "category": "admin",
+      "defaultEnabled": true,
+      "privilegedIntents": [],
+      "commands": [
+        {
+          "name": "setup",
+          "fullName": "/setup",
+          "type": "slash",
+          "description": "Guided server setup and setup status.",
+          "staffLevel": "admin",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "wizard",
+              "fullName": "/setup wizard",
+              "description": "Run the guided setup wizard.",
+              "options": []
+            },
+            {
+              "name": "status",
+              "fullName": "/setup status",
+              "description": "Show what has been configured so far.",
+              "options": []
+            }
+          ]
+        },
+        {
+          "name": "config",
+          "fullName": "/config",
+          "type": "slash",
+          "description": "View or change server configuration.",
+          "staffLevel": "admin",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "view",
+              "fullName": "/config view",
+              "description": "View the current configuration.",
+              "options": []
+            },
+            {
+              "name": "set",
+              "fullName": "/config set",
+              "description": "Set a configuration key.",
+              "options": [
+                {
+                  "name": "key",
+                  "description": "Config key, e.g. guild.locale",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "value",
+                  "description": "New value (\"none\" clears a nullable field)",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "reset",
+              "fullName": "/config reset",
+              "description": "Reset a configuration key to its default.",
+              "options": [
+                {
+                  "name": "key",
+                  "description": "Config key to reset",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "plugin",
+          "fullName": "/plugin",
+          "type": "slash",
+          "description": "Manage plugins.",
+          "staffLevel": "admin",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "enable",
+              "fullName": "/plugin enable",
+              "description": "Enable a plugin.",
+              "options": [
+                {
+                  "name": "plugin",
+                  "description": "Plugin id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "disable",
+              "fullName": "/plugin disable",
+              "description": "Disable a plugin.",
+              "options": [
+                {
+                  "name": "plugin",
+                  "description": "Plugin id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "status",
+              "fullName": "/plugin status",
+              "description": "Show a plugin's status, or every plugin's if none is given.",
+              "options": [
+                {
+                  "name": "plugin",
+                  "description": "Plugin id",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/plugin list",
+              "description": "List every plugin, grouped by category.",
+              "options": []
+            }
+          ]
+        },
+        {
+          "name": "permissions",
+          "fullName": "/permissions",
+          "type": "slash",
+          "description": "Audit bot permissions and configuration health.",
+          "staffLevel": "admin",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "audit",
+              "fullName": "/permissions audit",
+              "description": "Run a permissions and configuration audit.",
+              "options": []
+            }
+          ]
+        },
+        {
+          "name": "health",
+          "fullName": "/health",
+          "type": "slash",
+          "description": "Show the bot's health and per-plugin status.",
+          "staffLevel": "moderator",
+          "options": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "id": "moderation",
+      "name": "Moderation",
+      "description": "Warnings, timeouts, kicks, bans, cases, and the moderator hierarchy — the platform's core moderation toolkit.",
+      "category": "moderation",
+      "defaultEnabled": true,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "automod",
+      "name": "Automod",
+      "description": "Configurable automated moderation rules — spam, mentions, invites, word filters — with dry-run mode and a false-positive review queue.",
+      "category": "moderation",
+      "defaultEnabled": true,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "enforcer",
+      "name": "Enforcer",
+      "description": "Policy-driven, hands-off moderation: the bot flags possible violations from a server policy and a moderator decides — everything is bookkept in a read-only ledger and the database.",
+      "category": "moderation",
+      "defaultEnabled": false,
+      "privilegedIntents": [
+        "MessageContent"
+      ],
+      "commands": []
+    },
+    {
+      "id": "logging",
+      "name": "Logging",
+      "description": "Routes member, message, role, and moderation events to configured log channels, with retention and CSV export.",
+      "category": "moderation",
+      "defaultEnabled": true,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "tickets",
+      "name": "Tickets",
+      "description": "Button-driven support tickets with categories, staff assignment, tags, and HTML/JSON transcripts.",
+      "category": "community",
+      "defaultEnabled": false,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "roles",
+      "name": "Roles & Onboarding",
+      "description": "Role panels, welcome/goodbye messages, onboarding checklists, and member verification.",
+      "category": "community",
+      "defaultEnabled": false,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "engagement",
+      "name": "Engagement",
+      "description": "Leveling/XP with anti-farming controls, leaderboards, reputation, and the starboard.",
+      "category": "community",
+      "defaultEnabled": true,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "community",
+      "name": "Community",
+      "description": "Polls, giveaways, suggestions, scheduled announcements, reminders, and event RSVPs.",
+      "category": "community",
+      "defaultEnabled": true,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "economy",
+      "name": "Economy",
+      "description": "Virtual currency economy (balance, daily, give, leaderboard) — no real-money functionality. Disabled by default.",
+      "category": "community",
+      "defaultEnabled": false,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "utility",
+      "name": "Utility",
+      "description": "General-purpose utility commands: user/server info, timestamps, reminders, translation, weather, and more.",
+      "category": "utility",
+      "defaultEnabled": true,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "media",
+      "name": "Music & Media",
+      "description": "Playlist and queue management for a legal, user-authorized audio source. Unavailable unless MEDIA_PROVIDER names a compliant provider — no YouTube scraping, stream ripping, or copyright bypassing.",
+      "category": "media",
+      "defaultEnabled": false,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "integrations",
+      "name": "Integrations",
+      "description": "Secure connector framework for optional external services: Twitch, YouTube, GitHub, Reddit, Steam, Google/Microsoft Calendar, Notion, Stripe, and generic webhooks.",
+      "category": "integrations",
+      "defaultEnabled": false,
+      "privilegedIntents": [],
+      "commands": []
+    },
+    {
+      "id": "ai",
+      "name": "AI Assistant",
+      "description": "Optional, disabled-by-default AI helper (/ask, /summarize, /draft, /mod-assist) with per-server opt-in and per-channel allowlisting.",
+      "category": "ai",
+      "defaultEnabled": false,
+      "privilegedIntents": [],
+      "commands": []
+    }
+  ]
+}

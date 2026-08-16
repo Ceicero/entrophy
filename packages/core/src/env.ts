@@ -55,6 +55,12 @@ const envSchema = z.object({
   API_BASE_URL: z.string().optional(),
   DASHBOARD_URL: z.string().optional(),
   NEXT_PUBLIC_API_URL: z.string().optional(),
+  WEB_URL: z.string().optional(),
+  SESSION_COOKIE_SAMESITE: z.enum(['lax', 'none']).default('lax'),
+  DONATION_PRESETS_CENTS: z.string().optional(),
+  DONATION_MIN_CENTS: z.coerce.number().int().positive().default(100),
+  DONATION_MAX_CENTS: z.coerce.number().int().positive().default(50000),
+  BRAND_LOGO_PATH: z.string().optional(),
 
   BOT_OWNER_IDS: z.string().optional(),
   DEV_GUILD_ID: z.string().optional(),

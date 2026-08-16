@@ -3,6 +3,7 @@
 import { manifest as admin } from './admin/manifest';
 import { manifest as moderation } from './moderation/manifest';
 import { manifest as automod } from './automod/manifest';
+import { manifest as enforcer } from './enforcer/manifest';
 import { manifest as logging } from './logging/manifest';
 import { manifest as tickets } from './tickets/manifest';
 import { manifest as roles } from './roles/manifest';
@@ -20,6 +21,7 @@ export const allManifests: PluginManifest[] = [
   admin,
   moderation,
   automod,
+  enforcer,
   logging,
   tickets,
   roles,

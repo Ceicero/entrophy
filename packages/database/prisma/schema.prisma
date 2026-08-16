@@ -169,6 +169,52 @@ enum DataRequestType {
   DELETE
 }
 
+enum DonationStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
+enum PolicySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum EnforcerRecordKind {
+  FLAG
+  DECISION
+  APPEAL_OPENED
+  APPEAL_DECIDED
+  NOTE
+}
+
+enum EnforcerFlagStatus {
+  PENDING
+  ACTIONED
+  DISMISSED
+  EXPIRED
+}
+
+enum EnforcerSource {
+  AUTO
+  MANUAL
+  AI_ASSIST
+  DASHBOARD
+}
+
+enum EnforcerDecision {
+  WARN
+  TIMEOUT
+  MUTE
+  UNMUTE
+  KICK
+  BAN
+  DISMISS
+}
+
 // ---------------------------------------------------------------------------
 // Guild + core config
 // ---------------------------------------------------------------------------
@@ -225,6 +271,8 @@ model Guild {
   dataRequests           DataRequest[]
   aiUsages               AiUsage[]
   analyticsDaily         GuildAnalyticsDaily[]
+  enforcerPolicies       EnforcerPolicy[]
+  enforcerRecords        EnforcerRecord[]
 }
 
 model GuildConfig {
@@ -333,8 +381,9 @@ model ModerationCase {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
-  warnings ModerationWarning[]
-  appeals  ModerationAppeal[]
+  warnings        ModerationWarning[]
+  appeals         ModerationAppeal[]
+  enforcerRecords EnforcerRecord[]
 
   @@unique([guildId, caseNumber])
   @@index([guildId])
@@ -1180,4 +1229,92 @@ model GuildAnalyticsDaily {
 
   @@unique([guildId, date])
   @@index([guildId])
+}
+
+// ---------------------------------------------------------------------------
+// Donations (public website; not tenant-scoped) — see ARCHITECTURE.md §18.
+// Append-only status transitions (PENDING -> PAID | FAILED | EXPIRED). Never
+// purged by the retention job (see src/retention.ts). Stores no personal data.
+// ---------------------------------------------------------------------------
+
+model Donation {
+  id                    String         @id @default(cuid())
+  stripeSessionId       String         @unique
+  stripePaymentIntentId String?
+  amountCents           Int
+  currency              String         @default("usd")
+  status                DonationStatus @default(PENDING)
+  createdAt             DateTime       @default(now())
+  paidAt                DateTime?
+  updatedAt             DateTime       @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Enforcer — policy-driven, hands-off moderation. See ARCHITECTURE.md §19.
+// ---------------------------------------------------------------------------
+
+model EnforcerPolicy {
+  id               String            @id @default(cuid())
+  guildId          String
+  guild            Guild             @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  name             String
+  description      String
+  enabled          Boolean           @default(true)
+  severity         PolicySeverity    @default(MEDIUM)
+  /// [{type:'keyword'|'phrase'|'regex'|'link_domain'|'invite'|'mention_count'|'attachment_ext'|'ai_category', value: string|string[]|number, caseSensitive?: bool, wholeWord?: bool}]
+  matchers         Json
+  channelIds       String[]
+  exemptRoleIds    String[]
+  exemptChannelIds String[]
+  suggestedAction  EnforcerDecision?
+  createdBy        String
+  updatedBy        String?
+  deletedAt        DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  records EnforcerRecord[]
+
+  @@index([guildId, enabled])
+  @@index([guildId])
+}
+
+model EnforcerRecord {
+  id              String              @id @default(cuid())
+  guildId         String
+  guild           Guild               @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  recordNumber    Int
+  kind            EnforcerRecordKind
+  status          EnforcerFlagStatus?
+  userId          String
+  channelId       String?
+  messageId       String?
+  messageJumpUrl  String?
+  policyId        String?
+  policy          EnforcerPolicy?     @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  policyName      String?
+  matcherSummary  String?
+  riskScore       Float?
+  aiExplanation   String?
+  excerpt         String?
+  contextSnapshot Json?
+  source          EnforcerSource
+  flaggedBy       String?
+  decision        EnforcerDecision?
+  decidedBy       String?
+  decidedAt       DateTime?
+  decisionReason  String?
+  durationMs      Int?
+  caseId          String?
+  case            ModerationCase?     @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  parentRecordId  String?
+  ledgerMessageId String?
+  flagMessageId   String?
+  createdAt       DateTime            @default(now())
+
+  @@unique([guildId, recordNumber])
+  @@index([guildId, userId, createdAt])
+  @@index([guildId, kind, createdAt])
+  @@index([guildId, status])
+  @@index([guildId, policyId])
 }
