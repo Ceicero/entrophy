@@ -1,0 +1,37 @@
+# apps/bot — Discord gateway process + BullMQ workers.
+# Runs from TypeScript source via tsx; no build step (see ARCHITECTURE.md §3, §14).
+FROM node:22-alpine
+
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+
+WORKDIR /app
+
+# Root manifests first so `pnpm install` layers cache independently of source changes.
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml .npmrc tsconfig.base.json ./
+
+# Every workspace's package.json, explicitly, so pnpm can resolve the workspace graph
+# before any source is copied in.
+COPY apps/bot/package.json ./apps/bot/package.json
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/dashboard/package.json ./apps/dashboard/package.json
+COPY packages/types/package.json ./packages/types/package.json
+COPY packages/core/package.json ./packages/core/package.json
+COPY packages/database/package.json ./packages/database/package.json
+COPY packages/plugins/package.json ./packages/plugins/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
+
+RUN pnpm install --frozen-lockfile || pnpm install
+
+COPY . .
+
+RUN pnpm db:generate
+
+RUN addgroup -S entrophy && adduser -S entrophy -G entrophy && chown -R entrophy:entrophy /app
+USER entrophy
+
+EXPOSE 3002
+
+HEALTHCHECK --interval=15s --timeout=5s --retries=5 --start-period=10s \
+  CMD wget -qO- http://localhost:3002/health || exit 1
+
+CMD ["pnpm", "--filter", "@entrophy/bot", "start"]

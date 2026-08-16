@@ -1,0 +1,37 @@
+{
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "permission_denied": "You do not have permission to do this.",
+    "missing_staff_level": "You need at least {level} staff level to do this.",
+    "missing_discord_permission": "You are missing the required Discord permission: {permission}.",
+    "bot_missing_permission": "I am missing the required Discord permission: {permission}.",
+    "cooldown": "You're doing that too fast. Try again in {seconds}s.",
+    "rate_limited": "Too many requests. Please slow down and try again shortly.",
+    "guild_only": "This command can only be used in a server.",
+    "plugin_disabled": "The {plugin} plugin is disabled in this server.",
+    "plugin_unavailable": "The {plugin} plugin is not available: {reason}.",
+    "validation": "That input isn't valid: {message}.",
+    "not_found": "{thing} was not found.",
+    "hierarchy": {
+      "self": "You can't do that to yourself.",
+      "bot": "You can't do that to the bot.",
+      "guild_owner": "You can't take moderation action against the server owner.",
+      "bot_owner": "You can't take moderation action against a bot owner.",
+      "target_higher_or_equal_than_actor": "That member's highest role is at or above yours.",
+      "target_higher_or_equal_than_bot": "That member's highest role is at or above mine."
+    }
+  },
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "confirmed": "Confirmed.",
+    "cancelled": "Cancelled.",
+    "timed_out": "Timed out.",
+    "yes": "Yes",
+    "no": "No",
+    "none": "None",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "page_of": "Page {page} of {total}"
+  }
+}

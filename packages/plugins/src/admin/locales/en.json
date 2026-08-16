@@ -1,0 +1,44 @@
+{
+  "setup": {
+    "statusTitle": "Setup status",
+    "wizardStepTitle": "Server setup — step {step} of {total}",
+    "notCompleted": "**not yet run** — try `/setup wizard`",
+    "sessionExpired": "This setup session expired (15 minutes of inactivity). Run `/setup wizard` again.",
+    "notWizardOwner": "Only the person who started /setup wizard can use these controls.",
+    "cancelled": "Setup cancelled. Nothing was changed. Run `/setup wizard` again anytime.",
+    "complete": "Setup complete."
+  },
+  "config": {
+    "guildTitle": "Config — guild",
+    "pluginTitle": "Config — {plugin}",
+    "unknownKey": "Unknown config key \"{key}\". Use the autocomplete suggestions to find a valid one.",
+    "setSuccess": "Set **{key}** to `{value}`.",
+    "resetSuccess": "Reset **{key}** to its default."
+  },
+  "plugin": {
+    "listTitle": "Plugins",
+    "unknownPlugin": "Unknown plugin \"{plugin}\".",
+    "alwaysEnabled": "**{plugin}** is always enabled and can't be disabled.",
+    "enabledMessage": "Enabled **{plugin}**.",
+    "disabledMessage": "Disabled **{plugin}**."
+  },
+  "permissions": {
+    "auditTitle": "Permissions & configuration audit",
+    "botPermissionsField": "Bot permissions",
+    "roleHierarchyField": "Role hierarchy",
+    "privilegedIntentsField": "Privileged intents",
+    "noMissingPermissions": "✅ No missing bot permissions for enabled plugins.",
+    "hierarchyOk": "✅ My highest role outranks every configured staff role.",
+    "intentsOk": "✅ Every privileged intent needed by an enabled plugin is enabled."
+  },
+  "health": {
+    "title": "Bot health",
+    "gatewayPing": "Gateway ping",
+    "uptime": "Uptime",
+    "guilds": "Guilds",
+    "memory": "Memory",
+    "redis": "Redis",
+    "database": "Database",
+    "plugins": "Plugins"
+  }
+}

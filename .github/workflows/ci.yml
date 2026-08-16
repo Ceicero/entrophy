@@ -1,0 +1,177 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: entrophy
+          POSTGRES_PASSWORD: entrophy
+          POSTGRES_DB: entrophy
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U entrophy -d entrophy"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://entrophy:entrophy@localhost:5432/entrophy
+      REDIS_URL: redis://localhost:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Validate Prisma schema
+        run: pnpm --filter @entrophy/database validate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Run migrations against service database
+        env:
+          DATABASE_URL: postgresql://entrophy:entrophy@localhost:5432/entrophy
+        run: pnpm db:migrate
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+        run: pnpm build
+
+  e2e:
+    needs: ci
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: entrophy
+          POSTGRES_PASSWORD: entrophy
+          POSTGRES_DB: entrophy
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U entrophy -d entrophy"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://entrophy:entrophy@localhost:5432/entrophy
+      REDIS_URL: redis://localhost:6379
+      E2E_TEST_MODE: true
+      API_PORT: 3001
+      API_BASE_URL: http://localhost:3001
+      DASHBOARD_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      SESSION_SECRET: ci-e2e-session-secret-not-for-production-use-only
+      ENCRYPTION_KEY: Y2ktZTJlLWVuY3J5cHRpb24ta2V5LTMyLWJ5dGVzISE=
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Run migrations against service database
+        run: pnpm db:migrate
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @entrophy/dashboard exec playwright install --with-deps chromium
+
+      - name: Start API in E2E test mode
+        run: |
+          pnpm --filter @entrophy/api run start &
+          echo $! > api.pid
+
+      - name: Wait for API health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3001/health > /dev/null; then
+              echo "API is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API did not become healthy in time"
+          exit 1
+
+      - name: Build dashboard
+        run: pnpm --filter @entrophy/dashboard build
+
+      - name: Run e2e tests
+        run: pnpm test:e2e
+
+      - name: Stop API
+        if: always()
+        run: kill "$(cat api.pid)" || true

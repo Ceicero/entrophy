@@ -1,0 +1,203 @@
+import { createHash } from 'node:crypto';
+import type { FastifyRequest } from 'fastify';
+import type { ZodFastifyInstance } from '../lib/http';
+import { z } from 'zod';
+import {
+  AppError,
+  NotFoundError,
+  ValidationError,
+  decryptSecret,
+  env,
+  verifyGithubSignature,
+  verifyHmacSha256,
+  verifyStripeSignature,
+  verifyTwitchEventSubSignature,
+} from '@entrophy/core';
+import { Prisma } from '@entrophy/database';
+
+const endpointParamSchema = z.object({ endpointId: z.string().min(1) });
+
+function rawBodyOf(request: FastifyRequest): string {
+  // The `application/json` content-type parser registered below yields the raw string, not a parsed object,
+  // so signatures can be verified over the exact bytes the provider signed.
+  return typeof request.body === 'string' ? request.body : '';
+}
+
+function safeJsonParse(raw: string): unknown {
+  try {
+    return raw.length > 0 ? JSON.parse(raw) : {};
+  } catch {
+    throw new ValidationError('Invalid JSON payload.');
+  }
+}
+
+/**
+ * Records `[provider, eventId]` as processed, returning `false` (do not process again) if it already was.
+ * Relies on `ProcessedWebhookEvent`'s `@@unique([provider, eventId])` for the actual race-safe guarantee.
+ */
+async function claimEventOnce(app: ZodFastifyInstance, provider: string, eventId: string): Promise<boolean> {
+  try {
+    await app.prisma.processedWebhookEvent.create({ data: { provider, eventId } });
+    return true;
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      return false;
+    }
+    throw err;
+  }
+}
+
+function invalidSignature(): AppError {
+  return new AppError('invalid_signature', 'Webhook signature verification failed.', { status: 401, expose: true });
+}
+
+/**
+ * `/webhooks/*` — inbound provider webhooks (NOT under `/guilds`, not session-authenticated). Every handler:
+ * verifies a provider signature over the raw body, enforces idempotency via `ProcessedWebhookEvent`, then
+ * enqueues `{ provider, endpointId?, eventType, payload }` onto the `integrations:inbound` queue
+ * (ARCHITECTURE.md §10). 5MB body limit is set where this plugin is registered in `app.ts`.
+ */
+export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<void> {
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (_request, body, done) => {
+    done(null, body);
+  });
+
+  app.post('/github/:endpointId', { schema: { params: endpointParamSchema } }, async (request, reply) => {
+    const { endpointId } = request.params as { endpointId: string };
+    const raw = rawBodyOf(request);
+    const signatureHeader = request.headers['x-hub-signature-256'];
+    const deliveryId = request.headers['x-github-delivery'];
+    const eventType = request.headers['x-github-event'];
+
+    if (typeof signatureHeader !== 'string' || typeof deliveryId !== 'string') {
+      throw new ValidationError('Missing GitHub webhook headers.');
+    }
+
+    const endpoint = await app.prisma.webhookEndpoint.findFirst({ where: { id: endpointId, direction: 'INBOUND', enabled: true, deletedAt: null } });
+    if (!endpoint) throw new NotFoundError('Unknown webhook endpoint.');
+
+    const secret = decryptSecret(endpoint.secretEnc);
+    if (!verifyGithubSignature(raw, secret, signatureHeader)) {
+      await app.prisma.webhookEndpoint.update({ where: { id: endpointId }, data: { failureCount: { increment: 1 } } });
+      throw invalidSignature();
+    }
+
+    const isNew = await claimEventOnce(app, 'github', deliveryId);
+    if (isNew) {
+      await app.queues.integrationsInbound().add('github', {
+        provider: 'github',
+        endpointId,
+        guildId: endpoint.guildId,
+        eventType: typeof eventType === 'string' ? eventType : 'unknown',
+        payload: safeJsonParse(raw),
+      });
+      await app.prisma.webhookEndpoint.update({ where: { id: endpointId }, data: { lastDeliveryAt: new Date(), failureCount: 0 } });
+    }
+
+    reply.status(202);
+    return { ok: true };
+  });
+
+  app.post('/stripe', async (request, reply) => {
+    const raw = rawBodyOf(request);
+    const signatureHeader = request.headers['stripe-signature'];
+    if (typeof signatureHeader !== 'string') {
+      throw new ValidationError('Missing Stripe-Signature header.');
+    }
+    if (!env.STRIPE_WEBHOOK_SECRET) {
+      throw new AppError('stripe_not_configured', 'Stripe is not configured on this server.', { status: 503, expose: true });
+    }
+    if (!verifyStripeSignature(raw, signatureHeader, env.STRIPE_WEBHOOK_SECRET)) {
+      throw invalidSignature();
+    }
+
+    const event = safeJsonParse(raw) as { id?: string; type?: string };
+    if (!event.id) throw new ValidationError('Stripe event is missing an id.');
+
+    const isNew = await claimEventOnce(app, 'stripe', event.id);
+    if (isNew) {
+      await app.queues.integrationsInbound().add('stripe', {
+        provider: 'stripe',
+        eventType: event.type ?? 'unknown',
+        payload: event,
+      });
+    }
+
+    reply.status(202);
+    return { ok: true };
+  });
+
+  app.post('/twitch', async (request, reply) => {
+    const raw = rawBodyOf(request);
+    const messageId = request.headers['twitch-eventsub-message-id'];
+    const timestamp = request.headers['twitch-eventsub-message-timestamp'];
+    const signatureHeader = request.headers['twitch-eventsub-message-signature'];
+    const messageType = request.headers['twitch-eventsub-message-type'];
+
+    if (typeof messageId !== 'string' || typeof timestamp !== 'string' || typeof signatureHeader !== 'string') {
+      throw new ValidationError('Missing Twitch EventSub headers.');
+    }
+    if (!env.TWITCH_EVENTSUB_SECRET) {
+      throw new AppError('twitch_not_configured', 'Twitch EventSub is not configured on this server.', { status: 503, expose: true });
+    }
+
+    const valid = verifyTwitchEventSubSignature({ messageId, timestamp, body: raw, secret: env.TWITCH_EVENTSUB_SECRET, signatureHeader });
+    if (!valid) throw invalidSignature();
+
+    const payload = safeJsonParse(raw) as { challenge?: string; subscription?: { type?: string } };
+
+    if (messageType === 'webhook_callback_verification') {
+      reply.header('Content-Type', 'text/plain');
+      return reply.status(200).send(payload.challenge ?? '');
+    }
+
+    const isNew = await claimEventOnce(app, 'twitch', messageId);
+    if (isNew) {
+      await app.queues.integrationsInbound().add('twitch', {
+        provider: 'twitch',
+        eventType: payload.subscription?.type ?? 'unknown',
+        payload,
+      });
+    }
+
+    reply.status(202);
+    return { ok: true };
+  });
+
+  app.post('/generic/:endpointId', { schema: { params: endpointParamSchema } }, async (request, reply) => {
+    const { endpointId } = request.params as { endpointId: string };
+    const raw = rawBodyOf(request);
+    const signatureHeader = request.headers['x-entrophy-signature'];
+    const eventIdHeader = request.headers['x-entrophy-event-id'];
+    const eventTypeHeader = request.headers['x-entrophy-event-type'];
+
+    if (typeof signatureHeader !== 'string') {
+      throw new ValidationError('Missing X-Entrophy-Signature header.');
+    }
+
+    const endpoint = await app.prisma.webhookEndpoint.findFirst({ where: { id: endpointId, direction: 'INBOUND', enabled: true, deletedAt: null } });
+    if (!endpoint) throw new NotFoundError('Unknown webhook endpoint.');
+
+    const secret = decryptSecret(endpoint.secretEnc);
+    if (!verifyHmacSha256(raw, secret, signatureHeader)) {
+      await app.prisma.webhookEndpoint.update({ where: { id: endpointId }, data: { failureCount: { increment: 1 } } });
+      throw invalidSignature();
+    }
+
+    const eventId = typeof eventIdHeader === 'string' && eventIdHeader.length > 0 ? eventIdHeader : createHash('sha256').update(raw).digest('hex');
+    const isNew = await claimEventOnce(app, `generic:${endpointId}`, eventId);
+    if (isNew) {
+      await app.queues.integrationsInbound().add('generic', {
+        provider: 'generic',
+        endpointId,
+        guildId: endpoint.guildId,
+        eventType: typeof eventTypeHeader === 'string' ? eventTypeHeader : 'unknown',
+        payload: safeJsonParse(raw),
+      });
+      await app.prisma.webhookEndpoint.update({ where: { id: endpointId }, data: { lastDeliveryAt: new Date(), failureCount: 0 } });
+    }
+
+    reply.status(202);
+    return { ok: true };
+  });
+}

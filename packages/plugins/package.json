@@ -1,0 +1,38 @@
+{
+  "name": "@entrophy/plugins",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./manifests": "./src/manifests.ts",
+    "./sdk": "./src/sdk/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --config ../../eslint.config.js src",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "discord.js": "^14.17.3",
+    "discord-api-types": "^0.37.114",
+    "bullmq": "^5.34.0",
+    "ioredis": "^5.4.2",
+    "zod": "^3.24.1",
+    "pino": "^9.6.0",
+    "luxon": "^3.5.0",
+    "cron-parser": "^4.9.0",
+    "@entrophy/core": "workspace:*",
+    "@entrophy/database": "workspace:*",
+    "@entrophy/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0",
+    "@types/node": "^22.10.0",
+    "@types/luxon": "^3.4.2",
+    "ioredis-mock": "^8.9.0"
+  }
+}

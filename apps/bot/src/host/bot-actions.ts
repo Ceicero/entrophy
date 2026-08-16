@@ -1,0 +1,114 @@
+import { Worker, type Job } from 'bullmq';
+import type { RedisOptions } from 'ioredis';
+import type { Client } from 'discord.js';
+import type { Logger } from 'pino';
+import { ensureGuild, type PrismaClient } from '@entrophy/database';
+import type { ServiceMap, ServiceRegistry } from '@entrophy/plugins';
+
+export const BOT_ACTIONS_QUEUE_NAME = 'bot-actions';
+
+/** Every bot-action job type this worker knows how to dispatch (ARCHITECTURE.md §9). */
+export type BotActionType =
+  | 'roles.postPanel'
+  | 'roles.testWelcome'
+  | 'tickets.postPanel'
+  | 'moderation.exportCases'
+  | 'integrations.testWebhook'
+  | 'ai.test'
+  | 'guild.refresh';
+
+export interface BotActionJobData {
+  type: BotActionType;
+  guildId: string;
+  payload?: unknown;
+  requestedBy?: string;
+}
+
+/** Maps a bot-action job type to the `ServiceMap` key and method name it dispatches to. `guild.refresh` is handled directly (host-level, not owned by any plugin service). */
+const DISPATCH_TABLE: Partial<Record<BotActionType, { service: keyof ServiceMap; method: string }>> = {
+  'roles.postPanel': { service: 'roles', method: 'postPanel' },
+  'roles.testWelcome': { service: 'roles', method: 'testWelcome' },
+  'tickets.postPanel': { service: 'tickets', method: 'postPanel' },
+  'moderation.exportCases': { service: 'moderation', method: 'exportCases' },
+  'integrations.testWebhook': { service: 'integrations', method: 'testWebhook' },
+  'ai.test': { service: 'ai', method: 'test' },
+};
+
+export interface BotActionsWorkerDeps {
+  services: ServiceRegistry;
+  client: Client;
+  prisma: PrismaClient;
+  connection: RedisOptions;
+  logger: Logger;
+  concurrency?: number;
+}
+
+/**
+ * Handles `guild.refresh`: re-fetches the guild from the gateway/API and upserts it (name, icon, owner, member
+ * count) via `ensureGuild`. Not a plugin action — every other job type dispatches to a plugin-registered service.
+ */
+async function handleGuildRefresh(deps: BotActionsWorkerDeps, guildId: string): Promise<void> {
+  const guild = await deps.client.guilds.fetch(guildId).catch(() => null);
+  if (!guild) {
+    throw new Error(`bot-actions: guild "${guildId}" is not reachable (bot may not be a member, or the id is invalid).`);
+  }
+  await ensureGuild(deps.prisma, {
+    id: guild.id,
+    name: guild.name,
+    iconHash: guild.icon,
+    ownerId: guild.ownerId,
+    memberCount: guild.memberCount,
+  });
+}
+
+/**
+ * Dispatches one `bot-actions` job to the owning plugin's cross-plugin service (ARCHITECTURE.md §9). Every
+ * non-`guild.refresh` type is looked up dynamically against `ServiceMap`, because none of the plugins that will
+ * eventually implement these methods (`roles`, `tickets`, `moderation`, `integrations`, `ai`) are built yet — they
+ * are still SDK stubs with no `onLoad`/no registered service. Once a plugin registers its service with the
+ * relevant method (module-augmenting `ServiceMap` per ARCHITECTURE.md §7.5), this dispatch starts working for it
+ * with no change needed here; until then it fails the job with a clear, non-crashing message.
+ */
+async function dispatchBotAction(deps: BotActionsWorkerDeps, job: Job<BotActionJobData>): Promise<void> {
+  const { type, guildId, payload, requestedBy } = job.data;
+
+  if (type === 'guild.refresh') {
+    await handleGuildRefresh(deps, guildId);
+    return;
+  }
+
+  const target = DISPATCH_TABLE[type];
+  if (!target) {
+    throw new Error(`bot-actions: unknown job type "${String(type)}".`);
+  }
+
+  const service = deps.services.get(target.service) as unknown as Record<string, unknown> | undefined;
+  const method = service?.[target.method];
+
+  if (typeof method !== 'function') {
+    deps.logger.warn(
+      { type, guildId, service: target.service, method: target.method },
+      'bot-actions: target service/method is not registered (owning plugin likely disabled, unavailable, or not yet built)',
+    );
+    throw new Error(`Action "${type}" is not available right now: the "${target.service}" plugin does not implement "${target.method}".`);
+  }
+
+  await (method as (...args: unknown[]) => unknown).call(service, { guildId, payload, requestedBy });
+}
+
+/** Starts the shared `bot-actions` BullMQ Worker (dashboard/host → bot one-off action requests, ARCHITECTURE.md §9). */
+export function createBotActionsWorker(deps: BotActionsWorkerDeps): Worker<BotActionJobData> {
+  const worker = new Worker<BotActionJobData>(BOT_ACTIONS_QUEUE_NAME, (job) => dispatchBotAction(deps, job), {
+    connection: deps.connection,
+    concurrency: deps.concurrency ?? 4,
+  });
+
+  worker.on('failed', (job, err) => {
+    deps.logger.error({ jobId: job?.id, type: job?.data.type, guildId: job?.data.guildId, err: err.message }, 'bot-actions job failed');
+  });
+  worker.on('error', (err) => {
+    deps.logger.error({ err }, 'bot-actions worker error');
+  });
+
+  return worker;
+}
