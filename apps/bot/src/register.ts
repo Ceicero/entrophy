@@ -2,9 +2,9 @@
 // Registers (or clears) this platform's slash/context-menu commands with Discord via the bulk-overwrite REST
 // endpoint (ARCHITECTURE.md §9). Run this whenever commands are added, renamed, or removed — Discord does not
 // pick up command changes automatically.
-import { REST, Routes } from 'discord.js';
 import { loadEnv, requireEnv, env, createLogger } from '@entrophy/core';
 import { allPlugins, PluginRegistry } from '@entrophy/plugins';
+import { describeTarget, registerCommands } from './host/register-commands';
 
 interface ParsedArgs {
   global: boolean;
@@ -70,32 +70,27 @@ async function main(): Promise<void> {
   const target = resolveTarget(args);
 
   const registry = new PluginRegistry(allPlugins);
-  const commands = args.clear ? [] : registry.commandsJson();
-
-  const rest = new REST({ version: '10' }).setToken(env.DISCORD_TOKEN as string);
-  const route =
-    target.scope === 'guild'
-      ? Routes.applicationGuildCommands(env.DISCORD_CLIENT_ID as string, target.guildId)
-      : Routes.applicationCommands(env.DISCORD_CLIENT_ID as string);
-
-  const targetDescription =
-    target.scope === 'guild'
-      ? `guild ${target.guildId} (instant)`
-      : 'globally (may take up to an hour to propagate)';
+  const targetDescription = describeTarget(target);
   logger.info(
-    { target, commandCount: commands.length, clear: args.clear },
+    { target, commandCount: args.clear ? 0 : registry.commandsJson().length, clear: args.clear },
     `${args.clear ? 'Clearing' : 'Registering'} commands ${targetDescription}`,
   );
 
-  const result = (await rest.put(route, { body: commands })) as { name: string; type: number }[];
+  const result = await registerCommands({
+    token: env.DISCORD_TOKEN as string,
+    clientId: env.DISCORD_CLIENT_ID as string,
+    registry,
+    target,
+    clear: args.clear,
+  });
 
-  if (args.clear) {
+  if (result.cleared) {
     // eslint-disable-next-line no-console
     console.log(`Cleared all commands ${targetDescription}.`);
   } else {
     // eslint-disable-next-line no-console
-    console.log(`Registered ${result.length} command(s) ${targetDescription}:\n`);
-    printSummaryTable(result.map((c) => ({ name: c.name, type: c.type })));
+    console.log(`Registered ${result.commands.length} command(s) ${targetDescription}:\n`);
+    printSummaryTable(result.commands);
   }
 }
 

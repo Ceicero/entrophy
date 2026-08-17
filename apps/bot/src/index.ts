@@ -9,6 +9,7 @@ import { createBotActionsWorker } from './host/bot-actions';
 import { createDataRequestsWorker } from './host/data-requests';
 import { startHealthServer } from './host/health';
 import { loadPlugins } from './host/loader';
+import { describeTarget, registerCommands, type RegisterTarget } from './host/register-commands';
 import { routeInteraction } from './host/router';
 import { startWorkers } from './workers';
 
@@ -56,6 +57,35 @@ async function main(): Promise<void> {
 
   client.once('ready', (readyClient) => {
     logger.info({ guilds: readyClient.guilds.cache.size, tag: readyClient.user.tag }, 'bot ready');
+
+    // Optional self-registration of slash commands at boot (REGISTER_COMMANDS_ON_BOOT=global|guild), so hosted
+    // deployments never need a local `commands:register` run. Failures are logged, never fatal.
+    if (env.REGISTER_COMMANDS_ON_BOOT !== 'off') {
+      const target: RegisterTarget | null =
+        env.REGISTER_COMMANDS_ON_BOOT === 'guild'
+          ? env.DEV_GUILD_ID
+            ? { scope: 'guild', guildId: env.DEV_GUILD_ID }
+            : null
+          : { scope: 'global' };
+      if (!target) {
+        logger.warn('REGISTER_COMMANDS_ON_BOOT=guild requires DEV_GUILD_ID; skipping command registration');
+      } else {
+        void registerCommands({
+          token: env.DISCORD_TOKEN as string,
+          clientId: env.DISCORD_CLIENT_ID as string,
+          registry,
+          target,
+        })
+          .then((result) =>
+            logger.info(
+              { count: result.commands.length, target: result.target },
+              `registered slash commands ${describeTarget(result.target)}`,
+            ),
+          )
+          .catch((err: unknown) => logger.error({ err, target }, 'command registration on boot failed'));
+      }
+    }
+
     void (async () => {
       for (const guild of readyClient.guilds.cache.values()) {
         try {

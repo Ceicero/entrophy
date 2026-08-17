@@ -64,6 +64,9 @@ const envSchema = z.object({
 
   BOT_OWNER_IDS: z.string().optional(),
   DEV_GUILD_ID: z.string().optional(),
+  /** off (default) | global | guild — when set, the bot bulk-registers its slash commands right after it logs in
+   * ('guild' targets DEV_GUILD_ID and is instant; 'global' can take up to an hour to propagate). */
+  REGISTER_COMMANDS_ON_BOOT: z.enum(['off', 'global', 'guild']).default('off'),
   BOT_HEALTH_PORT: z.coerce.number().int().positive().optional(),
   ENABLE_MESSAGE_CONTENT_INTENT: boolFromString(false),
   ENABLE_GUILD_MEMBERS_INTENT: boolFromString(true),
