@@ -16,7 +16,9 @@ beforeAll(async () => {
   ({ resolveApiKey } = await import('../resolve-key'));
   ({ describeAvailability } = await import('../service'));
   ({ configSchema } = await import('../manifest'));
-});
+  // The dynamic imports above transform `@entrophy/core` + the ai plugin on first use, which can take well over
+  // vitest's default 10s hook timeout when the whole plugins suite runs in parallel — give the hook room.
+}, 30_000);
 
 function baseConfig(overrides: Record<string, unknown> = {}) {
   return configSchema.parse(overrides);
