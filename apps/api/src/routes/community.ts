@@ -3,9 +3,11 @@ import { z } from 'zod';
 import { AppError, AuditAction, NotFoundError, buildPaginated, paginate } from '@entrophy/core';
 import { Prisma } from '@entrophy/database';
 import { stickyChannelsKey } from '@entrophy/plugins/community/sticky-keys';
+import { autoPublishCountKey, utcDayKey } from '@entrophy/plugins/community/channel-automations';
 import type { Paginated } from '@entrophy/types';
 import type {
   AnnouncementDto,
+  ChannelAutomationStatsDto,
   CommunityEventDto,
   EconomySettingsDto,
   GiveawayDto,
@@ -100,7 +102,7 @@ const economySettingsBodySchema = z
   })
   .strict();
 
-/** `/guilds/:guildId/community` — giveaways/polls/suggestions/announcements/events/stickies overview + suggestion status workflow, plus `/guilds/:guildId/economy/config` (ARCHITECTURE.md §10). */
+/** `/guilds/:guildId/community` — giveaways/polls/suggestions/announcements/events/stickies overview + suggestion status workflow, channel-automation stats, plus `/guilds/:guildId/economy/config` (ARCHITECTURE.md §10). */
 export default async function communityRoutes(app: ZodFastifyInstance): Promise<void> {
   // -------------------------------------------------------------------------
   // Giveaways
@@ -501,6 +503,21 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
       });
       reply.status(204);
       return null;
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // Channel automations (auto-publish / auto-threads live in the plugin config; this only exposes the
+  // bot-side Redis counter for the dashboard's "published today" stat)
+  // -------------------------------------------------------------------------
+
+  app.get(
+    '/:guildId/community/channel-automations/stats',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<ChannelAutomationStatsDto> => {
+      const raw = await app.redis.get(autoPublishCountKey(request.guildId!, utcDayKey()));
+      const parsed = raw === null ? 0 : Number.parseInt(raw, 10);
+      return { autoPublishToday: Number.isFinite(parsed) ? parsed : 0 };
     },
   );
 

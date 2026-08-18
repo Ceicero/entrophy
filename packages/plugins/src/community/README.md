@@ -1,7 +1,8 @@
 # Community plugin (`community`)
 
 Polls, giveaways, a suggestion box, scheduled announcements, reminders, event RSVPs, tags (custom commands with
-optional keyword auto-responders), and sticky messages. Enabled by default.
+optional keyword auto-responders), sticky messages, and channel automations (auto-publish for announcement
+channels, one-thread-per-post auto-threads). Enabled by default.
 
 ## Commands
 
@@ -32,6 +33,8 @@ optional keyword auto-responders), and sticky messages. Enabled by default.
 | `/sticky set [channel] [content] [cooldown]`         | Keep a staff message at the bottom of a channel (no `content` → editor modal with embed title/description) | Moderator+                             |
 | `/sticky remove [channel]`                           | Remove a channel's sticky (deletes the record and the bot's last post)                                     | Moderator+                             |
 | `/sticky list`                                       | List every sticky in the server with jump links                                                            | Moderator+                             |
+| `/channelauto publish add \| remove \| list`         | Auto-publish every new message in an announcement channel                                                  | Admin+                                 |
+| `/channelauto thread add \| remove \| list`          | One thread per post in a channel (template, archive, attachments-only, starter)                            | Admin+                                 |
 
 ## Config keys (`configSchema`)
 
@@ -49,6 +52,14 @@ tags.triggerCooldownSeconds  number        Minimum seconds between auto-responde
 sticky.enabled               boolean       Re-post sticky messages when members post (default: true)
 sticky.maxPerGuild           number        Maximum stickies per server, 1-100 (default: 25)
 sticky.defaultCooldownSeconds number       Default minimum seconds between re-posts, 3-600 (default: 10)
+autoPublish.channelIds       string[]      Announcement channels whose new messages are crossposted automatically (max 25)
+autoPublish.includeBots      boolean       Also publish other bots'/webhooks' messages (default: false — humans + this bot only)
+autoThreads[]                object[]      One rule per channel (max 25):
+  .channelId                 string          Text or announcement channel
+  .nameTemplate              string          Thread name; tokens {user} {user.tag} {server} {date} (default: "{user} — {date}", trimmed to 100)
+  .archiveMinutes            60|1440|4320|10080  Auto-archive after inactivity (default: 1440)
+  .requireAttachment         boolean         Only thread posts with an attachment/embed (default: false)
+  .starterMessage            string|null     Optional bot message posted in each new thread, max 300 chars (default: null)
 ```
 
 ### Tags (custom commands / auto-responders)
@@ -67,13 +78,31 @@ status community` reports the plugin as degraded, and triggers are simply inacti
   one reply per tag per `tags.triggerCooldownSeconds`.
 - Every create/edit/delete (bot or dashboard) writes an audit row (`community.tag.create|update|delete`).
 
+### Channel automations
+
+- **Auto-publish** — every new message in a listed announcement channel is published (crossposted) to follower
+  servers via `messageCreate` → `message.crosspost()`. Messages already published, and other bots'/webhooks'
+  messages (unless `includeBots`), are skipped. Publishing other members' messages needs **Manage Messages** in
+  that channel; without it only the bot's own posts are published. Discord caps publishing at 10 messages per
+  hour per channel. Failures (missing permission, crosspost limit) are logged **once per hour per channel**
+  (Redis `SET NX EX 3600`) to the bot log and, if the `logging` plugin is on, as a `bot.error` entry. Successful
+  publishes bump a per-day Redis counter (`entrophy:community:autopublish-count:<guildId>:<YYYY-MM-DD>`, UTC)
+  that the dashboard shows as "published today" (`GET /guilds/:guildId/community/channel-automations/stats`).
+- **Auto-threads** — every human post in a listed text/announcement channel gets its own thread named from the
+  template (`{user}` = display name, `{user.tag}`, `{server}`, `{date}` = YYYY-MM-DD; unknown tokens are left
+  literal; trimmed to 100 chars). Bot posts, posts that already have a thread, and — with `requireAttachment` —
+  text-only posts are skipped. Errors are logged once per hour per channel and never thrown.
+- Neither feature reads or stores message content — only channel id, author id/bot flag, message flags, and
+  whether attachments/embeds are present.
+
 ## Permissions
 
 | Permission                             | Feature                                                                                 | Optional | Fallback                                                                                                                                                                                    |
 | -------------------------------------- | --------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Send Messages                          | Posting polls/giveaways/suggestions/announcements/events, tag replies / auto-responders | No       | Command replies with an error                                                                                                                                                               |
 | Embed Links                            | Result/status embeds                                                                    | No       | N/A                                                                                                                                                                                         |
-| Manage Threads / Create Public Threads | Auto-threading suggestions                                                              | Yes      | Suggestion still posts, no thread                                                                                                                                                           |
+| Manage Threads / Create Public Threads | Auto-threading suggestions, auto-threads                                                | Yes      | Suggestion/message still posts, no thread                                                                                                                                                   |
+| Manage Messages                        | Auto-publish other members' announcement messages                                       | Yes      | Only the bot's own messages are published; warned once/hour                                                                                                                                 |
 | Manage Events                          | Native Discord scheduled event for `/event create`                                      | Yes      | Event is still tracked and announced in-channel                                                                                                                                             |
 | Manage Messages                        | Sticky messages (delete the bot's own previous sticky)                                  | Yes      | Old sticky stays in place; a new one is still posted (deleting the bot's own message doesn't strictly need it, but a channel overwrite can still remove it — `/permissions audit` explains) |
 
@@ -93,6 +122,8 @@ show`) works without it; the plugin degrades rather than disables when the inten
 - **Sticky messages store only the text/embed staff wrote and the id of the bot's own last post.** The
   `messageCreate` handler never reads member message content — it only reacts to "a message was posted" in a
   channel that has a sticky (a Redis-cached channel set makes that check cheap for every other channel).
+- Auto-publish and auto-threads act only on message ids/authors in the channels you list; content is never read
+  or stored.
 
 ## Background jobs
 
@@ -116,7 +147,9 @@ suppressed in the re-posted payload. If the channel is deleted, the sticky recor
 
 `/dashboard/[guildId]/community` — Overview, Suggestions (status workflow), Giveaways, Polls (results bars),
 Announcements, Events (RSVP counts), Tags (create/edit/delete tags, embed fields, staff-only, auto-responder
-trigger + channels), and Channels (sticky messages: channel, preview, cooldown, last re-post, Remove) tabs. Tags
-API: `GET/POST /guilds/:guildId/community/tags`, `PUT/DELETE .../tags/:tagId`. Removing a sticky from the dashboard
+trigger + channels), and Channels (sticky messages: channel, preview, cooldown, last re-post, Remove; auto-publish
+channel list + "published today"; auto-thread rules with an inline editor) tabs. Tags API:
+`GET/POST /guilds/:guildId/community/tags`, `PUT/DELETE .../tags/:tagId`. Removing a sticky from the dashboard
 deletes the record and stops re-posts; the bot's last posted copy stays in Discord (the API has no gateway) — delete
-it there or run `/sticky remove`.
+it there or run `/sticky remove`. The Channels tab and the generic plugin config drawer edit the same
+`autoPublish` / `autoThreads` keys.

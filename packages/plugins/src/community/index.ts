@@ -9,6 +9,8 @@ import { command as remindCommand } from './commands/remind';
 import { command as eventCommand } from './commands/event';
 import { command as tagCommand } from './commands/tag';
 import { command as stickyCommand } from './commands/sticky';
+import { command as channelAutoCommand } from './commands/channels';
+import { channelAutomationsHandler } from './events/channel-automations';
 import { pollComponents } from './components/poll';
 import { giveawayComponents } from './components/giveaway';
 import { suggestionComponents } from './components/suggestion';
@@ -42,6 +44,7 @@ export const plugin = definePlugin({
     eventCommand,
     tagCommand,
     stickyCommand,
+    channelAutoCommand,
   ],
   components: [
     ...pollComponents,
@@ -51,7 +54,7 @@ export const plugin = definePlugin({
     ...tagComponents,
     ...stickyComponents,
   ],
-  events: [tagTriggersHandler, stickyMessageCreateHandler],
+  events: [tagTriggersHandler, stickyMessageCreateHandler, channelAutomationsHandler],
   jobs: [
     pollEndJob,
     giveawayEndJob,
