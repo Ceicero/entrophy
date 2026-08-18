@@ -7,10 +7,13 @@ import { command as suggestionsCommand } from './commands/suggestions';
 import { command as announceCommand } from './commands/announce';
 import { command as remindCommand } from './commands/remind';
 import { command as eventCommand } from './commands/event';
+import { command as tagCommand } from './commands/tag';
 import { pollComponents } from './components/poll';
 import { giveawayComponents } from './components/giveaway';
 import { suggestionComponents } from './components/suggestion';
 import { eventComponents } from './components/event';
+import { tagComponents } from './components/tag-modal';
+import { tagTriggersHandler } from './events/tag-triggers';
 import { pollEndJob } from './jobs/poll-end';
 import { giveawayEndJob } from './jobs/giveaway-end';
 import { announcementRunJob } from './jobs/announcement-run';
@@ -33,8 +36,16 @@ export const plugin = definePlugin({
     announceCommand,
     remindCommand,
     eventCommand,
+    tagCommand,
   ],
-  components: [...pollComponents, ...giveawayComponents, ...suggestionComponents, ...eventComponents],
+  components: [
+    ...pollComponents,
+    ...giveawayComponents,
+    ...suggestionComponents,
+    ...eventComponents,
+    ...tagComponents,
+  ],
+  events: [tagTriggersHandler],
   jobs: [
     pollEndJob,
     giveawayEndJob,
@@ -44,7 +55,27 @@ export const plugin = definePlugin({
     eventReminderJob,
     suggestionSyncJob,
   ],
-  async health() {
+  async health(ctx) {
+    // Tag auto-responders need the Message Content intent. Only report degraded when some guild has actually
+    // opted into triggers (`tags.triggersEnabled`) — otherwise nothing is limited. Falls back to the cheap
+    // "intent off" check if the JSON-path query is unavailable (e.g. a stub prisma in tests).
+    if (!ctx.intentsEnabled.messageContent) {
+      let optedIn = 1;
+      try {
+        optedIn = await ctx.prisma.pluginConfig.count({
+          where: { pluginId: 'community', config: { path: ['tags', 'triggersEnabled'], equals: true } },
+        });
+      } catch {
+        optedIn = 1;
+      }
+      if (optedIn > 0) {
+        return {
+          status: 'degraded',
+          details:
+            'Tag auto-responders need the Message Content privileged intent, which is off — `/tag show` still works; keyword triggers are inactive.',
+        };
+      }
+    }
     return { status: 'ok' };
   },
 });

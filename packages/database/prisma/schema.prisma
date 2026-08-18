@@ -137,6 +137,13 @@ enum RsvpStatus {
   DECLINED
 }
 
+enum TagTriggerMode {
+  NONE
+  EXACT
+  CONTAINS
+  STARTS_WITH
+}
+
 enum IntegrationProvider {
   TWITCH
   YOUTUBE
@@ -259,6 +266,7 @@ model Guild {
   starboardEntries       StarboardEntry[]
   tempVoiceChannels      TempVoiceChannel[]
   communityEvents        CommunityEvent[]
+  tags                   Tag[]
   levelProfiles          LevelProfile[]
   levelRewards           LevelReward[]
   reputationEvents       ReputationEvent[]
@@ -968,6 +976,29 @@ model EventRsvp {
   updatedAt DateTime       @updatedAt
 
   @@unique([eventId, userId])
+}
+
+/// Custom commands (`/tag show <name>`) and opt-in keyword auto-responders. Content is plain text or a flat
+/// embed rendered with the welcome engine's fixed, non-recursive variable set — never a scripting language.
+model Tag {
+  id                String         @id @default(cuid())
+  guildId           String
+  guild             Guild          @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  name              String // 1..32, lowercase [a-z0-9-_], unique per guild
+  content           String? // plain text <= 2000, rendered with renderTemplate
+  embed             Json? // EmbedBuilderPayload-shaped: { title, description, colorHex, imageUrl, footer }
+  triggerMode       TagTriggerMode @default(NONE)
+  trigger           String? // 2..100 chars; required when triggerMode != NONE
+  triggerChannelIds String[]       @default([]) // empty = all channels
+  staffOnly         Boolean        @default(false) // only helper+ can invoke /tag show <name>
+  uses              Int            @default(0)
+  createdBy         String
+  updatedBy         String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([guildId, name])
+  @@index([guildId, triggerMode])
 }
 
 // ---------------------------------------------------------------------------

@@ -34,6 +34,9 @@ export const AuditAction = {
   DataExportRequest: 'data.export.request',
   DataDeleteRequest: 'data.delete.request',
   SetupWizardComplete: 'setup.wizard.complete',
+  CommunityTagCreate: 'community.tag.create',
+  CommunityTagUpdate: 'community.tag.update',
+  CommunityTagDelete: 'community.tag.delete',
 } as const;
 
 /** Union of all `AuditAction` string values. */

@@ -2843,10 +2843,10 @@
     {
       "id": "community",
       "name": "Community",
-      "description": "Polls, giveaways, suggestions, scheduled announcements, reminders, and event RSVPs.",
+      "description": "Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, and tags (custom commands / auto-responders).",
       "category": "community",
       "defaultEnabled": true,
-      "privilegedIntents": [],
+      "privilegedIntents": ["MessageContent"],
       "commands": [
         {
           "name": "poll",
@@ -3364,6 +3364,135 @@
                 {
                   "name": "id",
                   "description": "Event id",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "tag",
+          "fullName": "/tag",
+          "type": "slash",
+          "description": "Custom commands: show, list, and manage tags.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "show",
+              "fullName": "/tag show",
+              "description": "Post a tag.",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Tag name",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "ephemeral",
+                  "description": "Show it only to you",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/tag list",
+              "description": "List the tags on this server.",
+              "options": []
+            },
+            {
+              "name": "create",
+              "fullName": "/tag create",
+              "description": "Create a tag (moderator+). Omit content to open an editor with embed fields.",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Tag name (lowercase letters, numbers, - or _)",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "content",
+                  "description": "Plain-text content. Vars: {user} {user.tag} {server} {memberCount} {mention}",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "staff_only",
+                  "description": "Only helpers and above can show it",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "edit",
+              "fullName": "/tag edit",
+              "description": "Edit a tag in a modal (moderator+).",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Tag name",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "delete",
+              "fullName": "/tag delete",
+              "description": "Delete a tag (moderator+).",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Tag name",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "trigger",
+              "fullName": "/tag trigger",
+              "description": "Set or clear a keyword auto-responder for a tag (admin).",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Tag name",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "mode",
+                  "description": "How incoming messages are matched",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "phrase",
+                  "description": "Trigger phrase (2-100 chars); required unless mode is none",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Only respond in this channel (omit = every channel)",
+                  "required": false,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "info",
+              "fullName": "/tag info",
+              "description": "Show a tag’s uses, trigger, and history (helper+).",
+              "options": [
+                {
+                  "name": "name",
+                  "description": "Tag name",
                   "required": true,
                   "type": "String"
                 }

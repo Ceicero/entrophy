@@ -1,8 +1,19 @@
-import { PermissionFlagsBits } from 'discord.js';
+import { GatewayIntentBits, PermissionFlagsBits } from 'discord.js';
 import { z } from 'zod';
 import { defineManifest } from '../sdk';
 
 export const configSchema = z.object({
+  tags: z
+    .object({
+      enabled: z.boolean().default(true),
+      /** Hard cap per guild (abuse guard, not a paywall). */
+      maxTags: z.number().int().min(1).max(500).default(200),
+      /** Auto-responder cooldown per (guild, tag) in seconds. */
+      triggerCooldownSeconds: z.number().int().min(1).max(3600).default(15),
+      /** Master switch for keyword triggers (needs the Message Content intent). */
+      triggersEnabled: z.boolean().default(false),
+    })
+    .default({}),
   suggestions: z
     .object({
       channelId: z.string().nullable().default(null),
@@ -28,14 +39,15 @@ export type CommunityConfig = z.infer<typeof configSchema>;
 export const manifest = defineManifest({
   id: 'community',
   name: 'Community',
-  description: 'Polls, giveaways, suggestions, scheduled announcements, reminders, and event RSVPs.',
+  description:
+    'Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, and tags (custom commands / auto-responders).',
   category: 'community',
   version: '0.1.0',
   defaultEnabled: true,
   permissions: [
     {
       permission: PermissionFlagsBits.SendMessages,
-      feature: 'posting polls/giveaways/suggestions/announcements/events',
+      feature: 'posting polls/giveaways/suggestions/announcements/events, tag replies / auto-responders',
       optional: false,
       fallback: 'The bot cannot post in the configured channel; the command replies with an error.',
     },
@@ -64,7 +76,11 @@ export const manifest = defineManifest({
       fallback: 'The event is still tracked and announced in-channel; no Discord Events entry is created.',
     },
   ],
-  intents: [],
+  // Guilds + GuildMessages are needed for the tag auto-responder's `messageCreate` handler; the privileged
+  // Message Content intent only *degrades* the plugin (triggers inactive, `/tag` still works) — see the
+  // registry's availability() and docs/PLUGINS.md "Availability vs. enabled".
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+  privilegedIntents: ['MessageContent'],
   requiredEnv: [],
   configSchema,
   dashboard: { path: '/dashboard/[guildId]/community', label: 'Community', icon: 'megaphone' },
@@ -72,5 +88,6 @@ export const manifest = defineManifest({
     'Poll votes, giveaway entries, suggestion votes, reminder text, and event RSVPs are stored for as long as the record exists so results can be shown and re-rendered.',
     'Anonymous polls never store or display who voted for which option — only per-option counts.',
     'Reminder message text you set with /remind is stored until it is delivered (or cancelled) so it can be sent later.',
+    'Tags store the text/embed staff wrote and a use counter. Auto-responder triggers compare incoming messages against your trigger phrases in memory only when the Message Content intent is enabled; the messages themselves are never stored.',
   ],
 });

@@ -356,3 +356,244 @@ describe('community suggestions status', () => {
     await app.close();
   });
 });
+
+describe('community tags (spec CG-02)', () => {
+  const now = new Date('2026-08-01T00:00:00Z');
+  const tagRow = {
+    id: 'tag1',
+    guildId: GUILD_ID,
+    name: 'rules',
+    content: 'Read the {server} rules',
+    embed: null as unknown,
+    triggerMode: 'NONE',
+    trigger: null as string | null,
+    triggerChannelIds: [] as string[],
+    staffOnly: false,
+    uses: 3,
+    createdBy: USER_ID,
+    updatedBy: null as string | null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const triggerKey = `entrophy:community:tag-triggers:${GUILD_ID}`;
+
+  it('lists tags with a name-prefix filter and maps the DTO', async () => {
+    let seenWhere: unknown;
+    const { app, cookieHeader } = await authedApp({
+      tag: {
+        findMany: async (args: unknown) => {
+          seenWhere = (args as { where: unknown }).where;
+          return [tagRow];
+        },
+      },
+    });
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/tags?q=RU`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().items[0]).toMatchObject({
+      id: 'tag1',
+      name: 'rules',
+      content: 'Read the {server} rules',
+      embed: null,
+      triggerMode: 'NONE',
+      uses: 3,
+      createdAt: now.toISOString(),
+    });
+    expect(seenWhere).toMatchObject({ guildId: GUILD_ID, name: { startsWith: 'ru' } });
+
+    await app.close();
+  });
+
+  it('creates a tag (201), writes an audit row, and clears the trigger cache key', async () => {
+    let createData: Record<string, unknown> | undefined;
+    const { app, mutHeaders, redis, prismaCalls } = await authedApp({
+      tag: {
+        findUnique: async () => null,
+        count: async () => 0,
+        create: async (args: unknown) => {
+          createData = (args as { data: Record<string, unknown> }).data;
+          return { ...tagRow, ...createData, id: 'new1', createdAt: now, updatedAt: now };
+        },
+      },
+    });
+    await redis.set(triggerKey, '[]');
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/community/tags`,
+      headers: mutHeaders,
+      payload: {
+        name: ' LFG ',
+        content: 'Looking for group? Post in #lfg, {user}.',
+        triggerMode: 'CONTAINS',
+        trigger: 'looking for group',
+        triggerChannelIds: ['333333333333333333'],
+        staffOnly: false,
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toMatchObject({
+      id: 'new1',
+      name: 'lfg',
+      triggerMode: 'CONTAINS',
+      trigger: 'looking for group',
+    });
+    expect(createData).toMatchObject({
+      guildId: GUILD_ID,
+      name: 'lfg',
+      triggerMode: 'CONTAINS',
+      trigger: 'looking for group',
+      triggerChannelIds: ['333333333333333333'],
+      createdBy: USER_ID,
+    });
+
+    const audit = prismaCalls.find((c) => c.model === 'auditLog' && c.method === 'create');
+    expect(audit).toBeDefined();
+    expect((audit!.args[0] as { data: { action: string; source: string } }).data).toMatchObject({
+      action: 'community.tag.create',
+      source: 'DASHBOARD',
+    });
+    expect(await redis.get(triggerKey)).toBeNull();
+
+    await app.close();
+  });
+
+  it('rejects a duplicate name with 409 tag_exists', async () => {
+    const { app, mutHeaders } = await authedApp({ tag: { findUnique: async () => ({ id: 'tag1' }) } });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/community/tags`,
+      headers: mutHeaders,
+      payload: { name: 'rules', content: 'x' },
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('tag_exists');
+    await app.close();
+  });
+
+  it('rejects an invalid body (bad name / trigger mode without phrase / no content) with 400', async () => {
+    const { app, mutHeaders } = await authedApp({ tag: { findUnique: async () => null } });
+    for (const payload of [
+      { name: 'Bad Name', content: 'x' },
+      { name: 'ok', content: 'x', triggerMode: 'EXACT' },
+      { name: 'ok' },
+    ]) {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/guilds/${GUILD_ID}/community/tags`,
+        headers: mutHeaders,
+        payload,
+      });
+      expect(res.statusCode, JSON.stringify(payload)).toBe(400);
+    }
+    await app.close();
+  });
+
+  it('updates a tag (200), audits, and clears the trigger cache key', async () => {
+    let updateData: Record<string, unknown> | undefined;
+    const { app, mutHeaders, redis, prismaCalls } = await authedApp({
+      tag: {
+        findFirst: async () => tagRow,
+        findUnique: async () => null,
+        update: async (args: unknown) => {
+          updateData = (args as { data: Record<string, unknown> }).data;
+          return { ...tagRow, ...updateData, updatedAt: now };
+        },
+      },
+    });
+    await redis.set(triggerKey, '[]');
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/community/tags/tag1`,
+      headers: mutHeaders,
+      payload: {
+        name: 'rules',
+        content: null,
+        embed: { title: 'Rules', description: 'Be kind in {server}.', colorHex: '#5865F2' },
+        triggerMode: 'NONE',
+        trigger: 'stale phrase',
+        triggerChannelIds: ['333333333333333333'],
+        staffOnly: true,
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({
+      name: 'rules',
+      content: null,
+      embed: { title: 'Rules', description: 'Be kind in {server}.', colorHex: '#5865F2' },
+      staffOnly: true,
+      trigger: null,
+      triggerChannelIds: [],
+    });
+    // NONE mode always clears trigger + channels, and updatedBy is stamped.
+    expect(updateData).toMatchObject({ trigger: null, triggerChannelIds: [], updatedBy: USER_ID });
+
+    const audit = prismaCalls.find((c) => c.model === 'auditLog' && c.method === 'create');
+    expect((audit!.args[0] as { data: { action: string } }).data.action).toBe('community.tag.update');
+    expect(await redis.get(triggerKey)).toBeNull();
+
+    await app.close();
+  });
+
+  it('409s when renaming onto another existing tag', async () => {
+    const { app, mutHeaders } = await authedApp({
+      tag: { findFirst: async () => tagRow, findUnique: async () => ({ id: 'other' }) },
+    });
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/community/tags/tag1`,
+      headers: mutHeaders,
+      payload: { name: 'lfg', content: 'x' },
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('tag_exists');
+    await app.close();
+  });
+
+  it('deletes a tag (204), audits, clears the cache; 404 for unknown', async () => {
+    const { app, mutHeaders, redis, prismaCalls } = await authedApp({
+      tag: {
+        findFirst: async (args: unknown) =>
+          (args as { where: { id: string } }).where.id === 'tag1' ? tagRow : null,
+      },
+    });
+    await redis.set(triggerKey, '[]');
+
+    const ok = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/community/tags/tag1`,
+      headers: mutHeaders,
+    });
+    expect(ok.statusCode).toBe(204);
+    expect(prismaCalls.some((c) => c.model === 'tag' && c.method === 'delete')).toBe(true);
+    const audit = prismaCalls.find((c) => c.model === 'auditLog' && c.method === 'create');
+    expect((audit!.args[0] as { data: { action: string } }).data.action).toBe('community.tag.delete');
+    expect(await redis.get(triggerKey)).toBeNull();
+
+    const missing = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/community/tags/nope`,
+      headers: mutHeaders,
+    });
+    expect(missing.statusCode).toBe(404);
+
+    await app.close();
+  });
+
+  it('requires CSRF for tag writes', async () => {
+    const { app, cookieHeader } = await authedApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/community/tags`,
+      headers: { cookie: cookieHeader },
+      payload: { name: 'x', content: 'y' },
+    });
+    expect(res.statusCode).toBe(403);
+    await app.close();
+  });
+});
