@@ -59,5 +59,43 @@
     "listTitle": "Upcoming events",
     "notFound": "That event could not be found.",
     "cancelled": "Event cancelled."
+  },
+  "birthday": {
+    "disabled": "Birthday announcements aren't enabled in this server. Ask an admin to run /birthday config.",
+    "badMonth": "That month isn't valid — pick 1 (January) to 12 (December).",
+    "badDay": "That day doesn't exist in that month.",
+    "set": "Your birthday is set to **{date}** in this server. Only the month and day are stored — never a year. Use /birthday remove any time to delete it.",
+    "removed": "Your birthday has been removed from this server.",
+    "nothingToRemove": "You don't have a birthday set in this server.",
+    "private": "Birthdays aren't public in this server.",
+    "noneSelf": "You haven't set a birthday here yet — use /birthday set.",
+    "noneOther": "{user} hasn't shared a birthday in this server.",
+    "viewTitle": "Birthday",
+    "viewSelf": "Your birthday in this server: **{date}**.",
+    "viewOther": "{user}'s birthday: **{date}**.",
+    "upcomingTitle": "Upcoming birthdays",
+    "today": "today",
+    "tomorrow": "tomorrow",
+    "inDays": "in {days} days",
+    "adminOnly": "Only admins can change birthday settings.",
+    "staffOnly": "Only staff can view birthday settings.",
+    "badChannel": "I can't post in that channel — check my permissions.",
+    "badTokens": "Unknown tokens in the message: {tokens}. Supported: {mention}, {user}, {server}.",
+    "role": {
+      "elevated": "That role grants elevated permissions and can't be used as a birthday role.",
+      "managed": "That role is managed by an integration and can't be assigned by me.",
+      "hierarchy": "That role is above my highest role — move my role above it first."
+    },
+    "configSaved": "Birthday announcements are **{state}**: {channel} at {hour}:00 server time.",
+    "on": "on",
+    "off": "off",
+    "configTitle": "Birthday settings",
+    "cfgEnabled": "Enabled",
+    "cfgChannel": "Channel",
+    "cfgHour": "Announce at",
+    "cfgRole": "Birthday role",
+    "cfgPublicList": "Public list",
+    "cfgMessage": "Message",
+    "cfgCount": "Registered birthdays"
   }
 }

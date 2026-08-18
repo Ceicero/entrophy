@@ -7,6 +7,7 @@ import { command as suggestionsCommand } from './commands/suggestions';
 import { command as announceCommand } from './commands/announce';
 import { command as remindCommand } from './commands/remind';
 import { command as eventCommand } from './commands/event';
+import { command as birthdayCommand } from './commands/birthday';
 import { pollComponents } from './components/poll';
 import { giveawayComponents } from './components/giveaway';
 import { suggestionComponents } from './components/suggestion';
@@ -18,6 +19,8 @@ import { reminderDeliverJob } from './jobs/reminder-deliver';
 import { reminderSweepJob } from './jobs/reminder-sweep';
 import { eventReminderJob } from './jobs/event-reminder';
 import { suggestionSyncJob } from './jobs/suggestion-sync';
+import { birthdayAnnounceJob } from './jobs/birthday-announce';
+import { birthdayRoleRemoveJob } from './jobs/birthday-role-remove';
 import en from './locales/en.json';
 
 // Registers the `community` locale bundle (see admin/index.ts for the same pattern).
@@ -33,6 +36,7 @@ export const plugin = definePlugin({
     announceCommand,
     remindCommand,
     eventCommand,
+    birthdayCommand,
   ],
   components: [...pollComponents, ...giveawayComponents, ...suggestionComponents, ...eventComponents],
   jobs: [
@@ -43,6 +47,8 @@ export const plugin = definePlugin({
     reminderSweepJob,
     eventReminderJob,
     suggestionSyncJob,
+    birthdayAnnounceJob,
+    birthdayRoleRemoveJob,
   ],
   async health() {
     return { status: 'ok' };

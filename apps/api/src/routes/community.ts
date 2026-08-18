@@ -1,9 +1,11 @@
 import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
-import { NotFoundError, buildPaginated, paginate } from '@entrophy/core';
+import { AuditAction, NotFoundError, buildPaginated, paginate } from '@entrophy/core';
 import type { Paginated } from '@entrophy/types';
 import type {
   AnnouncementDto,
+  BirthdayConfigDto,
+  BirthdaySummaryDto,
   CommunityEventDto,
   EconomySettingsDto,
   GiveawayDto,
@@ -22,9 +24,34 @@ import {
 import { cancelAnnouncementJob } from '../lib/community/queue';
 import { writeDashboardAudit } from '../lib/audit';
 import { requireGuildAccess } from '../lib/guild-access';
-import { guildIdParamSchema, paginationQuerySchema } from '../lib/schemas';
+import { guildIdParamSchema, paginationQuerySchema, snowflakeSchema } from '../lib/schemas';
+import type { CommunityConfig } from '@entrophy/plugins/community/manifest';
+import { findUnknownMessageTokens, localNow, upcomingSorted } from '@entrophy/plugins/community/birthdays';
 
 const ECONOMY_PLUGIN_ID = 'economy' as const;
+const COMMUNITY_PLUGIN_ID = 'community' as const;
+const BIRTHDAY_NEXT_LIMIT = 10;
+
+const birthdayUserParamSchema = guildIdParamSchema.extend({ userId: snowflakeSchema });
+/** Mirrors `configSchema.shape.birthdays` in the community manifest (every field optional for a PUT patch). */
+const birthdayConfigBodySchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    channelId: snowflakeSchema.nullable().optional(),
+    message: z
+      .string()
+      .trim()
+      .min(1)
+      .max(500)
+      .refine((value) => findUnknownMessageTokens(value).length === 0, {
+        message: 'Unknown message token; supported tokens are {mention}, {user}, {server}.',
+      })
+      .optional(),
+    announceHour: z.number().int().min(0).max(23).optional(),
+    roleId: snowflakeSchema.nullable().optional(),
+    publicList: z.boolean().optional(),
+  })
+  .strict();
 
 const suggestionParamSchema = guildIdParamSchema.extend({ suggestionId: z.string().min(1) });
 const suggestionStatusSchema = z.object({
@@ -259,6 +286,89 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
       });
       const dtos = rows.map((row) => toCommunityEventDto(row, row.rsvps));
       return buildPaginated(dtos, limit, offset);
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // Birthdays (spec CG-06) — a summary only, never a paginated table of every member's entry
+  // -------------------------------------------------------------------------
+
+  app.get(
+    '/:guildId/community/birthdays/summary',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<BirthdaySummaryDto> => {
+      const guildId = request.guildId!;
+      const [config, guildConfig, count, rows] = await Promise.all([
+        app.configStore.getConfig<CommunityConfig>(guildId, COMMUNITY_PLUGIN_ID),
+        app.configStore.getGuildConfig(guildId),
+        app.prisma.birthday.count({ where: { guildId } }),
+        app.prisma.birthday.findMany({
+          where: { guildId },
+          select: { userId: true, month: true, day: true },
+        }),
+      ]);
+      const today = localNow(guildConfig.timezone);
+      const b = config.birthdays;
+      return {
+        enabled: b.enabled,
+        channelId: b.channelId,
+        message: b.message,
+        announceHour: b.announceHour,
+        roleId: b.roleId,
+        publicList: b.publicList,
+        count,
+        next: upcomingSorted(rows, today, BIRTHDAY_NEXT_LIMIT),
+      };
+    },
+  );
+
+  app.put(
+    '/:guildId/community/birthdays/config',
+    {
+      schema: { params: guildIdParamSchema, body: birthdayConfigBodySchema },
+      preHandler: requireGuildAccess(),
+    },
+    async (request): Promise<BirthdayConfigDto> => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const before = await app.configStore.getConfig<CommunityConfig>(guildId, COMMUNITY_PLUGIN_ID);
+      const updated = await app.configStore.setConfig<CommunityConfig>(
+        guildId,
+        COMMUNITY_PLUGIN_ID,
+        { birthdays: { ...before.birthdays, ...request.body } },
+        { id: session.userId, source: 'dashboard' },
+      );
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.CommunityBirthdayConfigUpdate,
+        targetType: 'plugin_config',
+        targetId: COMMUNITY_PLUGIN_ID,
+        before: before.birthdays,
+        after: updated.birthdays,
+      });
+      return updated.birthdays;
+    },
+  );
+
+  app.delete(
+    '/:guildId/community/birthdays/:userId',
+    { schema: { params: birthdayUserParamSchema }, preHandler: requireGuildAccess() },
+    async (request, reply): Promise<void> => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { userId } = request.params as { userId: string };
+      const result = await app.prisma.birthday.deleteMany({ where: { guildId, userId } });
+      if (result.count === 0) throw new NotFoundError('No birthday is set for that member.');
+      // Audited with the target user id only — never the date itself.
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.CommunityBirthdayRemove,
+        targetType: 'birthday',
+        targetId: userId,
+      });
+      reply.status(204);
     },
   );
 

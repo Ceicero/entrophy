@@ -52,6 +52,7 @@ function fakePrismaForExport(overrides: Record<string, unknown> = {}): PrismaCli
     enforcerPolicy: empty,
     enforcerRecord: empty,
     auditLog: empty,
+    birthday: empty,
     dataRequest: { update: vi.fn(async () => ({})) },
     dataExportBlob: { upsert: vi.fn(async () => ({})) },
     ...overrides,
@@ -70,6 +71,16 @@ describe('collectGuildExport', () => {
     const serialized = JSON.stringify(data);
     expect(serialized).not.toContain('super-secret');
     expect(serialized).toContain('gpt-4o');
+  });
+
+  it('includes member-shared birthdays as month/day only', async () => {
+    const prisma = fakePrismaForExport({
+      birthday: { findMany: async () => [{ userId: 'u1', month: 3, day: 4 }] },
+    });
+
+    const data = await collectGuildExport(prisma, 'g1');
+    expect(data.birthdays).toEqual([{ userId: 'u1', month: 3, day: 4 }]);
+    expect(JSON.stringify(data.birthdays)).not.toContain('year');
   });
 });
 

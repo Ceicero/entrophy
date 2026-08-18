@@ -4,6 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Paginated } from '@entrophy/types';
 import type {
   AnnouncementDto,
+  BirthdayConfigDto,
+  BirthdayConfigPatchDto,
+  BirthdaySummaryDto,
   CommunityEventDto,
   GiveawayDto,
   PollDto,
@@ -26,6 +29,7 @@ export const communityQueryKeys = {
     ['guilds', guildId, 'community', 'announcements', cursor ?? null] as const,
   events: (guildId: string, cursor?: string) =>
     ['guilds', guildId, 'community', 'events', cursor ?? null] as const,
+  birthdaySummary: (guildId: string) => ['guilds', guildId, 'community', 'birthdays', 'summary'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -137,5 +141,42 @@ export function useCommunityEvents(guildId: string | undefined, cursor?: string)
         `/guilds/${guildId}/community/events${toQueryString({ cursor })}`,
       ),
     enabled: Boolean(guildId),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Birthdays (spec CG-06)
+// ---------------------------------------------------------------------------
+
+export function useBirthdaySummary(guildId: string | undefined) {
+  return useQuery({
+    queryKey: communityQueryKeys.birthdaySummary(guildId ?? ''),
+    queryFn: () => apiFetch<BirthdaySummaryDto>(`/guilds/${guildId}/community/birthdays/summary`),
+    enabled: Boolean(guildId),
+  });
+}
+
+export function useUpdateBirthdayConfig(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: BirthdayConfigPatchDto) =>
+      apiFetch<BirthdayConfigDto>(`/guilds/${guildId}/community/birthdays/config`, {
+        method: 'PUT',
+        body: patch,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['guilds', guildId, 'community', 'birthdays'] });
+    },
+  });
+}
+
+export function useRemoveBirthday(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      apiFetch<void>(`/guilds/${guildId}/community/birthdays/${userId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['guilds', guildId, 'community', 'birthdays'] });
+    },
   });
 }

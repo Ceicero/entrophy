@@ -356,3 +356,154 @@ describe('community suggestions status', () => {
     await app.close();
   });
 });
+
+describe('community birthdays', () => {
+  const USER_A = '333333333333333333';
+
+  it('GET summary returns config + count + upcoming list, with no year field anywhere', async () => {
+    const { app, cookieHeader } = await authedApp({
+      birthday: {
+        count: async () => 2,
+        findMany: async () => [
+          { userId: USER_A, month: 3, day: 4 },
+          { userId: '444444444444444444', month: 12, day: 25 },
+        ],
+      },
+    });
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/birthdays/summary`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body).toMatchObject({
+      enabled: false,
+      channelId: null,
+      announceHour: 9,
+      roleId: null,
+      publicList: true,
+      message: '🎂 Happy birthday, {mention}!',
+      count: 2,
+    });
+    expect(body.next).toHaveLength(2);
+    expect(body.next[0]).toMatchObject({
+      userId: expect.any(String),
+      month: expect.any(Number),
+      day: expect.any(Number),
+    });
+    expect(typeof body.next[0].inDays).toBe('number');
+    expect(JSON.stringify(body).toLowerCase()).not.toContain('year');
+
+    await app.close();
+  });
+
+  it('PUT config rejects an out-of-range hour and unknown message tokens with 400', async () => {
+    const { app, mutHeaders } = await authedApp();
+
+    const badHour = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/community/birthdays/config`,
+      headers: mutHeaders,
+      payload: { announceHour: 24 },
+    });
+    expect(badHour.statusCode).toBe(400);
+
+    const badTokens = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/community/birthdays/config`,
+      headers: mutHeaders,
+      payload: { message: 'Happy {age}th, {mention}!' },
+    });
+    expect(badTokens.statusCode).toBe(400);
+
+    await app.close();
+  });
+
+  it('PUT config persists the patch over defaults and writes an audit entry', async () => {
+    const store = new Map<string, Record<string, unknown>>();
+    const audits: unknown[] = [];
+    const { app, mutHeaders } = await authedApp({
+      pluginConfig: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake, args shape mirrors Prisma's generated types
+        findUnique: async (args: any) =>
+          store.has(args.where.guildId_pluginId.pluginId)
+            ? { config: store.get(args.where.guildId_pluginId.pluginId) }
+            : null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake
+        upsert: async (args: any) => {
+          store.set(args.where.guildId_pluginId.pluginId, args.create.config);
+          return { config: args.create.config };
+        },
+      },
+      auditLog: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake
+        create: async (args: any) => {
+          audits.push(args.data);
+          return args.data;
+        },
+      },
+    });
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/community/birthdays/config`,
+      headers: mutHeaders,
+      payload: { enabled: true, channelId: '555555555555555555', announceHour: 18 },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({
+      enabled: true,
+      channelId: '555555555555555555',
+      announceHour: 18,
+      publicList: true, // untouched default survives
+    });
+    expect(audits.some((a) => (a as { action: string }).action === 'community.birthday.config.update')).toBe(
+      true,
+    );
+
+    await app.close();
+  });
+
+  it('DELETE removes one member entry and audits with the user id only', async () => {
+    const audits: unknown[] = [];
+    const { app, mutHeaders } = await authedApp({
+      birthday: { deleteMany: async () => ({ count: 1 }) },
+      auditLog: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fake
+        create: async (args: any) => {
+          audits.push(args.data);
+          return args.data;
+        },
+      },
+    });
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/community/birthdays/${USER_A}`,
+      headers: mutHeaders,
+    });
+    expect(res.statusCode).toBe(204);
+    const audit = audits.find((a) => (a as { action: string }).action === 'community.birthday.remove') as
+      { targetId: string; before?: unknown; after?: unknown } | undefined;
+    expect(audit).toBeDefined();
+    expect(audit!.targetId).toBe(USER_A);
+    // No before/after snapshot — the date itself never lands in the audit trail.
+    expect(audit!.before ?? null).toBeNull();
+    expect(audit!.after ?? null).toBeNull();
+
+    await app.close();
+  });
+
+  it('DELETE 404s when the member has no birthday set', async () => {
+    const { app, mutHeaders } = await authedApp({ birthday: { deleteMany: async () => ({ count: 0 }) } });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/community/birthdays/${USER_A}`,
+      headers: mutHeaders,
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+});
