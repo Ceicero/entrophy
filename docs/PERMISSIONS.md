@@ -95,14 +95,14 @@ _Button-driven support tickets with categories, staff assignment, tags, and HTML
 
 _Self-assignable role panels, welcome/goodbye messages, onboarding checklists, rules acknowledgement, and member verification (button, staff-approved modal, or CAPTCHA)._ (disabled by default, community)
 
-| Permission      | Feature                                              | Required? | Fallback if missing                                                                    |
-| --------------- | ---------------------------------------------------- | --------- | -------------------------------------------------------------------------------------- |
-| Manage Roles    | role panels / verification / role persistence        | Required  | Role assignment fails with a clear error until Manage Roles is granted.                |
-| Send Messages   | posting panels, welcome/goodbye, onboarding rules    | Required  | Messages cannot be posted to the configured channel.                                   |
-| Embed Links     | panel / welcome / goodbye / onboarding embeds        | Required  | Falls back to plain text where possible.                                               |
-| Add Reactions   | reaction-style role panels                           | Optional  | Reaction panels cannot add the initial reactions; button/select panels are unaffected. |
-| Manage Channels | account-age quarantine channel visibility (optional) | Optional  | Quarantine still applies the role; channel overwrites are left as configured manually. |
-| Kick Members    | account-age gate: kick action                        | Optional  | The kick action is skipped with a warning logged if this permission is missing.        |
+| Permission      | Feature                                                    | Required? | Fallback if missing                                                                    |
+| --------------- | ---------------------------------------------------------- | --------- | -------------------------------------------------------------------------------------- |
+| Manage Roles    | role panels / verification / role persistence / auto-roles | Required  | Role assignment fails with a clear error until Manage Roles is granted.                |
+| Send Messages   | posting panels, welcome/goodbye, onboarding rules          | Required  | Messages cannot be posted to the configured channel.                                   |
+| Embed Links     | panel / welcome / goodbye / onboarding embeds              | Required  | Falls back to plain text where possible.                                               |
+| Add Reactions   | reaction-style role panels                                 | Optional  | Reaction panels cannot add the initial reactions; button/select panels are unaffected. |
+| Manage Channels | account-age quarantine channel visibility (optional)       | Optional  | Quarantine still applies the role; channel overwrites are left as configured manually. |
+| Kick Members    | account-age gate: kick action                              | Optional  | The kick action is skipped with a warning logged if this permission is missing.        |
 
 ### Engagement (`engagement`)
 

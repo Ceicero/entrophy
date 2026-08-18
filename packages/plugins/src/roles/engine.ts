@@ -57,6 +57,25 @@ export function checkRoleAssignable(input: RoleAssignabilityInput): RoleAssignab
 }
 
 // ---------------------------------------------------------------------------
+// Auto-roles on join
+// ---------------------------------------------------------------------------
+
+/** The `autoRoles` config section shape (mirrors `manifest.ts`'s `autoRolesSchema`; kept structural so this file stays free of zod/discord.js). */
+export interface AutoRolesConfigLike {
+  enabled: boolean;
+  roleIds: string[];
+  botRoleIds: string[];
+  delaySeconds: number;
+}
+
+/** Picks which auto-role list applies to a joining member: `botRoleIds` for bot accounts, `roleIds` for humans. Returns `[]` when auto-roles are disabled. Duplicates are collapsed. */
+export function selectAutoRoles(input: { isBot: boolean; config: AutoRolesConfigLike }): string[] {
+  if (!input.config.enabled) return [];
+  const list = input.isBot ? input.config.botRoleIds : input.config.roleIds;
+  return [...new Set(list)];
+}
+
+// ---------------------------------------------------------------------------
 // Template rendering (welcome/goodbye messages + embeds)
 // ---------------------------------------------------------------------------
 

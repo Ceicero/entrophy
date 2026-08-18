@@ -7,6 +7,7 @@ import {
   TextInputStyle,
   type ChatInputCommandInteraction,
 } from 'discord.js';
+import { formatDuration } from '@entrophy/core';
 import {
   assertStaffLevel,
   buildCustomId,
@@ -18,7 +19,12 @@ import {
   type PluginCommand,
 } from '../../sdk';
 import { checkRoleAssignable } from '../engine';
-import type { RolesConfig } from '../manifest';
+import {
+  AUTO_ROLES_MAX_BOT,
+  AUTO_ROLES_MAX_DELAY_SECONDS,
+  AUTO_ROLES_MAX_HUMAN,
+  type RolesConfig,
+} from '../manifest';
 
 const PANEL_STYLES = [
   { name: 'Buttons', value: 'BUTTONS' },
@@ -26,9 +32,14 @@ const PANEL_STYLES = [
   { name: 'Reactions', value: 'REACTIONS' },
 ] as const;
 
+const AUTOROLE_AUDIENCES = [
+  { name: 'Humans', value: 'humans' },
+  { name: 'Bots', value: 'bots' },
+] as const;
+
 const data = new SlashCommandBuilder()
   .setName('roles')
-  .setDescription('Self-assignable role panels, groups, and role persistence.')
+  .setDescription('Self-assignable role panels, groups, role persistence, and auto-roles.')
   .setDMPermission(false)
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
   .addSubcommandGroup((group) =>
@@ -214,6 +225,51 @@ const data = new SlashCommandBuilder()
       )
       .addSubcommand((sub) => sub.setName('off').setDescription('Turn off role persistence.'))
       .addSubcommand((sub) => sub.setName('status').setDescription('Show whether role persistence is on.')),
+  )
+  .addSubcommandGroup((group) =>
+    group
+      .setName('autorole')
+      .setDescription('Auto-roles given to every new member (humans and bots separately).')
+      .addSubcommand((sub) =>
+        sub
+          .setName('add')
+          .setDescription('Add a role to the auto-role list (max 5 for humans, 3 for bots).')
+          .addRoleOption((opt) => opt.setName('role').setDescription('Role to give').setRequired(true))
+          .addStringOption((opt) =>
+            opt
+              .setName('for')
+              .setDescription('Who gets it (default: humans)')
+              .addChoices(...AUTOROLE_AUDIENCES),
+          ),
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('remove')
+          .setDescription('Remove a role from the auto-role lists.')
+          .addRoleOption((opt) => opt.setName('role').setDescription('Role to remove').setRequired(true)),
+      )
+      .addSubcommand((sub) => sub.setName('list').setDescription('Show the current auto-role setup.'))
+      .addSubcommand((sub) =>
+        sub
+          .setName('delay')
+          .setDescription('Delay before auto-roles land (0 = immediately, max 7 days).')
+          .addIntegerOption((opt) =>
+            opt
+              .setName('seconds')
+              .setDescription('Seconds to wait after the member finishes joining')
+              .setMinValue(0)
+              .setMaxValue(AUTO_ROLES_MAX_DELAY_SECONDS)
+              .setRequired(true),
+          ),
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('enable')
+          .setDescription('Turn auto-roles on or off.')
+          .addBooleanOption((opt) =>
+            opt.setName('on').setDescription('true = on, false = off').setRequired(true),
+          ),
+      ),
   );
 
 const ROLE_PERSISTENCE_DISCLOSURE =
@@ -230,6 +286,7 @@ export const command: PluginCommand = {
     if (group === 'panel') return handlePanel(c.interaction, c, sub, config);
     if (group === 'group') return handleGroup(c.interaction, c, sub);
     if (group === 'persist') return handlePersist(c.interaction, c, sub);
+    if (group === 'autorole') return handleAutorole(c.interaction, c, sub, config);
   },
   async autocomplete(c) {
     const focused = c.interaction.options.getFocused(true);
@@ -675,4 +732,162 @@ async function handlePersist(
     ],
     ephemeral: true,
   });
+}
+
+// ---------------------------------------------------------------------------
+// autorole
+// ---------------------------------------------------------------------------
+
+type AutoroleAudience = 'humans' | 'bots';
+
+function autoroleListKey(audience: AutoroleAudience): 'roleIds' | 'botRoleIds' {
+  return audience === 'bots' ? 'botRoleIds' : 'roleIds';
+}
+
+function autoroleLimit(audience: AutoroleAudience): number {
+  return audience === 'bots' ? AUTO_ROLES_MAX_BOT : AUTO_ROLES_MAX_HUMAN;
+}
+
+function formatDelay(c: CommandContext, seconds: number): string {
+  return seconds <= 0 ? c.t('autorole.delayImmediate') : formatDuration(seconds * 1000);
+}
+
+function formatRoleList(c: CommandContext, roleIds: string[]): string {
+  return roleIds.length > 0 ? roleIds.map((id) => `<@&${id}>`).join(', ') : c.t('autorole.listNone');
+}
+
+async function handleAutorole(
+  interaction: ChatInputCommandInteraction<'cached'>,
+  c: CommandContext,
+  sub: string,
+  config: RolesConfig,
+): Promise<void> {
+  const autoRoles = config.autoRoles;
+
+  if (sub === 'list') {
+    const lines = [
+      c.t('autorole.listStatus', { status: autoRoles.enabled ? 'On' : 'Off' }),
+      c.t('autorole.listHumans', { roles: formatRoleList(c, autoRoles.roleIds) }),
+      c.t('autorole.listBots', { roles: formatRoleList(c, autoRoles.botRoleIds) }),
+      c.t('autorole.listDelay', { delay: formatDelay(c, autoRoles.delaySeconds) }),
+      c.t('autorole.safetyNote'),
+    ];
+    await interaction.reply({ embeds: [listEmbed(c.t('autorole.listTitle'), lines)], ephemeral: true });
+    return;
+  }
+
+  // Everything below writes config → admin only (the command-level requirement is moderator so `list` stays read-only for mods).
+  assertStaffLevel(c.staffLevel, 'admin', c.t);
+
+  if (sub === 'add') {
+    const role = interaction.options.getRole('role', true);
+    const audience = (interaction.options.getString('for') ?? 'humans') as AutoroleAudience;
+    const key = autoroleListKey(audience);
+    const current = autoRoles[key];
+
+    if (current.includes(role.id)) {
+      await interaction.reply({
+        embeds: [errorEmbed(c.t('autorole.alreadyAdded', { role: `<@&${role.id}>`, audience }))],
+        ephemeral: true,
+      });
+      return;
+    }
+    if (current.length >= autoroleLimit(audience)) {
+      await interaction.reply({
+        embeds: [errorEmbed(c.t('autorole.limit', { max: autoroleLimit(audience) }))],
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const botTopRolePosition = interaction.guild.members.me?.roles.highest.position ?? 0;
+    const guildRole =
+      interaction.guild.roles.cache.get(role.id) ??
+      (await interaction.guild.roles.fetch(role.id).catch(() => null));
+    const permissionsBitfield =
+      typeof role.permissions === 'string' ? BigInt(role.permissions) : role.permissions.bitfield;
+    const result = checkRoleAssignable({
+      permissionsBitfield,
+      position: guildRole?.position ?? 0,
+      managed: guildRole?.managed ?? false,
+      botTopRolePosition,
+      allowElevatedRoles: config.allowElevatedRoles,
+    });
+    if (!result.ok) {
+      const refusal =
+        result.reason === 'elevated'
+          ? c.t('autorole.refused.elevated')
+          : result.reason === 'managed'
+            ? c.t('autorole.refused.managed')
+            : c.t('autorole.refused.hierarchy');
+      await interaction.reply({ embeds: [errorEmbed(refusal)], ephemeral: true });
+      return;
+    }
+
+    await c.ctx.setConfig<RolesConfig>(
+      c.guildId,
+      { autoRoles: { ...autoRoles, [key]: [...current, role.id] } },
+      { id: interaction.user.id, source: 'bot' },
+    );
+    const hint = autoRoles.enabled ? '' : `\n\n${c.t('autorole.notEnabledHint')}`;
+    await interaction.reply({
+      embeds: [successEmbed(c.t('autorole.added', { role: `<@&${role.id}>`, audience }) + hint)],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (sub === 'remove') {
+    const role = interaction.options.getRole('role', true);
+    const inHumans = autoRoles.roleIds.includes(role.id);
+    const inBots = autoRoles.botRoleIds.includes(role.id);
+    if (!inHumans && !inBots) {
+      await interaction.reply({ embeds: [errorEmbed(c.t('autorole.notConfigured'))], ephemeral: true });
+      return;
+    }
+    await c.ctx.setConfig<RolesConfig>(
+      c.guildId,
+      {
+        autoRoles: {
+          ...autoRoles,
+          roleIds: autoRoles.roleIds.filter((id) => id !== role.id),
+          botRoleIds: autoRoles.botRoleIds.filter((id) => id !== role.id),
+        },
+      },
+      { id: interaction.user.id, source: 'bot' },
+    );
+    await interaction.reply({
+      embeds: [successEmbed(c.t('autorole.removed', { role: `<@&${role.id}>` }))],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (sub === 'delay') {
+    const seconds = interaction.options.getInteger('seconds', true);
+    await c.ctx.setConfig<RolesConfig>(
+      c.guildId,
+      { autoRoles: { ...autoRoles, delaySeconds: seconds } },
+      { id: interaction.user.id, source: 'bot' },
+    );
+    await interaction.reply({
+      embeds: [successEmbed(c.t('autorole.delaySet', { delay: formatDelay(c, seconds) }))],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (sub === 'enable') {
+    const on = interaction.options.getBoolean('on', true);
+    await c.ctx.setConfig<RolesConfig>(
+      c.guildId,
+      { autoRoles: { ...autoRoles, enabled: on } },
+      { id: interaction.user.id, source: 'bot' },
+    );
+    await interaction.reply({
+      embeds: [successEmbed(c.t(on ? 'autorole.enabled' : 'autorole.disabled'))],
+      ephemeral: true,
+    });
+    return;
+  }
 }

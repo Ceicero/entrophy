@@ -62,3 +62,15 @@ export interface RolePersistenceDto {
   enabled: boolean;
   maxDays: number;
 }
+
+/** Auto-roles on join (`config.roles.autoRoles`). `note` explains that the bot re-validates each role at assignment time — the API has no gateway and cannot check role hierarchy itself. */
+export interface AutoRolesDto {
+  enabled: boolean;
+  /** Roles given to human members (max 5). */
+  roleIds: string[];
+  /** Roles given to bot accounts (max 3). */
+  botRoleIds: string[];
+  /** 0 = immediately; otherwise a delayed job (max 604800 = 7 days). */
+  delaySeconds: number;
+  note: string;
+}

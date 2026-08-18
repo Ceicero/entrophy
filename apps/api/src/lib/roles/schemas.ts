@@ -40,6 +40,14 @@ export const onboardingConfigBodySchema = z.object({
     .optional(),
 });
 
+/** Partial patch for `config.roles.autoRoles`; limits mirror the plugin's `autoRolesSchema` (5 human / 3 bot roles, delay ≤ 7 days). */
+export const autoRolesBodySchema = z.object({
+  enabled: z.boolean().optional(),
+  roleIds: z.array(z.string().min(1)).max(5).optional(),
+  botRoleIds: z.array(z.string().min(1)).max(3).optional(),
+  delaySeconds: z.number().int().min(0).max(604_800).optional(),
+});
+
 export const persistenceBodySchema = z.object({
   enabled: z.boolean(),
   maxDays: z.number().int().min(1).max(365).optional(),

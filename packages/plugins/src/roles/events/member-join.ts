@@ -7,7 +7,7 @@ import {
   passesAccountAgeGate,
 } from '../engine';
 import type { RolesConfig } from '../manifest';
-import { deliverWelcomeGoodbye } from '../service';
+import { applyAutoRoles, deliverWelcomeGoodbye } from '../service';
 
 export const memberJoinHandler: PluginEventHandler<'guildMemberAdd'> = {
   event: 'guildMemberAdd',
@@ -76,7 +76,7 @@ export const memberJoinHandler: PluginEventHandler<'guildMemberAdd'> = {
   },
 };
 
-/** Shared by `guildMemberAdd` (non-pending members) and `member-update.ts` (pending → not pending): restores persisted roles, then sends the welcome message. */
+/** Shared by `guildMemberAdd` (non-pending members) and `member-update.ts` (pending → not pending): restores persisted roles, applies auto-roles, then sends the welcome message. */
 export async function handleFullyJoined(
   ctx: PluginContext,
   member: GuildMember,
@@ -121,6 +121,11 @@ export async function handleFullyJoined(
         source: 'bot',
       });
     }
+  }
+
+  // --- Auto-roles -----------------------------------------------------------------------------------------
+  if (config.autoRoles.enabled) {
+    await applyAutoRoles(ctx, member, config);
   }
 
   // --- Welcome message ------------------------------------------------------------------------------------
