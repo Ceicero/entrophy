@@ -179,6 +179,39 @@ export interface StickyMessageDto {
   updatedAt: string;
 }
 
+// ---------------------------------------------------------------------------
+// Birthdays (spec CG-06) — month + day only; there is no year field anywhere, by design.
+// ---------------------------------------------------------------------------
+
+export interface BirthdayConfigDto {
+  enabled: boolean;
+  channelId: string | null;
+  /** Announcement template; tokens `{mention}`, `{user}`, `{server}`. */
+  message: string;
+  /** Guild-local hour (0–23), interpreted in the guild's `GuildConfig.timezone`. */
+  announceHour: number;
+  roleId: string | null;
+  publicList: boolean;
+}
+
+export interface UpcomingBirthdayDto {
+  userId: string;
+  month: number;
+  day: number;
+  /** Days until the birthday from the guild-local "today" (0 = today). */
+  inDays: number;
+}
+
+/** Dashboard summary — deliberately not a paginated table of every member's entry. */
+export interface BirthdaySummaryDto extends BirthdayConfigDto {
+  /** Number of members who have shared a birthday in this guild. */
+  count: number;
+  /** The next few upcoming birthdays (max 10). */
+  next: UpcomingBirthdayDto[];
+}
+
+export type BirthdayConfigPatchDto = Partial<BirthdayConfigDto>;
+
 export interface EconomySettingsDto {
   currencyName: string;
   currencySymbol: string;

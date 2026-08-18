@@ -268,6 +268,7 @@ model Guild {
   communityEvents        CommunityEvent[]
   tags                   Tag[]
   stickyMessages         StickyMessage[]
+  birthdays              Birthday[]
   levelProfiles          LevelProfile[]
   levelRewards           LevelReward[]
   reputationEvents       ReputationEvent[]
@@ -1020,6 +1021,23 @@ model StickyMessage {
 
   @@unique([guildId, channelId])
   @@index([guildId])
+}
+
+/// Member-shared birthday for the community plugin. Deliberately month + day only — no year, no age, ever.
+/// One row per (guild, user); removed by the member (`/birthday remove`), by an admin, or with the guild's data.
+model Birthday {
+  id                String   @id @default(cuid())
+  guildId           String
+  guild             Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  userId            String
+  month             Int
+  day               Int
+  lastAnnouncedYear Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([guildId, userId])
+  @@index([guildId, month, day])
 }
 
 // ---------------------------------------------------------------------------

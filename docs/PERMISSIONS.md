@@ -119,18 +119,19 @@ _Leveling/XP with anti-farming controls, leaderboards, a reputation system, a st
 
 ### Community (`community`)
 
-_Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, tags (custom commands / auto-responders), and sticky messages._ (enabled by default, community)
+_Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, tags (custom commands / auto-responders), sticky messages, and birthdays._ (enabled by default, community)
 
-| Permission            | Feature                                                                                 | Required? | Fallback if missing                                                                                  |
-| --------------------- | --------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------- |
-| Send Messages         | posting polls/giveaways/suggestions/announcements/events, tag replies / auto-responders | Required  | The bot cannot post in the configured channel; the command replies with an error.                    |
-| Embed Links           | result and status embeds                                                                | Required  | Falls back to plain text where possible.                                                             |
-| Manage Threads        | auto-threading suggestions, auto-threads                                                | Optional  | The suggestion/message is still posted; no thread is created.                                        |
-| Create Public Threads | auto-threading suggestions, auto-threads                                                | Optional  | The suggestion/message is still posted; no thread is created.                                        |
-| Manage Messages       | auto-publish (crosspost announcement messages by other members)                         | Optional  | Only the bot's own announcement messages get published; others are skipped and logged once per hour. |
-| Manage Events         | creating a native Discord scheduled event for /event create                             | Optional  | The event is still tracked and announced in-channel; no Discord Events entry is created.             |
-| Manage Messages       | sticky messages (delete the bot's own previous sticky)                                  | Optional  | The old sticky stays in place; the bot still posts a new one.                                        |
-| Manage Channels       | server-stats counter channels (rename)                                                  | Optional  | Counters stop updating; /statschannel refresh reports the missing permission.                        |
+| Permission            | Feature                                                                                                        | Required? | Fallback if missing                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| Send Messages         | posting polls/giveaways/suggestions/announcements/events/birthday announcements, tag replies / auto-responders | Required  | The bot cannot post in the configured channel; the command replies with an error.                    |
+| Embed Links           | result, status, and birthday list embeds                                                                       | Required  | Falls back to plain text where possible.                                                             |
+| Manage Threads        | auto-threading suggestions, auto-threads                                                                       | Optional  | The suggestion/message is still posted; no thread is created.                                        |
+| Create Public Threads | auto-threading suggestions, auto-threads                                                                       | Optional  | The suggestion/message is still posted; no thread is created.                                        |
+| Manage Messages       | auto-publish (crosspost announcement messages by other members)                                                | Optional  | Only the bot's own announcement messages get published; others are skipped and logged once per hour. |
+| Manage Events         | creating a native Discord scheduled event for /event create                                                    | Optional  | The event is still tracked and announced in-channel; no Discord Events entry is created.             |
+| Manage Messages       | sticky messages (delete the bot's own previous sticky)                                                         | Optional  | The old sticky stays in place; the bot still posts a new one.                                        |
+| Manage Channels       | server-stats counter channels (rename)                                                                         | Optional  | Counters stop updating; /statschannel refresh reports the missing permission.                        |
+| Manage Roles          | birthday role (optional)                                                                                       | Optional  | No role is added; the announcement still posts.                                                      |
 
 ### Economy (`economy`)
 

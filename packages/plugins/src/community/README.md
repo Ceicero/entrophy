@@ -2,45 +2,52 @@
 
 Polls, giveaways, a suggestion box, scheduled announcements, reminders, event RSVPs, tags (custom commands with
 optional keyword auto-responders), sticky messages, channel automations (auto-publish for announcement channels,
-one-thread-per-post auto-threads), and server-stats counter channels. Enabled by default.
+one-thread-per-post auto-threads), server-stats counter channels, and opt-in birthday announcements. Enabled by
+default.
 
 ## Commands
 
-| Command                                              | Description                                                                                                | Who                                    |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| `/poll create`                                       | Start a poll (2-10 options, optional duration/anonymous/multi-select)                                      | Everyone                               |
-| `/poll end <id>`                                     | End a poll early                                                                                           | Poll creator or moderator+             |
-| `/poll results <id>`                                 | Show a poll's current results                                                                              | Everyone                               |
-| `/giveaway start`                                    | Start a giveaway (prize, duration, winners, optional eligibility rules)                                    | Moderator+                             |
-| `/giveaway end \| reroll \| list \| cancel`          | Manage giveaways                                                                                           | Moderator+                             |
-| `/suggest <text>`                                    | Submit a suggestion                                                                                        | Everyone                               |
-| `/suggestions setup`                                 | Choose the suggestions channel                                                                             | Moderator+                             |
-| `/suggestions status <number> <status> [note]`       | Change a suggestion's status                                                                               | Moderator+                             |
-| `/suggestions list [status]`                         | List suggestions                                                                                           | Moderator+                             |
-| `/announce schedule <channel> <when> <message>`      | Schedule an announcement (cron, ISO date/time, or duration)                                                | Moderator+                             |
-| `/announce list \| cancel \| preview`                | Manage scheduled announcements                                                                             | Moderator+                             |
-| `/remind set <when> <message> [channel] [recurring]` | Set a reminder (DM by default, or post in a channel)                                                       | Everyone                               |
-| `/remind list \| cancel`                             | Manage your reminders                                                                                      | Owner, or moderator+ to cancel others' |
-| `/event create`                                      | Create an event with RSVP, optionally as a native Discord scheduled event                                  | Helper+                                |
-| `/event list \| cancel \| rsvps`                     | Manage events                                                                                              | Helper+                                |
-| `/tag show <name> [ephemeral]`                       | Post a tag (custom command); staff-only tags need helper+                                                  | Everyone                               |
-| `/tag list`                                          | List this server's tags (staff-only tags hidden from non-staff)                                            | Everyone                               |
-| `/tag create <name> [content] [staff_only]`          | Create a tag; omit `content` to open a modal with embed fields                                             | Moderator+                             |
-| `/tag edit <name>`                                   | Edit a tag's content / embed title / embed description in a modal                                          | Moderator+                             |
-| `/tag delete <name>`                                 | Delete a tag (confirmation prompt)                                                                         | Moderator+                             |
-| `/tag trigger <name> <mode> [phrase] [channel]`      | Set/clear a keyword auto-responder (exact / contains / starts_with)                                        | Admin                                  |
-| `/tag info <name>`                                   | Uses, trigger, channels, created/updated by                                                                | Helper+                                |
-| `/sticky set [channel] [content] [cooldown]`         | Keep a staff message at the bottom of a channel (no `content` → editor modal with embed title/description) | Moderator+                             |
-| `/sticky remove [channel]`                           | Remove a channel's sticky (deletes the record and the bot's last post)                                     | Moderator+                             |
-| `/sticky list`                                       | List every sticky in the server with jump links                                                            | Moderator+                             |
-| `/channelauto publish add \| remove \| list`         | Auto-publish every new message in an announcement channel                                                  | Admin+                                 |
-| `/channelauto thread add \| remove \| list`          | One thread per post in a channel (template, archive, attachments-only, starter)                            | Admin+                                 |
-| `/statschannel create <template> [category] [kind]`  | Create a locked voice channel (or category) showing a live server count                                    | Admin (bot needs Manage Channels)      |
-| `/statschannel add <channel> <template>`             | Attach an existing voice/category/text channel as a counter                                                | Admin                                  |
-| `/statschannel remove <channel>`                     | Stop updating a counter (config only — the channel is not deleted)                                         | Admin                                  |
-| `/statschannel list`                                 | Show counters, templates, current rendered value, last refresh                                             | Admin                                  |
-| `/statschannel refresh`                              | Refresh every counter now (at most once per 5 minutes)                                                     | Admin                                  |
-| `/statschannel interval <minutes>`                   | Set the automatic refresh interval (10-1440 minutes)                                                       | Admin                                  |
+| Command                                                                      | Description                                                                                                | Who                                       |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `/poll create`                                                               | Start a poll (2-10 options, optional duration/anonymous/multi-select)                                      | Everyone                                  |
+| `/poll end <id>`                                                             | End a poll early                                                                                           | Poll creator or moderator+                |
+| `/poll results <id>`                                                         | Show a poll's current results                                                                              | Everyone                                  |
+| `/giveaway start`                                                            | Start a giveaway (prize, duration, winners, optional eligibility rules)                                    | Moderator+                                |
+| `/giveaway end \| reroll \| list \| cancel`                                  | Manage giveaways                                                                                           | Moderator+                                |
+| `/suggest <text>`                                                            | Submit a suggestion                                                                                        | Everyone                                  |
+| `/suggestions setup`                                                         | Choose the suggestions channel                                                                             | Moderator+                                |
+| `/suggestions status <number> <status> [note]`                               | Change a suggestion's status                                                                               | Moderator+                                |
+| `/suggestions list [status]`                                                 | List suggestions                                                                                           | Moderator+                                |
+| `/announce schedule <channel> <when> <message>`                              | Schedule an announcement (cron, ISO date/time, or duration)                                                | Moderator+                                |
+| `/announce list \| cancel \| preview`                                        | Manage scheduled announcements                                                                             | Moderator+                                |
+| `/remind set <when> <message> [channel] [recurring]`                         | Set a reminder (DM by default, or post in a channel)                                                       | Everyone                                  |
+| `/remind list \| cancel`                                                     | Manage your reminders                                                                                      | Owner, or moderator+ to cancel others'    |
+| `/event create`                                                              | Create an event with RSVP, optionally as a native Discord scheduled event                                  | Helper+                                   |
+| `/event list \| cancel \| rsvps`                                             | Manage events                                                                                              | Helper+                                   |
+| `/tag show <name> [ephemeral]`                                               | Post a tag (custom command); staff-only tags need helper+                                                  | Everyone                                  |
+| `/tag list`                                                                  | List this server's tags (staff-only tags hidden from non-staff)                                            | Everyone                                  |
+| `/tag create <name> [content] [staff_only]`                                  | Create a tag; omit `content` to open a modal with embed fields                                             | Moderator+                                |
+| `/tag edit <name>`                                                           | Edit a tag's content / embed title / embed description in a modal                                          | Moderator+                                |
+| `/tag delete <name>`                                                         | Delete a tag (confirmation prompt)                                                                         | Moderator+                                |
+| `/tag trigger <name> <mode> [phrase] [channel]`                              | Set/clear a keyword auto-responder (exact / contains / starts_with)                                        | Admin                                     |
+| `/tag info <name>`                                                           | Uses, trigger, channels, created/updated by                                                                | Helper+                                   |
+| `/sticky set [channel] [content] [cooldown]`                                 | Keep a staff message at the bottom of a channel (no `content` → editor modal with embed title/description) | Moderator+                                |
+| `/sticky remove [channel]`                                                   | Remove a channel's sticky (deletes the record and the bot's last post)                                     | Moderator+                                |
+| `/sticky list`                                                               | List every sticky in the server with jump links                                                            | Moderator+                                |
+| `/channelauto publish add \| remove \| list`                                 | Auto-publish every new message in an announcement channel                                                  | Admin+                                    |
+| `/channelauto thread add \| remove \| list`                                  | One thread per post in a channel (template, archive, attachments-only, starter)                            | Admin+                                    |
+| `/statschannel create <template> [category] [kind]`                          | Create a locked voice channel (or category) showing a live server count                                    | Admin (bot needs Manage Channels)         |
+| `/statschannel add <channel> <template>`                                     | Attach an existing voice/category/text channel as a counter                                                | Admin                                     |
+| `/statschannel remove <channel>`                                             | Stop updating a counter (config only — the channel is not deleted)                                         | Admin                                     |
+| `/statschannel list`                                                         | Show counters, templates, current rendered value, last refresh                                             | Admin                                     |
+| `/statschannel refresh`                                                      | Refresh every counter now (at most once per 5 minutes)                                                     | Admin                                     |
+| `/statschannel interval <minutes>`                                           | Set the automatic refresh interval (10-1440 minutes)                                                       | Admin                                     |
+| `/birthday set <month> <day>`                                                | Share your birthday in this server (month + day only — never a year)                                       | Everyone (when birthdays are enabled)     |
+| `/birthday remove`                                                           | Delete your birthday from this server                                                                      | Everyone                                  |
+| `/birthday view [user]`                                                      | See your birthday, or another member's if the public list is on                                            | Everyone (others: public list or Helper+) |
+| `/birthday upcoming [ephemeral]`                                             | Next 15 upcoming birthdays (ephemeral; staff may post it publicly)                                         | Everyone if public list, else Helper+     |
+| `/birthday config <channel> [hour] [role] [message] [enabled] [public_list]` | Configure birthday announcements                                                                           | Admin+                                    |
+| `/birthday config-view`                                                      | Show birthday settings + how many members registered (count only)                                          | Moderator+                                |
 
 ## Config keys (`configSchema`)
 
@@ -68,6 +75,12 @@ autoThreads[]                object[]      One rule per channel (max 25):
   .starterMessage            string|null     Optional bot message posted in each new thread, max 300 chars (default: null)
 statsChannels                array         Up to 10 `{ channelId, template }` counters (default: [])
 statsRefreshMinutes          number        Minutes between automatic counter refreshes, 10-1440 (default: 15)
+birthdays.enabled            boolean       Birthday announcements + /birthday set on/off (default: false)
+birthdays.channelId          string|null   Channel birthdays are announced in (default: null)
+birthdays.message            string        Template; tokens {mention} {user} {server} (default: "🎂 Happy birthday, {mention}!")
+birthdays.announceHour       number        Guild-local hour 0-23 to announce, using the core timezone (default: 9)
+birthdays.roleId             string|null   Optional role added for ~24h on the day (default: null)
+birthdays.publicList         boolean       Members may run /birthday upcoming and view each other's (default: true)
 ```
 
 ### Tags (custom commands / auto-responders)
@@ -133,6 +146,7 @@ channel is deleted in Discord, the next refresh drops it from config (info log, 
 | Manage Events                          | Native Discord scheduled event for `/event create`                                      | Yes      | Event is still tracked and announced in-channel                                                                                                                                             |
 | Manage Messages                        | Sticky messages (delete the bot's own previous sticky)                                  | Yes      | Old sticky stays in place; a new one is still posted (deleting the bot's own message doesn't strictly need it, but a channel overwrite can still remove it — `/permissions audit` explains) |
 | Manage Channels                        | Server-stats counter channels (rename)                                                  | Yes      | Counters stop updating; `/statschannel refresh` reports the missing permission                                                                                                              |
+| Manage Roles                           | Birthday role (optional)                                                                | Yes      | No role is added; the announcement still posts                                                                                                                                              |
 
 Privileged intents: **Message Content — auto-responders only.** Everything else in the plugin (including `/tag
 show`) works without it; the plugin degrades rather than disables when the intent is off.
@@ -154,6 +168,12 @@ show`) works without it; the plugin degrades rather than disables when the inten
   or stored.
 - Stats channels display only aggregate server counts (members, humans, bots, boosts, roles, channels); nothing
   per member is read or stored.
+- **Birthdays store only the month and day** a member chooses to share, per server (`Birthday` row per
+  guild/user), until the member removes it (`/birthday remove`), an admin removes it from the dashboard, or the
+  server's data is deleted (cascade). No year, no age — there is no column for it. The bot never DMs about
+  birthdays; announcements only ping the birthday member. Setting/removing your own birthday is **not** audited
+  (no audit trail of personal data); config changes and admin removals are audited (admin removal records the
+  user id only). Birthdays are included in the guild data export as `{ userId, month, day }`.
 
 ## Background jobs
 
@@ -166,6 +186,8 @@ show`) works without it; the plugin degrades rather than disables when the inten
 - `community:suggestion-sync` — every minute; reflects dashboard suggestion status/note edits into the posted Discord embed (dashboard writes only touch the database).
 - `community:sticky-repost` — delayed catch-up re-post for a channel whose cooldown blocked an immediate one (`jobId sticky:<guildId>:<channelId>`, delay = the sticky's cooldown; enqueuing while one is pending is a no-op, so a burst of messages yields one re-post now and one after the cooldown).
 - `community:stats-refresh` — every 5 minutes; renames each guild's stats channels at most once per `statsRefreshMinutes` (Redis `SET NX EX` gate per guild), concurrency 1, never throws.
+- `community:birthday-announce` — hourly (top of the hour); for each guild with birthdays enabled + a channel, when the guild-local hour equals `birthdays.announceHour`, posts one message per birthday due today (Feb 29 → Feb 28 in non-leap years), adds the optional role, and stamps `lastAnnouncedYear` so nothing is announced twice in a year. Members who left are skipped, not deleted.
+- `community:birthday-role-remove` — delayed ~24h per birthday role grant (`jobId bday-role:<guild>:<user>:<year>`); removes the role if the member still has it.
 
 ## Sticky messages
 
@@ -178,11 +200,12 @@ suppressed in the re-posted payload. If the channel is deleted, the sticky recor
 
 `/dashboard/[guildId]/community` — Overview, Suggestions (status workflow), Giveaways, Polls (results bars),
 Announcements, Events (RSVP counts), Tags (create/edit/delete tags, embed fields, staff-only, auto-responder
-trigger + channels), and Channels (sticky messages: channel, preview, cooldown, last re-post, Remove; auto-publish
-channel list + "published today"; auto-thread rules with an inline editor; server-stats counters: attach/edit/remove
-
-- refresh interval, new counters are created with `/statschannel create`) tabs. Tags API:
-  `GET/POST /guilds/:guildId/community/tags`, `PUT/DELETE .../tags/:tagId`. Removing a sticky from the dashboard
-  deletes the record and stops re-posts; the bot's last posted copy stays in Discord (the API has no gateway) — delete
-  it there or run `/sticky remove`. The Channels tab and the generic plugin config drawer edit the same
-  `autoPublish` / `autoThreads` keys.
+trigger + channels), Channels (sticky messages: channel, preview, cooldown, last re-post, Remove; auto-publish
+channel list + "published today"; auto-thread rules with an inline editor; server-stats counters: attach, edit,
+remove and refresh interval — new counters are created with `/statschannel create`), and Birthdays (settings,
+count, next 10 upcoming by user id, admin removal) tabs. The API exposes only a birthday summary
+(`GET /guilds/:guildId/community/birthdays/summary`), never a paginated table of every member's date. Tags API:
+`GET/POST /guilds/:guildId/community/tags`, `PUT/DELETE .../tags/:tagId`. Removing a sticky from the dashboard
+deletes the record and stops re-posts; the bot's last posted copy stays in Discord (the API has no gateway) — delete
+it there or run `/sticky remove`. The Channels tab and the generic plugin config drawer edit the same
+`autoPublish` / `autoThreads` / `statsChannels` keys.

@@ -39,6 +39,8 @@ export const AuditAction = {
   CommunityTagCreate: 'community.tag.create',
   CommunityTagUpdate: 'community.tag.update',
   CommunityTagDelete: 'community.tag.delete',
+  CommunityBirthdayConfigUpdate: 'community.birthday.config.update',
+  CommunityBirthdayRemove: 'community.birthday.remove',
 } as const;
 
 /** Union of all `AuditAction` string values. */

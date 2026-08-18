@@ -78,6 +78,20 @@ export const configSchema = z.object({
     .default([]),
   /** Minimum minutes between automatic stats refreshes per guild (Discord allows 2 channel renames / 10 min). */
   statsRefreshMinutes: z.number().int().min(10).max(1440).default(15),
+  birthdays: z
+    .object({
+      enabled: z.boolean().default(false),
+      channelId: z.string().nullable().default(null),
+      /** Tokens: {mention}, {user}, {server}. */
+      message: z.string().max(500).default('🎂 Happy birthday, {mention}!'),
+      /** Guild-local hour (0–23) to announce; uses core GuildConfig.timezone. */
+      announceHour: z.number().int().min(0).max(23).default(9),
+      /** Optional role added for ~24h. */
+      roleId: z.string().nullable().default(null),
+      /** Let members list upcoming birthdays with /birthday upcoming (and view each other's). */
+      publicList: z.boolean().default(true),
+    })
+    .default({}),
 });
 
 export type CommunityConfig = z.infer<typeof configSchema>;
@@ -88,20 +102,21 @@ export const manifest = defineManifest({
   id: 'community',
   name: 'Community',
   description:
-    'Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, tags (custom commands / auto-responders), and sticky messages.',
+    'Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, tags (custom commands / auto-responders), sticky messages, and birthdays.',
   category: 'community',
   version: '0.1.0',
   defaultEnabled: true,
   permissions: [
     {
       permission: PermissionFlagsBits.SendMessages,
-      feature: 'posting polls/giveaways/suggestions/announcements/events, tag replies / auto-responders',
+      feature:
+        'posting polls/giveaways/suggestions/announcements/events/birthday announcements, tag replies / auto-responders',
       optional: false,
       fallback: 'The bot cannot post in the configured channel; the command replies with an error.',
     },
     {
       permission: PermissionFlagsBits.EmbedLinks,
-      feature: 'result and status embeds',
+      feature: 'result, status, and birthday list embeds',
       optional: false,
       fallback: 'Falls back to plain text where possible.',
     },
@@ -142,6 +157,12 @@ export const manifest = defineManifest({
       optional: true,
       fallback: 'Counters stop updating; /statschannel refresh reports the missing permission.',
     },
+    {
+      permission: PermissionFlagsBits.ManageRoles,
+      feature: 'birthday role (optional)',
+      optional: true,
+      fallback: 'No role is added; the announcement still posts.',
+    },
   ],
   // Guilds + GuildMessages are needed for the tag auto-responder's and sticky messages' `messageCreate`
   // handlers (sticky reads no content — only that a message was posted); the privileged Message Content
@@ -160,5 +181,6 @@ export const manifest = defineManifest({
     "Sticky messages store only the text/embed staff wrote and the id of the bot's own last post.",
     'Auto-publish and auto-threads act only on message ids/authors in the channels you list; content is never read or stored.',
     'Stats channels display only aggregate server counts (members, humans, bots, boosts, roles, channels); nothing per member is read or stored.',
+    "Birthdays store only the month and day a member chooses to share, per server, until the member removes it or the server's data is deleted. No year, no age, and the bot never DMs about birthdays.",
   ],
 });

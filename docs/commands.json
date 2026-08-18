@@ -2843,7 +2843,7 @@
     {
       "id": "community",
       "name": "Community",
-      "description": "Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, tags (custom commands / auto-responders), and sticky messages.",
+      "description": "Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, tags (custom commands / auto-responders), sticky messages, and birthdays.",
       "category": "community",
       "defaultEnabled": true,
       "privilegedIntents": ["MessageContent"],
@@ -3741,6 +3741,115 @@
                   "type": "Integer"
                 }
               ]
+            }
+          ]
+        },
+        {
+          "name": "birthday",
+          "fullName": "/birthday",
+          "type": "slash",
+          "description": "Share your birthday (month + day only) and see upcoming ones.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "set",
+              "fullName": "/birthday set",
+              "description": "Set your birthday in this server (month and day only — never a year).",
+              "options": [
+                {
+                  "name": "month",
+                  "description": "Month",
+                  "required": true,
+                  "type": "Integer"
+                },
+                {
+                  "name": "day",
+                  "description": "Day of the month",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/birthday remove",
+              "description": "Remove your birthday from this server.",
+              "options": []
+            },
+            {
+              "name": "view",
+              "fullName": "/birthday view",
+              "description": "View your birthday (or another member's, if the server allows it).",
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Member to look up",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "upcoming",
+              "fullName": "/birthday upcoming",
+              "description": "List the next upcoming birthdays.",
+              "options": [
+                {
+                  "name": "ephemeral",
+                  "description": "Only you can see the reply (default: true; staff may post it publicly)",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "config",
+              "fullName": "/birthday config",
+              "description": "Admin: configure birthday announcements.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel birthdays are announced in",
+                  "required": true,
+                  "type": "Channel"
+                },
+                {
+                  "name": "hour",
+                  "description": "Hour of the day to announce, in the server's timezone (0-23)",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "role",
+                  "description": "Role given for ~24 hours on a birthday",
+                  "required": false,
+                  "type": "Role"
+                },
+                {
+                  "name": "message",
+                  "description": "Announcement text; tokens: {mention} {user} {server}",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "enabled",
+                  "description": "Turn birthday announcements on or off",
+                  "required": false,
+                  "type": "Boolean"
+                },
+                {
+                  "name": "public_list",
+                  "description": "Let members list upcoming birthdays and view each other's",
+                  "required": false,
+                  "type": "Boolean"
+                }
+              ]
+            },
+            {
+              "name": "config-view",
+              "fullName": "/birthday config-view",
+              "description": "Staff: show the current birthday settings.",
+              "options": []
             }
           ]
         }
