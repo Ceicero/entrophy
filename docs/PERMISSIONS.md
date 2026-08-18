@@ -128,6 +128,7 @@ _Polls, giveaways, suggestions, scheduled announcements, reminders, and event RS
 | Manage Threads        | auto-threading suggestions                                  | Optional  | The suggestion is still posted; no thread is created.                                    |
 | Create Public Threads | auto-threading suggestions                                  | Optional  | The suggestion is still posted; no thread is created.                                    |
 | Manage Events         | creating a native Discord scheduled event for /event create | Optional  | The event is still tracked and announced in-channel; no Discord Events entry is created. |
+| Manage Channels       | server-stats counter channels (rename)                      | Optional  | Counters stop updating; /statschannel refresh reports the missing permission.            |
 
 ### Economy (`economy`)
 

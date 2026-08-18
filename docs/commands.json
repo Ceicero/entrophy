@@ -3306,6 +3306,98 @@
               ]
             }
           ]
+        },
+        {
+          "name": "statschannel",
+          "fullName": "/statschannel",
+          "type": "slash",
+          "description": "Server-stats counter channels (member/bot/boost counts in the channel list).",
+          "staffLevel": "admin",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "create",
+              "fullName": "/statschannel create",
+              "description": "Create a locked voice channel (or category) that shows a live server count.",
+              "options": [
+                {
+                  "name": "template",
+                  "description": "Template, e.g. \"Members: {members}\" ({members} {humans} {bots} {boosts} {roles} {channels} {date})",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "category",
+                  "description": "Category to create the voice channel under",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "kind",
+                  "description": "What to create (default: voice)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "add",
+              "fullName": "/statschannel add",
+              "description": "Attach an existing channel as a stats counter.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel to rename with the template",
+                  "required": true,
+                  "type": "Channel"
+                },
+                {
+                  "name": "template",
+                  "description": "Name template — tokens: {members} {humans} {bots} {boosts} {roles} {channels} {date}",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/statschannel remove",
+              "description": "Stop updating a stats channel (the channel itself is not deleted).",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "The stats channel to detach",
+                  "required": true,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/statschannel list",
+              "description": "List the configured stats channels.",
+              "options": []
+            },
+            {
+              "name": "refresh",
+              "fullName": "/statschannel refresh",
+              "description": "Refresh every stats channel now (at most once per 5 minutes).",
+              "options": []
+            },
+            {
+              "name": "interval",
+              "fullName": "/statschannel interval",
+              "description": "Set how often stats channels refresh automatically.",
+              "options": [
+                {
+                  "name": "minutes",
+                  "description": "Minutes between automatic refreshes (10-1440)",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            }
+          ]
         }
       ]
     },

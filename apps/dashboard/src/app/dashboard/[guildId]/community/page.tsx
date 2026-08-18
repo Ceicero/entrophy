@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from '@entrophy/ui';
 import { AnnouncementsTab } from '../../../../components/community/announcements-tab';
+import { ChannelsTab } from '../../../../components/community/channels-tab';
 import { EventsTab } from '../../../../components/community/events-tab';
 import { GiveawaysTab } from '../../../../components/community/giveaways-tab';
 import { OverviewTab } from '../../../../components/community/overview-tab';
@@ -16,7 +17,7 @@ export default function CommunityPage() {
     <div className="space-y-6">
       <PageHeader
         title="Community"
-        description="Polls, giveaways, the suggestion box, scheduled announcements, and events."
+        description="Polls, giveaways, the suggestion box, scheduled announcements, events, and server-stats channels."
       />
 
       <Tabs defaultValue="overview">
@@ -27,6 +28,7 @@ export default function CommunityPage() {
           <TabsTrigger value="polls">Polls</TabsTrigger>
           <TabsTrigger value="announcements">Announcements</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
+          <TabsTrigger value="channels">Channels</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -46,6 +48,9 @@ export default function CommunityPage() {
         </TabsContent>
         <TabsContent value="events">
           <EventsTab guildId={guildId} />
+        </TabsContent>
+        <TabsContent value="channels">
+          <ChannelsTab guildId={guildId} />
         </TabsContent>
       </Tabs>
     </div>

@@ -59,6 +59,7 @@ export const HELP_MAP: Record<string, PluginId> = {
   announce: 'community',
   remind: 'community',
   event: 'community',
+  statschannel: 'community',
 
   // economy
   economy: 'economy',
