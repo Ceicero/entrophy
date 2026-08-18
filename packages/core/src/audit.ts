@@ -22,6 +22,7 @@ export const AuditAction = {
   RolesPanelUpdate: 'roles.panel.update',
   RolesPanelDelete: 'roles.panel.delete',
   RolesWelcomeUpdate: 'roles.welcome.update',
+  RolesAutoRoleUpdate: 'roles.autorole.update',
   VerificationApprove: 'verification.approve',
   VerificationDeny: 'verification.deny',
   IntegrationConnect: 'integration.connect',

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Paginated, RolePanelDto } from '@entrophy/types';
 import type {
+  AutoRolesDto,
   OnboardingConfigDto,
   RoleGroupDto,
   RolePersistenceDto,
@@ -22,6 +23,7 @@ export const rolesQueryKeys = {
   verificationQueue: (guildId: string) => ['guilds', guildId, 'roles', 'verification', 'queue'] as const,
   onboarding: (guildId: string) => ['guilds', guildId, 'roles', 'onboarding'] as const,
   persistence: (guildId: string) => ['guilds', guildId, 'roles', 'persistence'] as const,
+  autoRoles: (guildId: string) => ['guilds', guildId, 'roles', 'autoroles'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -289,5 +291,33 @@ export function useSetRolePersistence(guildId: string) {
         body: input,
       }),
     onSuccess: (data) => queryClient.setQueryData(rolesQueryKeys.persistence(guildId), data),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Auto-roles on join
+// ---------------------------------------------------------------------------
+
+export interface AutoRolesInput {
+  enabled?: boolean;
+  roleIds?: string[];
+  botRoleIds?: string[];
+  delaySeconds?: number;
+}
+
+export function useAutoRoles(guildId: string | undefined) {
+  return useQuery({
+    queryKey: rolesQueryKeys.autoRoles(guildId ?? ''),
+    queryFn: () => apiFetch<AutoRolesDto>(`/guilds/${guildId}/roles/autoroles`),
+    enabled: Boolean(guildId),
+  });
+}
+
+export function useSetAutoRoles(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: AutoRolesInput) =>
+      apiFetch<AutoRolesDto>(`/guilds/${guildId}/roles/autoroles`, { method: 'PUT', body: input }),
+    onSuccess: (data) => queryClient.setQueryData(rolesQueryKeys.autoRoles(guildId), data),
   });
 }

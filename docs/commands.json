@@ -1684,7 +1684,7 @@
           "name": "roles",
           "fullName": "/roles",
           "type": "slash",
-          "description": "Self-assignable role panels, groups, and role persistence.",
+          "description": "Self-assignable role panels, groups, role persistence, and auto-roles.",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": [
@@ -1984,6 +1984,70 @@
               "fullName": "/roles persist status",
               "description": "Show whether role persistence is on.",
               "options": []
+            },
+            {
+              "name": "add",
+              "fullName": "/roles autorole add",
+              "description": "Add a role to the auto-role list (max 5 for humans, 3 for bots).",
+              "options": [
+                {
+                  "name": "role",
+                  "description": "Role to give",
+                  "required": true,
+                  "type": "Role"
+                },
+                {
+                  "name": "for",
+                  "description": "Who gets it (default: humans)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/roles autorole remove",
+              "description": "Remove a role from the auto-role lists.",
+              "options": [
+                {
+                  "name": "role",
+                  "description": "Role to remove",
+                  "required": true,
+                  "type": "Role"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/roles autorole list",
+              "description": "Show the current auto-role setup.",
+              "options": []
+            },
+            {
+              "name": "delay",
+              "fullName": "/roles autorole delay",
+              "description": "Delay before auto-roles land (0 = immediately, max 7 days).",
+              "options": [
+                {
+                  "name": "seconds",
+                  "description": "Seconds to wait after the member finishes joining",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "enable",
+              "fullName": "/roles autorole enable",
+              "description": "Turn auto-roles on or off.",
+              "options": [
+                {
+                  "name": "on",
+                  "description": "true = on, false = off",
+                  "required": true,
+                  "type": "Boolean"
+                }
+              ]
             }
           ]
         },

@@ -31,6 +31,21 @@ const rolePersistenceSchema = z.object({
   maxDays: z.number().int().min(1).max(365).default(30),
 });
 
+/** Auto-roles: roles handed to every member (humans / bots separately) once they've fully joined (after Discord's membership screening, if on). */
+const autoRolesSchema = z.object({
+  enabled: z.boolean().default(false),
+  /** Roles given to human members. */
+  roleIds: z.array(z.string()).max(5).default([]),
+  /** Roles given to bot accounts (many servers tag bots). */
+  botRoleIds: z.array(z.string()).max(3).default([]),
+  /** 0 = immediately; otherwise queue a delayed job. Max 7 days. */
+  delaySeconds: z.number().int().min(0).max(604_800).default(0),
+});
+
+export const AUTO_ROLES_MAX_HUMAN = 5;
+export const AUTO_ROLES_MAX_BOT = 3;
+export const AUTO_ROLES_MAX_DELAY_SECONDS = 604_800;
+
 export const configSchema = z.object({
   /** When false (default), role panels / groups refuse to attach a role that grants an elevated permission. */
   allowElevatedRoles: z.boolean().default(false),
@@ -41,6 +56,7 @@ export const configSchema = z.object({
   steps: z.array(onboardingStepSchema).max(20).default([]),
   verification: verificationSchema.default({}),
   rolePersistence: rolePersistenceSchema.default({}),
+  autoRoles: autoRolesSchema.default({}),
 });
 
 export type RolesConfig = z.infer<typeof configSchema>;
@@ -48,6 +64,7 @@ export type WelcomeGoodbyeConfig = z.infer<typeof welcomeGoodbyeSchema>;
 export type OnboardingStepConfig = z.infer<typeof onboardingStepSchema>;
 export type VerificationConfig = z.infer<typeof verificationSchema>;
 export type RolePersistenceConfig = z.infer<typeof rolePersistenceSchema>;
+export type AutoRolesConfig = z.infer<typeof autoRolesSchema>;
 
 export const manifest = defineManifest({
   id: 'roles',
@@ -60,7 +77,7 @@ export const manifest = defineManifest({
   permissions: [
     {
       permission: PermissionFlagsBits.ManageRoles,
-      feature: 'role panels / verification / role persistence',
+      feature: 'role panels / verification / role persistence / auto-roles',
       optional: false,
       fallback: 'Role assignment fails with a clear error until Manage Roles is granted.',
     },
@@ -112,5 +129,6 @@ export const manifest = defineManifest({
     "Verification (modal mode) stores the member's submitted answers on the pending request until a staff decision is made.",
     "Role persistence, when enabled by an admin, stores a snapshot of a leaving member's roles (excluding elevated/managed roles) for up to the configured number of days so they can be restored on rejoin. Disabled by default and clearly disclosed in `/roles persist`.",
     "The account-age gate and membership screening only ever read a member's Discord account-creation date and `pending` flag — no additional data is collected.",
+    'Auto-roles store nothing about members; a delayed auto-role keeps only the member id in a scheduled job until it fires.',
   ],
 });

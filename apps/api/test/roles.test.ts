@@ -71,7 +71,7 @@ function roleGroupOverrides() {
 }
 
 async function authedContext(overrides: PrismaStubOverrides = {}) {
-  const { app, redis, queues } = await buildTestApp(overrides);
+  const { app, redis, queues, prismaCalls } = await buildTestApp(overrides);
   const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
   await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
   const mutHeaders = {
@@ -79,7 +79,7 @@ async function authedContext(overrides: PrismaStubOverrides = {}) {
     origin: 'http://localhost:3000',
     'x-csrf-token': session.csrfToken,
   };
-  return { app, queues, cookieHeader, mutHeaders };
+  return { app, queues, prismaCalls, cookieHeader, mutHeaders };
 }
 
 describe('roles: welcome config', () => {
@@ -284,6 +284,136 @@ describe('roles: persistence', () => {
     });
     expect(toggleOnly.statusCode).toBe(200);
     expect(toggleOnly.json()).toMatchObject({ enabled: false, maxDays: 45 }); // maxDays preserved from the previous write
+
+    await app.close();
+  });
+});
+
+describe('roles: auto-roles', () => {
+  it('401s without a session', async () => {
+    const { overrides } = pluginConfigOverrides();
+    const { app } = await buildTestApp(overrides);
+
+    const get = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/roles/autoroles` });
+    expect(get.statusCode).toBe(401);
+
+    const put = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/autoroles`,
+      payload: { enabled: true },
+    });
+    expect(put.statusCode).toBe(401);
+
+    await app.close();
+  });
+
+  it('GET returns defaults plus the re-check note', async () => {
+    const { overrides } = pluginConfigOverrides();
+    const { app, cookieHeader } = await authedContext(overrides);
+
+    const get = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/roles/autoroles`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(get.statusCode).toBe(200);
+    expect(get.json()).toMatchObject({ enabled: false, roleIds: [], botRoleIds: [], delaySeconds: 0 });
+    expect(get.json().note).toMatch(/re-checked at assignment time/i);
+
+    await app.close();
+  });
+
+  it('400s on more than 5 human roles / 3 bot roles / an out-of-range delay', async () => {
+    const { overrides } = pluginConfigOverrides();
+    const { app, mutHeaders } = await authedContext(overrides);
+
+    const tooManyHumans = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/autoroles`,
+      headers: mutHeaders,
+      payload: { roleIds: ['1', '2', '3', '4', '5', '6'] },
+    });
+    expect(tooManyHumans.statusCode).toBe(400);
+
+    const tooManyBots = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/autoroles`,
+      headers: mutHeaders,
+      payload: { botRoleIds: ['1', '2', '3', '4'] },
+    });
+    expect(tooManyBots.statusCode).toBe(400);
+
+    const delayTooLong = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/autoroles`,
+      headers: mutHeaders,
+      payload: { delaySeconds: 604_801 },
+    });
+    expect(delayTooLong.statusCode).toBe(400);
+
+    await app.close();
+  });
+
+  it('PUT merges into the existing section, round-trips via GET, and writes a roles.autorole.update audit row', async () => {
+    const { overrides } = pluginConfigOverrides();
+    const { app, cookieHeader, mutHeaders, prismaCalls } = await authedContext(overrides);
+
+    const first = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/autoroles`,
+      headers: mutHeaders,
+      payload: { enabled: true, roleIds: ['111', '222'], delaySeconds: 600 },
+    });
+    expect(first.statusCode).toBe(200);
+    expect(first.json()).toMatchObject({
+      enabled: true,
+      roleIds: ['111', '222'],
+      botRoleIds: [],
+      delaySeconds: 600,
+    });
+
+    // A second partial PUT must keep the earlier fields (merge, not replace).
+    const second = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/autoroles`,
+      headers: mutHeaders,
+      payload: { botRoleIds: ['333'] },
+    });
+    expect(second.statusCode).toBe(200);
+    expect(second.json()).toMatchObject({
+      enabled: true,
+      roleIds: ['111', '222'],
+      botRoleIds: ['333'],
+      delaySeconds: 600,
+    });
+
+    const get = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/roles/autoroles`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(get.statusCode).toBe(200);
+    expect(get.json()).toMatchObject({
+      enabled: true,
+      roleIds: ['111', '222'],
+      botRoleIds: ['333'],
+      delaySeconds: 600,
+    });
+    expect(get.json().note).toMatch(/re-checked/i);
+
+    const auditWrites = prismaCalls.filter(
+      (c) =>
+        c.model === 'auditLog' &&
+        c.method === 'create' &&
+        (c.args[0] as { data: { action: string } }).data.action === 'roles.autorole.update',
+    );
+    expect(auditWrites.length).toBe(2);
+    const lastAudit = auditWrites[1]!.args[0] as {
+      data: { actorId: string; source: string; after: { botRoleIds: string[] } };
+    };
+    expect(lastAudit.data.actorId).toBe(USER_ID);
+    expect(lastAudit.data.source).toBe('DASHBOARD');
+    expect(lastAudit.data.after.botRoleIds).toEqual(['333']);
 
     await app.close();
   });

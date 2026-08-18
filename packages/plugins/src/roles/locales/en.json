@@ -8,5 +8,29 @@
     "panelPosted": "Panel posted.",
     "roleAdded": "Added {role}.",
     "roleRemoved": "Removed {role}."
+  },
+  "autorole": {
+    "added": "{role} will now be given to every new {audience} member.",
+    "alreadyAdded": "{role} is already on the {audience} auto-role list.",
+    "removed": "{role} removed from the auto-role lists.",
+    "notConfigured": "That role isn't on any auto-role list.",
+    "notEnabledHint": "Auto-roles are currently **off** — run `/roles autorole enable on:true` to start assigning them.",
+    "listTitle": "Auto-roles on join",
+    "listStatus": "Status: {status}",
+    "listHumans": "Humans: {roles}",
+    "listBots": "Bots: {roles}",
+    "listDelay": "Delay: {delay}",
+    "listNone": "none",
+    "limit": "You can configure at most {max} auto-roles for that audience. Remove one first.",
+    "delaySet": "Auto-roles will now be given {delay} after a member finishes joining.",
+    "delayImmediate": "immediately",
+    "enabled": "Auto-roles are now **on**. New members will receive the configured roles once they finish joining.",
+    "disabled": "Auto-roles are now **off**. Pending delayed assignments will be skipped when they fire.",
+    "refused": {
+      "elevated": "That role grants an elevated permission (Administrator, Manage Server/Roles/Channels/Webhooks, Kick/Ban/Timeout Members, or Mention Everyone). Enable `allowElevatedRoles` in this plugin's config to allow it anyway.",
+      "managed": "That role is managed by an integration or bot and can't be given out automatically.",
+      "hierarchy": "That role is at or above my own highest role, so I can't grant it. Move my role above it in Server Settings → Roles."
+    },
+    "safetyNote": "Roles are re-checked at assignment time; elevated/managed/higher-than-bot roles are skipped and logged."
   }
 }

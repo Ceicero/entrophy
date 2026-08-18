@@ -4,6 +4,7 @@ import { AuditAction, NotFoundError, buildPaginated, paginate } from '@entrophy/
 import type { RolesConfig } from '@entrophy/plugins/roles/manifest';
 import type { Paginated, RolePanelDto } from '@entrophy/types';
 import type {
+  AutoRolesDto,
   OnboardingConfigDto,
   RoleGroupDto,
   RolePersistenceDto,
@@ -20,6 +21,7 @@ import {
   toWelcomeGoodbyeDto,
 } from '../lib/roles/dto';
 import {
+  autoRolesBodySchema,
   groupBodySchema,
   groupParamSchema,
   groupUpdateSchema,
@@ -35,6 +37,19 @@ import { guildIdParamSchema, paginationQuerySchema } from '../lib/schemas';
 const ROLES_PLUGIN_ID = 'roles' as const;
 const ROLE_PERSISTENCE_DISCLOSURE =
   "When on, Entrophy stores a snapshot of a leaving member's roles (excluding elevated-permission and integration-managed roles) for up to the configured number of days, and restores them automatically if that member rejoins within that window.";
+/** The API has no gateway connection, so it cannot check role hierarchy/permissions; the bot re-validates at assignment time (`grantAutoRoles`) and records skips in the `roles.autorole.apply` audit row. */
+const AUTO_ROLES_NOTE =
+  'Roles are re-checked at assignment time; elevated/managed/higher-than-bot roles are skipped and logged.';
+
+function toAutoRolesDto(config: RolesConfig): AutoRolesDto {
+  return {
+    enabled: config.autoRoles.enabled,
+    roleIds: config.autoRoles.roleIds,
+    botRoleIds: config.autoRoles.botRoleIds,
+    delaySeconds: config.autoRoles.delaySeconds,
+    note: AUTO_ROLES_NOTE,
+  };
+}
 
 const panelOptionSchema = z.object({
   roleId: z.string().min(1),
@@ -681,6 +696,65 @@ export default async function rolesRoutes(app: ZodFastifyInstance): Promise<void
       });
 
       return { ...updated.rolePersistence, disclosure: ROLE_PERSISTENCE_DISCLOSURE };
+    },
+  );
+
+  // ---------------------------------------------------------------------------------------------------------
+  // Auto-roles on join
+  // ---------------------------------------------------------------------------------------------------------
+
+  app.get(
+    '/:guildId/roles/autoroles',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<AutoRolesDto> => {
+      const config = await getRolesConfig(app, request.guildId!);
+      return toAutoRolesDto(config);
+    },
+  );
+
+  app.put(
+    '/:guildId/roles/autoroles',
+    { schema: { params: guildIdParamSchema, body: autoRolesBodySchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<AutoRolesDto> => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const current = await getRolesConfig(app, guildId);
+
+      const updated = await app.configStore.setConfig<RolesConfig>(
+        guildId,
+        ROLES_PLUGIN_ID,
+        {
+          autoRoles: {
+            enabled: request.body.enabled ?? current.autoRoles.enabled,
+            roleIds: request.body.roleIds ?? current.autoRoles.roleIds,
+            botRoleIds: request.body.botRoleIds ?? current.autoRoles.botRoleIds,
+            delaySeconds: request.body.delaySeconds ?? current.autoRoles.delaySeconds,
+          },
+        },
+        { id: session.userId, source: 'dashboard' },
+      );
+
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.RolesAutoRoleUpdate,
+        targetType: 'plugin_config',
+        targetId: ROLES_PLUGIN_ID,
+        before: {
+          enabled: current.autoRoles.enabled,
+          roleIds: current.autoRoles.roleIds,
+          botRoleIds: current.autoRoles.botRoleIds,
+          delaySeconds: current.autoRoles.delaySeconds,
+        },
+        after: {
+          enabled: updated.autoRoles.enabled,
+          roleIds: updated.autoRoles.roleIds,
+          botRoleIds: updated.autoRoles.botRoleIds,
+          delaySeconds: updated.autoRoles.delaySeconds,
+        },
+      });
+
+      return toAutoRolesDto(updated);
     },
   );
 }

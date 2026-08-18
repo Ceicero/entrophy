@@ -23,6 +23,7 @@ import { memberUpdateHandler } from './events/member-update';
 import { reactionAddHandler, reactionRemoveHandler } from './events/reactions';
 
 import { captchaPollJob } from './jobs/captcha-poll';
+import { autoRoleApplyJob } from './jobs/autorole-apply';
 
 import en from './locales/en.json';
 
@@ -56,7 +57,7 @@ export const plugin = definePlugin({
     reactionAddHandler,
     reactionRemoveHandler,
   ],
-  jobs: [captchaPollJob],
+  jobs: [captchaPollJob, autoRoleApplyJob],
   async onLoad(ctx) {
     ctx.services.register('roles', createRolesService(ctx));
   },

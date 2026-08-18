@@ -13,6 +13,8 @@ import {
   parseOnboardingProgress,
   renderTemplate,
   renderTemplateDeep,
+  selectAutoRoles,
+  type RoleAssignabilityReason,
   type TemplateVars,
 } from './engine';
 import { buildPanelMessagePayload, reactionRoleMap, type PanelWithOptions } from './panel-render';
@@ -76,6 +78,136 @@ function assignabilityMessage(reason: 'elevated' | 'managed' | 'hierarchy'): str
   if (reason === 'managed')
     return 'This role is managed by an integration/bot and cannot be assigned manually.';
   return "This role is at or above the bot's own highest role, so the bot can't assign it.";
+}
+
+// ---------------------------------------------------------------------------
+// Auto-roles on join
+// ---------------------------------------------------------------------------
+
+export const AUTO_ROLE_JOB_NAME = 'autorole-apply';
+export const AUTO_ROLE_AUDIT_ACTION = 'roles.autorole.apply';
+
+export interface AutoRoleJobData {
+  guildId: string;
+  userId: string;
+  roleIds: string[];
+}
+
+/** Deterministic job id so a member who leaves and rejoins inside the delay window only ever has ONE pending auto-role job. */
+export function autoRoleJobId(guildId: string, userId: string): string {
+  return `autorole:${guildId}:${userId}`;
+}
+
+export type AutoRoleSkipReason = RoleAssignabilityReason | 'missing' | 'already';
+
+/**
+ * Entry point run from `handleFullyJoined` (non-pending join, or pending → not-pending after Discord's
+ * membership screening). Picks the human/bot list, then either grants immediately or schedules the
+ * `autorole-apply` job when `delaySeconds > 0`. Never throws — a failed auto-role must not break the join flow.
+ */
+export async function applyAutoRoles(
+  ctx: PluginContext,
+  member: GuildMember,
+  config: RolesConfig,
+): Promise<void> {
+  const roleIds = selectAutoRoles({ isBot: member.user.bot, config: config.autoRoles });
+  if (roleIds.length === 0) return;
+
+  const guildId = member.guild.id;
+  const userId = member.id;
+  const delaySeconds = config.autoRoles.delaySeconds;
+
+  if (delaySeconds > 0) {
+    try {
+      const data: AutoRoleJobData = { guildId, userId, roleIds };
+      await ctx.queue(AUTO_ROLE_JOB_NAME).add(AUTO_ROLE_JOB_NAME, data, {
+        jobId: autoRoleJobId(guildId, userId),
+        delay: delaySeconds * 1000,
+        removeOnComplete: true,
+      });
+    } catch (err) {
+      ctx.logger.warn(
+        { err: err instanceof Error ? err.message : String(err), guildId, userId },
+        'roles: failed to schedule a delayed auto-role job',
+      );
+    }
+    return;
+  }
+
+  await grantAutoRoles(ctx, member, roleIds, config.allowElevatedRoles);
+}
+
+/**
+ * Actually grants `roleIds` to `member`, re-checking every role through `checkRoleAssignable` at assignment
+ * time (roles can change after an admin configured them), dropping missing roles and ones the member already
+ * holds. Writes a `roles.autorole.apply` audit row listing what was granted and what was skipped (with why).
+ */
+export async function grantAutoRoles(
+  ctx: PluginContext,
+  member: GuildMember,
+  roleIds: string[],
+  allowElevatedRoles: boolean,
+): Promise<{ assigned: string[]; skipped: { roleId: string; reason: AutoRoleSkipReason }[] }> {
+  const guild = member.guild;
+  await guild.roles.fetch().catch(() => undefined);
+  const botTopRolePosition = guild.members.me?.roles.highest.position ?? 0;
+
+  const assignable: string[] = [];
+  const skipped: { roleId: string; reason: AutoRoleSkipReason }[] = [];
+
+  for (const roleId of roleIds) {
+    const role = guild.roles.cache.get(roleId);
+    if (!role) {
+      skipped.push({ roleId, reason: 'missing' });
+      continue;
+    }
+    if (member.roles.cache.has(roleId)) {
+      skipped.push({ roleId, reason: 'already' });
+      continue;
+    }
+    const result = checkRoleAssignable({
+      permissionsBitfield: role.permissions.bitfield,
+      position: role.position,
+      managed: role.managed,
+      botTopRolePosition,
+      allowElevatedRoles,
+    });
+    if (result.ok) {
+      assignable.push(roleId);
+    } else {
+      skipped.push({ roleId, reason: result.reason });
+    }
+  }
+
+  if (assignable.length === 0) {
+    return { assigned: [], skipped };
+  }
+
+  let assigned: string[] = assignable;
+  let failed: string[] = [];
+  try {
+    await member.roles.add(assignable, 'Auto-role on join');
+  } catch (err) {
+    assigned = [];
+    failed = assignable;
+    ctx.logger.warn(
+      { err: err instanceof Error ? err.message : String(err), guildId: guild.id, userId: member.id },
+      'roles: failed to add auto-roles',
+    );
+  }
+
+  await ctx.audit({
+    guildId: guild.id,
+    actorId: member.id,
+    actorType: 'system',
+    action: AUTO_ROLE_AUDIT_ACTION,
+    targetType: 'member',
+    targetId: member.id,
+    after: { roleIds: assigned, skipped, ...(failed.length > 0 ? { failed } : {}) },
+    source: 'bot',
+  });
+
+  return { assigned, skipped };
 }
 
 /** Renders `section` of the welcome/goodbye config for `member` in `guild`; returns null if that section is disabled or has nothing to send. */

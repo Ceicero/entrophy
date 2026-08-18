@@ -13,6 +13,7 @@ import {
   renderTemplate,
   renderTemplateDeep,
   resolveGroupSelection,
+  selectAutoRoles,
 } from '../engine';
 
 describe('isElevatedPermissionBitfield / checkRoleAssignable', () => {
@@ -298,5 +299,33 @@ describe('onboarding progress', () => {
     expect(items.find((i) => i.id === '__roles__')).toMatchObject({ done: true });
     expect(items.find((i) => i.id === 'intro')).toMatchObject({ done: true });
     expect(items.find((i) => i.id === 'other')).toMatchObject({ done: false });
+  });
+});
+
+describe('selectAutoRoles', () => {
+  const config = {
+    enabled: true,
+    roleIds: ['human1', 'human2'],
+    botRoleIds: ['bot1'],
+    delaySeconds: 0,
+  };
+
+  it('picks the human list for human members', () => {
+    expect(selectAutoRoles({ isBot: false, config })).toEqual(['human1', 'human2']);
+  });
+
+  it('picks the bot list for bot accounts', () => {
+    expect(selectAutoRoles({ isBot: true, config })).toEqual(['bot1']);
+  });
+
+  it('returns nothing when auto-roles are disabled', () => {
+    expect(selectAutoRoles({ isBot: false, config: { ...config, enabled: false } })).toEqual([]);
+  });
+
+  it('collapses duplicate ids', () => {
+    expect(selectAutoRoles({ isBot: false, config: { ...config, roleIds: ['a', 'a', 'b'] } })).toEqual([
+      'a',
+      'b',
+    ]);
   });
 });
