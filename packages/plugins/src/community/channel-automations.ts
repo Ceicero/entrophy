@@ -14,6 +14,10 @@ export const CHANNEL_AUTOMATION_MAX = 25;
 export const WARN_TTL_SECONDS = 3600;
 /** TTL for the per-day auto-publish counter (2 days so "today" survives a UTC rollover). */
 export const COUNTER_TTL_SECONDS = 172_800;
+/** Discord allows at most 10 published (crossposted) messages per hour per announcement channel. */
+export const AUTO_PUBLISH_HOURLY_LIMIT = 10;
+/** TTL for the per-channel hourly auto-publish budget counter — resets an hour after the first crosspost in a window. */
+export const AUTO_PUBLISH_BUDGET_TTL_SECONDS = 3600;
 
 // ---------------------------------------------------------------------------
 // Redis keys (shared by the bot handler and the API stats endpoint)
@@ -30,6 +34,13 @@ export function autoPublishCountKey(guildId: string, day: string = utcDayKey()):
 
 export function autoPublishWarnedKey(channelId: string): string {
   return redisKey('community', 'autopublish-warned', channelId);
+}
+
+/** Per-channel hourly crosspost budget counter (`INCR` with `EX 3600` on first increment) — Discord's 10/hour
+ * crosspost limit isn't reported as a normal rejection (discord.js sleeps through a 429 instead of throwing), so
+ * this is enforced proactively rather than by reacting to an API error. */
+export function autoPublishBudgetKey(channelId: string): string {
+  return redisKey('community', 'autopublish-budget', channelId);
 }
 
 export function autoThreadWarnedKey(channelId: string): string {

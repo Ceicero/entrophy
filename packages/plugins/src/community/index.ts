@@ -20,7 +20,7 @@ import { eventComponents } from './components/event';
 import { tagComponents } from './components/tag-modal';
 import { tagTriggersHandler } from './events/tag-triggers';
 import { stickyComponents } from './components/sticky';
-import { stickyMessageCreateHandler } from './events/sticky';
+import { stickyMessageCreateHandler, stickyChannelDeleteHandler } from './events/sticky';
 import { pollEndJob } from './jobs/poll-end';
 import { giveawayEndJob } from './jobs/giveaway-end';
 import { announcementRunJob } from './jobs/announcement-run';
@@ -61,7 +61,7 @@ export const plugin = definePlugin({
     ...tagComponents,
     ...stickyComponents,
   ],
-  events: [tagTriggersHandler, stickyMessageCreateHandler, channelAutomationsHandler],
+  events: [tagTriggersHandler, stickyMessageCreateHandler, stickyChannelDeleteHandler, channelAutomationsHandler],
   jobs: [
     pollEndJob,
     giveawayEndJob,

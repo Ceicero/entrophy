@@ -3,6 +3,7 @@ import type { ClientEvents } from 'discord.js';
 import RedisMock from 'ioredis-mock';
 import { createTestContext, type TestContextOverrides } from '../../sdk/testing';
 import { tagTriggersHandler } from '../events/tag-triggers';
+import { loadTriggerTags } from '../tag-cache';
 import { configSchema } from '../manifest';
 import { tagTriggersCacheKey } from '../tags';
 
@@ -179,5 +180,48 @@ describe('tag auto-responder (messageCreate)', () => {
     await tagTriggersHandler.handler(ctx, empty.message);
     expect(empty.reply).not.toHaveBeenCalled();
     expect(prismaCalls).toHaveLength(0);
+  });
+
+  it('never replies for a staff-only tag, even if a stale cache entry matched it (defense-in-depth double-check)', async () => {
+    // A staff-only tag should never make it into the cache in the first place (see loadTriggerTags below), but
+    // seed the cache directly to prove the handler's own `!tag.staffOnly` re-check on the fetched row also holds.
+    const staffOnlyRow = { ...tagRow, staffOnly: true };
+    const { ctx, prismaCalls } = buildCtx({
+      intentsEnabled: { messageContent: true },
+      prismaOverrides: {
+        tag: { findUnique: async () => staffOnlyRow, findMany: async () => [staffOnlyRow] },
+      },
+    });
+    await seedCache(ctx.redis);
+
+    const { message, reply } = fakeMessage('how do i verify?');
+    await tagTriggersHandler.handler(ctx, message);
+
+    expect(reply).not.toHaveBeenCalled();
+    expect(prismaCalls.some((c) => c.model === 'tag' && c.method === 'update')).toBe(false);
+  });
+});
+
+describe('loadTriggerTags (tag-cache loader)', () => {
+  beforeEach(async () => {
+    await new RedisMock().flushall();
+  });
+
+  it('queries only non-staff-only trigger tags on a cache miss', async () => {
+    let seenWhere: unknown;
+    const { ctx } = buildCtx({
+      prismaOverrides: {
+        tag: {
+          findMany: async (args: unknown) => {
+            seenWhere = (args as { where: unknown }).where;
+            return [];
+          },
+        },
+      },
+    });
+
+    await loadTriggerTags(ctx, GUILD_ID);
+
+    expect(seenWhere).toMatchObject({ guildId: GUILD_ID, triggerMode: { not: 'NONE' }, staffOnly: false });
   });
 });

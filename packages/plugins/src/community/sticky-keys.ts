@@ -6,6 +6,16 @@ import { redisKey } from '@entrophy/core';
 /** Seconds the per-guild "channels that have a sticky" set stays cached in Redis. */
 export const STICKY_CHANNELS_TTL_SECONDS = 300;
 
+/** Seconds the per-channel repost lock is held (`SET NX EX`) around delete+send+DB-update — generous relative to
+ * how long that sequence actually takes, so a crashed process can't wedge a channel's sticky forever. */
+export const STICKY_REPOST_LOCK_TTL_SECONDS = 15;
+
+/** Seconds a repost's own posted message id is remembered so the auto-publish handler can recognise and skip it. */
+export const STICKY_OWN_MESSAGE_TTL_SECONDS = 600;
+
+/** Seconds between repeated "sticky failed to send" logs for the same channel (mirrors channel-automations.ts's `WARN_TTL_SECONDS`). */
+export const STICKY_SEND_WARN_TTL_SECONDS = 3600;
+
 /** Redis key holding a JSON array of channel ids that have a sticky in `guildId` (lazily filled, DEL'd on every write). */
 export function stickyChannelsKey(guildId: string): string {
   return redisKey('community', 'sticky-channels', guildId);
@@ -14,6 +24,23 @@ export function stickyChannelsKey(guildId: string): string {
 /** Redis key for the per-channel re-post cooldown (`SET NX EX <cooldownSeconds>`). */
 export function stickyCooldownKey(guildId: string, channelId: string): string {
   return redisKey('community', 'sticky-cd', guildId, channelId);
+}
+
+/** Redis key for the per-channel repost lock that serializes `repostSticky` so a catch-up job and a
+ * cooldown-triggered repost can never both delete+send+update at once (which orphans a duplicate copy). */
+export function stickyRepostLockKey(guildId: string, channelId: string): string {
+  return redisKey('community', 'sticky-repost-lock', guildId, channelId);
+}
+
+/** Redis key marking `messageId` as the bot's own sticky repost, so `channelAutomationsHandler` can skip
+ * crossposting it even in a channel that also has auto-publish enabled. */
+export function stickyOwnMessageKey(messageId: string): string {
+  return redisKey('community', 'sticky-own', messageId);
+}
+
+/** Redis key guarding "sticky failed to send" log spam to once per channel per hour. */
+export function stickySendWarnedKey(guildId: string, channelId: string): string {
+  return redisKey('community', 'sticky-send-warned', guildId, channelId);
 }
 
 /** BullMQ jobId for the single debounced catch-up re-post per channel. Dash-separated for consistency with the

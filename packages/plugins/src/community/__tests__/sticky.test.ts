@@ -1,21 +1,22 @@
-import { ChannelType, type Guild } from 'discord.js';
+import { ChannelType, PermissionFlagsBits, type Guild } from 'discord.js';
 import type { Queue } from 'bullmq';
 import RedisMock from 'ioredis-mock';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTestContext, type TestContextOverrides } from '../../sdk/testing';
-import { stickyMessageCreateHandler } from '../events/sticky';
+import { stickyChannelDeleteHandler, stickyMessageCreateHandler } from '../events/sticky';
 import { stickyRepostJob } from '../jobs/sticky-repost';
 import {
   StickyError,
   getStickyChannelIds,
   removeSticky,
+  repostSticky,
   stickyChannelsKey,
   stickyCooldownKey,
   stickyPayload,
   stickyRepostJobId,
   upsertSticky,
 } from '../sticky';
-import { parseStickyEmbed, stickyPreview } from '../sticky-keys';
+import { parseStickyEmbed, stickyPreview, stickyRepostLockKey } from '../sticky-keys';
 
 type HandlerMessage = Parameters<typeof stickyMessageCreateHandler.handler>[1];
 
@@ -52,12 +53,15 @@ function fakeMessage(input: {
   guild: Guild;
   channelId?: string;
   system?: boolean;
+  bot?: boolean;
+  webhookId?: string | null;
 }): HandlerMessage {
   return {
     guildId: GUILD_ID,
     channelId: input.channelId ?? CHANNEL_ID,
     guild: input.guild,
-    author: { id: input.authorId, bot: input.authorId === BOT_ID },
+    author: { id: input.authorId, bot: input.bot ?? input.authorId === BOT_ID },
+    webhookId: input.webhookId ?? null,
     system: input.system ?? false,
     inGuild: () => true,
   } as unknown as HandlerMessage;
@@ -113,6 +117,38 @@ describe('sticky messageCreate handler', () => {
     });
 
     await stickyMessageCreateHandler.handler(ctx, fakeMessage({ authorId: BOT_ID, guild }));
+
+    expect(prismaCalls).toHaveLength(0);
+    expect(channel.send).not.toHaveBeenCalled();
+  });
+
+  it("ignores another bot's messages too, so two bots can't ping-pong reposts", async () => {
+    const channel = fakeChannel();
+    const guild = fakeGuild(channel);
+    const { ctx, prismaCalls } = buildCtx(guild, {
+      prismaOverrides: { stickyMessage: { findMany: async () => [{ channelId: CHANNEL_ID }] } },
+    });
+
+    await stickyMessageCreateHandler.handler(
+      ctx,
+      fakeMessage({ authorId: 'some-other-bot', bot: true, guild }),
+    );
+
+    expect(prismaCalls).toHaveLength(0);
+    expect(channel.send).not.toHaveBeenCalled();
+  });
+
+  it('ignores webhook messages', async () => {
+    const channel = fakeChannel();
+    const guild = fakeGuild(channel);
+    const { ctx, prismaCalls } = buildCtx(guild, {
+      prismaOverrides: { stickyMessage: { findMany: async () => [{ channelId: CHANNEL_ID }] } },
+    });
+
+    await stickyMessageCreateHandler.handler(
+      ctx,
+      fakeMessage({ authorId: MEMBER_ID, webhookId: 'wh1', guild }),
+    );
 
     expect(prismaCalls).toHaveLength(0);
     expect(channel.send).not.toHaveBeenCalled();
@@ -246,6 +282,132 @@ describe('sticky-repost catch-up job', () => {
     expect(channel.send).not.toHaveBeenCalled();
     expect(channel.messages.delete).not.toHaveBeenCalled();
   });
+
+  it('re-checks freshness after acquiring the lock, skipping if a concurrent repost already moved the sticky since the job was queued', async () => {
+    // The channel's newest message already matches the fresh row's lastMessageId — as if some other repost
+    // (a cooldown-triggered one) fully completed between this job being queued and it acquiring the lock.
+    const channel = fakeChannel({ lastMessageId: 'new-sticky-msg' });
+    const guild = fakeGuild(channel);
+    let findUniqueCalls = 0;
+    const { ctx } = buildCtx(guild, {
+      prismaOverrides: {
+        stickyMessage: {
+          findUnique: async () => {
+            findUniqueCalls += 1;
+            return findUniqueCalls === 1 ? stickyRow : { ...stickyRow, lastMessageId: 'new-sticky-msg' };
+          },
+        },
+      },
+    });
+
+    await stickyRepostJob.processor(ctx, { data: { guildId: GUILD_ID, channelId: CHANNEL_ID } } as never);
+
+    expect(findUniqueCalls).toBe(2);
+    expect(channel.send).not.toHaveBeenCalled();
+    expect(channel.messages.delete).not.toHaveBeenCalled();
+  });
+});
+
+describe('repostSticky — overlap lock (B3)', () => {
+  it('two concurrent reposts for the same channel produce exactly one send (no orphaned copy)', async () => {
+    const channel = fakeChannel();
+    const guild = fakeGuild(channel);
+    const { ctx } = buildCtx(guild, {
+      prismaOverrides: {
+        stickyMessage: { update: async () => ({ ...stickyRow, lastMessageId: 'new-sticky-msg' }) },
+      },
+    });
+
+    const [a, b] = await Promise.all([repostSticky(ctx, guild, stickyRow), repostSticky(ctx, guild, stickyRow)]);
+
+    expect(channel.send).toHaveBeenCalledTimes(1);
+    expect(channel.messages.delete).toHaveBeenCalledTimes(1);
+    expect([a, b].filter((r) => r !== null)).toHaveLength(1);
+  });
+
+  it('skips entirely (no delete, no send) when another repost already holds the lock', async () => {
+    const channel = fakeChannel();
+    const guild = fakeGuild(channel);
+    const { ctx, redis } = buildCtx(guild);
+    await redis.set(stickyRepostLockKey(GUILD_ID, CHANNEL_ID), '1', 'EX', 15);
+
+    const result = await repostSticky(ctx, guild, stickyRow);
+
+    expect(result).toBeNull();
+    expect(channel.send).not.toHaveBeenCalled();
+    expect(channel.messages.delete).not.toHaveBeenCalled();
+  });
+
+  it('releases the lock after a repost completes, so a later repost can proceed', async () => {
+    const channel = fakeChannel();
+    const guild = fakeGuild(channel);
+    const { ctx, redis } = buildCtx(guild, {
+      prismaOverrides: {
+        stickyMessage: { update: async () => ({ ...stickyRow, lastMessageId: 'new-sticky-msg' }) },
+      },
+    });
+
+    await repostSticky(ctx, guild, stickyRow);
+    expect(await redis.get(stickyRepostLockKey(GUILD_ID, CHANNEL_ID))).toBeNull();
+
+    const second = await repostSticky(ctx, guild, stickyRow);
+    expect(second).not.toBeNull();
+    expect(channel.send).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('repostSticky — send failures and permission pre-checks (B6)', () => {
+  it('wraps a channel.send failure: returns null without throwing, logs once per channel per hour', async () => {
+    const channel = fakeChannel({
+      send: vi.fn(async () => {
+        throw new Error('boom');
+      }),
+    });
+    const guild = fakeGuild(channel);
+    const { ctx, services } = buildCtx(guild);
+    const log = vi.fn(async () => undefined);
+    services.register(
+      'logging',
+      { log } as unknown as NonNullable<ReturnType<typeof services.get<'logging'>>>,
+    );
+
+    await expect(repostSticky(ctx, guild, stickyRow)).resolves.toBeNull();
+    expect(log).toHaveBeenCalledTimes(1);
+
+    // A second failure for the same channel within the hour doesn't log again.
+    await expect(repostSticky(ctx, guild, stickyRow)).resolves.toBeNull();
+    expect(log).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses to post an embed sticky without Embed Links, leaving the channel's old copy untouched", async () => {
+    const channel = fakeChannel({
+      permissionsFor: () => ({ has: (perm: unknown) => perm !== PermissionFlagsBits.EmbedLinks }),
+    });
+    const guild = fakeGuild(channel);
+    const embedSticky = { ...stickyRow, content: null, embed: { title: 'Rules' } };
+    const { ctx } = buildCtx(guild, { prismaOverrides: { stickyMessage: { findUnique: async () => embedSticky } } });
+
+    const result = await repostSticky(ctx, guild, embedSticky);
+
+    expect(result).toBeNull();
+    expect(channel.messages.delete).not.toHaveBeenCalled();
+    expect(channel.send).not.toHaveBeenCalled();
+  });
+
+  it('still posts a plain-text sticky without Embed Links (no embed to gate on)', async () => {
+    const channel = fakeChannel({
+      permissionsFor: () => ({ has: (perm: unknown) => perm !== PermissionFlagsBits.EmbedLinks }),
+    });
+    const guild = fakeGuild(channel);
+    const { ctx } = buildCtx(guild, {
+      prismaOverrides: { stickyMessage: { update: async () => ({ ...stickyRow, lastMessageId: 'new-sticky-msg' }) } },
+    });
+
+    const result = await repostSticky(ctx, guild, stickyRow);
+
+    expect(result).not.toBeNull();
+    expect(channel.send).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('upsertSticky', () => {
@@ -373,6 +535,52 @@ describe('upsertSticky', () => {
       }),
     ).rejects.toMatchObject({ code: 'badChannel' });
   });
+
+  it('refuses a channel that is currently on the auto-publish list (B5)', async () => {
+    const channel = fakeChannel();
+    const guild = fakeGuild(channel);
+    const { ctx } = buildCtx(guild, {
+      config: {
+        sticky: { enabled: true, maxPerGuild: 25, defaultCooldownSeconds: 10 },
+        autoPublish: { channelIds: [CHANNEL_ID], includeBots: false },
+      },
+      prismaOverrides: { stickyMessage: { findUnique: async () => null, count: async () => 0 } },
+    });
+
+    await expect(
+      upsertSticky(ctx, {
+        guild,
+        guildId: GUILD_ID,
+        channelId: CHANNEL_ID,
+        content: 'hi',
+        cooldownSeconds: 10,
+        actorId: MEMBER_ID,
+      }),
+    ).rejects.toMatchObject({ code: 'autoPublishConflict' });
+    expect(channel.send).not.toHaveBeenCalled();
+  });
+
+  it('rejects an embed sticky when the channel lacks Embed Links', async () => {
+    const channel = fakeChannel({
+      permissionsFor: () => ({ has: (perm: unknown) => perm !== PermissionFlagsBits.EmbedLinks }),
+    });
+    const guild = fakeGuild(channel);
+    const { ctx } = buildCtx(guild, {
+      prismaOverrides: { stickyMessage: { findUnique: async () => null, count: async () => 0 } },
+    });
+
+    await expect(
+      upsertSticky(ctx, {
+        guild,
+        guildId: GUILD_ID,
+        channelId: CHANNEL_ID,
+        embed: { title: 'Rules' },
+        cooldownSeconds: 10,
+        actorId: MEMBER_ID,
+      }),
+    ).rejects.toMatchObject({ code: 'missingEmbedPermission' });
+    expect(channel.send).not.toHaveBeenCalled();
+  });
 });
 
 describe('removeSticky', () => {
@@ -456,5 +664,45 @@ describe('sticky-keys helpers', () => {
     expect(stickyPreview({ content: null, embed: { title: 'Embed title' } })).toBe('Embed title');
     expect(stickyPreview({ content: 'x'.repeat(50), embed: null }, 40)).toBe(`${'x'.repeat(40)}…`);
     expect(stickyPreview({ content: null, embed: null })).toBe('(empty)');
+  });
+});
+
+describe('stickyChannelDeleteHandler (B7)', () => {
+  it('deletes the sticky row for the deleted channel and invalidates the cached channel set', async () => {
+    const { ctx, redis, prismaCalls } = buildCtx(fakeGuild(fakeChannel()), {
+      prismaOverrides: { stickyMessage: { deleteMany: async () => ({ count: 1 }) } },
+    });
+    await redis.set(stickyChannelsKey(GUILD_ID), JSON.stringify([CHANNEL_ID]));
+
+    await stickyChannelDeleteHandler.handler(
+      ctx,
+      { id: CHANNEL_ID, guild: { id: GUILD_ID } } as never,
+    );
+
+    const deleteCall = prismaCalls.find((c) => c.model === 'stickyMessage' && c.method === 'deleteMany');
+    expect(deleteCall?.args[0]).toMatchObject({ where: { guildId: GUILD_ID, channelId: CHANNEL_ID } });
+    expect(await redis.get(stickyChannelsKey(GUILD_ID))).toBeNull();
+  });
+
+  it('does nothing for a channel delete outside a guild (e.g. a DM)', async () => {
+    const { ctx, prismaCalls } = buildCtx(fakeGuild(fakeChannel()));
+
+    await stickyChannelDeleteHandler.handler(ctx, { id: 'dm-channel' } as never);
+
+    expect(prismaCalls).toHaveLength(0);
+  });
+
+  it('leaves the cache alone when the deleted channel had no sticky', async () => {
+    const { ctx, redis } = buildCtx(fakeGuild(fakeChannel()), {
+      prismaOverrides: { stickyMessage: { deleteMany: async () => ({ count: 0 }) } },
+    });
+    await redis.set(stickyChannelsKey(GUILD_ID), JSON.stringify(['some-other-channel']));
+
+    await stickyChannelDeleteHandler.handler(
+      ctx,
+      { id: CHANNEL_ID, guild: { id: GUILD_ID } } as never,
+    );
+
+    expect(await redis.get(stickyChannelsKey(GUILD_ID))).not.toBeNull();
   });
 });

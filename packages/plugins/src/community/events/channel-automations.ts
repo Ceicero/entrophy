@@ -2,8 +2,11 @@ import { ChannelType, MessageFlags, type Message } from 'discord.js';
 import type { PluginContext, PluginEventHandler } from '../../sdk';
 import type { AutoThreadRule, CommunityConfig } from '../manifest';
 import {
+  AUTO_PUBLISH_BUDGET_TTL_SECONDS,
+  AUTO_PUBLISH_HOURLY_LIMIT,
   COUNTER_TTL_SECONDS,
   WARN_TTL_SECONDS,
+  autoPublishBudgetKey,
   autoPublishCountKey,
   autoPublishWarnedKey,
   autoThreadWarnedKey,
@@ -17,6 +20,7 @@ import {
   utcDayKey,
   type ThreadTemplateVars,
 } from '../channel-automations';
+import { stickyOwnMessageKey } from '../sticky-keys';
 
 const THREADABLE_CHANNEL_TYPES = new Set<number>([ChannelType.GuildText, ChannelType.GuildAnnouncement]);
 
@@ -55,12 +59,38 @@ async function bumpPublishCounter(ctx: PluginContext, guildId: string): Promise<
   if (count === 1) await ctx.redis.expire(key, COUNTER_TTL_SECONDS);
 }
 
+/**
+ * Takes one slot from the channel's hourly crosspost budget; `false` once the 10th slot in the current window
+ * is already spent. discord.js never rejects `crosspost()` on Discord's real 429 for this limit — it sleeps
+ * through the retry-after and stalls the handler for up to an hour — so the limit has to be enforced here,
+ * before ever calling `crosspost()`, rather than reacted to as an API error.
+ */
+async function takeAutoPublishBudget(ctx: PluginContext, channelId: string): Promise<boolean> {
+  const key = autoPublishBudgetKey(channelId);
+  const count = await ctx.redis.incr(key);
+  if (count === 1) await ctx.redis.expire(key, AUTO_PUBLISH_BUDGET_TTL_SECONDS);
+  return count <= AUTO_PUBLISH_HOURLY_LIMIT;
+}
+
 async function handleAutoPublish(ctx: PluginContext, message: Message<true>): Promise<void> {
+  const channelId = message.channelId;
+
+  if (!(await takeAutoPublishBudget(ctx, channelId))) {
+    await reportOnce(
+      ctx,
+      autoPublishWarnedKey(channelId),
+      message.guildId,
+      channelId,
+      'Auto-publish paused',
+      `Discord allows 10 published messages per hour in this channel; <#${channelId}> hit that limit, so this message was not published automatically. It can still be published manually, and auto-publish resumes next hour.`,
+    );
+    return;
+  }
+
   try {
     await message.crosspost();
     await bumpPublishCounter(ctx, message.guildId);
   } catch (err) {
-    const channelId = message.channelId;
     if (isMissingPermissionsError(err)) {
       await reportOnce(
         ctx,
@@ -164,7 +194,13 @@ export const channelAutomationsHandler: PluginEventHandler<'messageCreate'> = {
         autoPublish,
       )
     ) {
-      await handleAutoPublish(ctx, message);
+      // Our own sticky re-posts must never get crossposted just because they land in a channel that also has
+      // auto-publish on (`/sticky set` refuses that combination going forward, but this is the runtime safety
+      // net for setups that predate the check, or that add auto-publish to a channel with an existing sticky).
+      const isOwnStickyRepost = message.author.bot && Boolean(await ctx.redis.get(stickyOwnMessageKey(message.id)));
+      if (!isOwnStickyRepost) {
+        await handleAutoPublish(ctx, message);
+      }
     }
 
     if (!THREADABLE_CHANNEL_TYPES.has(channelType)) return;

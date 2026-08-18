@@ -494,6 +494,77 @@ describe('community tags (spec CG-02)', () => {
     await app.close();
   });
 
+  it('rejects a staff-only tag with an auto-responder trigger (400)', async () => {
+    const { app, mutHeaders } = await authedApp({ tag: { findUnique: async () => null } });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/community/tags`,
+      headers: mutHeaders,
+      payload: {
+        name: 'ok',
+        content: 'x',
+        staffOnly: true,
+        triggerMode: 'CONTAINS',
+        trigger: 'how do i verify',
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('maps a Prisma P2002 unique violation on tag.create to 409 tag_exists (race past the check-then-write gate)', async () => {
+    const { Prisma } = await import('@entrophy/database');
+    const { app, mutHeaders } = await authedApp({
+      tag: {
+        findUnique: async () => null, // the pre-check sees no clash…
+        count: async () => 0,
+        create: async () => {
+          // …but the write itself races with a concurrent insert and hits the unique constraint.
+          throw new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+            code: 'P2002',
+            clientVersion: '5.0.0',
+          });
+        },
+      },
+    });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/community/tags`,
+      headers: mutHeaders,
+      payload: { name: 'rules', content: 'x' },
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('tag_exists');
+    await app.close();
+  });
+
+  it('maps a Prisma P2002 unique violation on tag.update (rename) to 409 tag_exists', async () => {
+    const { Prisma } = await import('@entrophy/database');
+    const { app, mutHeaders } = await authedApp({
+      tag: {
+        findFirst: async () => tagRow,
+        findUnique: async () => null, // the pre-check sees no clash…
+        update: async () => {
+          throw new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+            code: 'P2002',
+            clientVersion: '5.0.0',
+          });
+        },
+      },
+    });
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/community/tags/tag1`,
+      headers: mutHeaders,
+      payload: { name: 'renamed', content: 'x' },
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('tag_exists');
+    await app.close();
+  });
+
   it('updates a tag (200), audits, and clears the trigger cache key', async () => {
     let updateData: Record<string, unknown> | undefined;
     const { app, mutHeaders, redis, prismaCalls } = await authedApp({

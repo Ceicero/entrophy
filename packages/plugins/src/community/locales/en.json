@@ -82,6 +82,7 @@
     "modalEmbedTitleLabel": "Embed title (optional)",
     "modalEmbedDescriptionLabel": "Embed description (optional)",
     "badTrigger": "Trigger phrases are 2-100 characters.",
+    "staffOnlyNoTrigger": "`{name}` is staff-only, and staff-only tags cannot be auto-responders. Turn off staff-only first (dashboard), or leave this tag's trigger mode as none.",
     "triggerCleared": "Auto-responder removed from tag `{name}`.",
     "triggerSet": "Tag `{name}` will now reply when a message {mode} \"{phrase}\" ({where}).",
     "triggerAnyChannel": "any channel",
@@ -114,7 +115,9 @@
     "limit": "This server already has the maximum of {max} sticky messages. Remove one first.",
     "empty": "Give the sticky some text or an embed title/description.",
     "badChannel": "Pick a text or announcement channel I can post in.",
-    "disabled": "Sticky messages are turned off for this server (community → sticky.enabled)."
+    "disabled": "Sticky messages are turned off for this server (community → sticky.enabled).",
+    "missingEmbedPermission": "This sticky has an embed, but I don't have the Embed Links permission in that channel. Grant it, or remove the embed and use plain text only.",
+    "autoPublishConflict": "That channel is on the auto-publish list — a sticky there would get published to followers every single re-post. Remove it from auto-publish first (Community config → autoPublish), or pick a different channel."
   },
   "channelauto": {
     "publish": {

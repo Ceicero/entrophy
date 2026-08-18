@@ -262,33 +262,57 @@ function TagFormDialog({ guildId, open, onOpenChange, tag }: TagFormDialogProps)
             </div>
             <Switch
               checked={draft.staffOnly}
-              onCheckedChange={(v) => set('staffOnly', v)}
+              onCheckedChange={(v) => {
+                // Staff-only tags can't be auto-responders (enforced server-side too) — clear any trigger
+                // already set rather than let the toggle silently save a combination the API will reject.
+                if (v) {
+                  setDraft((prev) => ({
+                    ...prev,
+                    staffOnly: true,
+                    triggerMode: 'NONE',
+                    trigger: '',
+                    triggerChannelIds: [],
+                  }));
+                } else {
+                  set('staffOnly', false);
+                }
+              }}
               disabled={saving}
             />
           </div>
 
           <div className="space-y-3 rounded-md border border-border p-3">
             <p className="text-sm font-medium">Auto-responder (optional)</p>
-            <FormField label="Trigger mode">
-              <Select
-                value={draft.triggerMode}
-                onValueChange={(v) => set('triggerMode', v as TagTriggerModeDto)}
-                disabled={saving}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(TRIGGER_MODE_LABEL) as TagTriggerModeDto[]).map((mode) => (
-                    <SelectItem key={mode} value={mode}>
-                      {TRIGGER_MODE_LABEL[mode]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
+            {draft.staffOnly ? (
+              <Alert>
+                <AlertTitle>Not available for staff-only tags</AlertTitle>
+                <AlertDescription>
+                  Staff-only tags cannot be auto-responders. Turn off &quot;Staff only&quot; above if this tag
+                  needs a keyword trigger.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <FormField label="Trigger mode">
+                <Select
+                  value={draft.triggerMode}
+                  onValueChange={(v) => set('triggerMode', v as TagTriggerModeDto)}
+                  disabled={saving}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(TRIGGER_MODE_LABEL) as TagTriggerModeDto[]).map((mode) => (
+                      <SelectItem key={mode} value={mode}>
+                        {TRIGGER_MODE_LABEL[mode]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
 
-            {draft.triggerMode !== 'NONE' ? (
+            {!draft.staffOnly && draft.triggerMode !== 'NONE' ? (
               <>
                 <Alert variant="warning">
                   <AlertTriangle />
@@ -447,6 +471,7 @@ export function TagsTab({ guildId }: { guildId: string }) {
             }}
             placeholder="Filter by name…"
             className="w-56"
+            maxLength={32}
           />
           <Button onClick={openCreate}>New tag</Button>
         </div>

@@ -53,7 +53,10 @@ export async function loadTriggerTags(ctx: PluginContext, guildId: string): Prom
   if (cached !== null) return cached;
 
   const rows = await ctx.prisma.tag.findMany({
-    where: { guildId, triggerMode: { not: 'NONE' } },
+    // `staffOnly: false` here is a defense-in-depth filter, not the only guard — the messageCreate handler
+    // (`events/tag-triggers.ts`) re-checks `!tag.staffOnly` on the full row it fetches after a match, so a
+    // staff-only tag never fires as a public auto-responder even if this cache were ever seeded incorrectly.
+    where: { guildId, triggerMode: { not: 'NONE' }, staffOnly: false },
     orderBy: { createdAt: 'asc' },
     select: { id: true, name: true, triggerMode: true, trigger: true, triggerChannelIds: true },
   });

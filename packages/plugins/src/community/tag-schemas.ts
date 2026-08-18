@@ -142,6 +142,16 @@ export const tagBodySchema = z
           message: `Trigger phrases must be at least ${TAG_TRIGGER_MIN} characters.`,
         });
       }
+      // Staff-only tags must never auto-respond publicly (bot messageCreate handler + tag-cache loader both
+      // also refuse to trigger them; this is the single validation choke point for every writer: the API,
+      // the dashboard form, and `/tag trigger` all reach this schema or replicate this exact rule).
+      if (value.staffOnly) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['triggerMode'],
+          message: 'Staff-only tags cannot be auto-responders.',
+        });
+      }
     }
   });
 

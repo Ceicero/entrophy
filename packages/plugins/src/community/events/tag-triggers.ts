@@ -42,6 +42,9 @@ export const tagTriggersHandler: PluginEventHandler<'messageCreate'> = {
 
       const tag = await ctx.prisma.tag.findUnique({ where: { id: match.id } });
       if (!tag) return;
+      // Defense-in-depth: staff-only tags must never auto-respond publicly, even if a stale/bad cache entry
+      // slipped past the loader's `staffOnly: false` filter (`../tag-cache.ts`).
+      if (tag.staffOnly) return;
 
       const rendered = renderTag(tag, tagTemplateVars(message.author, message.guild), message.author.id);
       await message.reply(rendered);

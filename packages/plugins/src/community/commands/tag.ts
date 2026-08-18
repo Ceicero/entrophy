@@ -397,6 +397,15 @@ async function handleTrigger(c: CommandContext): Promise<void> {
   const phrase = c.interaction.options.getString('phrase')?.trim() ?? '';
   const channel = c.interaction.options.getChannel('channel');
 
+  // Staff-only tags must never auto-respond publicly (same rule enforced in `tagBodySchema` for the API/dashboard).
+  if (mode !== 'NONE' && tag.staffOnly) {
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('tag.staffOnlyNoTrigger', { name: tag.name }))],
+      ephemeral: true,
+    });
+    return;
+  }
+
   const before = {
     triggerMode: tag.triggerMode,
     trigger: tag.trigger,

@@ -3,6 +3,7 @@ import { ChannelType, MessageFlagsBitField } from 'discord.js';
 import { createTestContext } from '../../sdk/testing';
 import { configSchema, type AutoThreadRule } from '../manifest';
 import {
+  autoPublishBudgetKey,
   autoPublishCountKey,
   autoPublishWarnedKey,
   autoThreadWarnedKey,
@@ -15,6 +16,7 @@ import {
   utcDayKey,
 } from '../channel-automations';
 import { channelAutomationsHandler } from '../events/channel-automations';
+import { stickyOwnMessageKey } from '../sticky-keys';
 
 const BOT_ID = 'bot1';
 
@@ -158,6 +160,7 @@ describe('error classifiers', () => {
 // ---------------------------------------------------------------------------
 
 interface FakeMessageOptions {
+  id?: string;
   channelId?: string;
   channelType?: ChannelType;
   authorBot?: boolean;
@@ -174,6 +177,7 @@ function fakeMessage(o: FakeMessageOptions = {}): HandlerMessage {
   const attachments = new Map<string, unknown>();
   for (let i = 0; i < (o.attachments ?? 0); i++) attachments.set(`a${i}`, {});
   return {
+    id: o.id ?? 'm1',
     guildId: 'g1',
     guild: { id: 'g1', name: 'Lab' },
     channelId: o.channelId ?? 'c1',
@@ -246,6 +250,64 @@ describe('channelAutomationsHandler', () => {
     expect(log).toHaveBeenCalledTimes(1);
     expect(log.mock.calls[0]?.[1]).toBe('bot.error');
     expect(await redis.get(autoPublishCountKey('g1', utcDayKey()))).toBeNull();
+  });
+
+  it('pauses auto-publish after 10 crossposts in the hour: the 11th message skips crosspost and warns once (B4)', async () => {
+    const { ctx, redis, services } = createTestContext({
+      config: { autoPublish: { channelIds: ['c1'], includeBots: false }, autoThreads: [] },
+    });
+    const log = vi.fn(async () => undefined);
+    services.register('logging', { log } as unknown as NonNullable<
+      ReturnType<typeof services.get<'logging'>>
+    >);
+    const crosspost = vi.fn(async () => undefined);
+
+    for (let i = 0; i < 10; i++) {
+      await channelAutomationsHandler.handler(ctx, fakeMessage({ id: `m${i}`, crosspost }));
+    }
+    expect(crosspost).toHaveBeenCalledTimes(10);
+    expect(log).not.toHaveBeenCalled();
+
+    // 11th message in the window: crosspost is skipped and the pause is reported once.
+    await channelAutomationsHandler.handler(ctx, fakeMessage({ id: 'm10', crosspost }));
+    expect(crosspost).toHaveBeenCalledTimes(10);
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(await redis.get(autoPublishWarnedKey('c1'))).toBe('1');
+    expect(Number(await redis.get(autoPublishBudgetKey('c1')))).toBe(11);
+
+    // A 12th message within the same warn window skips crosspost too, but doesn't log again.
+    await channelAutomationsHandler.handler(ctx, fakeMessage({ id: 'm11', crosspost }));
+    expect(crosspost).toHaveBeenCalledTimes(10);
+    expect(log).toHaveBeenCalledTimes(1);
+  });
+
+  it("never crossposts the bot's own sticky repost, even in a channel that also has auto-publish enabled (B5)", async () => {
+    const { ctx, redis } = createTestContext({
+      config: { autoPublish: { channelIds: ['c1'], includeBots: false }, autoThreads: [] },
+    });
+    await redis.set(stickyOwnMessageKey('sticky-repost-1'), '1', 'EX', 600);
+    const crosspost = vi.fn(async () => undefined);
+
+    await channelAutomationsHandler.handler(
+      ctx,
+      fakeMessage({ id: 'sticky-repost-1', authorBot: true, authorId: BOT_ID, crosspost }),
+    );
+
+    expect(crosspost).not.toHaveBeenCalled();
+  });
+
+  it("still crossposts the bot's own ordinary announcement (not marked as a sticky repost)", async () => {
+    const { ctx } = createTestContext({
+      config: { autoPublish: { channelIds: ['c1'], includeBots: false }, autoThreads: [] },
+    });
+    const crosspost = vi.fn(async () => undefined);
+
+    await channelAutomationsHandler.handler(
+      ctx,
+      fakeMessage({ id: 'normal-announcement', authorBot: true, authorId: BOT_ID, crosspost }),
+    );
+
+    expect(crosspost).toHaveBeenCalledTimes(1);
   });
 
   it('starts a thread from the template and posts the starter message', async () => {

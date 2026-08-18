@@ -50,6 +50,11 @@ function tagExistsError(name: string): AppError {
   return new AppError('tag_exists', `A tag named "${name}" already exists.`, { status: 409, expose: true });
 }
 
+/** True for Prisma's unique-constraint-violation error (P2002) — same check as `webhooks.ts`'s `claimEventOnce`. */
+function isUniqueViolation(err: unknown): boolean {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
+}
+
 /** Maps the validated body to Prisma column values (`embed` → `Prisma.DbNull` when absent so an edit can clear it). */
 function tagDataFromBody(body: TagBody) {
   return {
@@ -395,9 +400,19 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
         });
       }
 
-      const row = await app.prisma.tag.create({
-        data: { guildId, ...tagDataFromBody(body), createdBy: session.userId },
-      });
+      // The check above is a friendly fast path, not the real guarantee — a concurrent create for the same
+      // name can still race past it, so the DB's unique constraint (`@@unique([guildId, name])`) is the actual
+      // guard; map its P2002 violation to the same 409 a caught-early clash gets (precedent: webhooks.ts's
+      // `claimEventOnce`).
+      let row;
+      try {
+        row = await app.prisma.tag.create({
+          data: { guildId, ...tagDataFromBody(body), createdBy: session.userId },
+        });
+      } catch (err) {
+        if (isUniqueViolation(err)) throw tagExistsError(body.name);
+        throw err;
+      }
 
       await writeDashboardAudit(app.prisma, {
         guildId,
@@ -434,10 +449,18 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
         if (clash && clash.id !== existing.id) throw tagExistsError(body.name);
       }
 
-      const updated = await app.prisma.tag.update({
-        where: { id: existing.id },
-        data: { ...tagDataFromBody(body), updatedBy: session.userId },
-      });
+      // Same check-then-write race as create: the name-clash lookup above is a fast path, the unique
+      // constraint on the write itself is the real guard.
+      let updated;
+      try {
+        updated = await app.prisma.tag.update({
+          where: { id: existing.id },
+          data: { ...tagDataFromBody(body), updatedBy: session.userId },
+        });
+      } catch (err) {
+        if (isUniqueViolation(err)) throw tagExistsError(body.name);
+        throw err;
+      }
 
       await writeDashboardAudit(app.prisma, {
         guildId,
