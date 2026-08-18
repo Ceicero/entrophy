@@ -7,7 +7,7 @@ import {
   type ModalSubmitInteraction,
 } from 'discord.js';
 import { parseDuration } from '@entrophy/core';
-import { assertStaffLevel, buildCustomId, successEmbed, type ComponentHandler } from '../../sdk';
+import { assertStaffLevel, buildCustomId, errorEmbed, successEmbed, type ComponentHandler } from '../../sdk';
 import type { EnforcerDecideInput } from '../../sdk/services';
 import type { EnforcerConfig } from '../manifest';
 
@@ -20,6 +20,20 @@ const REQUIRE_REASON_KEY: Partial<Record<Decision, 'warn' | 'timeout' | 'mute' |
   KICK: 'kick',
   BAN: 'ban',
 };
+
+/** The subset of `Decision` a flag-queue button/modal can ever carry — excludes `UNMUTE`, which isn't a queue action. */
+const QUEUE_DECISIONS = ['WARN', 'TIMEOUT', 'MUTE', 'KICK', 'BAN', 'DISMISS'] as const;
+
+/**
+ * Normalises the `<decision>` custom-id arg. `embeds.ts` builds decision buttons with lowercase ids
+ * (`enforcer:decide:<recordId>:warn`, locked in by `embeds.test.ts`), but the service and this file's own
+ * comparisons work in uppercase — so every read of the arg must go through this instead of a raw cast.
+ * Returns null for anything outside the six queue decisions (including `unmute`, which has no queue button).
+ */
+export function parseDecisionArg(raw: string | undefined): Decision | null {
+  const upper = raw?.toUpperCase();
+  return QUEUE_DECISIONS.includes(upper as (typeof QUEUE_DECISIONS)[number]) ? (upper as Decision) : null;
+}
 
 function needsModal(decision: Decision, config: EnforcerConfig): boolean {
   if (decision === 'DISMISS') return false;
@@ -42,7 +56,14 @@ const decideButtonHandler: ComponentHandler = {
   requirement: { staffLevel: 'helper' },
   async handler(c) {
     const [recordId, decisionRaw] = c.args;
-    const decision = decisionRaw as Decision;
+    const decision = parseDecisionArg(decisionRaw);
+    if (!decision) {
+      await (c.interaction as ButtonInteraction<'cached'>).reply({
+        embeds: [errorEmbed('Unknown decision.')],
+        ephemeral: true,
+      });
+      return;
+    }
     if (decision !== 'DISMISS') {
       assertStaffLevel(c.staffLevel, 'moderator', c.t);
     }
@@ -121,7 +142,14 @@ const decideModalHandler: ComponentHandler = {
   requirement: { staffLevel: 'helper' },
   async handler(c) {
     const [recordId, decisionRaw] = c.args;
-    const decision = decisionRaw as Decision;
+    const decision = parseDecisionArg(decisionRaw);
+    if (!decision) {
+      await (c.interaction as ModalSubmitInteraction<'cached'>).reply({
+        embeds: [errorEmbed('Unknown decision.')],
+        ephemeral: true,
+      });
+      return;
+    }
     assertStaffLevel(c.staffLevel, 'moderator', c.t);
 
     const interaction = c.interaction as ModalSubmitInteraction<'cached'>;
