@@ -259,6 +259,7 @@ model Guild {
   starboardEntries       StarboardEntry[]
   tempVoiceChannels      TempVoiceChannel[]
   communityEvents        CommunityEvent[]
+  stickyMessages         StickyMessage[]
   levelProfiles          LevelProfile[]
   levelRewards           LevelReward[]
   reputationEvents       ReputationEvent[]
@@ -968,6 +969,26 @@ model EventRsvp {
   updatedAt DateTime       @updatedAt
 
   @@unique([eventId, userId])
+}
+
+/** One staff-authored message the bot keeps re-posting at the bottom of a channel (community sticky messages).
+ * Stores only the text/embed staff wrote plus the id of the bot's own last post — never member messages. */
+model StickyMessage {
+  id              String    @id @default(cuid())
+  guildId         String
+  guild           Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  channelId       String
+  content         String?
+  embed           Json?
+  cooldownSeconds Int       @default(10)
+  lastMessageId   String?
+  lastPostedAt    DateTime?
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([guildId, channelId])
+  @@index([guildId])
 }
 
 // ---------------------------------------------------------------------------

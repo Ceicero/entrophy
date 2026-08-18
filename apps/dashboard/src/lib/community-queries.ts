@@ -8,6 +8,7 @@ import type {
   GiveawayDto,
   PollDto,
   PollResultsDto,
+  StickyMessageDto,
   SuggestionDto,
 } from '@entrophy/types/community';
 import { apiFetch, toQueryString } from './api';
@@ -26,6 +27,7 @@ export const communityQueryKeys = {
     ['guilds', guildId, 'community', 'announcements', cursor ?? null] as const,
   events: (guildId: string, cursor?: string) =>
     ['guilds', guildId, 'community', 'events', cursor ?? null] as const,
+  stickies: (guildId: string) => ['guilds', guildId, 'community', 'stickies'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -137,5 +139,29 @@ export function useCommunityEvents(guildId: string | undefined, cursor?: string)
         `/guilds/${guildId}/community/events${toQueryString({ cursor })}`,
       ),
     enabled: Boolean(guildId),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Sticky messages
+// ---------------------------------------------------------------------------
+
+export function useCommunityStickies(guildId: string | undefined) {
+  return useQuery({
+    queryKey: communityQueryKeys.stickies(guildId ?? ''),
+    queryFn: () => apiFetch<StickyMessageDto[]>(`/guilds/${guildId}/community/stickies`),
+    enabled: Boolean(guildId),
+  });
+}
+
+/** Deletes a sticky's database row so the bot stops re-posting it. The bot's last posted copy stays in Discord (see the Channels tab hint). */
+export function useDeleteSticky(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (stickyId: string) =>
+      apiFetch<void>(`/guilds/${guildId}/community/stickies/${stickyId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: communityQueryKeys.stickies(guildId) });
+    },
   });
 }

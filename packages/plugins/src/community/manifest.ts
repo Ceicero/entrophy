@@ -1,4 +1,4 @@
-import { PermissionFlagsBits } from 'discord.js';
+import { GatewayIntentBits, PermissionFlagsBits } from 'discord.js';
 import { z } from 'zod';
 import { defineManifest } from '../sdk';
 
@@ -21,6 +21,13 @@ export const configSchema = z.object({
       maxOptions: z.number().int().min(2).max(10).default(10),
     })
     .default({}),
+  sticky: z
+    .object({
+      enabled: z.boolean().default(true),
+      maxPerGuild: z.number().int().min(1).max(100).default(25),
+      defaultCooldownSeconds: z.number().int().min(3).max(600).default(10),
+    })
+    .default({}),
 });
 
 export type CommunityConfig = z.infer<typeof configSchema>;
@@ -28,7 +35,8 @@ export type CommunityConfig = z.infer<typeof configSchema>;
 export const manifest = defineManifest({
   id: 'community',
   name: 'Community',
-  description: 'Polls, giveaways, suggestions, scheduled announcements, reminders, and event RSVPs.',
+  description:
+    'Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, and sticky messages.',
   category: 'community',
   version: '0.1.0',
   defaultEnabled: true,
@@ -63,8 +71,16 @@ export const manifest = defineManifest({
       optional: true,
       fallback: 'The event is still tracked and announced in-channel; no Discord Events entry is created.',
     },
+    {
+      permission: PermissionFlagsBits.ManageMessages,
+      feature: "sticky messages (delete the bot's own previous sticky)",
+      optional: true,
+      fallback: 'The old sticky stays in place; the bot still posts a new one.',
+    },
   ],
-  intents: [],
+  // Sticky messages listen for messageCreate (no content is read — only that a message was posted in a channel
+  // with a sticky), so the non-privileged Guilds + GuildMessages intents are needed. Message Content stays off.
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   requiredEnv: [],
   configSchema,
   dashboard: { path: '/dashboard/[guildId]/community', label: 'Community', icon: 'megaphone' },
@@ -72,5 +88,6 @@ export const manifest = defineManifest({
     'Poll votes, giveaway entries, suggestion votes, reminder text, and event RSVPs are stored for as long as the record exists so results can be shown and re-rendered.',
     'Anonymous polls never store or display who voted for which option — only per-option counts.',
     'Reminder message text you set with /remind is stored until it is delivered (or cancelled) so it can be sent later.',
+    "Sticky messages store only the text/embed staff wrote and the id of the bot's own last post.",
   ],
 });
