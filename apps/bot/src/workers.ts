@@ -41,7 +41,7 @@ export function startWorkers(deps: StartWorkersDeps): StartedWorkers {
     }
 
     for (const job of jobs) {
-      const queueName = `${plugin.manifest.id}:${job.name}`;
+      const queueName = `${plugin.manifest.id}.${job.name}`;
       // `PluginJob<T>`'s payload type `T` is erased on `Plugin['jobs']` (declared `PluginJob<any>[]` in
       // sdk/types.ts) for the same reason every other heterogeneous-plugin-array loop in this file needs it;
       // each job's own `processor` stays fully typed.

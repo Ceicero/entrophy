@@ -4,7 +4,7 @@ import type Redis from 'ioredis';
 /** Shared queue names the dashboard enqueues jobs onto (ARCHITECTURE.md §10, §9's `bot-actions`). */
 export const QUEUE_NAMES = {
   botActions: 'bot-actions',
-  integrationsInbound: 'integrations:inbound',
+  integrationsInbound: 'integrations.inbound',
   dataRequests: 'data-requests',
 } as const;
 

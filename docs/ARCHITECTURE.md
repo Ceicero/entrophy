@@ -369,7 +369,7 @@ export interface ComponentHandler {
 }
 
 export interface PluginJob<T = unknown> {
-  name: string; // queue name = `${pluginId}:${name}`
+  name: string; // queue name = `${pluginId}.${name}` (BullMQ forbids ":" in queue names)
   processor: (ctx: PluginContext, job: Job<T>) => Promise<void>;
   concurrency?: number;
   repeat?: { pattern: string }; // cron; scheduled at load with jobId = name (idempotent)
@@ -387,7 +387,7 @@ export interface PluginContext {
   logger: Logger; // child logger with { plugin: id }
   events: PlatformEvents; // in-process typed bus
   rateLimiter: RateLimiterLike;
-  queue: (jobName: string) => Queue; // returns/creates queue `${pluginId}:${jobName}`
+  queue: (jobName: string) => Queue; // returns/creates queue `${pluginId}.${jobName}`
   getConfig: <T>(guildId: string) => Promise<T>; // this plugin's guild config with defaults applied
   setConfig: <T>(
     guildId: string,
@@ -517,7 +517,7 @@ Also `apps/bot/src/host/bot-actions.ts`: processes `bot-actions` queue jobs `{ t
   - `routes/ai.ts` — settings + usage
   - `routes/analytics.ts` — `GET /:guildId/analytics?range=7d|30d|90d` (from GuildAnalyticsDaily; only if `GuildConfig.dataCollectionEnabled`)
   - `routes/privacy.ts` — retention policy get/put, `POST /:guildId/data/export` (queues job → downloadable JSON), `POST /:guildId/data/delete` (requires confirmation phrase, queues deletion), `GET /:guildId/data/requests`
-  - `routes/webhooks.ts` (NOT under /guilds): `POST /webhooks/github/:endpointId`, `POST /webhooks/stripe`, `POST /webhooks/twitch`, `POST /webhooks/generic/:endpointId` — raw body, signature verification, idempotency via `ProcessedWebhookEvent`, then enqueue to `integrations:inbound` queue
+  - `routes/webhooks.ts` (NOT under /guilds): `POST /webhooks/github/:endpointId`, `POST /webhooks/stripe`, `POST /webhooks/twitch`, `POST /webhooks/generic/:endpointId` — raw body, signature verification, idempotency via `ProcessedWebhookEvent`, then enqueue to `integrations.inbound` queue
   - `routes/oauth-integrations.ts` — `/integrations/:provider/callback`
 - Errors: `setErrorHandler` → `toPublicError` → `{ error: { code, message, details? } }`, zod errors → 400 with issues.
 - Tests: `vitest` with `app.inject()` for auth guard, csrf, guild access (mock Redis via `ioredis-mock`), signature verification.
@@ -630,7 +630,7 @@ options: [{name, description, required, type}], subcommands: [{ name, fullName, 
   `Donation` row (PAID with `amountCents = amount_total`, `paidAt`; EXPIRED; FAILED). Idempotent (status transitions
   only forward). **Stores no personal data** (no email/name).
 - `routes/webhooks.ts` stripe handler MUST call `handleStripeDonationEvent` first; only non-donation events are
-  enqueued to `integrations:inbound`.
+  enqueued to `integrations.inbound`.
 - Prisma: `model Donation { id String @id @default(cuid()); stripeSessionId String @unique; stripePaymentIntentId String?;
 amountCents Int; currency String @default("usd"); status DonationStatus @default(PENDING); createdAt; paidAt DateTime?;
 updatedAt }` + `enum DonationStatus { PENDING PAID FAILED EXPIRED }`.

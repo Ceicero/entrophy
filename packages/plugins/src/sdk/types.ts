@@ -119,7 +119,7 @@ export interface ComponentHandler {
 }
 
 export interface PluginJob<T = unknown> {
-  name: string; // queue name = `${pluginId}:${name}`
+  name: string; // queue name = `${pluginId}.${name}` (BullMQ forbids ":" in queue names)
   processor: (ctx: PluginContext, job: Job<T>) => Promise<void>;
   concurrency?: number;
   repeat?: { pattern: string }; // cron; scheduled at load with jobId = name (idempotent)
@@ -137,7 +137,7 @@ export interface PluginContext {
   logger: Logger; // child logger with { plugin: id }
   events: PlatformEvents; // in-process typed bus
   rateLimiter: RateLimiterLike;
-  queue: (jobName: string) => Queue; // returns/creates queue `${pluginId}:${jobName}`
+  queue: (jobName: string) => Queue; // returns/creates queue `${pluginId}.${jobName}`
   getConfig: <T>(guildId: string) => Promise<T>; // this plugin's guild config with defaults applied
   setConfig: <T>(
     guildId: string,

@@ -15,7 +15,7 @@ function paymentIntentId(session: Stripe.Checkout.Session): string | undefined {
 /**
  * Handles Stripe checkout events for donations (ARCHITECTURE.md §18). Returns `true` when the event was a
  * donation event this function handled (regardless of whether it changed anything), so `routes/webhooks.ts`
- * knows not to also enqueue it onto `integrations:inbound` — `false` means "not mine, handle it elsewhere".
+ * knows not to also enqueue it onto `integrations.inbound` — `false` means "not mine, handle it elsewhere".
  *
  * Idempotent: only ever transitions a `Donation` row forward from `PENDING` (`updateMany` with a `status:
  * 'PENDING'` guard is a no-op if the row was already updated by a prior delivery of the same event, which

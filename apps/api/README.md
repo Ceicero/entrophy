@@ -60,7 +60,7 @@ pnpm --filter @entrophy/api openapi:export   # writes docs/openapi.json from a f
 - **Webhooks**: raw-body signature verification (GitHub `X-Hub-Signature-256`, Stripe `Stripe-Signature`,
   Twitch EventSub HMAC + `webhook_callback_verification` challenge echo, and a generic
   `X-Entrophy-Signature` HMAC for per-guild endpoints), idempotent via `ProcessedWebhookEvent`
-  (`@@unique([provider, eventId])`), 5MB body limit, then enqueued onto the `integrations:inbound` BullMQ
+  (`@@unique([provider, eventId])`), 5MB body limit, then enqueued onto the `integrations.inbound` BullMQ
   queue for the bot host to process.
 - **Errors**: `setErrorHandler` never leaks stack traces or raw internal error messages — only `AppError`s
   with `expose: true` (client-facing 4xx) surface their real message; everything else becomes a generic

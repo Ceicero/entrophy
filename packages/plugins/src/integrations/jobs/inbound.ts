@@ -19,7 +19,7 @@ const PROVIDER_ALIAS: Record<InboundJobData['provider'], string> = {
   generic: 'generic_webhook',
 };
 
-/** Processes the `integrations:inbound` queue: dispatches each API-verified webhook delivery to its provider's
+/** Processes the `integrations.inbound` queue: dispatches each API-verified webhook delivery to its provider's
  * `handleInbound`. Never throws (a bad/unexpected payload from one delivery must not retry-storm or crash the
  * worker) — errors are logged and the job resolves. */
 export const inboundJob: PluginJob<InboundJobData> = {

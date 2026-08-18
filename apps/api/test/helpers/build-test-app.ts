@@ -26,7 +26,7 @@ export function createFakeQueues(): QueueRegistryLike & { calls: FakeQueueCall[]
     calls,
     get: (name: string) => makeQueue(name),
     botActions: () => makeQueue('bot-actions'),
-    integrationsInbound: () => makeQueue('integrations:inbound'),
+    integrationsInbound: () => makeQueue('integrations.inbound'),
     dataRequests: () => makeQueue('data-requests'),
   };
 }

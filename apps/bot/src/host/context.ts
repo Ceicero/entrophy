@@ -24,15 +24,15 @@ export interface BuildContextDeps {
    * plugin's `queue()` factory builds its BullMQ `Queue`s from this same options object rather than a live client,
    * since BullMQ manages its own internal Redis connections per Queue/Worker. */
   bullConnectionOptions: RedisOptions;
-  /** Shared across every plugin context so `Queue` instances for `<pluginId>:<jobName>` are created at most once. */
+  /** Shared across every plugin context so `Queue` instances for `<pluginId>.<jobName>` are created at most once. */
   queueCache: Map<string, Queue>;
   botOwnerIds: string[];
   intentsEnabled: PluginContext['intentsEnabled'];
 }
 
-/** Returns (creating and caching on first use) the BullMQ `Queue` for `<pluginId>:<jobName>`. */
+/** Returns (creating and caching on first use) the BullMQ `Queue` for `<pluginId>.<jobName>`. */
 function getOrCreateQueue(deps: BuildContextDeps, pluginId: PluginId, jobName: string): Queue {
-  const key = `${pluginId}:${jobName}`;
+  const key = `${pluginId}.${jobName}`;
   const existing = deps.queueCache.get(key);
   if (existing) return existing;
 

@@ -55,7 +55,7 @@ describe('webhook signature verification', () => {
 
     expect(res.statusCode).toBe(202);
     expect(queues.calls).toHaveLength(1);
-    expect(queues.calls[0]).toMatchObject({ queue: 'integrations:inbound', name: 'github' });
+    expect(queues.calls[0]).toMatchObject({ queue: 'integrations.inbound', name: 'github' });
     expect(queues.calls[0].data).toMatchObject({ provider: 'github', eventType: 'issues' });
 
     await app.close();
@@ -101,7 +101,7 @@ describe('webhook signature verification', () => {
 
     expect(res.statusCode).toBe(202);
     expect(queues.calls).toHaveLength(1);
-    expect(queues.calls[0]).toMatchObject({ queue: 'integrations:inbound', name: 'stripe' });
+    expect(queues.calls[0]).toMatchObject({ queue: 'integrations.inbound', name: 'stripe' });
 
     await app.close();
   });
@@ -140,7 +140,7 @@ describe('webhook signature verification', () => {
 
     expect(res.statusCode).toBe(202);
     expect(queues.calls).toHaveLength(1);
-    expect(queues.calls[0]).toMatchObject({ queue: 'integrations:inbound', name: 'generic' });
+    expect(queues.calls[0]).toMatchObject({ queue: 'integrations.inbound', name: 'generic' });
 
     await app.close();
   });

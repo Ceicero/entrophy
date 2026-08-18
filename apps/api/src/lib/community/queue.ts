@@ -15,7 +15,7 @@ const QUEUE_OP_TIMEOUT_MS = 2000;
 const queueCache = new Map<string, Queue>();
 
 function communityQueue(redis: Redis, jobName: string): Queue {
-  const key = `community:${jobName}`;
+  const key = `community.${jobName}`;
   const existing = queueCache.get(key);
   if (existing) return existing;
   const queue = new Queue(key, { connection: redis });

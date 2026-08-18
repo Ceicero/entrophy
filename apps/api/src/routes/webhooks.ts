@@ -59,7 +59,7 @@ function invalidSignature(): AppError {
 /**
  * `/webhooks/*` — inbound provider webhooks (NOT under `/guilds`, not session-authenticated). Every handler:
  * verifies a provider signature over the raw body, enforces idempotency via `ProcessedWebhookEvent`, then
- * enqueues `{ provider, endpointId?, eventType, payload }` onto the `integrations:inbound` queue
+ * enqueues `{ provider, endpointId?, eventType, payload }` onto the `integrations.inbound` queue
  * (ARCHITECTURE.md §10). 5MB body limit is set where this plugin is registered in `app.ts`.
  */
 export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<void> {
