@@ -811,18 +811,20 @@ everything below must degrade gracefully — never fail a build because it is mi
 - Website: `apps/web/public/brand/entrophy-skull.png` + `.jpg` (copied at build by `scripts/sync-brand.mjs`, root
   script `brand:sync`, run automatically as `prebuild`/`predev` of web and dashboard; the script is a no-op when the
   source is missing) used in the header, hero, Open Graph image (`opengraph-image` route rendering the skull on
-  black) and `src/app/icon.png` (Next favicon; a small inline SVG fallback icon `src/app/icon.svg` ships in the repo
-  so the favicon exists before the PNG arrives — the sync script writes `icon.png` next to it, and Next prefers
-  `icon.png`? No — Next serves both; keep only `icon.svg` in git and let sync copy the PNG to `public/brand/` and to
-  `src/app/apple-icon.png`). The `Logo` component (`apps/web/src/components/Logo.tsx`) reads the build-time copy of
-  the manifest at `apps/web/src/data/brand.json` (git-tracked, written by the sync script) rather than fetching
-  `public/brand/manifest.json` at runtime, so the logo path is known at build time in every environment including
-  the Docker standalone runner.
+  black) and `src/app/apple-icon.png`. The `Logo` component (`apps/web/src/components/Logo.tsx`) reads the
+  build-time copy of the manifest at `apps/web/src/data/brand.json` (git-tracked, written by the sync script) rather
+  than fetching `public/brand/manifest.json` at runtime, so the logo path is known at build time in every
+  environment including the Docker standalone runner.
 - Dashboard: same sync into `apps/dashboard/public/brand/entrophy-skull.png` + `.jpg`; the sidebar wordmark
   (`apps/dashboard/src/components/brand-wordmark.tsx`) reads its own build-time manifest copy at
   `apps/dashboard/src/data/brand.json` (git-tracked, same pattern as the web app's) rather than hard-coding the
   path, and falls back to a text wordmark when the image 404s (`<img onError>` → hide) or when the manifest has no
   logo.
+- Browser-tab favicons: `apps/web/src/app/icon.png` and `apps/dashboard/src/app/icon.png` (256×256, resized from
+  `assets/brand/entrophy-skull.png`, black background kept) are committed static files picked up by Next's
+  app-router file convention — `sync-brand.mjs` does not generate or touch them, and no `icons` entry is needed in
+  either app's `metadata`. Regenerate both by hand (see `assets/brand/README.md` "Regenerating favicons") whenever
+  the canonical skull PNG changes.
 - Bot: `pnpm --filter @entrophy/bot set-avatar [--file assets/brand/entrophy-skull.png]` (`apps/bot/src/set-avatar.ts`,
   one-off CLI: logs in, `client.user.setAvatar(buffer)`, exits; warns about Discord's avatar-change rate limit) and
   `BRAND.iconUrl = ${WEB_URL}/brand/entrophy-skull.png` used as embed author/footer icon when `WEB_URL` is set (core

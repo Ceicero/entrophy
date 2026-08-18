@@ -25,9 +25,6 @@ export const metadata: Metadata = {
     title: 'Entrophy — Discord moderation you can trust',
     description: 'A modular, compliance-first Discord bot built for gaming communities.',
   },
-  icons: {
-    icon: '/icon.svg',
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

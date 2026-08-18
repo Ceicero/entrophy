@@ -18,4 +18,27 @@ folder would make the public website display that variant instead (header/hero/a
 dashboard, bot avatar, and embed icons keep reading the shared `entrophy-skull.<ext>` above. No such file is
 currently present in the repo — the shared logo already is the clean/bright art the website wants.
 
-Do not commit other raster variants — sizes are generated at build/serve time.
+Do not commit other raster variants — sizes are generated at build/serve time. The one exception is the browser-tab
+favicon, below.
+
+## Browser-tab favicons
+
+`apps/web/src/app/icon.png` and `apps/dashboard/src/app/icon.png` (256×256 RGB, black background kept) are the
+committed favicons for the two apps, picked up automatically by Next's app-router file convention (no `icons` entry
+needed in `metadata`). They are static, hand-generated files — `scripts/sync-brand.mjs` does not touch them — so
+regenerate and re-commit both whenever `assets/brand/entrophy-skull.png` changes.
+
+### Regenerating favicons
+
+No `sharp`-based Node script ships in this repo (`sharp` isn't resolvable from the repo root as of this writing —
+re-check with `node -e "require.resolve('sharp')"` before assuming this). Regenerate both favicons with Python PIL:
+
+```
+python -c "
+from PIL import Image
+src = Image.open('assets/brand/entrophy-skull.png').convert('RGB')
+resized = src.resize((256, 256), Image.LANCZOS)
+for t in ['apps/web/src/app/icon.png', 'apps/dashboard/src/app/icon.png']:
+    resized.save(t, format='PNG', optimize=True)
+"
+```
