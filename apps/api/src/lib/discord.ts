@@ -125,16 +125,65 @@ export async function fetchDiscordUser(accessToken: string): Promise<DiscordUser
   return (await res.json()) as DiscordUser;
 }
 
-/** Fetches the authenticated user's guild list directly from Discord (`guilds` scope), bypassing the cache. */
-async function fetchDiscordUserGuildsUncached(accessToken: string): Promise<DiscordUserGuild[]> {
-  const res = await fetch(`${DISCORD_API_BASE}/users/@me/guilds`, {
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Discord caps `Retry-After` guidance we'll actually wait on — beyond this we'd rather fail fast than block the request. */
+const MAX_RETRY_AFTER_WAIT_MS = 5000;
+
+function requestUserGuilds(accessToken: string): Promise<Response> {
+  return fetch(`${DISCORD_API_BASE}/users/@me/guilds`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+}
+
+/** Reads how long to back off from a 429: the JSON body's `retry_after` (seconds), else the `Retry-After` header, else 1s — capped at 5s. */
+async function parseRetryAfterMs(res: Response): Promise<number> {
+  let seconds: number | undefined;
+  try {
+    const body = (await res.json()) as { retry_after?: number };
+    if (typeof body.retry_after === 'number' && Number.isFinite(body.retry_after)) {
+      seconds = body.retry_after;
+    }
+  } catch {
+    // Body wasn't JSON (or already consumed) — fall through to the header/default below.
+  }
+  if (seconds === undefined) {
+    const header = res.headers.get('retry-after');
+    const parsed = header !== null ? Number(header) : NaN;
+    seconds = Number.isFinite(parsed) ? parsed : 1;
+  }
+  return Math.min(seconds * 1000, MAX_RETRY_AFTER_WAIT_MS);
+}
+
+/**
+ * Fetches the authenticated user's guild list directly from Discord (`guilds` scope), bypassing the cache.
+ * On a 429, waits out `retry_after` (capped at 5s) and retries exactly once before giving up.
+ */
+async function fetchDiscordUserGuildsUncached(accessToken: string): Promise<DiscordUserGuild[]> {
+  const res = await requestUserGuilds(accessToken);
+  if (res.status === 429) {
+    await sleep(await parseRetryAfterMs(res));
+    const retryRes = await requestUserGuilds(accessToken);
+    if (!retryRes.ok) {
+      throw new ExternalServiceError(`Failed to fetch Discord guild list (${retryRes.status}).`);
+    }
+    return (await retryRes.json()) as DiscordUserGuild[];
+  }
   if (!res.ok) {
     throw new ExternalServiceError(`Failed to fetch Discord guild list (${res.status}).`);
   }
   return (await res.json()) as DiscordUserGuild[];
 }
+
+/**
+ * In-process de-dup for concurrent `getCachedUserGuilds` calls on a cold cache: without this, a dashboard
+ * page load that fires several requests at once (`/guilds`, `/guilds/:id`, `/guilds/:id/plugins`, ...) each
+ * triggers its own Discord fetch, and Discord's per-user rate limit on `/users/@me/guilds` turns the losers
+ * into 502s. Keyed by userId; always cleared in `finally` so a failed fetch doesn't wedge later calls.
+ */
+const inflightUserGuilds = new Map<string, Promise<DiscordUserGuild[]>>();
 
 /** Fetches (and caches for 60s in Redis, per-user) the authenticated user's guild list. */
 export async function getCachedUserGuilds(
@@ -147,9 +196,30 @@ export async function getCachedUserGuilds(
   if (cached !== null) {
     return JSON.parse(cached) as DiscordUserGuild[];
   }
-  const guilds = await fetchDiscordUserGuildsUncached(accessToken);
-  await redis.set(cacheKey, JSON.stringify(guilds), 'EX', GUILDS_CACHE_TTL_SECONDS);
-  return guilds;
+
+  const inflight = inflightUserGuilds.get(userId);
+  if (inflight) {
+    return inflight;
+  }
+
+  const fetchPromise = (async () => {
+    // Double-checked against Redis: cheap protection against a *different* process having just populated
+    // the cache (a real distributed lock would be overkill for a 60s freshness cache).
+    const recheck = await redis.get(cacheKey);
+    if (recheck !== null) {
+      return JSON.parse(recheck) as DiscordUserGuild[];
+    }
+    const guilds = await fetchDiscordUserGuildsUncached(accessToken);
+    await redis.set(cacheKey, JSON.stringify(guilds), 'EX', GUILDS_CACHE_TTL_SECONDS);
+    return guilds;
+  })();
+
+  inflightUserGuilds.set(userId, fetchPromise);
+  try {
+    return await fetchPromise;
+  } finally {
+    inflightUserGuilds.delete(userId);
+  }
 }
 
 /** Invalidates a user's cached guild list (call after actions that change it, e.g. the bot joining a new guild). */
