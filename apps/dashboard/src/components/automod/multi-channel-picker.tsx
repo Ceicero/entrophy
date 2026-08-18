@@ -1,18 +1,20 @@
 'use client';
 
 import { X } from 'lucide-react';
-import { Badge, ChannelPicker, Input } from '@entrophy/ui';
+import { Badge, ChannelPicker, Input, type ChannelKind } from '@entrophy/ui';
 import { useGuildChannels } from '../../lib/queries';
 
 export interface MultiChannelPickerProps {
   guildId: string;
   value: string[];
   onChange: (next: string[]) => void;
+  /** Restrict the add-picker to these channel kinds. Omit for any kind. */
+  kinds?: ChannelKind[];
   disabled?: boolean;
 }
 
 /** Add-one-at-a-time multi-select over guild channels, mirroring `MultiRolePicker`. Falls back to a comma-separated id input if the channels endpoint is unavailable. */
-export function MultiChannelPicker({ guildId, value, onChange, disabled }: MultiChannelPickerProps) {
+export function MultiChannelPicker({ guildId, value, onChange, kinds, disabled }: MultiChannelPickerProps) {
   const { data: channels, isError, isLoading } = useGuildChannels(guildId);
   const channelName = (id: string) => channels?.find((c) => c.id === id)?.name ?? id;
 
@@ -62,6 +64,7 @@ export function MultiChannelPicker({ guildId, value, onChange, disabled }: Multi
         placeholder="Add a channel…"
         allowNone={false}
         disabled={disabled || isLoading}
+        kinds={kinds}
       />
     </div>
   );

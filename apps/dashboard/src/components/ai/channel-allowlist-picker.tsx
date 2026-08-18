@@ -63,6 +63,7 @@ export function ChannelAllowlistPicker({ guildId, value, onChange, disabled }: C
         placeholder="Add a channel…"
         allowNone={false}
         disabled={disabled || isLoading}
+        kinds={['text', 'announcement', 'forum', 'voice']}
       />
     </div>
   );

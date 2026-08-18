@@ -107,6 +107,12 @@ Discord permission to the bot's role in **Server Settings → Roles** → the bo
 tab. `docs/PERMISSIONS.md` explains exactly what each permission is for and what happens if you
 leave it off — most features degrade gracefully rather than breaking everything.
 
+**`/setup status` — did I need to run the wizard?**
+→ No. `/setup status` says _complete (configured via dashboard or /config)_ when staff roles and a
+mod-log channel exist even if the wizard was never run; it only says _incomplete_ (listing what's
+missing) when one of those is actually absent. Set them under the dashboard's **Settings** page or
+run `/setup wizard` — either way counts.
+
 ---
 
 ## Dashboard login loop (keeps sending you back to the login page)

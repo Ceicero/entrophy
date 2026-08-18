@@ -11,6 +11,8 @@ export interface JsonSchemaNode {
   items?: JsonSchemaNode;
   /** Custom format hints: `'discord-channel' | 'discord-role'` route to the channel/role pickers. */
   format?: string;
+  /** Optional hint for `format: 'discord-channel'`: restrict the picker to these channel kinds (`text`, `announcement`, `voice`, `stage`, `category`, `forum`). */
+  'x-channel-kinds'?: string[];
   minimum?: number;
   maximum?: number;
   minLength?: number;

@@ -1,7 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
-import { Badge, ChannelPicker, Input } from '@entrophy/ui';
+import { Badge, ChannelPicker, Input, type ChannelKind } from '@entrophy/ui';
 import { useGuildChannels } from '../../lib/queries';
 
 export interface MultiChannelPickerProps {
@@ -10,6 +10,8 @@ export interface MultiChannelPickerProps {
   onChange: (next: string[]) => void;
   /** Discord channel type to restrict the picker to (e.g. 2 = voice). Omit for any type. */
   filterType?: number;
+  /** Restrict the add-picker to these channel kinds. Omit for any kind. Combines with `filterType`. */
+  kinds?: ChannelKind[];
   disabled?: boolean;
 }
 
@@ -19,6 +21,7 @@ export function MultiChannelPicker({
   value,
   onChange,
   filterType,
+  kinds,
   disabled,
 }: MultiChannelPickerProps) {
   const { data: channels, isError, isLoading } = useGuildChannels(guildId);
@@ -71,6 +74,7 @@ export function MultiChannelPicker({
         placeholder="Add a channel…"
         allowNone={false}
         disabled={disabled || isLoading}
+        kinds={kinds}
       />
     </div>
   );

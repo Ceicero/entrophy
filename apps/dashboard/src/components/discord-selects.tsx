@@ -1,6 +1,6 @@
 'use client';
 
-import { ChannelPicker, Input, RolePicker } from '@entrophy/ui';
+import { ChannelPicker, Input, RolePicker, type ChannelKind } from '@entrophy/ui';
 import { useGuildChannels, useGuildRoles } from '../lib/queries';
 
 export interface DiscordChannelSelectProps {
@@ -9,6 +9,8 @@ export interface DiscordChannelSelectProps {
   onChange: (next: string | null) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** Channel kinds the field accepts. Defaults to `['text', 'announcement']` — "a channel the bot posts in". Pass e.g. `['category']` or `['voice']` for fields that need something else. */
+  kinds?: ChannelKind[];
 }
 
 /** Single-channel picker backed by `GET /guilds/:id/discord/channels`; falls back to a raw-id text input if that endpoint errors. */
@@ -18,6 +20,7 @@ export function DiscordChannelSelect({
   onChange,
   placeholder,
   disabled,
+  kinds = ['text', 'announcement'],
 }: DiscordChannelSelectProps) {
   const { data: channels, isError, isLoading } = useGuildChannels(guildId);
   if (isError) {
@@ -37,6 +40,7 @@ export function DiscordChannelSelect({
       onChange={onChange}
       placeholder={placeholder}
       disabled={disabled || isLoading}
+      kinds={kinds}
     />
   );
 }

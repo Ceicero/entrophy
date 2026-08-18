@@ -170,6 +170,7 @@ export function PanelFormDialog({ guildId, open, onOpenChange, panel }: PanelFor
                 value={draft.categoryId ?? null}
                 onChange={(v) => set('categoryId', v)}
                 disabled={pending}
+                kinds={['category']}
               />
             </FormField>
           ) : null}

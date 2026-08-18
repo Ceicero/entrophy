@@ -13,6 +13,8 @@ import {
   SelectValue,
   Switch,
   Textarea,
+  CHANNEL_KIND_TYPES,
+  type ChannelKind,
 } from '@entrophy/ui';
 import { defaultForSchema, type JsonSchemaNode } from '../lib/json-schema';
 import { DiscordChannelSelect, DiscordRoleSelect } from './discord-selects';
@@ -59,6 +61,13 @@ export function JsonSchemaForm({ schema, value, onChange, guildId, disabled }: J
       ))}
     </div>
   );
+}
+
+/** Parses an optional `x-channel-kinds` schema hint into known `ChannelKind`s; undefined when absent/empty/unrecognized. */
+function readChannelKinds(raw: unknown): ChannelKind[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const kinds = raw.filter((k): k is ChannelKind => typeof k === 'string' && k in CHANNEL_KIND_TYPES);
+  return kinds.length > 0 ? kinds : undefined;
 }
 
 function humanizeKey(key: string): string {
@@ -190,6 +199,8 @@ function SchemaField({ fieldKey, node, value, onChange, guildId, disabled }: Sch
 
   // Discord channel/role formats.
   if (node.format === 'discord-channel') {
+    // Optional `x-channel-kinds` (string[]) narrows the picker; nothing emits it yet (forward-compatible plumbing).
+    const kinds = readChannelKinds(node['x-channel-kinds']);
     return (
       <FormField label={label} htmlFor={htmlId} hint={node.description}>
         <DiscordChannelSelect
@@ -197,6 +208,7 @@ function SchemaField({ fieldKey, node, value, onChange, guildId, disabled }: Sch
           value={(resolved as string | null) ?? null}
           onChange={onChange}
           disabled={disabled}
+          {...(kinds ? { kinds } : {})}
         />
       </FormField>
     );

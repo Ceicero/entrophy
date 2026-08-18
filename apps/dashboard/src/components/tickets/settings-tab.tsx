@@ -107,6 +107,7 @@ export function TicketsSettingsTab({ guildId }: TicketsSettingsTabProps) {
               value={draft.categoryId}
               onChange={(v) => set('categoryId', v)}
               disabled={update.isPending}
+              kinds={['category']}
             />
           </FormField>
           <FormField label="Default support roles" className="sm:col-span-2">

@@ -303,6 +303,7 @@ export function RuleFormDialog({ guildId, open, onOpenChange, rule }: RuleFormDi
                 value={draft.exemptChannelIds}
                 onChange={(v) => set('exemptChannelIds', v)}
                 disabled={saving}
+                kinds={['text', 'announcement', 'forum', 'voice']}
               />
             </FormField>
             <FormField label="Exempt users" hint="Discord user IDs">
