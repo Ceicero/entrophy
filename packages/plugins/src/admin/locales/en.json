@@ -2,7 +2,11 @@
   "setup": {
     "statusTitle": "Setup status",
     "wizardStepTitle": "Server setup — step {step} of {total}",
-    "notCompleted": "**not yet run** — try `/setup wizard`",
+    "state": {
+      "wizard": "Setup: completed via wizard {when}",
+      "configured": "Setup: complete (configured via dashboard or /config)",
+      "incomplete": "Setup: incomplete — missing: {missing}. Run `/setup wizard` or set them under Settings."
+    },
     "sessionExpired": "This setup session expired (15 minutes of inactivity). Run `/setup wizard` again.",
     "notWizardOwner": "Only the person who started /setup wizard can use these controls.",
     "cancelled": "Setup cancelled. Nothing was changed. Run `/setup wizard` again anytime.",

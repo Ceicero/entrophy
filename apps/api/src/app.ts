@@ -27,6 +27,7 @@ import {
 import { prisma as sharedPrisma, type PrismaClient } from '@entrophy/database';
 import { createGuildConfigStore } from './lib/config-store';
 import { csrfProtection } from './lib/csrf';
+import { describeFastifyClientError, isFastifyRateLimitError } from './lib/fastify-errors';
 import type { ZodFastifyInstance } from './lib/http';
 import { QueueRegistry, type QueueRegistryLike } from './lib/queues';
 import { getSession, SESSION_COOKIE_NAME } from './lib/session';
@@ -194,6 +195,30 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
       };
       request.log.info({ code: body.error.code }, 'Request validation error');
       reply.status(400).send(body);
+      return;
+    }
+
+    // Fastify's own client errors (content-type parser: empty/invalid JSON body, unsupported media type, body
+    // too large, ...) are plain `FastifyError`s carrying a proper 4xx `statusCode`. Keep that status and map
+    // the code to a fixed public message instead of letting `toPublicError` report them as a 500.
+    const fastifyErr = err as { code?: unknown; statusCode?: unknown };
+    if (
+      typeof fastifyErr.code === 'string' &&
+      fastifyErr.code.startsWith('FST_ERR_') &&
+      typeof fastifyErr.statusCode === 'number' &&
+      fastifyErr.statusCode >= 400 &&
+      fastifyErr.statusCode < 500
+    ) {
+      const { code, message } = describeFastifyClientError(fastifyErr.code, fastifyErr.statusCode);
+      request.log.info({ code }, 'Request error');
+      reply.status(fastifyErr.statusCode).send({ error: { code, message } });
+      return;
+    }
+
+    // `@fastify/rate-limit` throws a plain Error with `statusCode: 429` (no `code`) — same treatment.
+    if (isFastifyRateLimitError(fastifyErr)) {
+      request.log.info({ code: 'rate_limited' }, 'Request error');
+      reply.status(429).send({ error: { code: 'rate_limited', message: 'Rate limit exceeded.' } });
       return;
     }
 

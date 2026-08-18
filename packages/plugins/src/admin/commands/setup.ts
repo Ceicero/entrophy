@@ -3,11 +3,23 @@ import { discordTimestamp } from '@entrophy/core';
 import type { PluginId } from '@entrophy/types';
 import { assertStaffLevel, listEmbed, type PluginCommand } from '../../sdk';
 import { createWizardSession, renderWizardStep, WizardSessionStore } from '../wizard';
-import { describeMissingBotPermissions } from '../format';
+import { deriveSetupState, describeMissingBotPermissions, type SetupState } from '../format';
 
-function formatCompletedAt(iso: string | null): string {
-  if (!iso) return 'not yet run';
-  return `completed ${discordTimestamp(new Date(iso), 'R')}`;
+const MISSING_LABELS = { modRoles: 'moderator/admin roles', modLogChannel: 'mod-log channel' } as const;
+
+/** First line of `/setup status`: reflects actual config, not just whether the wizard ran. */
+function formatSetupLine(
+  state: SetupState,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string {
+  switch (state.kind) {
+    case 'wizard':
+      return t('setup.state.wizard', { when: discordTimestamp(new Date(state.completedAt), 'R') });
+    case 'configured':
+      return t('setup.state.configured');
+    case 'incomplete':
+      return t('setup.state.incomplete', { missing: state.missing.map((m) => MISSING_LABELS[m]).join(', ') });
+  }
 }
 
 const data = new SlashCommandBuilder()
@@ -59,7 +71,7 @@ export const command: PluginCommand = {
     }
 
     const lines: string[] = [
-      `Setup wizard: ${config.setupCompletedAt ? formatCompletedAt(config.setupCompletedAt) : c.t('setup.notCompleted')}`,
+      formatSetupLine(deriveSetupState(config), c.t),
       `Locale: **${config.locale}** · Timezone: **${config.timezone}**`,
       `Admin roles: ${config.adminRoleIds.length > 0 ? config.adminRoleIds.map((id) => `<@&${id}>`).join(', ') : '_None configured_'}`,
       `Moderator roles: ${config.modRoleIds.length > 0 ? config.modRoleIds.map((id) => `<@&${id}>`).join(', ') : '_None configured_'}`,

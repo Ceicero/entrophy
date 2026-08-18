@@ -119,11 +119,7 @@ export function TempVoiceTab({ guildId }: { guildId: string }) {
   );
 }
 
-/**
- * Category picker. `DiscordChannelSelect` has no type filter, so this lists every channel rather than
- * categories only — acceptable since picking a non-category id here just fails validation server-side
- * (Discord rejects a non-category `parent`), and the hint text tells the admin what to pick.
- */
+/** Category picker — lists only category channels (Discord rejects a non-category `parent`). */
 function CategoryPicker({
   guildId,
   value,
@@ -139,6 +135,7 @@ function CategoryPicker({
       value={value}
       onChange={onChange}
       placeholder="Same as hub's category"
+      kinds={['category']}
     />
   );
 }

@@ -261,6 +261,7 @@ export function LevelingTab({ guildId }: { guildId: string }) {
                 guildId={guildId}
                 value={draft.ignoredChannelIds}
                 onChange={(v) => set('ignoredChannelIds', v)}
+                kinds={['text', 'announcement', 'forum', 'voice']}
               />
             </FormField>
             <FormField label="Ignored roles" hint="Members with any of these roles never earn XP.">

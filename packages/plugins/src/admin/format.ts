@@ -55,3 +55,35 @@ export function formatUptime(totalSeconds: number): string {
   if (minutes > 0) return `${minutes}m ${seconds}s`;
   return `${seconds}s`;
 }
+
+/** Which of the two core setup requirements a guild is missing. */
+export type SetupMissing = 'modRoles' | 'modLogChannel';
+
+/**
+ * How `/setup status` should describe a guild's setup:
+ * - `wizard`: the guided wizard was completed (`setupCompletedAt` set);
+ * - `configured`: wizard never run, but core config is complete (staff roles + mod-log channel — e.g. set from the dashboard or `/config`);
+ * - `incomplete`: something core is still missing.
+ */
+export type SetupState =
+  | { kind: 'wizard'; completedAt: string }
+  | { kind: 'configured' }
+  | { kind: 'incomplete'; missing: SetupMissing[] };
+
+/**
+ * Derives the setup state from actual config so the bot agrees with the API's guild overview (`setupIssues`):
+ * complete ⇔ a mod-log channel is set AND at least one moderator or admin role exists (admin roles alone count
+ * as staff). `setupCompletedAt` only says the wizard ran; it is never inferred or back-filled here.
+ */
+export function deriveSetupState(config: {
+  setupCompletedAt: string | null;
+  modRoleIds: string[];
+  adminRoleIds: string[];
+  modLogChannelId: string | null;
+}): SetupState {
+  if (config.setupCompletedAt) return { kind: 'wizard', completedAt: config.setupCompletedAt };
+  const missing: SetupMissing[] = [];
+  if (config.modRoleIds.length === 0 && config.adminRoleIds.length === 0) missing.push('modRoles');
+  if (config.modLogChannelId === null) missing.push('modLogChannel');
+  return missing.length === 0 ? { kind: 'configured' } : { kind: 'incomplete', missing };
+}
