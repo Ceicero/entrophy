@@ -65,6 +65,19 @@ export const configSchema = z.object({
     )
     .max(25)
     .default([]),
+  /** Server-stats counter channels: locked voice channels / categories renamed on a schedule (see stats-channels.ts). */
+  statsChannels: z
+    .array(
+      z.object({
+        channelId: z.string(),
+        /** Tokens: {members} (all), {humans}, {bots}, {boosts}, {roles}, {channels}, {date} (YYYY-MM-DD, guild tz). */
+        template: z.string().min(1).max(90).default('Members: {members}'),
+      }),
+    )
+    .max(10)
+    .default([]),
+  /** Minimum minutes between automatic stats refreshes per guild (Discord allows 2 channel renames / 10 min). */
+  statsRefreshMinutes: z.number().int().min(10).max(1440).default(15),
 });
 
 export type CommunityConfig = z.infer<typeof configSchema>;
@@ -123,6 +136,12 @@ export const manifest = defineManifest({
       optional: true,
       fallback: 'The old sticky stays in place; the bot still posts a new one.',
     },
+    {
+      permission: PermissionFlagsBits.ManageChannels,
+      feature: 'server-stats counter channels (rename)',
+      optional: true,
+      fallback: 'Counters stop updating; /statschannel refresh reports the missing permission.',
+    },
   ],
   // Guilds + GuildMessages are needed for the tag auto-responder's and sticky messages' `messageCreate`
   // handlers (sticky reads no content — only that a message was posted); the privileged Message Content
@@ -140,5 +159,6 @@ export const manifest = defineManifest({
     'Tags store the text/embed staff wrote and a use counter. Auto-responder triggers compare incoming messages against your trigger phrases in memory only when the Message Content intent is enabled; the messages themselves are never stored.',
     "Sticky messages store only the text/embed staff wrote and the id of the bot's own last post.",
     'Auto-publish and auto-threads act only on message ids/authors in the channels you list; content is never read or stored.',
+    'Stats channels display only aggregate server counts (members, humans, bots, boosts, roles, channels); nothing per member is read or stored.',
   ],
 });

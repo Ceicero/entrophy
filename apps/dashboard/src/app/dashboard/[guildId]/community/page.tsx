@@ -18,7 +18,7 @@ export default function CommunityPage() {
     <div className="space-y-6">
       <PageHeader
         title="Community"
-        description="Polls, giveaways, the suggestion box, scheduled announcements, events, tags (custom commands / auto-responders), and channel automations (sticky messages, auto-publish, auto-threads)."
+        description="Polls, giveaways, the suggestion box, scheduled announcements, events, tags (custom commands / auto-responders), and channel automations (sticky messages, auto-publish, auto-threads, server-stats channels)."
       />
 
       <Tabs defaultValue="overview">

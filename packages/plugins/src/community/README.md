@@ -1,8 +1,8 @@
 # Community plugin (`community`)
 
 Polls, giveaways, a suggestion box, scheduled announcements, reminders, event RSVPs, tags (custom commands with
-optional keyword auto-responders), sticky messages, and channel automations (auto-publish for announcement
-channels, one-thread-per-post auto-threads). Enabled by default.
+optional keyword auto-responders), sticky messages, channel automations (auto-publish for announcement channels,
+one-thread-per-post auto-threads), and server-stats counter channels. Enabled by default.
 
 ## Commands
 
@@ -35,6 +35,12 @@ channels, one-thread-per-post auto-threads). Enabled by default.
 | `/sticky list`                                       | List every sticky in the server with jump links                                                            | Moderator+                             |
 | `/channelauto publish add \| remove \| list`         | Auto-publish every new message in an announcement channel                                                  | Admin+                                 |
 | `/channelauto thread add \| remove \| list`          | One thread per post in a channel (template, archive, attachments-only, starter)                            | Admin+                                 |
+| `/statschannel create <template> [category] [kind]`  | Create a locked voice channel (or category) showing a live server count                                    | Admin (bot needs Manage Channels)      |
+| `/statschannel add <channel> <template>`             | Attach an existing voice/category/text channel as a counter                                                | Admin                                  |
+| `/statschannel remove <channel>`                     | Stop updating a counter (config only — the channel is not deleted)                                         | Admin                                  |
+| `/statschannel list`                                 | Show counters, templates, current rendered value, last refresh                                             | Admin                                  |
+| `/statschannel refresh`                              | Refresh every counter now (at most once per 5 minutes)                                                     | Admin                                  |
+| `/statschannel interval <minutes>`                   | Set the automatic refresh interval (10-1440 minutes)                                                       | Admin                                  |
 
 ## Config keys (`configSchema`)
 
@@ -60,6 +66,8 @@ autoThreads[]                object[]      One rule per channel (max 25):
   .archiveMinutes            60|1440|4320|10080  Auto-archive after inactivity (default: 1440)
   .requireAttachment         boolean         Only thread posts with an attachment/embed (default: false)
   .starterMessage            string|null     Optional bot message posted in each new thread, max 300 chars (default: null)
+statsChannels                array         Up to 10 `{ channelId, template }` counters (default: [])
+statsRefreshMinutes          number        Minutes between automatic counter refreshes, 10-1440 (default: 15)
 ```
 
 ### Tags (custom commands / auto-responders)
@@ -95,6 +103,25 @@ status community` reports the plugin as degraded, and triggers are simply inacti
 - Neither feature reads or stores message content — only channel id, author id/bot flag, message flags, and
   whether attachments/embeds are present.
 
+### Server-stats counter channels
+
+Templates use a fixed token set — `{members}` (all), `{humans}`, `{bots}`, `{boosts}`, `{roles}`, `{channels}`,
+`{date}` (YYYY-MM-DD in the guild timezone). Unknown tokens are rejected at command/dashboard time so a typo never
+becomes a channel literally named "{memebrs}"; the rendered name is truncated to Discord's 100-character limit.
+
+Constraints (also stated in the UI):
+
+- **Discord allows 2 channel-name edits per 10 minutes per channel.** Counters therefore refresh on a schedule
+  (`statsRefreshMinutes`, minimum 10) and `/statschannel refresh` is limited to once per 5 minutes; member
+  join/leave events deliberately do _not_ trigger a rename.
+- **`{online}` is not offered** — it needs the Presence privileged intent, which Entrophy does not enable. The
+  command rejects it with that explanation.
+- `{humans}`/`{bots}` need the Server Members intent; without it `{humans}` = `{members}` and `{bots}` = 0 (the
+  reply says so).
+
+`/statschannel create` makes a voice channel with `@everyone` denied Connect (visible, not joinable). If a counter
+channel is deleted in Discord, the next refresh drops it from config (info log, no crash).
+
 ## Permissions
 
 | Permission                             | Feature                                                                                 | Optional | Fallback                                                                                                                                                                                    |
@@ -105,6 +132,7 @@ status community` reports the plugin as degraded, and triggers are simply inacti
 | Manage Messages                        | Auto-publish other members' announcement messages                                       | Yes      | Only the bot's own messages are published; warned once/hour                                                                                                                                 |
 | Manage Events                          | Native Discord scheduled event for `/event create`                                      | Yes      | Event is still tracked and announced in-channel                                                                                                                                             |
 | Manage Messages                        | Sticky messages (delete the bot's own previous sticky)                                  | Yes      | Old sticky stays in place; a new one is still posted (deleting the bot's own message doesn't strictly need it, but a channel overwrite can still remove it — `/permissions audit` explains) |
+| Manage Channels                        | Server-stats counter channels (rename)                                                  | Yes      | Counters stop updating; `/statschannel refresh` reports the missing permission                                                                                                              |
 
 Privileged intents: **Message Content — auto-responders only.** Everything else in the plugin (including `/tag
 show`) works without it; the plugin degrades rather than disables when the intent is off.
@@ -124,6 +152,8 @@ show`) works without it; the plugin degrades rather than disables when the inten
   channel that has a sticky (a Redis-cached channel set makes that check cheap for every other channel).
 - Auto-publish and auto-threads act only on message ids/authors in the channels you list; content is never read
   or stored.
+- Stats channels display only aggregate server counts (members, humans, bots, boosts, roles, channels); nothing
+  per member is read or stored.
 
 ## Background jobs
 
@@ -135,6 +165,7 @@ show`) works without it; the plugin degrades rather than disables when the inten
 - `community:event-reminder` — delayed, one per configured reminder mark (`jobId ev:<id>:<minutes>`).
 - `community:suggestion-sync` — every minute; reflects dashboard suggestion status/note edits into the posted Discord embed (dashboard writes only touch the database).
 - `community:sticky-repost` — delayed catch-up re-post for a channel whose cooldown blocked an immediate one (`jobId sticky:<guildId>:<channelId>`, delay = the sticky's cooldown; enqueuing while one is pending is a no-op, so a burst of messages yields one re-post now and one after the cooldown).
+- `community:stats-refresh` — every 5 minutes; renames each guild's stats channels at most once per `statsRefreshMinutes` (Redis `SET NX EX` gate per guild), concurrency 1, never throws.
 
 ## Sticky messages
 
@@ -148,8 +179,10 @@ suppressed in the re-posted payload. If the channel is deleted, the sticky recor
 `/dashboard/[guildId]/community` — Overview, Suggestions (status workflow), Giveaways, Polls (results bars),
 Announcements, Events (RSVP counts), Tags (create/edit/delete tags, embed fields, staff-only, auto-responder
 trigger + channels), and Channels (sticky messages: channel, preview, cooldown, last re-post, Remove; auto-publish
-channel list + "published today"; auto-thread rules with an inline editor) tabs. Tags API:
-`GET/POST /guilds/:guildId/community/tags`, `PUT/DELETE .../tags/:tagId`. Removing a sticky from the dashboard
-deletes the record and stops re-posts; the bot's last posted copy stays in Discord (the API has no gateway) — delete
-it there or run `/sticky remove`. The Channels tab and the generic plugin config drawer edit the same
-`autoPublish` / `autoThreads` keys.
+channel list + "published today"; auto-thread rules with an inline editor; server-stats counters: attach/edit/remove
+
+- refresh interval, new counters are created with `/statschannel create`) tabs. Tags API:
+  `GET/POST /guilds/:guildId/community/tags`, `PUT/DELETE .../tags/:tagId`. Removing a sticky from the dashboard
+  deletes the record and stops re-posts; the bot's last posted copy stays in Discord (the API has no gateway) — delete
+  it there or run `/sticky remove`. The Channels tab and the generic plugin config drawer edit the same
+  `autoPublish` / `autoThreads` keys.

@@ -11,6 +11,7 @@ import { command as tagCommand } from './commands/tag';
 import { command as stickyCommand } from './commands/sticky';
 import { command as channelAutoCommand } from './commands/channels';
 import { channelAutomationsHandler } from './events/channel-automations';
+import { command as statsChannelCommand } from './commands/statschannel';
 import { pollComponents } from './components/poll';
 import { giveawayComponents } from './components/giveaway';
 import { suggestionComponents } from './components/suggestion';
@@ -27,6 +28,7 @@ import { reminderSweepJob } from './jobs/reminder-sweep';
 import { eventReminderJob } from './jobs/event-reminder';
 import { suggestionSyncJob } from './jobs/suggestion-sync';
 import { stickyRepostJob } from './jobs/sticky-repost';
+import { statsRefreshJob } from './jobs/stats-refresh';
 import en from './locales/en.json';
 
 // Registers the `community` locale bundle (see admin/index.ts for the same pattern).
@@ -45,6 +47,7 @@ export const plugin = definePlugin({
     tagCommand,
     stickyCommand,
     channelAutoCommand,
+    statsChannelCommand,
   ],
   components: [
     ...pollComponents,
@@ -64,6 +67,7 @@ export const plugin = definePlugin({
     eventReminderJob,
     suggestionSyncJob,
     stickyRepostJob,
+    statsRefreshJob,
   ],
   async health(ctx) {
     // Tag auto-responders need the Message Content intent. Only report degraded when some guild has actually

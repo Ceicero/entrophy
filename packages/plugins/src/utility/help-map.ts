@@ -62,6 +62,7 @@ export const HELP_MAP: Record<string, PluginId> = {
   tag: 'community',
   sticky: 'community',
   channelauto: 'community',
+  statschannel: 'community',
 
   // economy
   economy: 'economy',

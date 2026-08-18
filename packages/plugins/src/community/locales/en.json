@@ -136,5 +136,24 @@
       "listEmpty": "No auto-thread rules yet. Use /channelauto thread add.",
       "limit": "You can have at most {max} auto-thread rules."
     }
+  },
+  "statschannel": {
+    "limit": "This server already has the maximum of {max} stats channels. Remove one first.",
+    "badToken": "Unknown token(s) in the template: {tokens}. Available tokens: {known}",
+    "onlineNotSupported": "{online} isn't available: counting online members needs Discord's Presence privileged intent, which this bot does not enable (it would expose per-member activity). Use {members}, {humans}, or {bots} instead.",
+    "created": "Stats channel {channel} created. It refreshes automatically (Discord allows 2 renames per 10 minutes per channel).",
+    "createFailed": "I couldn't create the channel — check that I have Manage Channels.",
+    "added": "{channel} will now be renamed to **{name}** on each refresh.",
+    "alreadyAdded": "{channel} is already a stats channel.",
+    "notTracked": "{channel} isn't a stats channel.",
+    "removed": "{channel} is no longer a stats channel. The channel itself was not deleted — remove it in Discord if you no longer want it.",
+    "listTitle": "Server stats channels",
+    "lastRefresh": "Last refresh: {when} · auto-refresh every {minutes} min",
+    "never": "never",
+    "refreshed": "Stats refreshed — {renamed} renamed, {unchanged} already up to date, {dropped} missing channel(s) removed.",
+    "missingPermission": "Some channels could not be renamed: I'm missing Manage Channels on them.",
+    "tooSoon": "Too soon — stats channels can be renamed at most once per 5 minutes. Try again {when}.",
+    "intervalSet": "Stats channels will now refresh every {minutes} minutes.",
+    "humansNote": "Note: the Server Members intent is off, so {humans} equals {members} and {bots} is 0."
   }
 }

@@ -130,6 +130,7 @@ _Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs,
 | Manage Messages       | auto-publish (crosspost announcement messages by other members)                         | Optional  | Only the bot's own announcement messages get published; others are skipped and logged once per hour. |
 | Manage Events         | creating a native Discord scheduled event for /event create                             | Optional  | The event is still tracked and announced in-channel; no Discord Events entry is created.             |
 | Manage Messages       | sticky messages (delete the bot's own previous sticky)                                  | Optional  | The old sticky stays in place; the bot still posts a new one.                                        |
+| Manage Channels       | server-stats counter channels (rename)                                                  | Optional  | Counters stop updating; /statschannel refresh reports the missing permission.                        |
 
 ### Economy (`economy`)
 
