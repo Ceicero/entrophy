@@ -1,10 +1,17 @@
 import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
-import type { GuildConfigDto, GuildSummary } from '@entrophy/types';
+import type { GuildConfigDto, GuildOverviewDto, GuildSummary } from '@entrophy/types';
 import { decryptAccessToken } from '../lib/session';
 import { getCachedUserGuilds, hasManageAccess } from '../lib/discord';
 import { requireAuth, requireGuildAccess } from '../lib/guild-access';
+import { buildPluginSummaries } from '../lib/plugin-summaries';
 import { guildIdParamSchema } from '../lib/schemas';
+
+/** Discord CDN icon URL for a guild's icon hash, or `null` if it has none — the animated-icon (`a_` prefix) rule applies wherever a guild icon is rendered. */
+function iconUrlFor(guildId: string, iconHash: string | null | undefined): string | null {
+  if (!iconHash) return null;
+  return `https://cdn.discordapp.com/icons/${guildId}/${iconHash}.${iconHash.startsWith('a_') ? 'gif' : 'png'}`;
+}
 
 function toGuildConfigDto(
   guildId: string,
@@ -59,45 +66,89 @@ export default async function guildsRoutes(app: ZodFastifyInstance): Promise<voi
     return manageable.map((g): GuildSummary => ({
       id: g.id,
       name: g.name,
-      iconUrl: g.icon
-        ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.${g.icon.startsWith('a_') ? 'gif' : 'png'}`
-        : null,
+      iconUrl: iconUrlFor(g.id, g.icon),
       botPresent: botPresentIds.has(g.id),
       canManage: true,
       owner: g.owner,
     }));
   });
 
+  // `allowBotAbsent`: unlike every other `/:guildId/*` route, the overview must still render (with
+  // `guild.botPresent: false` and a setup issue) for a guild the user manages but hasn't added the bot to yet —
+  // the dashboard lands here first, before "Add to server". The default `requireGuildAccess()` 404s in that
+  // case, which would leave the page with nothing to show.
   app.get(
     '/:guildId',
-    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
-    async (request) => {
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess({ allowBotAbsent: true }) },
+    async (request): Promise<GuildOverviewDto> => {
       const guildId = request.guildId!;
-      const [guild, config, manifests, pluginStateRows] = await Promise.all([
+      const session = request.session!;
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      const [guildRow, config, plugins, openTickets, pendingReviews, moderationCasesLast7d] = await Promise.all([
         app.prisma.guild.findUnique({ where: { id: guildId } }),
         app.configStore.getGuildConfig(guildId),
-        Promise.resolve(app.registry.listManifests()),
-        app.prisma.pluginState.findMany({ where: { guildId } }),
+        buildPluginSummaries(app, guildId),
+        app.prisma.ticket.count({ where: { guildId, status: 'OPEN' } }),
+        app.prisma.enforcerRecord.count({ where: { guildId, kind: 'FLAG', status: 'PENDING' } }),
+        app.prisma.moderationCase.count({ where: { guildId, createdAt: { gte: sevenDaysAgo } } }),
       ]);
 
-      const enabledByPlugin = new Map(pluginStateRows.map((row) => [row.pluginId, row.enabled]));
-      const enabledCount = manifests.filter(
-        (m) => m.alwaysEnabled || (enabledByPlugin.get(m.id) ?? m.defaultEnabled),
-      ).length;
+      const botPresent = Boolean(guildRow?.botPresent);
+      const guild: GuildOverviewDto['guild'] = guildRow
+        ? {
+            id: guildRow.id,
+            name: guildRow.name,
+            iconUrl: iconUrlFor(guildRow.id, guildRow.iconHash),
+            memberCount: guildRow.memberCount,
+            ownerId: guildRow.ownerId,
+            joinedAt: guildRow.joinedAt.toISOString(),
+            botPresent,
+            canManage: true,
+            owner: guildRow.ownerId === session.userId,
+          }
+        : {
+            id: guildId,
+            name: 'Unknown server',
+            iconUrl: null,
+            memberCount: null,
+            ownerId: null,
+            joinedAt: null,
+            botPresent: false,
+            canManage: true,
+            owner: false,
+          };
+
+      const pluginsEnabled = plugins.filter((p) => p.enabled).length;
+      const pluginCount = plugins.length;
+
+      const setupIssues: string[] = [];
+      if (config.modLogChannelId === null) {
+        setupIssues.push('No mod-log channel configured (set one under Settings).');
+      }
+      if (config.modRoleIds.length === 0) {
+        setupIssues.push('No moderator roles configured (set them under Settings).');
+      }
+      if (!botPresent) {
+        setupIssues.push('Entrophy is not in this server yet — invite it from the server list.');
+      }
 
       return {
-        guild: guild
-          ? {
-              id: guild.id,
-              name: guild.name,
-              memberCount: guild.memberCount,
-              ownerId: guild.ownerId,
-              joinedAt: guild.joinedAt.toISOString(),
-            }
-          : null,
+        guild,
         config: toGuildConfigDto(guildId, config),
-        pluginCount: manifests.length,
-        pluginsEnabled: enabledCount,
+        stats: {
+          memberCount: guild.memberCount ?? undefined,
+          pluginsEnabled,
+          pluginCount,
+          openTickets,
+          pendingReviews,
+          moderationCasesLast7d,
+        },
+        plugins,
+        setupIncomplete: setupIssues.length > 0,
+        setupIssues,
+        pluginCount,
+        pluginsEnabled,
       };
     },
   );

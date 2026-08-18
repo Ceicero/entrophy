@@ -6,6 +6,7 @@ import type {
   AuditLogEntryDto,
   DataRequestDto,
   GuildConfigDto,
+  GuildOverviewDto,
   GuildSummary,
   Paginated,
   PluginSummary,
@@ -43,25 +44,7 @@ export function useGuilds() {
   });
 }
 
-/**
- * `GET /guilds/:guildId` — overview stats for a guild's dashboard home page.
- * The API is being built concurrently against the shared DTOs; this shape is deliberately
- * defensive (every field optional) so a slightly different real response doesn't crash the page.
- */
-export interface GuildOverviewDto {
-  guild: GuildSummary;
-  stats?: {
-    memberCount?: number;
-    pluginsEnabled?: number;
-    openTickets?: number;
-    pendingReviews?: number;
-    moderationCasesLast7d?: number;
-  };
-  plugins?: PluginSummary[];
-  setupIncomplete?: boolean;
-  setupIssues?: string[];
-}
-
+/** `GET /guilds/:guildId` — overview stats for a guild's dashboard home page (shared shape: `@entrophy/types`'s `GuildOverviewDto`). */
 export function useGuild(guildId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.guild(guildId ?? ''),

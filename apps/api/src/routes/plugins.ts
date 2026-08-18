@@ -1,8 +1,9 @@
 import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
-import { NotFoundError, env as coreEnv } from '@entrophy/core';
+import { NotFoundError } from '@entrophy/core';
 import { PLUGIN_IDS, type PluginId, type PluginSummary } from '@entrophy/types';
 import { requireGuildAccess } from '../lib/guild-access';
+import { buildPluginSummaries } from '../lib/plugin-summaries';
 import { guildIdParamSchema } from '../lib/schemas';
 import { omitSecretFields, omitSecretSchemaProperties } from '../lib/secret-fields';
 import { zodToJsonSchema } from '../lib/zod-json-schema';
@@ -12,14 +13,6 @@ const pluginIdParamSchema = guildIdParamSchema.extend({
 });
 const configBodySchema = z.record(z.string(), z.unknown());
 
-function intentsEnabled() {
-  return {
-    messageContent: coreEnv.ENABLE_MESSAGE_CONTENT_INTENT,
-    guildMembers: coreEnv.ENABLE_GUILD_MEMBERS_INTENT,
-    guildPresences: coreEnv.ENABLE_GUILD_PRESENCES_INTENT,
-  };
-}
-
 /** `/guilds/:guildId/plugins` — plugin marketplace list, enable/disable, and per-plugin config (ARCHITECTURE.md §10). */
 export default async function pluginsRoutes(app: ZodFastifyInstance): Promise<void> {
   app.get(
@@ -27,38 +20,7 @@ export default async function pluginsRoutes(app: ZodFastifyInstance): Promise<vo
     { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
     async (request): Promise<PluginSummary[]> => {
       const guildId = request.guildId!;
-      const manifests = app.registry.listManifests();
-      const availability = app.registry.availability(
-        coreEnv as unknown as Record<string, unknown>,
-        intentsEnabled(),
-      );
-      const stateRows = await app.prisma.pluginState.findMany({ where: { guildId } });
-      const enabledMap = new Map(stateRows.map((row) => [row.pluginId, row.enabled]));
-
-      return manifests.map((manifest): PluginSummary => {
-        const avail = availability.get(manifest.id) ?? { available: false };
-        return {
-          id: manifest.id,
-          name: manifest.name,
-          description: manifest.description,
-          category: manifest.category,
-          version: manifest.version,
-          enabled: manifest.alwaysEnabled ? true : (enabledMap.get(manifest.id) ?? manifest.defaultEnabled),
-          defaultEnabled: manifest.defaultEnabled,
-          alwaysEnabled: Boolean(manifest.alwaysEnabled),
-          available: avail.available,
-          availabilityReason: avail.reason,
-          dashboardPath: manifest.dashboard?.path,
-          privacyNotes: manifest.privacyNotes ?? [],
-          permissions: manifest.permissions.map((p) => ({
-            permission: String(p.permission),
-            feature: p.feature,
-            optional: p.optional,
-            fallback: p.fallback,
-          })),
-          privilegedIntents: manifest.privilegedIntents ?? [],
-        };
-      });
+      return buildPluginSummaries(app, guildId);
     },
   );
 

@@ -74,6 +74,39 @@ export interface GuildConfigDto {
   dmOnModeration: boolean;
 }
 
+export interface GuildOverviewStats {
+  memberCount?: number;
+  pluginsEnabled: number;
+  pluginCount: number;
+  openTickets: number;
+  pendingReviews: number;
+  moderationCasesLast7d: number;
+}
+
+/** `GET /guilds/:guildId` — overview stats for a guild's dashboard home page (ARCHITECTURE.md §10). */
+export interface GuildOverviewDto {
+  guild: {
+    id: string;
+    name: string;
+    iconUrl: string | null;
+    memberCount: number | null;
+    ownerId: string | null;
+    joinedAt: string | null;
+    botPresent: boolean;
+    canManage: true;
+    owner: boolean;
+  };
+  config: GuildConfigDto;
+  stats: GuildOverviewStats;
+  plugins: PluginSummary[];
+  setupIncomplete: boolean;
+  setupIssues: string[];
+  /** @deprecated use stats.pluginCount */
+  pluginCount: number;
+  /** @deprecated use stats.pluginsEnabled */
+  pluginsEnabled: number;
+}
+
 export interface AuditLogEntryDto {
   id: string;
   guildId: string;
