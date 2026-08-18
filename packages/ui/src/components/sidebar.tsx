@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
+import { Slot, Slottable } from '@radix-ui/react-slot';
 import { cn } from '../lib/cn';
 import { Sheet, SheetContent } from './sheet';
 
@@ -74,7 +74,12 @@ export interface SidebarNavItemProps extends React.AnchorHTMLAttributes<HTMLAnch
   suffix?: React.ReactNode;
 }
 
-/** A single nav row. Pass `asChild` with a routing `<Link>` as the sole child to integrate with Next.js routing. */
+/**
+ * A single nav row. Pass `asChild` with a routing `<Link>` as the sole child to integrate
+ * with Next.js routing; wrap the label in `<span className="flex-1 truncate">` inside the
+ * link to keep the layout (Radix `Slot` renders the link itself, so this component can only
+ * add the icon/suffix as siblings of the link's own content via `Slottable`, not wrap it).
+ */
 export const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
   ({ icon, active, asChild, suffix, className, children, ...props }, ref) => {
     const Comp = asChild ? Slot : 'a';
@@ -92,7 +97,7 @@ export const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItem
         {...props}
       >
         {icon}
-        <span className="flex-1 truncate">{children}</span>
+        {asChild ? <Slottable>{children}</Slottable> : <span className="flex-1 truncate">{children}</span>}
         {suffix}
       </Comp>
     );

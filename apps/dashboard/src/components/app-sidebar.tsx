@@ -52,7 +52,7 @@ export function AppSidebar({ guildId, mobileOpen, onMobileOpenChange }: AppSideb
               }
             >
               <Link href={href} onClick={() => onMobileOpenChange(false)}>
-                {item.label}
+                <span className="flex-1 truncate">{item.label}</span>
               </Link>
             </SidebarNavItem>
           );
