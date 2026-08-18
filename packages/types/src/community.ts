@@ -126,3 +126,9 @@ export interface EconomySettingsDto {
   giveMinAmount: number;
   giveMaxAmount: number;
 }
+
+/** `GET /guilds/:guildId/community/channel-automations/stats` — auto-publish activity for the dashboard Channels tab. */
+export interface ChannelAutomationStatsDto {
+  /** Messages the bot auto-published today (UTC day), read from the community plugin's Redis counter. */
+  autoPublishToday: number;
+}

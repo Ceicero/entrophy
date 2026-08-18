@@ -7,6 +7,8 @@ import { command as suggestionsCommand } from './commands/suggestions';
 import { command as announceCommand } from './commands/announce';
 import { command as remindCommand } from './commands/remind';
 import { command as eventCommand } from './commands/event';
+import { command as channelAutoCommand } from './commands/channels';
+import { channelAutomationsHandler } from './events/channel-automations';
 import { pollComponents } from './components/poll';
 import { giveawayComponents } from './components/giveaway';
 import { suggestionComponents } from './components/suggestion';
@@ -33,7 +35,9 @@ export const plugin = definePlugin({
     announceCommand,
     remindCommand,
     eventCommand,
+    channelAutoCommand,
   ],
+  events: [channelAutomationsHandler],
   components: [...pollComponents, ...giveawayComponents, ...suggestionComponents, ...eventComponents],
   jobs: [
     pollEndJob,

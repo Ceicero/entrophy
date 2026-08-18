@@ -59,5 +59,26 @@
     "listTitle": "Upcoming events",
     "notFound": "That event could not be found.",
     "cancelled": "Event cancelled."
+  },
+  "channelauto": {
+    "publish": {
+      "added": "New messages in {channel} will now be published automatically.",
+      "removed": "Stopped auto-publishing {channel}.",
+      "notListed": "{channel} isn't on the auto-publish list.",
+      "listTitle": "Auto-published channels",
+      "listEmpty": "No channels are auto-published yet. Use /channelauto publish add.",
+      "includeBotsOn": "Messages from other bots and webhooks are published too.",
+      "notAnnouncement": "That isn't an announcement channel — only announcement channels can be published.",
+      "missingManageMessages": "⚠️ I don't have Manage Messages in {channel}, so only my own messages will be published there. Grant it to publish everyone's.",
+      "limit": "You can auto-publish at most {max} channels."
+    },
+    "thread": {
+      "added": "Every post in {channel} now gets its own thread named `{name}` (auto-archives after {archive}).",
+      "removed": "Removed the auto-thread rule for {channel}.",
+      "notFound": "{channel} has no auto-thread rule.",
+      "listTitle": "Auto-thread rules",
+      "listEmpty": "No auto-thread rules yet. Use /channelauto thread add.",
+      "limit": "You can have at most {max} auto-thread rules."
+    }
   }
 }

@@ -4656,6 +4656,26 @@
         }
       }
     },
+    "/guilds/{guildId}/community/channel-automations/stats": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/guilds/{guildId}/economy/config": {
       "get": {
         "parameters": [

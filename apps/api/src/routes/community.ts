@@ -4,6 +4,7 @@ import { NotFoundError, buildPaginated, paginate } from '@entrophy/core';
 import type { Paginated } from '@entrophy/types';
 import type {
   AnnouncementDto,
+  ChannelAutomationStatsDto,
   CommunityEventDto,
   EconomySettingsDto,
   GiveawayDto,
@@ -20,6 +21,7 @@ import {
   toSuggestionDto,
 } from '../lib/community/dto';
 import { cancelAnnouncementJob } from '../lib/community/queue';
+import { autoPublishCountKey, utcDayKey } from '@entrophy/plugins/community/channel-automations';
 import { writeDashboardAudit } from '../lib/audit';
 import { requireGuildAccess } from '../lib/guild-access';
 import { guildIdParamSchema, paginationQuerySchema } from '../lib/schemas';
@@ -48,7 +50,7 @@ const economySettingsBodySchema = z
   })
   .strict();
 
-/** `/guilds/:guildId/community` — giveaways/polls/suggestions/announcements/events overview + suggestion status workflow, plus `/guilds/:guildId/economy/config` (ARCHITECTURE.md §10). */
+/** `/guilds/:guildId/community` — giveaways/polls/suggestions/announcements/events overview + suggestion status workflow, channel-automation stats, plus `/guilds/:guildId/economy/config` (ARCHITECTURE.md §10). */
 export default async function communityRoutes(app: ZodFastifyInstance): Promise<void> {
   // -------------------------------------------------------------------------
   // Giveaways
@@ -259,6 +261,21 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
       });
       const dtos = rows.map((row) => toCommunityEventDto(row, row.rsvps));
       return buildPaginated(dtos, limit, offset);
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // Channel automations (auto-publish / auto-threads live in the plugin config; this only exposes the
+  // bot-side Redis counter for the dashboard's "published today" stat)
+  // -------------------------------------------------------------------------
+
+  app.get(
+    '/:guildId/community/channel-automations/stats',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<ChannelAutomationStatsDto> => {
+      const raw = await app.redis.get(autoPublishCountKey(request.guildId!, utcDayKey()));
+      const parsed = raw === null ? 0 : Number.parseInt(raw, 10);
+      return { autoPublishToday: Number.isFinite(parsed) ? parsed : 0 };
     },
   );
 

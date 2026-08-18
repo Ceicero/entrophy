@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Paginated } from '@entrophy/types';
 import type {
   AnnouncementDto,
+  ChannelAutomationStatsDto,
   CommunityEventDto,
   GiveawayDto,
   PollDto,
@@ -26,6 +27,8 @@ export const communityQueryKeys = {
     ['guilds', guildId, 'community', 'announcements', cursor ?? null] as const,
   events: (guildId: string, cursor?: string) =>
     ['guilds', guildId, 'community', 'events', cursor ?? null] as const,
+  channelAutomationStats: (guildId: string) =>
+    ['guilds', guildId, 'community', 'channel-automations', 'stats'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -137,5 +140,19 @@ export function useCommunityEvents(guildId: string | undefined, cursor?: string)
         `/guilds/${guildId}/community/events${toQueryString({ cursor })}`,
       ),
     enabled: Boolean(guildId),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Channel automations (auto-publish / auto-threads config lives in the plugin config; this is just the counter)
+// ---------------------------------------------------------------------------
+
+export function useChannelAutomationStats(guildId: string | undefined) {
+  return useQuery({
+    queryKey: communityQueryKeys.channelAutomationStats(guildId ?? ''),
+    queryFn: () =>
+      apiFetch<ChannelAutomationStatsDto>(`/guilds/${guildId}/community/channel-automations/stats`),
+    enabled: Boolean(guildId),
+    staleTime: 30_000,
   });
 }

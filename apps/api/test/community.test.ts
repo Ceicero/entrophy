@@ -356,3 +356,47 @@ describe('community suggestions status', () => {
     await app.close();
   });
 });
+
+describe('community channel-automation stats', () => {
+  it('returns 0 when the bot has not published anything today', async () => {
+    const { app, cookieHeader } = await authedApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/channel-automations/stats`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ autoPublishToday: 0 });
+    await app.close();
+  });
+
+  it("reads the plugin's Redis daily counter", async () => {
+    const { autoPublishCountKey, utcDayKey } =
+      await import('@entrophy/plugins/community/channel-automations');
+    const { app, redis, cookieHeader } = await authedApp();
+    await redis.set(autoPublishCountKey(GUILD_ID, utcDayKey()), '7');
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/channel-automations/stats`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ autoPublishToday: 7 });
+    await app.close();
+  });
+
+  it('403s a user without access to the guild', async () => {
+    const built = await buildTestApp({
+      guild: { findUnique: async () => ({ id: GUILD_ID, botPresent: true }) },
+    });
+    const { cookieHeader } = await loginAs(built.app, built.redis, { userId: USER_ID });
+    await seedUserGuilds(built.redis, USER_ID, []);
+    const res = await built.app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/channel-automations/stats`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(403);
+    await built.app.close();
+  });
+});

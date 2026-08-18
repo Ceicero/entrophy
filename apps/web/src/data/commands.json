@@ -3306,6 +3306,104 @@
               ]
             }
           ]
+        },
+        {
+          "name": "channelauto",
+          "fullName": "/channelauto",
+          "type": "slash",
+          "description": "Channel automations: auto-publish announcements and one-thread-per-post channels.",
+          "staffLevel": "admin",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "add",
+              "fullName": "/channelauto publish add",
+              "description": "Start auto-publishing an announcement channel.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Announcement channel",
+                  "required": true,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/channelauto publish remove",
+              "description": "Stop auto-publishing an announcement channel.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Announcement channel",
+                  "required": true,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/channelauto publish list",
+              "description": "List auto-published channels.",
+              "options": []
+            },
+            {
+              "name": "add",
+              "fullName": "/channelauto thread add",
+              "description": "Add or update an auto-thread rule for a channel.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Text or announcement channel",
+                  "required": true,
+                  "type": "Channel"
+                },
+                {
+                  "name": "name",
+                  "description": "Thread name template: {user}, {user.tag}, {server}, {date} (default: \"{user} — {date}\")",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "archive",
+                  "description": "Auto-archive after inactivity (default: 1 day)",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "require_attachment",
+                  "description": "Only thread posts with an attachment or embed (default: false)",
+                  "required": false,
+                  "type": "Boolean"
+                },
+                {
+                  "name": "starter",
+                  "description": "Optional message the bot posts in each new thread (same tokens as name)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/channelauto thread remove",
+              "description": "Remove the auto-thread rule for a channel.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Channel",
+                  "required": true,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/channelauto thread list",
+              "description": "List auto-thread rules.",
+              "options": []
+            }
+          ]
         }
       ]
     },
