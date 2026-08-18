@@ -155,6 +155,30 @@ export interface TagBodyDto {
   staffOnly?: boolean;
 }
 
+/** The optional embed of a sticky message — same flat shape as `/embed builder`'s payload. */
+export interface StickyEmbedDto {
+  title?: string;
+  description?: string;
+  colorHex?: string;
+  imageUrl?: string;
+  footer?: string;
+}
+
+/** A staff message the bot keeps re-posting at the bottom of a channel (`/sticky set`). */
+export interface StickyMessageDto {
+  id: string;
+  channelId: string;
+  content: string | null;
+  embed: StickyEmbedDto | null;
+  cooldownSeconds: number;
+  /** Id of the bot's current sticky post in the channel (null until first posted / after staff deleted it). */
+  lastMessageId: string | null;
+  lastPostedAt: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EconomySettingsDto {
   currencyName: string;
   currencySymbol: string;

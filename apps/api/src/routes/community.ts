@@ -2,6 +2,7 @@ import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
 import { AppError, AuditAction, NotFoundError, buildPaginated, paginate } from '@entrophy/core';
 import { Prisma } from '@entrophy/database';
+import { stickyChannelsKey } from '@entrophy/plugins/community/sticky-keys';
 import type { Paginated } from '@entrophy/types';
 import type {
   AnnouncementDto,
@@ -10,6 +11,7 @@ import type {
   GiveawayDto,
   PollDto,
   PollResultsDto,
+  StickyMessageDto,
   SuggestionDto,
   TagDto,
 } from '@entrophy/types/community';
@@ -19,6 +21,7 @@ import {
   toGiveawayDto,
   toPollDto,
   toPollResultsDto,
+  toStickyDto,
   toSuggestionDto,
   toTagDto,
 } from '../lib/community/dto';
@@ -82,6 +85,7 @@ const suggestionStatusSchema = z.object({
 
 const pollParamSchema = guildIdParamSchema.extend({ pollId: z.string().min(1) });
 const announcementParamSchema = guildIdParamSchema.extend({ announcementId: z.string().min(1) });
+const stickyParamSchema = guildIdParamSchema.extend({ stickyId: z.string().min(1) });
 
 const economySettingsBodySchema = z
   .object({
@@ -96,7 +100,7 @@ const economySettingsBodySchema = z
   })
   .strict();
 
-/** `/guilds/:guildId/community` — giveaways/polls/suggestions/announcements/events overview + suggestion status workflow, plus `/guilds/:guildId/economy/config` (ARCHITECTURE.md §10). */
+/** `/guilds/:guildId/community` — giveaways/polls/suggestions/announcements/events/stickies overview + suggestion status workflow, plus `/guilds/:guildId/economy/config` (ARCHITECTURE.md §10). */
 export default async function communityRoutes(app: ZodFastifyInstance): Promise<void> {
   // -------------------------------------------------------------------------
   // Giveaways
@@ -445,6 +449,56 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
       });
       await app.redis.del(tagTriggersCacheKey(guildId));
 
+      reply.status(204);
+      return null;
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // Sticky messages (list + remove; creating one needs the bot to post, so that stays in Discord: /sticky set)
+  // -------------------------------------------------------------------------
+
+  app.get(
+    '/:guildId/community/stickies',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<StickyMessageDto[]> => {
+      const guildId = request.guildId!;
+      const rows = await app.prisma.stickyMessage.findMany({
+        where: { guildId },
+        orderBy: { createdAt: 'asc' },
+      });
+      return rows.map(toStickyDto);
+    },
+  );
+
+  app.delete(
+    '/:guildId/community/stickies/:stickyId',
+    { schema: { params: stickyParamSchema }, preHandler: requireGuildAccess() },
+    async (request, reply) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { stickyId } = request.params as { stickyId: string };
+      const existing = await app.prisma.stickyMessage.findFirst({ where: { id: stickyId, guildId } });
+      if (!existing) throw new NotFoundError('Sticky message not found.');
+
+      await app.prisma.stickyMessage.delete({ where: { id: stickyId } });
+      // The bot's messageCreate handler consults this cached channel set before any DB read — drop it so the
+      // channel stops re-posting right away. The bot's last posted copy stays in Discord (the API has no
+      // gateway); staff delete it there or run `/sticky remove`.
+      await app.redis.del(stickyChannelsKey(guildId));
+
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.CommunityStickyRemove,
+        targetType: 'sticky_message',
+        targetId: stickyId,
+        before: {
+          channelId: existing.channelId,
+          content: existing.content,
+          cooldownSeconds: existing.cooldownSeconds,
+        },
+      });
       reply.status(204);
       return null;
     },

@@ -119,7 +119,7 @@ _Leveling/XP with anti-farming controls, leaderboards, a reputation system, a st
 
 ### Community (`community`)
 
-_Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, and tags (custom commands / auto-responders)._ (enabled by default, community)
+_Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, tags (custom commands / auto-responders), and sticky messages._ (enabled by default, community)
 
 | Permission            | Feature                                                                                 | Required? | Fallback if missing                                                                      |
 | --------------------- | --------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------- |
@@ -128,6 +128,7 @@ _Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs,
 | Manage Threads        | auto-threading suggestions                                                              | Optional  | The suggestion is still posted; no thread is created.                                    |
 | Create Public Threads | auto-threading suggestions                                                              | Optional  | The suggestion is still posted; no thread is created.                                    |
 | Manage Events         | creating a native Discord scheduled event for /event create                             | Optional  | The event is still tracked and announced in-channel; no Discord Events entry is created. |
+| Manage Messages       | sticky messages (delete the bot's own previous sticky)                                  | Optional  | The old sticky stays in place; the bot still posts a new one.                            |
 
 ### Economy (`economy`)
 

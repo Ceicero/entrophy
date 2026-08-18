@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { redisKey } from '@entrophy/core';
 import { buildTestApp, loginAs, seedUserGuilds } from './helpers/build-test-app';
 
 const GUILD_ID = '111111111111111111';
@@ -592,6 +593,123 @@ describe('community tags (spec CG-02)', () => {
       url: `/guilds/${GUILD_ID}/community/tags`,
       headers: { cookie: cookieHeader },
       payload: { name: 'x', content: 'y' },
+    });
+    expect(res.statusCode).toBe(403);
+    await app.close();
+  });
+});
+
+describe('community sticky messages', () => {
+  const stickyRow = {
+    id: 'st1',
+    guildId: GUILD_ID,
+    channelId: 'c1',
+    content: 'Post LFG requests here',
+    embed: { title: 'LFG rules', description: 5 },
+    cooldownSeconds: 10,
+    lastMessageId: 'm1',
+    lastPostedAt: new Date('2026-02-01T00:00:00Z'),
+    createdBy: 'mod1',
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+    updatedAt: new Date('2026-01-02T00:00:00Z'),
+  };
+
+  it('lists stickies as DTOs (embed normalised, dates as ISO strings)', async () => {
+    const { app, cookieHeader } = await authedApp({ stickyMessage: { findMany: async () => [stickyRow] } });
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/community/stickies`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toHaveLength(1);
+    expect(res.json()[0]).toMatchObject({
+      id: 'st1',
+      channelId: 'c1',
+      content: 'Post LFG requests here',
+      cooldownSeconds: 10,
+      lastMessageId: 'm1',
+      lastPostedAt: '2026-02-01T00:00:00.000Z',
+      createdBy: 'mod1',
+    });
+    // The non-string `description` is dropped by the DTO mapper; only the title survives.
+    expect(res.json()[0].embed).toEqual({ title: 'LFG rules' });
+    expect(res.json()[0]).not.toHaveProperty('guildId');
+
+    await app.close();
+  });
+
+  it('rejects an unauthenticated list request', async () => {
+    const { app } = await authedApp();
+    const res = await app.inject({ method: 'GET', url: `/guilds/${GUILD_ID}/community/stickies` });
+    expect(res.statusCode).toBe(401);
+    await app.close();
+  });
+
+  it('DELETE removes the row, drops the bot-side channel cache, and writes an audit entry', async () => {
+    const deletes: unknown[] = [];
+    const audits: unknown[] = [];
+    const { app, mutHeaders, redis } = await authedApp({
+      stickyMessage: {
+        findFirst: async () => stickyRow,
+        delete: async (args: unknown) => {
+          deletes.push(args);
+          return stickyRow;
+        },
+      },
+      auditLog: {
+        create: async (args: unknown) => {
+          audits.push(args);
+          return { id: 'a1' };
+        },
+      },
+    });
+    const cacheKey = redisKey('community', 'sticky-channels', GUILD_ID);
+    await redis.set(cacheKey, JSON.stringify(['c1']));
+
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/community/stickies/st1`,
+      headers: mutHeaders,
+    });
+    expect(res.statusCode).toBe(204);
+    expect(deletes).toHaveLength(1);
+    expect((deletes[0] as { where: { id: string } }).where.id).toBe('st1');
+    expect(await redis.get(cacheKey)).toBeNull();
+    expect(audits).toHaveLength(1);
+    expect((audits[0] as { data: Record<string, unknown> }).data).toMatchObject({
+      guildId: GUILD_ID,
+      actorId: USER_ID,
+      action: 'community.sticky.remove',
+      targetType: 'sticky_message',
+      targetId: 'st1',
+      source: 'DASHBOARD',
+    });
+
+    await app.close();
+  });
+
+  it('DELETE 404s for a sticky that does not belong to the guild', async () => {
+    const { app, mutHeaders, prismaCalls } = await authedApp({
+      stickyMessage: { findFirst: async () => null },
+    });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/community/stickies/nope`,
+      headers: mutHeaders,
+    });
+    expect(res.statusCode).toBe(404);
+    expect(prismaCalls.some((c) => c.model === 'stickyMessage' && c.method === 'delete')).toBe(false);
+    await app.close();
+  });
+
+  it('DELETE requires the CSRF header', async () => {
+    const { app, cookieHeader } = await authedApp({ stickyMessage: { findFirst: async () => stickyRow } });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/community/stickies/st1`,
+      headers: { cookie: cookieHeader },
     });
     expect(res.statusCode).toBe(403);
     await app.close();

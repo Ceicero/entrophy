@@ -8,12 +8,15 @@ import { command as announceCommand } from './commands/announce';
 import { command as remindCommand } from './commands/remind';
 import { command as eventCommand } from './commands/event';
 import { command as tagCommand } from './commands/tag';
+import { command as stickyCommand } from './commands/sticky';
 import { pollComponents } from './components/poll';
 import { giveawayComponents } from './components/giveaway';
 import { suggestionComponents } from './components/suggestion';
 import { eventComponents } from './components/event';
 import { tagComponents } from './components/tag-modal';
 import { tagTriggersHandler } from './events/tag-triggers';
+import { stickyComponents } from './components/sticky';
+import { stickyMessageCreateHandler } from './events/sticky';
 import { pollEndJob } from './jobs/poll-end';
 import { giveawayEndJob } from './jobs/giveaway-end';
 import { announcementRunJob } from './jobs/announcement-run';
@@ -21,6 +24,7 @@ import { reminderDeliverJob } from './jobs/reminder-deliver';
 import { reminderSweepJob } from './jobs/reminder-sweep';
 import { eventReminderJob } from './jobs/event-reminder';
 import { suggestionSyncJob } from './jobs/suggestion-sync';
+import { stickyRepostJob } from './jobs/sticky-repost';
 import en from './locales/en.json';
 
 // Registers the `community` locale bundle (see admin/index.ts for the same pattern).
@@ -37,6 +41,7 @@ export const plugin = definePlugin({
     remindCommand,
     eventCommand,
     tagCommand,
+    stickyCommand,
   ],
   components: [
     ...pollComponents,
@@ -44,8 +49,9 @@ export const plugin = definePlugin({
     ...suggestionComponents,
     ...eventComponents,
     ...tagComponents,
+    ...stickyComponents,
   ],
-  events: [tagTriggersHandler],
+  events: [tagTriggersHandler, stickyMessageCreateHandler],
   jobs: [
     pollEndJob,
     giveawayEndJob,
@@ -54,6 +60,7 @@ export const plugin = definePlugin({
     reminderSweepJob,
     eventReminderJob,
     suggestionSyncJob,
+    stickyRepostJob,
   ],
   async health(ctx) {
     // Tag auto-responders need the Message Content intent. Only report degraded when some guild has actually

@@ -8,6 +8,7 @@ import type {
   PollOption,
   PollVote,
   ScheduledAnnouncement,
+  StickyMessage,
   Suggestion,
   Tag,
 } from '@entrophy/database';
@@ -19,11 +20,13 @@ import type {
   PollDto,
   PollOptionDto,
   PollResultsDto,
+  StickyMessageDto,
   SuggestionDto,
   TagDto,
   TagEmbedDto,
 } from '@entrophy/types/community';
 import { isTagEmbedEmpty, tagEmbedSchema } from './tag-schemas';
+import { parseStickyEmbed } from '@entrophy/plugins/community/sticky-keys';
 
 export function toPollOptionDto(row: PollOption, votes: PollVote[], anonymous: boolean): PollOptionDto {
   const optionVotes = votes.filter((v) => v.optionId === row.id);
@@ -186,6 +189,21 @@ export function toTagDto(row: Tag): TagDto {
     uses: row.uses,
     createdBy: row.createdBy,
     updatedBy: row.updatedBy,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+export function toStickyDto(row: StickyMessage): StickyMessageDto {
+  return {
+    id: row.id,
+    channelId: row.channelId,
+    content: row.content,
+    embed: parseStickyEmbed(row.embed),
+    cooldownSeconds: row.cooldownSeconds,
+    lastMessageId: row.lastMessageId,
+    lastPostedAt: row.lastPostedAt ? row.lastPostedAt.toISOString() : null,
+    createdBy: row.createdBy,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

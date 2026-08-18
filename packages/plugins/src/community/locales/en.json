@@ -104,5 +104,16 @@
     "infoUpdatedAt": "Last updated",
     "yes": "Yes",
     "no": "No"
+  },
+  "sticky": {
+    "set": "Sticky message set in {channel}. It re-posts at most once every {cooldown}s.",
+    "removed": "Sticky message removed from {channel}.",
+    "notFound": "There is no sticky message in {channel}.",
+    "listTitle": "Sticky messages",
+    "listEmpty": "No sticky messages yet. Run /sticky set in a channel to add one.",
+    "limit": "This server already has the maximum of {max} sticky messages. Remove one first.",
+    "empty": "Give the sticky some text or an embed title/description.",
+    "badChannel": "Pick a text or announcement channel I can post in.",
+    "disabled": "Sticky messages are turned off for this server (community → sticky.enabled)."
   }
 }

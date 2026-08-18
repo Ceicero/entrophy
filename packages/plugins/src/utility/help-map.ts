@@ -60,6 +60,7 @@ export const HELP_MAP: Record<string, PluginId> = {
   remind: 'community',
   event: 'community',
   tag: 'community',
+  sticky: 'community',
 
   // economy
   economy: 'economy',

@@ -32,6 +32,13 @@ export const configSchema = z.object({
       maxOptions: z.number().int().min(2).max(10).default(10),
     })
     .default({}),
+  sticky: z
+    .object({
+      enabled: z.boolean().default(true),
+      maxPerGuild: z.number().int().min(1).max(100).default(25),
+      defaultCooldownSeconds: z.number().int().min(3).max(600).default(10),
+    })
+    .default({}),
 });
 
 export type CommunityConfig = z.infer<typeof configSchema>;
@@ -40,7 +47,7 @@ export const manifest = defineManifest({
   id: 'community',
   name: 'Community',
   description:
-    'Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, and tags (custom commands / auto-responders).',
+    'Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, tags (custom commands / auto-responders), and sticky messages.',
   category: 'community',
   version: '0.1.0',
   defaultEnabled: true,
@@ -75,10 +82,17 @@ export const manifest = defineManifest({
       optional: true,
       fallback: 'The event is still tracked and announced in-channel; no Discord Events entry is created.',
     },
+    {
+      permission: PermissionFlagsBits.ManageMessages,
+      feature: "sticky messages (delete the bot's own previous sticky)",
+      optional: true,
+      fallback: 'The old sticky stays in place; the bot still posts a new one.',
+    },
   ],
-  // Guilds + GuildMessages are needed for the tag auto-responder's `messageCreate` handler; the privileged
-  // Message Content intent only *degrades* the plugin (triggers inactive, `/tag` still works) — see the
-  // registry's availability() and docs/PLUGINS.md "Availability vs. enabled".
+  // Guilds + GuildMessages are needed for the tag auto-responder's and sticky messages' `messageCreate`
+  // handlers (sticky reads no content — only that a message was posted); the privileged Message Content
+  // intent only *degrades* the plugin (tag triggers inactive, `/tag` still works) — see the registry's
+  // availability() and docs/PLUGINS.md "Availability vs. enabled".
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   privilegedIntents: ['MessageContent'],
   requiredEnv: [],
@@ -89,5 +103,6 @@ export const manifest = defineManifest({
     'Anonymous polls never store or display who voted for which option — only per-option counts.',
     'Reminder message text you set with /remind is stored until it is delivered (or cancelled) so it can be sent later.',
     'Tags store the text/embed staff wrote and a use counter. Auto-responder triggers compare incoming messages against your trigger phrases in memory only when the Message Content intent is enabled; the messages themselves are never stored.',
+    "Sticky messages store only the text/embed staff wrote and the id of the bot's own last post.",
   ],
 });

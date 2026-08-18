@@ -267,6 +267,7 @@ model Guild {
   tempVoiceChannels      TempVoiceChannel[]
   communityEvents        CommunityEvent[]
   tags                   Tag[]
+  stickyMessages         StickyMessage[]
   levelProfiles          LevelProfile[]
   levelRewards           LevelReward[]
   reputationEvents       ReputationEvent[]
@@ -999,6 +1000,26 @@ model Tag {
 
   @@unique([guildId, name])
   @@index([guildId, triggerMode])
+}
+
+/** One staff-authored message the bot keeps re-posting at the bottom of a channel (community sticky messages).
+ * Stores only the text/embed staff wrote plus the id of the bot's own last post — never member messages. */
+model StickyMessage {
+  id              String    @id @default(cuid())
+  guildId         String
+  guild           Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  channelId       String
+  content         String?
+  embed           Json?
+  cooldownSeconds Int       @default(10)
+  lastMessageId   String?
+  lastPostedAt    DateTime?
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([guildId, channelId])
+  @@index([guildId])
 }
 
 // ---------------------------------------------------------------------------
