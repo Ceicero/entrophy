@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/brand/entrophy-skull.jpg" width="120" alt="Entrophy" />
+  <img src="assets/brand/entrophy-skull.png" width="120" alt="Entrophy" />
 </p>
 
 <h1 align="center">Entrophy</h1>
@@ -100,7 +100,7 @@ entrophy/
 ├── infra/
 │   ├── docker/           Dockerfile.bot, Dockerfile.api, Dockerfile.dashboard, Dockerfile.web
 │   └── DEPLOYMENT.md
-├── assets/brand/         Logo source (entrophy-skull.jpg / .png)
+├── assets/brand/         Logo source (entrophy-skull.png / .jpg)
 ├── docs/                 SPEC, ARCHITECTURE, PERMISSIONS, TROUBLESHOOTING, and more
 ├── .github/workflows/ci.yml
 ├── docker-compose.yml
@@ -133,8 +133,8 @@ See `docs/ARCHITECTURE.md` for the full binding design and `docs/SPEC.md` for pr
 1. Go to <https://discord.com/developers/applications> and click **New Application**.
 2. Name it (e.g. "Entrophy") and click **Create**.
 3. On the **General Information** page, click the app icon and upload
-   `assets/brand/entrophy-skull.jpg` as the application icon. Click **Save Changes**.
-4. Click **Bot** in the left sidebar. Upload the same `assets/brand/entrophy-skull.jpg` as the bot's
+   `assets/brand/entrophy-skull.png` as the application icon. Click **Save Changes**.
+4. Click **Bot** in the left sidebar. Upload the same `assets/brand/entrophy-skull.png` as the bot's
    avatar.
 5. Still on the **Bot** page, click **Reset Token** → confirm → **Copy**. This is your
    `DISCORD_TOKEN` — treat it like a password; it's shown only once per reset.

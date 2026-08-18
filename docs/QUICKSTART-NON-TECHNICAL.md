@@ -26,10 +26,10 @@ running this locally on their own machine is a separate, more technical path cov
 2. Click **New Application** (top right). Name it **Entrophy**. Agree to the terms, click
    **Create**.
 3. On the **General Information** page: click the icon circle, upload
-   `assets/brand/entrophy-skull.jpg` from the project folder as the app icon. Click **Save
+   `assets/brand/entrophy-skull.png` from the project folder as the app icon. Click **Save
    Changes**.
 4. Click **Bot** in the left sidebar. Under the bot's icon, click it and upload the same
-   `assets/brand/entrophy-skull.jpg` file as the bot's avatar too.
+   `assets/brand/entrophy-skull.png` file as the bot's avatar too.
 5. Still on the **Bot** page, click **Reset Token**, confirm, then click **Copy**. This is your
    bot's password — paste it somewhere temporarily safe (a private note), you'll need it in step
    4 below. If you lose it later, come back here and reset it again.

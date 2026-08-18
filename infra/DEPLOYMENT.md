@@ -191,7 +191,7 @@ railway run --service bot pnpm --filter @entrophy/bot set-avatar
 `commands:register` registers slash commands globally (can take up to an hour to show up
 everywhere the first time — set `DEV_GUILD_ID` temporarily on `bot` and re-run for instant
 registration to one test server while you're verifying). `set-avatar` uploads
-`assets/brand/entrophy-skull.jpg` as the bot's Discord avatar — you only need to run it once (Discord
+`assets/brand/entrophy-skull.png` as the bot's Discord avatar — you only need to run it once (Discord
 rate-limits avatar changes).
 
 ### 2.7 Health checks

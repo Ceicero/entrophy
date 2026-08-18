@@ -785,7 +785,7 @@ ship `.env.production.example` pre-filled with them, secrets blank):
 | Discord OAuth redirect                      | `https://api.entrophybot.com/auth/discord/callback`                                                        | `DISCORD_OAUTH_REDIRECT_URI`                                                                 |
 | Stripe webhook                              | `https://api.entrophybot.com/webhooks/stripe`                                                              | `STRIPE_WEBHOOK_SECRET` from that endpoint                                                   |
 | Twitch EventSub / GitHub / generic webhooks | `https://api.entrophybot.com/webhooks/...`                                                                 | —                                                                                            |
-| Brand links                                 | `BRAND.siteUrl = 'https://entrophybot.com'`, embed icon `https://entrophybot.com/brand/entrophy-skull.jpg` | `WEB_URL`                                                                                    |
+| Brand links                                 | `BRAND.siteUrl = 'https://entrophybot.com'`, embed icon `https://entrophybot.com/brand/entrophy-skull.png` | `WEB_URL`                                                                                    |
 | Placeholders in policy templates            | `support@entrophybot.com` (Brandon to confirm mailbox), operator name "Entrophy"                           | —                                                                                            |
 
 DNS (documented in `infra/DEPLOYMENT.md`, cloud-first): at the registrar create `CNAME app` / `CNAME api` /
@@ -794,35 +794,46 @@ instructions); the host provisions TLS automatically. CORS allowlist = `[DASHBOA
 
 ## 22. Brand assets (logo = bot avatar)
 
-The Entrophy logo and bot avatar is a pixel-art skull (dark grey smoky pixels on pure black, square, 1245×1245).
-Canonical file: `assets/brand/entrophy-skull.jpg` (present in the repo, JPEG original); if a lossless
-`assets/brand/entrophy-skull.png` is added later it takes precedence. The sync script picks whichever exists and writes
-`public/brand/manifest.json` (`{ "logo": "/brand/entrophy-skull.jpg" }`) so pages reference the right extension.
-If neither file is present, everything below must degrade gracefully — never fail a build because it is missing.
+The Entrophy logo and bot avatar is a pixel-art skull (brighter/cleaner grey pixels on pure black, square,
+1254×1254), used everywhere: website, dashboard, bot embed icon, and Discord avatar. Canonical file:
+`assets/brand/entrophy-skull.png` (present in the repo, lossless PNG; takes precedence over the `.jpg` when both
+exist). `assets/brand/entrophy-skull.jpg` is the same art re-encoded as JPEG, kept only so any URL or cached
+reference that still names the `.jpg` file keeps serving the current art instead of 404ing or showing stale art. The
+sync script copies every existing shared candidate (both `.png` and `.jpg`, when present) into each app's
+`public/brand/`, and writes `public/brand/manifest.json` with `logo` naming the preferred one
+(`{ "logo": "/brand/entrophy-skull.png" }`) so pages reference the right extension. If no shared file is present,
+everything below must degrade gracefully — never fail a build because it is missing.
 
 - `assets/brand/README.md` documents the expected files and how they are consumed.
-- Website: `apps/web/public/brand/entrophy-skull.png` (copied at build by `scripts/sync-brand.mjs`, root script
-  `brand:sync`, run automatically as `prebuild`/`predev` of web and dashboard; the script is a no-op when the source is
-  missing) used in the header, hero, Open Graph image (`opengraph-image` route rendering the skull on black) and
-  `src/app/icon.png` (Next favicon; a small inline SVG fallback icon `src/app/icon.svg` ships in the repo so the
-  favicon exists before the PNG arrives — the sync script writes `icon.png` next to it, and Next prefers `icon.png`?
-  No — Next serves both; keep only `icon.svg` in git and let sync copy the PNG to `public/brand/` and to
-  `src/app/apple-icon.png`).
-- Dashboard: same sync into `apps/dashboard/public/brand/entrophy-skull.png`; sidebar wordmark shows the skull (falls
-  back to a text wordmark when the image 404s: `<img onError>` → hide).
+- Website: `apps/web/public/brand/entrophy-skull.png` + `.jpg` (copied at build by `scripts/sync-brand.mjs`, root
+  script `brand:sync`, run automatically as `prebuild`/`predev` of web and dashboard; the script is a no-op when the
+  source is missing) used in the header, hero, Open Graph image (`opengraph-image` route rendering the skull on
+  black) and `src/app/icon.png` (Next favicon; a small inline SVG fallback icon `src/app/icon.svg` ships in the repo
+  so the favicon exists before the PNG arrives — the sync script writes `icon.png` next to it, and Next prefers
+  `icon.png`? No — Next serves both; keep only `icon.svg` in git and let sync copy the PNG to `public/brand/` and to
+  `src/app/apple-icon.png`). The `Logo` component (`apps/web/src/components/Logo.tsx`) reads the build-time copy of
+  the manifest at `apps/web/src/data/brand.json` (git-tracked, written by the sync script) rather than fetching
+  `public/brand/manifest.json` at runtime, so the logo path is known at build time in every environment including
+  the Docker standalone runner.
+- Dashboard: same sync into `apps/dashboard/public/brand/entrophy-skull.png` + `.jpg`; the sidebar wordmark
+  (`apps/dashboard/src/components/brand-wordmark.tsx`) reads its own build-time manifest copy at
+  `apps/dashboard/src/data/brand.json` (git-tracked, same pattern as the web app's) rather than hard-coding the
+  path, and falls back to a text wordmark when the image 404s (`<img onError>` → hide) or when the manifest has no
+  logo.
 - Bot: `pnpm --filter @entrophy/bot set-avatar [--file assets/brand/entrophy-skull.png]` (`apps/bot/src/set-avatar.ts`,
   one-off CLI: logs in, `client.user.setAvatar(buffer)`, exits; warns about Discord's avatar-change rate limit) and
   `BRAND.iconUrl = ${WEB_URL}/brand/entrophy-skull.png` used as embed author/footer icon when `WEB_URL` is set (core
-  `constants.ts` exports `brandIconUrl(env)`).
+  `constants.ts` exports `brandIconUrl(env)`, default path `/brand/entrophy-skull.png`, overridable via
+  `BRAND_LOGO_PATH`).
 - Also list `assets/brand/entrophy-skull.png` in the README "Discord Developer Portal setup" step (upload as the App
   Icon and Bot avatar) — the Portal upload is manual.
-- Website-only variant: `assets/brand/entrophy-skull-web.png` (brighter/cleaner crop of the same mark) is what the
-  public website displays for its own logo — header, hero, `apple-icon` — and nothing else. The sync script
-  resolves it from web-specific candidates (`entrophy-skull-web.png`/`.jpg`), falling back to the shared candidates
-  when no web-specific file is present, and copies it (when present) to `apps/web/public/brand/entrophy-skull-web.png`
-  alongside the unchanged shared copy. `apps/web/public/brand/manifest.json` and `apps/web/src/data/brand.json` gain
-  a `sharedLogo` key alongside `logo`: `{ "logo": "/brand/entrophy-skull-web.png", "sharedLogo": "/brand/entrophy-skull.jpg" }`
-  — `logo` is "whatever the website displays" (web variant, or the shared logo on fallback) and `sharedLogo` always
-  points at the shared file for any website code that needs the canonical/bot-avatar image specifically. The
-  dashboard manifest, the bot's `set-avatar` script, and `brandIconUrl` (core `constants.ts`) are untouched and
-  keep reading the shared `entrophy-skull.<ext>` — never the web-only variant.
+- Website-only override (optional, currently unused): `assets/brand/entrophy-skull-web.png`/`.jpg`, if ever added,
+  would be a variant used by the public website's header/hero/`apple-icon` only, resolved from web-specific
+  candidates before falling back to the shared candidates above. No such file exists in the repo today — the shared
+  logo already is the clean/bright art the website wants — but the sync script still supports it: on fallback,
+  `apps/web/public/brand/manifest.json` and `apps/web/src/data/brand.json` gain a `sharedLogo` key alongside `logo`
+  (`{ "logo": "/brand/entrophy-skull.png", "sharedLogo": "/brand/entrophy-skull.png" }` while unused — both point at
+  the same shared file); `logo` is "whatever the website displays" and `sharedLogo` always points at the shared file
+  for any website code that needs the canonical/bot-avatar image specifically. The dashboard manifest, the bot's
+  `set-avatar` script, and `brandIconUrl` (core `constants.ts`) are untouched by this override and always read the
+  shared `entrophy-skull.<ext>` — never the web-only variant.

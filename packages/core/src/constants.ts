@@ -14,7 +14,7 @@ export const BRAND = {
  */
 export function brandIconUrl(env: { WEB_URL?: string; BRAND_LOGO_PATH?: string }): string | undefined {
   if (!env.WEB_URL) return undefined;
-  return `${env.WEB_URL}${env.BRAND_LOGO_PATH ?? '/brand/entrophy-skull.jpg'}`;
+  return `${env.WEB_URL}${env.BRAND_LOGO_PATH ?? '/brand/entrophy-skull.png'}`;
 }
 
 /** Discord embed field/content limits (bytes are UTF-16 code units per Discord's API docs). */
