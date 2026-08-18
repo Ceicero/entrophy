@@ -816,3 +816,13 @@ If neither file is present, everything below must degrade gracefully — never f
   `constants.ts` exports `brandIconUrl(env)`).
 - Also list `assets/brand/entrophy-skull.png` in the README "Discord Developer Portal setup" step (upload as the App
   Icon and Bot avatar) — the Portal upload is manual.
+- Website-only variant: `assets/brand/entrophy-skull-web.png` (brighter/cleaner crop of the same mark) is what the
+  public website displays for its own logo — header, hero, `apple-icon` — and nothing else. The sync script
+  resolves it from web-specific candidates (`entrophy-skull-web.png`/`.jpg`), falling back to the shared candidates
+  when no web-specific file is present, and copies it (when present) to `apps/web/public/brand/entrophy-skull-web.png`
+  alongside the unchanged shared copy. `apps/web/public/brand/manifest.json` and `apps/web/src/data/brand.json` gain
+  a `sharedLogo` key alongside `logo`: `{ "logo": "/brand/entrophy-skull-web.png", "sharedLogo": "/brand/entrophy-skull.jpg" }`
+  — `logo` is "whatever the website displays" (web variant, or the shared logo on fallback) and `sharedLogo` always
+  points at the shared file for any website code that needs the canonical/bot-avatar image specifically. The
+  dashboard manifest, the bot's `set-avatar` script, and `brandIconUrl` (core `constants.ts`) are untouched and
+  keep reading the shared `entrophy-skull.<ext>` — never the web-only variant.
