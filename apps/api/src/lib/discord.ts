@@ -230,7 +230,9 @@ export async function invalidateCachedUserGuilds(redis: Redis, userId: string): 
 // ---------------------------------------------------------------------------
 // Bot-token guild resources (channel/role pickers for the dashboard). These use the bot's own token — never
 // the user's OAuth token, whose `identify guilds` scopes cannot read guild channels/roles — and are cached
-// briefly per guild in Redis, mirroring the OAuth guild-list cache above.
+// briefly per guild in Redis, mirroring the OAuth guild-list cache above. Dashboard settings pages mount
+// several channel/role pickers at once, so a cold cache gets the same in-process de-dup and 429 retry
+// treatment as `getCachedUserGuilds`.
 // ---------------------------------------------------------------------------
 
 const GUILD_RESOURCE_CACHE_TTL_SECONDS = 60;
@@ -268,6 +270,16 @@ export function hasBotToken(): boolean {
   return Boolean(env.DISCORD_TOKEN);
 }
 
+function requestWithBotToken(path: string, token: string): Promise<Response> {
+  return fetch(`${DISCORD_API_BASE}${path}`, {
+    headers: { Authorization: `Bot ${token}` },
+  });
+}
+
+/**
+ * Fetches a path with the bot token, bypassing the cache. On a 429, waits out `retry_after` (capped at 5s)
+ * and retries exactly once before giving up — mirrors `fetchDiscordUserGuildsUncached`.
+ */
 async function fetchWithBotToken<T>(path: string): Promise<T> {
   if (!env.DISCORD_TOKEN) {
     throw new AppError(
@@ -279,45 +291,93 @@ async function fetchWithBotToken<T>(path: string): Promise<T> {
       },
     );
   }
-  const res = await fetch(`${DISCORD_API_BASE}${path}`, {
-    headers: { Authorization: `Bot ${env.DISCORD_TOKEN}` },
-  });
+  const token = env.DISCORD_TOKEN;
+  const res = await requestWithBotToken(path, token);
+  if (res.status === 429) {
+    await sleep(await parseRetryAfterMs(res));
+    const retryRes = await requestWithBotToken(path, token);
+    if (!retryRes.ok) {
+      throw new ExternalServiceError(`Discord API request failed (${retryRes.status}).`);
+    }
+    return (await retryRes.json()) as T;
+  }
   if (!res.ok) {
     throw new ExternalServiceError(`Discord API request failed (${res.status}).`);
   }
   return (await res.json()) as T;
 }
 
-/** Fetches (cached 60s per guild) the guild's pickable channels via the bot token, sorted by position. */
-export async function getCachedGuildChannels(redis: Redis, guildId: string): Promise<DiscordChannelOption[]> {
-  const cacheKey = redisKey('guildchannels', guildId);
+/**
+ * In-process de-dup for concurrent bot-token guild-resource fetches on a cold cache, shared by
+ * `getCachedGuildChannels` and `getCachedGuildRoles` (see `inflightUserGuilds` above for the rationale).
+ * Keyed by `${resource}:${guildId}` so the two resources never dedupe against each other. Always cleared
+ * in `finally` so a failed fetch doesn't wedge later calls.
+ */
+const inflightGuildResources = new Map<string, Promise<unknown>>();
+
+/**
+ * Shared cache-check → in-flight-check → double-check → fetch → set flow for a bot-token guild resource.
+ * `resource` is the Redis cache-key namespace (e.g. `'guildchannels'`) and also the in-flight map's
+ * namespace. `load` fetches and transforms the raw Discord response into the shape that gets cached.
+ */
+async function getCachedGuildResource<T>(
+  redis: Redis,
+  resource: string,
+  guildId: string,
+  load: () => Promise<T>,
+): Promise<T> {
+  const cacheKey = redisKey(resource, guildId);
   const cached = await redis.get(cacheKey);
   if (cached !== null) {
-    return JSON.parse(cached) as DiscordChannelOption[];
+    return JSON.parse(cached) as T;
   }
-  const raw = await fetchWithBotToken<DiscordGuildChannel[]>(`/guilds/${guildId}/channels`);
-  const channels: DiscordChannelOption[] = raw
-    .filter((c) => PICKABLE_CHANNEL_TYPES.has(c.type))
-    .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name))
-    .map((c) => ({ id: c.id, name: c.name, type: c.type }));
-  await redis.set(cacheKey, JSON.stringify(channels), 'EX', GUILD_RESOURCE_CACHE_TTL_SECONDS);
-  return channels;
+
+  const inflightKey = `${resource}:${guildId}`;
+  const inflight = inflightGuildResources.get(inflightKey);
+  if (inflight) {
+    return inflight as Promise<T>;
+  }
+
+  const fetchPromise = (async () => {
+    // Double-checked against Redis: cheap protection against a *different* process having just populated
+    // the cache (a real distributed lock would be overkill for a 60s freshness cache).
+    const recheck = await redis.get(cacheKey);
+    if (recheck !== null) {
+      return JSON.parse(recheck) as T;
+    }
+    const value = await load();
+    await redis.set(cacheKey, JSON.stringify(value), 'EX', GUILD_RESOURCE_CACHE_TTL_SECONDS);
+    return value;
+  })();
+
+  inflightGuildResources.set(inflightKey, fetchPromise);
+  try {
+    return await fetchPromise;
+  } finally {
+    inflightGuildResources.delete(inflightKey);
+  }
+}
+
+/** Fetches (cached 60s per guild) the guild's pickable channels via the bot token, sorted by position. */
+export async function getCachedGuildChannels(redis: Redis, guildId: string): Promise<DiscordChannelOption[]> {
+  return getCachedGuildResource(redis, 'guildchannels', guildId, async () => {
+    const raw = await fetchWithBotToken<DiscordGuildChannel[]>(`/guilds/${guildId}/channels`);
+    return raw
+      .filter((c) => PICKABLE_CHANNEL_TYPES.has(c.type))
+      .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name))
+      .map((c) => ({ id: c.id, name: c.name, type: c.type }));
+  });
 }
 
 /** Fetches (cached 60s per guild) the guild's assignable roles via the bot token (excludes `@everyone`), highest first. */
 export async function getCachedGuildRoles(redis: Redis, guildId: string): Promise<DiscordRoleOption[]> {
-  const cacheKey = redisKey('guildroles', guildId);
-  const cached = await redis.get(cacheKey);
-  if (cached !== null) {
-    return JSON.parse(cached) as DiscordRoleOption[];
-  }
-  const raw = await fetchWithBotToken<DiscordGuildRole[]>(`/guilds/${guildId}/roles`);
-  const roles: DiscordRoleOption[] = raw
-    .filter((r) => r.id !== guildId) // `@everyone` shares the guild id and is never a picker target
-    .sort((a, b) => b.position - a.position || a.name.localeCompare(b.name))
-    .map((r) => ({ id: r.id, name: r.name }));
-  await redis.set(cacheKey, JSON.stringify(roles), 'EX', GUILD_RESOURCE_CACHE_TTL_SECONDS);
-  return roles;
+  return getCachedGuildResource(redis, 'guildroles', guildId, async () => {
+    const raw = await fetchWithBotToken<DiscordGuildRole[]>(`/guilds/${guildId}/roles`);
+    return raw
+      .filter((r) => r.id !== guildId) // `@everyone` shares the guild id and is never a picker target
+      .sort((a, b) => b.position - a.position || a.name.localeCompare(b.name))
+      .map((r) => ({ id: r.id, name: r.name }));
+  });
 }
 
 /** Builds a Discord CDN avatar URL, or `null` if the user has no custom avatar. */
