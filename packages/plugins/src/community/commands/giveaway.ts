@@ -142,7 +142,7 @@ async function handleStart(c: CommandContext): Promise<void> {
   await ctx.prisma.giveaway.update({ where: { id: giveaway.id }, data: { messageId: message.id } });
   await ctx
     .queue('giveaway-end')
-    .add('giveaway-end', { giveawayId: giveaway.id }, { jobId: `gw:${giveaway.id}`, delay: ms });
+    .add('giveaway-end', { giveawayId: giveaway.id }, { jobId: `gw-${giveaway.id}`, delay: ms });
 
   await interaction.reply({
     embeds: [successEmbed(t('giveaway.started', { channel: `<#${channelId}>` }))],
@@ -165,7 +165,7 @@ async function handleEnd(c: CommandContext): Promise<void> {
 
   await ctx
     .queue('giveaway-end')
-    .remove(`gw:${giveaway.id}`)
+    .remove(`gw-${giveaway.id}`)
     .catch(() => undefined);
   await finalizeGiveaway(ctx, giveaway.id);
   await interaction.reply({ embeds: [successEmbed(t('giveaway.ended'))], ephemeral: true });

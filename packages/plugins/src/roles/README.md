@@ -34,7 +34,7 @@ member verification (instant button, staff-approved modal, or CAPTCHA). Disabled
 When `autoRoles.enabled` is on, every member who finishes joining (immediately for servers without membership
 screening; otherwise once `member.pending` flips to false) gets `autoRoles.roleIds` (humans) or
 `autoRoles.botRoleIds` (bot accounts). With `delaySeconds > 0` the grant is queued on `roles.autorole-apply`
-(BullMQ, jobId `autorole:<guildId>:<userId>` so a leave+rejoin inside the window doesn't double-schedule); when it
+(BullMQ, jobId `autorole-<guildId>-<userId>` so a leave+rejoin inside the window doesn't double-schedule); when it
 fires, the member must still be present and not pending, and only roles that are still in the current config are
 applied. Every grant re-runs `checkRoleAssignable` (elevated / managed / above the bot's top role are skipped),
 drops roles the member already holds, and writes a `roles.autorole.apply` audit row with `after.roleIds`

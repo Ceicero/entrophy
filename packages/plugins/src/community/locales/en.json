@@ -160,7 +160,7 @@
     "disabled": "Birthday announcements aren't enabled in this server. Ask an admin to run /birthday config.",
     "badMonth": "That month isn't valid — pick 1 (January) to 12 (December).",
     "badDay": "That day doesn't exist in that month.",
-    "set": "Your birthday is set to **{date}** in this server. Only the month and day are stored — never a year. Use /birthday remove any time to delete it.",
+    "set": "Your birthday is set to **{date}** in this server. Only the month and day are stored — never a year. If this server's public birthday list is on, other members can see it via /birthday view and /birthday upcoming. Use /birthday remove any time to delete it.",
     "removed": "Your birthday has been removed from this server.",
     "nothingToRemove": "You don't have a birthday set in this server.",
     "private": "Birthdays aren't public in this server.",

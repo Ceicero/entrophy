@@ -68,7 +68,10 @@ export async function announceBirthdaysForGuild(
     where: {
       guildId,
       OR: dateMatches,
-      NOT: { lastAnnouncedYear: ln.year },
+      // NOT: { lastAnnouncedYear: ln.year } looks equivalent but ISN'T: Postgres's `<> value` comparison
+      // evaluates to NULL (never TRUE) for a NULL column, so that predicate silently excludes every row whose
+      // birthday has never been announced — first-time birthdays would never fire. Spell out both cases.
+      AND: [{ OR: [{ lastAnnouncedYear: null }, { lastAnnouncedYear: { not: ln.year } }] }],
     },
   });
   if (due.length === 0) return { guildId, announced: 0 };
@@ -99,19 +102,35 @@ export async function announceBirthdaysForGuild(
     announced += 1;
 
     if (role) {
+      let roleAdded = false;
       try {
         await member.roles.add(role, 'Entrophy community: birthday role');
-        const jobData: BirthdayRoleRemoveJobData = { guildId, userId: member.id, roleId: role.id };
-        await ctx.queue('birthday-role-remove').add('birthday-role-remove', jobData, {
-          delay: BIRTHDAY_ROLE_DURATION_MS,
-          jobId: birthdayRoleRemoveJobId(guildId, member.id, ln.year),
-          removeOnComplete: true,
-        });
+        roleAdded = true;
       } catch (err) {
         ctx.logger.warn(
           { err, guildId, userId: member.id, roleId: role.id },
           'community: could not add the birthday role',
         );
+      }
+
+      if (roleAdded) {
+        try {
+          const jobData: BirthdayRoleRemoveJobData = { guildId, userId: member.id, roleId: role.id };
+          await ctx.queue('birthday-role-remove').add('birthday-role-remove', jobData, {
+            delay: BIRTHDAY_ROLE_DURATION_MS,
+            jobId: birthdayRoleRemoveJobId(guildId, member.id, ln.year),
+            removeOnComplete: true,
+          });
+        } catch (err) {
+          ctx.logger.warn(
+            { err, guildId, userId: member.id, roleId: role.id },
+            'community: could not schedule birthday role removal',
+          );
+          // The 24h auto-removal job couldn't be scheduled — undo the grant (best-effort) so it can't become permanent.
+          await member.roles
+            .remove(role.id, 'Entrophy community: could not schedule the automatic removal')
+            .catch(() => undefined);
+        }
       }
     }
 
@@ -136,6 +155,9 @@ export const birthdayAnnounceJob: PluginJob = {
   async processor(ctx) {
     const now = new Date();
     for (const guild of ctx.client.guilds.cache.values()) {
+      // An unavailable guild (regional Discord outage) has an empty channel/role cache — treating that as
+      // "nothing configured" would wipe live config. Wait for it to come back instead.
+      if (!guild.available) continue;
       try {
         if (!(await ctx.isEnabled(guild.id))) continue;
         const cfg = await ctx.getConfig<CommunityConfig>(guild.id);

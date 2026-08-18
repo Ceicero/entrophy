@@ -92,7 +92,7 @@ async function handleSchedule(c: CommandContext): Promise<void> {
   const queue = ctx.queue('announcement-run');
   if (parsed.kind === 'cron') {
     await queue.upsertJobScheduler(
-      `ann:${announcement.id}`,
+      `ann-${announcement.id}`,
       { pattern: parsed.cron, tz: timezone },
       { name: 'announcement-run', data: { announcementId: announcement.id } },
     );
@@ -100,7 +100,7 @@ async function handleSchedule(c: CommandContext): Promise<void> {
     await queue.add(
       'announcement-run',
       { announcementId: announcement.id },
-      { jobId: `ann:${announcement.id}`, delay: Math.max(0, parsed.runAt.getTime() - Date.now()) },
+      { jobId: `ann-${announcement.id}`, delay: Math.max(0, parsed.runAt.getTime() - Date.now()) },
     );
   }
 

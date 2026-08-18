@@ -149,9 +149,13 @@ export function formatBirthdayShort(md: MonthDay): string {
   return `${MONTH_ABBREVIATIONS[md.month - 1] ?? '?'} ${md.day}`;
 }
 
-/** BullMQ job id for the delayed role removal — one per member per year so re-runs can't double-enqueue. */
+/**
+ * BullMQ job id for the delayed role removal — one per member per year so re-runs can't double-enqueue.
+ * Dash-separated (not `:`): BullMQ 5.x rejects a custom jobId containing ':' unless it has exactly 3 segments,
+ * and this one has 4 (`bday-role`, guildId, userId, year) — with ':' the job silently never gets enqueued.
+ */
 export function birthdayRoleRemoveJobId(guildId: string, userId: string, year: number): string {
-  return `bday-role:${guildId}:${userId}:${year}`;
+  return `bday-role-${guildId}-${userId}-${year}`;
 }
 
 /** ~24 hours, the lifetime of the optional birthday role. */

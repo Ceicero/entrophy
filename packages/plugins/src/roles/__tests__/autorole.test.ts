@@ -12,6 +12,18 @@ import { AUTO_ROLE_AUDIT_ACTION, applyAutoRoles, autoRoleJobId, type AutoRoleJob
 // Fixtures
 // ---------------------------------------------------------------------------
 
+// `autoRoles.roleIds`/`botRoleIds` are validated against the Discord snowflake shape (`/^\d{17,20}$/`) by the
+// roles manifest's `autoRolesSchema`, so every fixture role id below is a realistic 18-digit id rather than a
+// readable name — named constants keep the tests legible anyway.
+const ROLE_MEMBER = '100000000000000001';
+const ROLE_NEWCOMER = '100000000000000002';
+const ROLE_MANAGED = '100000000000000003';
+const ROLE_TOOHIGH = '100000000000000004';
+const ROLE_GONE = '100000000000000005'; // never added to guild.roles — simulates a role that's since been deleted
+const ROLE_ADMIN = '100000000000000006';
+const ROLE_BOT_TAG = '100000000000000007';
+const ROLE_OLD = '100000000000000008';
+
 type AuditEntryArg = Parameters<PluginContext['audit']>[0];
 
 /** Typed `ctx.audit` spy — keeps `mock.calls[0][0]` indexable under strict tuple typing. */
@@ -53,7 +65,10 @@ function fakeMember(opts: FakeMemberOptions = {}) {
   const rolesCache = new Map((opts.guildRoles ?? []).map((r) => [r.id, r]));
   const memberRoles = new Map((opts.memberRoleIds ?? []).map((id) => [id, { id }]));
 
-  const rolesFetch = vi.fn(async () => rolesCache);
+  // Mirrors the real `RoleManager.fetch`: called with an id it resolves that one role (or null if it truly
+  // doesn't exist); called with no id it would resolve the full cache (kept for shape-compatibility, though
+  // `grantAutoRoles` only ever calls the single-id form now — see roles/service.ts).
+  const rolesFetch = vi.fn(async (roleId?: string) => (roleId ? (rolesCache.get(roleId) ?? null) : rolesCache));
   const rolesAdd = vi.fn(async (_ids: string[], _reason?: string) => undefined);
 
   const guild: Record<string, unknown> = {
@@ -86,7 +101,7 @@ function fakeMember(opts: FakeMemberOptions = {}) {
 function rolesConfig(patch: Partial<RolesConfig['autoRoles']> = {}, allowElevatedRoles = false): RolesConfig {
   return configSchema.parse({
     allowElevatedRoles,
-    autoRoles: { enabled: true, roleIds: ['member'], botRoleIds: ['bot-tag'], delaySeconds: 0, ...patch },
+    autoRoles: { enabled: true, roleIds: [ROLE_MEMBER], botRoleIds: [ROLE_BOT_TAG], delaySeconds: 0, ...patch },
   });
 }
 
@@ -100,22 +115,23 @@ describe('applyAutoRoles — immediate (delay 0)', () => {
     const { ctx } = createTestContext({ overrides: { audit } });
     const { member, rolesAdd, rolesFetch } = fakeMember({
       guildRoles: [
-        fakeRole('member', { position: 2 }),
-        fakeRole('newcomer', { position: 3 }),
-        fakeRole('managed', { managed: true, position: 2 }),
-        fakeRole('toohigh', { position: 15 }),
+        fakeRole(ROLE_MEMBER, { position: 2 }),
+        fakeRole(ROLE_NEWCOMER, { position: 3 }),
+        fakeRole(ROLE_MANAGED, { managed: true, position: 2 }),
+        fakeRole(ROLE_TOOHIGH, { position: 15 }),
       ],
     });
 
     await applyAutoRoles(
       ctx,
       member,
-      rolesConfig({ roleIds: ['member', 'newcomer', 'managed', 'toohigh', 'gone'] }),
+      rolesConfig({ roleIds: [ROLE_MEMBER, ROLE_NEWCOMER, ROLE_MANAGED, ROLE_TOOHIGH, ROLE_GONE] }),
     );
 
-    expect(rolesFetch).toHaveBeenCalled();
+    // Only the one role missing from cache (ROLE_GONE) triggers a fetch — the rest resolve from cache alone.
+    expect(rolesFetch).toHaveBeenCalledWith(ROLE_GONE);
     expect(rolesAdd).toHaveBeenCalledTimes(1);
-    expect(rolesAdd.mock.calls[0]![0]).toEqual(['member', 'newcomer']);
+    expect(rolesAdd.mock.calls[0]![0]).toEqual([ROLE_MEMBER, ROLE_NEWCOMER]);
     expect(rolesAdd.mock.calls[0]![1]).toBe('Auto-role on join');
 
     expect(audit).toHaveBeenCalledTimes(1);
@@ -130,12 +146,12 @@ describe('applyAutoRoles — immediate (delay 0)', () => {
     expect(entry.guildId).toBe('g1');
     expect(entry.targetId).toBe('u1');
     expect(entry.actorType).toBe('system');
-    expect(entry.after.roleIds).toEqual(['member', 'newcomer']);
+    expect(entry.after.roleIds).toEqual([ROLE_MEMBER, ROLE_NEWCOMER]);
     expect(entry.after.skipped).toEqual(
       expect.arrayContaining([
-        { roleId: 'managed', reason: 'managed' },
-        { roleId: 'toohigh', reason: 'hierarchy' },
-        { roleId: 'gone', reason: 'missing' },
+        { roleId: ROLE_MANAGED, reason: 'managed' },
+        { roleId: ROLE_TOOHIGH, reason: 'hierarchy' },
+        { roleId: ROLE_GONE, reason: 'missing' },
       ]),
     );
   });
@@ -145,29 +161,29 @@ describe('applyAutoRoles — immediate (delay 0)', () => {
     const { ctx } = createTestContext({ overrides: { audit } });
     const { member, rolesAdd } = fakeMember({
       guildRoles: [
-        fakeRole('member', { position: 2 }),
-        fakeRole('admin', { permissions: PermissionFlagsBits.Administrator, position: 2 }),
+        fakeRole(ROLE_MEMBER, { position: 2 }),
+        fakeRole(ROLE_ADMIN, { permissions: PermissionFlagsBits.Administrator, position: 2 }),
       ],
     });
 
-    await applyAutoRoles(ctx, member, rolesConfig({ roleIds: ['member', 'admin'] }));
+    await applyAutoRoles(ctx, member, rolesConfig({ roleIds: [ROLE_MEMBER, ROLE_ADMIN] }));
 
-    expect(rolesAdd.mock.calls[0]![0]).toEqual(['member']);
+    expect(rolesAdd.mock.calls[0]![0]).toEqual([ROLE_MEMBER]);
     const entry = audit.mock.calls[0]![0] as unknown as {
       after: { roleIds: string[]; skipped: { roleId: string; reason: string }[] };
     };
-    expect(entry.after.skipped).toEqual([{ roleId: 'admin', reason: 'elevated' }]);
+    expect(entry.after.skipped).toEqual([{ roleId: ROLE_ADMIN, reason: 'elevated' }]);
   });
 
   it('allows an elevated role when allowElevatedRoles is on', async () => {
     const { ctx } = createTestContext();
     const { member, rolesAdd } = fakeMember({
-      guildRoles: [fakeRole('admin', { permissions: PermissionFlagsBits.BanMembers, position: 2 })],
+      guildRoles: [fakeRole(ROLE_ADMIN, { permissions: PermissionFlagsBits.BanMembers, position: 2 })],
     });
 
-    await applyAutoRoles(ctx, member, rolesConfig({ roleIds: ['admin'] }, true));
+    await applyAutoRoles(ctx, member, rolesConfig({ roleIds: [ROLE_ADMIN] }, true));
 
-    expect(rolesAdd.mock.calls[0]![0]).toEqual(['admin']);
+    expect(rolesAdd.mock.calls[0]![0]).toEqual([ROLE_ADMIN]);
   });
 
   it('uses the bot list for bot accounts and skips roles the member already has', async () => {
@@ -175,8 +191,8 @@ describe('applyAutoRoles — immediate (delay 0)', () => {
     const { ctx } = createTestContext({ overrides: { audit } });
     const { member, rolesAdd } = fakeMember({
       bot: true,
-      guildRoles: [fakeRole('bot-tag', { position: 2 }), fakeRole('member', { position: 2 })],
-      memberRoleIds: ['bot-tag'],
+      guildRoles: [fakeRole(ROLE_BOT_TAG, { position: 2 }), fakeRole(ROLE_MEMBER, { position: 2 })],
+      memberRoleIds: [ROLE_BOT_TAG],
     });
 
     await applyAutoRoles(ctx, member, rolesConfig());
@@ -199,14 +215,14 @@ describe('applyAutoRoles — immediate (delay 0)', () => {
   it('never throws when the Discord role add fails (logs and audits the failure instead)', async () => {
     const audit = auditMock();
     const { ctx } = createTestContext({ overrides: { audit } });
-    const { member, rolesAdd } = fakeMember({ guildRoles: [fakeRole('member', { position: 2 })] });
+    const { member, rolesAdd } = fakeMember({ guildRoles: [fakeRole(ROLE_MEMBER, { position: 2 })] });
     rolesAdd.mockRejectedValueOnce(new Error('Missing Permissions'));
 
     await expect(applyAutoRoles(ctx, member, rolesConfig())).resolves.toBeUndefined();
 
     const entry = audit.mock.calls[0]![0] as unknown as { after: { roleIds: string[]; failed?: string[] } };
     expect(entry.after.roleIds).toEqual([]);
-    expect(entry.after.failed).toEqual(['member']);
+    expect(entry.after.failed).toEqual([ROLE_MEMBER]);
   });
 });
 
@@ -215,11 +231,11 @@ describe('applyAutoRoles — immediate (delay 0)', () => {
 // ---------------------------------------------------------------------------
 
 describe('applyAutoRoles — delayed (delay > 0)', () => {
-  it('schedules an autorole-apply job with the dedupe jobId and does NOT add roles now', async () => {
+  it('schedules an autorole-apply job with the dedupe jobId (dash-separated, removeOnFail) and does NOT add roles now', async () => {
     const add = queueAddMock();
     const queue = vi.fn((_name: string) => ({ add }) as unknown as Queue);
     const { ctx } = createTestContext({ overrides: { queue } });
-    const { member, rolesAdd } = fakeMember({ guildRoles: [fakeRole('member', { position: 2 })] });
+    const { member, rolesAdd } = fakeMember({ guildRoles: [fakeRole(ROLE_MEMBER, { position: 2 })] });
 
     await applyAutoRoles(ctx, member, rolesConfig({ delaySeconds: 60 }));
 
@@ -228,14 +244,17 @@ describe('applyAutoRoles — delayed (delay > 0)', () => {
     const [jobName, data, opts] = add.mock.calls[0]! as unknown as [
       string,
       AutoRoleJobData,
-      { jobId: string; delay: number; removeOnComplete: boolean },
+      { jobId: string; delay: number; removeOnComplete: boolean; removeOnFail: boolean },
     ];
     expect(jobName).toBe('autorole-apply');
-    expect(data).toEqual({ guildId: 'g1', userId: 'u1', roleIds: ['member'] });
+    expect(data).toEqual({ guildId: 'g1', userId: 'u1', roleIds: [ROLE_MEMBER] });
     expect(opts.jobId).toBe(autoRoleJobId('g1', 'u1'));
-    expect(opts.jobId).toBe('autorole:g1:u1');
+    // BullMQ 5.x rejects a custom jobId containing ':' unless it has exactly 3 segments — dashes sidestep that.
+    expect(opts.jobId).toBe('autorole-g1-u1');
     expect(opts.delay).toBe(60_000);
     expect(opts.removeOnComplete).toBe(true);
+    // A failed run must not permanently block later joins for the same guild+user (deterministic jobId).
+    expect(opts.removeOnFail).toBe(true);
 
     expect(rolesAdd).not.toHaveBeenCalled();
   });
@@ -258,14 +277,14 @@ describe('autorole-apply job', () => {
     const audit = auditMock();
     const { client, rolesAdd } = fakeMember({
       left: true,
-      guildRoles: [fakeRole('member', { position: 2 })],
+      guildRoles: [fakeRole(ROLE_MEMBER, { position: 2 })],
     });
     const { ctx } = createTestContext({
       config: rolesConfig({ delaySeconds: 60 }),
       overrides: { audit, client },
     });
 
-    await autoRoleApplyJob.processor(ctx, jobFor({ guildId: 'g1', userId: 'u1', roleIds: ['member'] }));
+    await autoRoleApplyJob.processor(ctx, jobFor({ guildId: 'g1', userId: 'u1', roleIds: [ROLE_MEMBER] }));
 
     expect(rolesAdd).not.toHaveBeenCalled();
     expect(audit).not.toHaveBeenCalled();
@@ -274,14 +293,14 @@ describe('autorole-apply job', () => {
   it('does nothing while the member is still pending membership screening', async () => {
     const { client, rolesAdd } = fakeMember({
       pending: true,
-      guildRoles: [fakeRole('member', { position: 2 })],
+      guildRoles: [fakeRole(ROLE_MEMBER, { position: 2 })],
     });
     const { ctx } = createTestContext({
       config: rolesConfig({ delaySeconds: 60 }),
       overrides: { client },
     });
 
-    await autoRoleApplyJob.processor(ctx, jobFor({ guildId: 'g1', userId: 'u1', roleIds: ['member'] }));
+    await autoRoleApplyJob.processor(ctx, jobFor({ guildId: 'g1', userId: 'u1', roleIds: [ROLE_MEMBER] }));
 
     expect(rolesAdd).not.toHaveBeenCalled();
   });
@@ -289,32 +308,32 @@ describe('autorole-apply job', () => {
   it('only applies roles that are STILL in the current config (admin edited the list while waiting)', async () => {
     const audit = auditMock();
     const { client, rolesAdd } = fakeMember({
-      guildRoles: [fakeRole('member', { position: 2 }), fakeRole('old', { position: 2 })],
+      guildRoles: [fakeRole(ROLE_MEMBER, { position: 2 }), fakeRole(ROLE_OLD, { position: 2 })],
     });
-    // The job was scheduled with ['member', 'old'] but the admin has since removed 'old'.
+    // The job was scheduled with [ROLE_MEMBER, ROLE_OLD] but the admin has since removed ROLE_OLD.
     const { ctx } = createTestContext({
-      config: rolesConfig({ roleIds: ['member'], delaySeconds: 60 }),
+      config: rolesConfig({ roleIds: [ROLE_MEMBER], delaySeconds: 60 }),
       overrides: { audit, client },
     });
 
     await autoRoleApplyJob.processor(
       ctx,
-      jobFor({ guildId: 'g1', userId: 'u1', roleIds: ['member', 'old'] }),
+      jobFor({ guildId: 'g1', userId: 'u1', roleIds: [ROLE_MEMBER, ROLE_OLD] }),
     );
 
     expect(rolesAdd).toHaveBeenCalledTimes(1);
-    expect(rolesAdd.mock.calls[0]![0]).toEqual(['member']);
+    expect(rolesAdd.mock.calls[0]![0]).toEqual([ROLE_MEMBER]);
     expect(audit).toHaveBeenCalledTimes(1);
   });
 
   it('does nothing when auto-roles were disabled while the job waited', async () => {
-    const { client, rolesAdd } = fakeMember({ guildRoles: [fakeRole('member', { position: 2 })] });
+    const { client, rolesAdd } = fakeMember({ guildRoles: [fakeRole(ROLE_MEMBER, { position: 2 })] });
     const { ctx } = createTestContext({
       config: rolesConfig({ enabled: false, delaySeconds: 60 }),
       overrides: { client },
     });
 
-    await autoRoleApplyJob.processor(ctx, jobFor({ guildId: 'g1', userId: 'u1', roleIds: ['member'] }));
+    await autoRoleApplyJob.processor(ctx, jobFor({ guildId: 'g1', userId: 'u1', roleIds: [ROLE_MEMBER] }));
 
     expect(rolesAdd).not.toHaveBeenCalled();
   });

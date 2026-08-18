@@ -22,9 +22,10 @@ describe('deriveSetupState', () => {
     });
   });
 
-  it('counts admin roles alone as staff', () => {
+  it('does NOT count admin roles alone as staff — must agree with the API overview, which only checks modRoleIds', () => {
     expect(deriveSetupState({ ...base, adminRoleIds: ['2'], modLogChannelId: '9' })).toEqual({
-      kind: 'configured',
+      kind: 'incomplete',
+      missing: ['modRoles'],
     });
   });
 

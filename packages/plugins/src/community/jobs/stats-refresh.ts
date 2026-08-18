@@ -2,7 +2,7 @@ import type { Guild } from 'discord.js';
 import { redisKey } from '@entrophy/core';
 import type { PluginContext, PluginJob } from '../../sdk';
 import type { CommunityConfig } from '../manifest';
-import { collectCounts, renderStatsName, type GuildCounts } from '../stats-channels';
+import { collectCounts, renderStatsName, RENAME_BUDGET_MS, type GuildCounts } from '../stats-channels';
 
 /** Redis key holding the ISO timestamp of a guild's last stats refresh; doubles as the periodic-job gate (TTL = `statsRefreshMinutes`). */
 export function statsLastKey(guildId: string): string {
@@ -12,6 +12,17 @@ export function statsLastKey(guildId: string): string {
 /** Redis NX key that throttles the "missing Manage Channels" warning to once per hour per guild. */
 function statsNoPermKey(guildId: string): string {
   return redisKey('community', 'stats-noperm', guildId);
+}
+
+/**
+ * Redis NX key throttling renames of ONE channel — Discord allows 2 renames per 10 minutes PER CHANNEL, but
+ * `statsLastKey` above only gates how often a whole GUILD's refresh pass runs. That's not the same budget: a
+ * guild with several stats channels, or an admin's manual `/statschannel refresh` landing between periodic
+ * passes, could still push a single channel over its own 10-minute limit even while the guild-level gate holds.
+ * TTL mirrors `RENAME_BUDGET_MS` (5 min) so at most ~2 renames land on one channel in any 10-minute window.
+ */
+export function statsChannelRenameKey(guildId: string, channelId: string): string {
+  return redisKey('community', 'stats-rename', guildId, channelId);
 }
 
 const MISSING_PERMISSIONS_CODE = 50013;
@@ -81,6 +92,21 @@ export async function refreshGuildStats(
       result.unchanged += 1;
       continue;
     }
+
+    const claimedBudget = await ctx.redis.set(
+      statsChannelRenameKey(guild.id, entry.channelId),
+      '1',
+      'EX',
+      Math.floor(RENAME_BUDGET_MS / 1000),
+      'NX',
+    );
+    if (!claimedBudget) {
+      // This channel was already renamed within the last RENAME_BUDGET_MS — try again next pass rather than
+      // risk Discord's per-channel rename limit.
+      result.unchanged += 1;
+      continue;
+    }
+
     try {
       await channel.setName(name, 'Server stats');
       result.renamed += 1;
@@ -131,6 +157,9 @@ export const statsRefreshJob: PluginJob<Record<string, never>> = {
   concurrency: 1,
   async processor(ctx) {
     for (const guild of ctx.client.guilds.cache.values()) {
+      // An unavailable guild (regional Discord outage) has an empty channel cache — without this check its
+      // stats channels would all look "deleted" and get wiped from config.
+      if (!guild.available) continue;
       try {
         if (!(await ctx.isEnabled(guild.id))) continue;
         const cfg = await ctx.getConfig<CommunityConfig>(guild.id);

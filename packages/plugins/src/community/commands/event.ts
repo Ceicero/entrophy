@@ -159,7 +159,7 @@ async function handleCreate(c: CommandContext): Promise<void> {
     await queue.add(
       'event-reminder',
       { eventId: updated.id, minutesBefore: minutes },
-      { jobId: `ev:${updated.id}:${minutes}`, delay: Math.max(0, fireAt - Date.now()) },
+      { jobId: `ev-${updated.id}-${minutes}`, delay: Math.max(0, fireAt - Date.now()) },
     );
   }
 

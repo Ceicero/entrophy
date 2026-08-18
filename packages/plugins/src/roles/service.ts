@@ -93,9 +93,11 @@ export interface AutoRoleJobData {
   roleIds: string[];
 }
 
-/** Deterministic job id so a member who leaves and rejoins inside the delay window only ever has ONE pending auto-role job. */
+/** Deterministic job id so a member who leaves and rejoins inside the delay window only ever has ONE pending
+ * auto-role job. Dash-separated: `:` is avoided in this codebase's custom BullMQ job ids (see
+ * `birthdayRoleRemoveJobId` in `community/birthdays.ts` for why). */
 export function autoRoleJobId(guildId: string, userId: string): string {
-  return `autorole:${guildId}:${userId}`;
+  return `autorole-${guildId}-${userId}`;
 }
 
 export type AutoRoleSkipReason = RoleAssignabilityReason | 'missing' | 'already';
@@ -124,6 +126,10 @@ export async function applyAutoRoles(
         jobId: autoRoleJobId(guildId, userId),
         delay: delaySeconds * 1000,
         removeOnComplete: true,
+        // Without this, one failed run leaves the completed/failed job with this deterministic id sitting in
+        // the queue forever, and every later join for the same guild+user silently no-ops (BullMQ refuses to
+        // re-add a jobId that's already there) — auto-roles would just stop working for that pair.
+        removeOnFail: true,
       });
     } catch (err) {
       ctx.logger.warn(
@@ -149,14 +155,15 @@ export async function grantAutoRoles(
   allowElevatedRoles: boolean,
 ): Promise<{ assigned: string[]; skipped: { roleId: string; reason: AutoRoleSkipReason }[] }> {
   const guild = member.guild;
-  await guild.roles.fetch().catch(() => undefined);
   const botTopRolePosition = guild.members.me?.roles.highest.position ?? 0;
 
   const assignable: string[] = [];
   const skipped: { roleId: string; reason: AutoRoleSkipReason }[] = [];
 
   for (const roleId of roleIds) {
-    const role = guild.roles.cache.get(roleId);
+    // Cache first; only hit the REST API for the handful of ids the cache doesn't already have (every join
+    // used to force a full-guild `roles.fetch()` here, which is wasteful at any real member-join volume).
+    const role = guild.roles.cache.get(roleId) ?? (await guild.roles.fetch(roleId).catch(() => null));
     if (!role) {
       skipped.push({ roleId, reason: 'missing' });
       continue;

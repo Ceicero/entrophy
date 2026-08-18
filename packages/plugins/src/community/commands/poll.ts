@@ -129,7 +129,7 @@ async function handleCreate(c: CommandContext): Promise<void> {
       .add(
         'poll-end',
         { pollId: poll.id },
-        { jobId: `poll:${poll.id}`, delay: Math.max(0, endsAt.getTime() - Date.now()) },
+        { jobId: `poll-${poll.id}`, delay: Math.max(0, endsAt.getTime() - Date.now()) },
       );
   }
 }
@@ -153,7 +153,7 @@ async function handleEnd(c: CommandContext): Promise<void> {
 
   await ctx
     .queue('poll-end')
-    .remove(`poll:${poll.id}`)
+    .remove(`poll-${poll.id}`)
     .catch(() => undefined);
   await closePoll(ctx, poll.id);
   await interaction.reply({ embeds: [successEmbed(t('poll.ended'))], ephemeral: true });

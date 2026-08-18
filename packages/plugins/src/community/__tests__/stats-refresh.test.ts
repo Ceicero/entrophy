@@ -4,7 +4,7 @@ import type { Client } from 'discord.js';
 import { createTestContext } from '../../sdk/testing';
 import type { CommunityConfig } from '../manifest';
 import { configSchema } from '../manifest';
-import { refreshGuildStats, statsLastKey, statsRefreshJob } from '../jobs/stats-refresh';
+import { refreshGuildStats, statsChannelRenameKey, statsLastKey, statsRefreshJob } from '../jobs/stats-refresh';
 
 const GUILD_ID = 'guild-1';
 
@@ -27,10 +27,11 @@ function fakeChannel(id: string, name: string, setNameImpl?: () => Promise<unkno
   return ch;
 }
 
-function fakeGuild(channels: FakeChannel[]) {
+function fakeGuild(channels: FakeChannel[], opts: { available?: boolean } = {}) {
   const channelMap = new Map(channels.map((c) => [c.id, c]));
   return {
     id: GUILD_ID,
+    available: opts.available ?? true,
     memberCount: 42,
     members: { cache: { filter: () => ({ size: 2 }), size: 42 } },
     premiumSubscriptionCount: 1,
@@ -99,11 +100,53 @@ describe('statsRefreshJob', () => {
     await statsRefreshJob.processor(ctx, {} as never);
     expect(ch.setName).toHaveBeenCalledTimes(1);
 
-    // Once the gate key expires, the next tick renames again.
+    // Once the gate key expires, the next tick renames again. The per-CHANNEL rename budget (A7) is a separate
+    // gate — clear it too, since this test is only about the per-guild interval (see the dedicated per-channel
+    // throttle test below).
     await redis.del(statsLastKey(GUILD_ID));
+    await redis.del(statsChannelRenameKey(GUILD_ID, 'c1'));
     await statsRefreshJob.processor(ctx, {} as never);
     expect(ch.setName).toHaveBeenCalledTimes(2);
     expect(ch.name).toBe('Members: 43');
+  });
+
+  it('skips an unavailable guild (regional outage) and leaves its stats-channel config untouched', async () => {
+    const ch = fakeChannel('c1', 'Members: 0');
+    const guild = fakeGuild([ch], { available: false });
+    const { ctx, setConfigCalls } = buildCtx(guild, {
+      statsChannels: [
+        { channelId: 'c1', template: 'Members: {members}' },
+        { channelId: 'gone', template: 'Boosts: {boosts}' },
+      ],
+    });
+
+    await statsRefreshJob.processor(ctx, {} as never);
+
+    expect(ch.setName).not.toHaveBeenCalled();
+    // Without the availability check an unavailable guild's empty channel cache would make every configured
+    // channel look deleted, wiping "gone" AND "c1" out of config.
+    expect(setConfigCalls).toHaveLength(0);
+  });
+
+  it('throttles a channel’s renames per CHANNEL (Redis NX/EX), independent of the per-guild refresh gate', async () => {
+    const ch = fakeChannel('c1', 'Members: 0');
+    const guild = fakeGuild([ch]);
+    const { ctx, cfg } = buildCtx(guild, {
+      statsChannels: [{ channelId: 'c1', template: 'Members: {members}' }],
+    });
+
+    // Two direct calls to refreshGuildStats (bypassing the per-guild `statsLastKey` gate entirely) simulate the
+    // periodic job landing right next to a manual `/statschannel refresh` — the per-CHANNEL budget must still
+    // hold even though each call's own guild-level gate would otherwise allow it.
+    const first = await refreshGuildStats(ctx, guild as never, cfg);
+    expect(first.renamed).toBe(1);
+    expect(ch.setName).toHaveBeenCalledTimes(1);
+
+    guild.memberCount = 99; // the rendered name would differ again
+    const second = await refreshGuildStats(ctx, guild as never, cfg);
+    expect(second.renamed).toBe(0);
+    expect(second.unchanged).toBe(1);
+    expect(ch.setName).toHaveBeenCalledTimes(1); // blocked by the per-channel budget, not called again
   });
 
   it('drops a missing channel from config without crashing', async () => {

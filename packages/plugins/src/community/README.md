@@ -177,17 +177,17 @@ show`) works without it; the plugin degrades rather than disables when the inten
 
 ## Background jobs
 
-- `community:poll-end` — delayed, one per timed poll (`jobId poll:<id>`); closes the poll and renders final results.
-- `community:giveaway-end` — delayed, one per giveaway (`jobId gw:<id>`); draws winners with `crypto.randomInt`, announces, and DMs them.
-- `community:announcement-run` — delayed for one-off announcements, or a repeatable scheduler for cron ones (`jobId ann:<id>`).
-- `community:reminder-deliver` — delayed for one-off reminders, or a repeatable scheduler for recurring ones (`jobId rem:<id>`).
+- `community:poll-end` — delayed, one per timed poll (`jobId poll-<id>`); closes the poll and renders final results.
+- `community:giveaway-end` — delayed, one per giveaway (`jobId gw-<id>`); draws winners with `crypto.randomInt`, announces, and DMs them.
+- `community:announcement-run` — delayed for one-off announcements, or a repeatable scheduler for cron ones (`jobId ann-<id>`).
+- `community:reminder-deliver` — delayed for one-off reminders, or a repeatable scheduler for recurring ones (`jobId rem-<id>`).
 - `community:reminder-sweep` — every 5 minutes; catches up any one-off reminder whose delayed job was lost.
-- `community:event-reminder` — delayed, one per configured reminder mark (`jobId ev:<id>:<minutes>`).
+- `community:event-reminder` — delayed, one per configured reminder mark (`jobId ev-<id>-<minutes>`).
 - `community:suggestion-sync` — every minute; reflects dashboard suggestion status/note edits into the posted Discord embed (dashboard writes only touch the database).
-- `community:sticky-repost` — delayed catch-up re-post for a channel whose cooldown blocked an immediate one (`jobId sticky:<guildId>:<channelId>`, delay = the sticky's cooldown; enqueuing while one is pending is a no-op, so a burst of messages yields one re-post now and one after the cooldown).
-- `community:stats-refresh` — every 5 minutes; renames each guild's stats channels at most once per `statsRefreshMinutes` (Redis `SET NX EX` gate per guild), concurrency 1, never throws.
-- `community:birthday-announce` — hourly (top of the hour); for each guild with birthdays enabled + a channel, when the guild-local hour equals `birthdays.announceHour`, posts one message per birthday due today (Feb 29 → Feb 28 in non-leap years), adds the optional role, and stamps `lastAnnouncedYear` so nothing is announced twice in a year. Members who left are skipped, not deleted.
-- `community:birthday-role-remove` — delayed ~24h per birthday role grant (`jobId bday-role:<guild>:<user>:<year>`); removes the role if the member still has it.
+- `community:sticky-repost` — delayed catch-up re-post for a channel whose cooldown blocked an immediate one (`jobId sticky-<guildId>-<channelId>`, delay = the sticky's cooldown; enqueuing while one is pending is a no-op, so a burst of messages yields one re-post now and one after the cooldown).
+- `community:stats-refresh` — every 5 minutes; renames each guild's stats channels at most once per `statsRefreshMinutes` (Redis `SET NX EX` gate per guild) and each individual channel at most once per 5 minutes (Redis `SET NX EX` gate per channel, since Discord's 2-renames/10-min limit is per channel), concurrency 1, never throws. Skips unavailable (outage) guilds.
+- `community:birthday-announce` — hourly (top of the hour); for each available guild with birthdays enabled + a channel, when the guild-local hour equals `birthdays.announceHour`, posts one message per birthday due today (Feb 29 → Feb 28 in non-leap years; `lastAnnouncedYear IS NULL OR <> current year`, since a plain `NOT` would silently skip never-announced rows under Postgres NULL semantics), adds the optional role, and stamps `lastAnnouncedYear` so nothing is announced twice in a year. Members who left are skipped, not deleted.
+- `community:birthday-role-remove` — delayed ~24h per birthday role grant (`jobId bday-role-<guild>-<user>-<year>`); removes the role if the member still has it.
 
 ## Sticky messages
 

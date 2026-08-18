@@ -172,7 +172,7 @@ export async function cancelGiveaway(ctx: PluginContext, giveawayId: string): Pr
   });
   await ctx
     .queue('giveaway-end')
-    .remove(`gw:${giveawayId}`)
+    .remove(`gw-${giveawayId}`)
     .catch(() => undefined);
   if (updated.messageId) {
     const guild = await ctx.client.guilds.fetch(updated.guildId).catch(() => null);
@@ -280,9 +280,9 @@ export async function cancelAnnouncement(
   await ctx.prisma.scheduledAnnouncement.update({ where: { id: announcementId }, data: { enabled: false } });
   const queue = ctx.queue('announcement-run');
   if (cron) {
-    await queue.removeJobScheduler(`ann:${announcementId}`).catch(() => undefined);
+    await queue.removeJobScheduler(`ann-${announcementId}`).catch(() => undefined);
   } else {
-    await queue.remove(`ann:${announcementId}`).catch(() => undefined);
+    await queue.remove(`ann-${announcementId}`).catch(() => undefined);
   }
 }
 
@@ -333,9 +333,9 @@ export async function cancelReminder(
   });
   const queue = ctx.queue('reminder-deliver');
   if (recurring) {
-    await queue.removeJobScheduler(`rem:${reminderId}`).catch(() => undefined);
+    await queue.removeJobScheduler(`rem-${reminderId}`).catch(() => undefined);
   } else {
-    await queue.remove(`rem:${reminderId}`).catch(() => undefined);
+    await queue.remove(`rem-${reminderId}`).catch(() => undefined);
   }
 }
 
@@ -385,10 +385,10 @@ export async function cancelEvent(ctx: PluginContext, eventId: string): Promise<
   const queue = ctx.queue('event-reminder');
   const stillDue = upcomingReminderMinutes(event.reminderMinutes, event.startsAt, new Date());
   for (const minutes of stillDue) {
-    await queue.remove(`ev:${event.id}:${minutes}`).catch(() => undefined);
+    await queue.remove(`ev-${event.id}-${minutes}`).catch(() => undefined);
   }
   for (const minutes of event.reminderMinutes) {
-    await queue.remove(`ev:${event.id}:${minutes}`).catch(() => undefined);
+    await queue.remove(`ev-${event.id}-${minutes}`).catch(() => undefined);
   }
 
   await ctx.prisma.communityEvent.delete({ where: { id: eventId } });

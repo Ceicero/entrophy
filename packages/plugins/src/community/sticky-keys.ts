@@ -16,9 +16,10 @@ export function stickyCooldownKey(guildId: string, channelId: string): string {
   return redisKey('community', 'sticky-cd', guildId, channelId);
 }
 
-/** BullMQ jobId for the single debounced catch-up re-post per channel. */
+/** BullMQ jobId for the single debounced catch-up re-post per channel. Dash-separated for consistency with the
+ * rest of the community/roles plugins' custom job ids (see `birthdayRoleRemoveJobId` for why `:` is avoided). */
 export function stickyRepostJobId(guildId: string, channelId: string): string {
-  return `sticky:${guildId}:${channelId}`;
+  return `sticky-${guildId}-${channelId}`;
 }
 
 /** The sticky's optional embed — the same flat shape as `/embed builder`'s `EmbedBuilderPayload`. */

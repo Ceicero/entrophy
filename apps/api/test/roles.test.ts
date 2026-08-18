@@ -331,7 +331,16 @@ describe('roles: auto-roles', () => {
       method: 'PUT',
       url: `/guilds/${GUILD_ID}/roles/autoroles`,
       headers: mutHeaders,
-      payload: { roleIds: ['1', '2', '3', '4', '5', '6'] },
+      payload: {
+        roleIds: [
+          '111111111111111111',
+          '222222222222222222',
+          '333333333333333333',
+          '444444444444444444',
+          '555555555555555555',
+          '666666666666666666',
+        ],
+      },
     });
     expect(tooManyHumans.statusCode).toBe(400);
 
@@ -339,7 +348,9 @@ describe('roles: auto-roles', () => {
       method: 'PUT',
       url: `/guilds/${GUILD_ID}/roles/autoroles`,
       headers: mutHeaders,
-      payload: { botRoleIds: ['1', '2', '3', '4'] },
+      payload: {
+        botRoleIds: ['111111111111111111', '222222222222222222', '333333333333333333', '444444444444444444'],
+      },
     });
     expect(tooManyBots.statusCode).toBe(400);
 
@@ -354,6 +365,29 @@ describe('roles: auto-roles', () => {
     await app.close();
   });
 
+  it('400s when a roleId is not a valid Discord snowflake', async () => {
+    const { overrides } = pluginConfigOverrides();
+    const { app, mutHeaders } = await authedContext(overrides);
+
+    const badRoleId = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/autoroles`,
+      headers: mutHeaders,
+      payload: { roleIds: ['not-a-snowflake'] },
+    });
+    expect(badRoleId.statusCode).toBe(400);
+
+    const badBotRoleId = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/roles/autoroles`,
+      headers: mutHeaders,
+      payload: { botRoleIds: ['12345'] }, // too short to be a real snowflake
+    });
+    expect(badBotRoleId.statusCode).toBe(400);
+
+    await app.close();
+  });
+
   it('PUT merges into the existing section, round-trips via GET, and writes a roles.autorole.update audit row', async () => {
     const { overrides } = pluginConfigOverrides();
     const { app, cookieHeader, mutHeaders, prismaCalls } = await authedContext(overrides);
@@ -362,12 +396,12 @@ describe('roles: auto-roles', () => {
       method: 'PUT',
       url: `/guilds/${GUILD_ID}/roles/autoroles`,
       headers: mutHeaders,
-      payload: { enabled: true, roleIds: ['111', '222'], delaySeconds: 600 },
+      payload: { enabled: true, roleIds: ['111111111111111111', '222222222222222222'], delaySeconds: 600 },
     });
     expect(first.statusCode).toBe(200);
     expect(first.json()).toMatchObject({
       enabled: true,
-      roleIds: ['111', '222'],
+      roleIds: ['111111111111111111', '222222222222222222'],
       botRoleIds: [],
       delaySeconds: 600,
     });
@@ -377,13 +411,13 @@ describe('roles: auto-roles', () => {
       method: 'PUT',
       url: `/guilds/${GUILD_ID}/roles/autoroles`,
       headers: mutHeaders,
-      payload: { botRoleIds: ['333'] },
+      payload: { botRoleIds: ['333333333333333333'] },
     });
     expect(second.statusCode).toBe(200);
     expect(second.json()).toMatchObject({
       enabled: true,
-      roleIds: ['111', '222'],
-      botRoleIds: ['333'],
+      roleIds: ['111111111111111111', '222222222222222222'],
+      botRoleIds: ['333333333333333333'],
       delaySeconds: 600,
     });
 
@@ -395,8 +429,8 @@ describe('roles: auto-roles', () => {
     expect(get.statusCode).toBe(200);
     expect(get.json()).toMatchObject({
       enabled: true,
-      roleIds: ['111', '222'],
-      botRoleIds: ['333'],
+      roleIds: ['111111111111111111', '222222222222222222'],
+      botRoleIds: ['333333333333333333'],
       delaySeconds: 600,
     });
     expect(get.json().note).toMatch(/re-checked/i);
@@ -413,7 +447,7 @@ describe('roles: auto-roles', () => {
     };
     expect(lastAudit.data.actorId).toBe(USER_ID);
     expect(lastAudit.data.source).toBe('DASHBOARD');
-    expect(lastAudit.data.after.botRoleIds).toEqual(['333']);
+    expect(lastAudit.data.after.botRoleIds).toEqual(['333333333333333333']);
 
     await app.close();
   });

@@ -72,8 +72,10 @@ export type SetupState =
 
 /**
  * Derives the setup state from actual config so the bot agrees with the API's guild overview (`setupIssues`):
- * complete ⇔ a mod-log channel is set AND at least one moderator or admin role exists (admin roles alone count
- * as staff). `setupCompletedAt` only says the wizard ran; it is never inferred or back-filled here.
+ * complete ⇔ a mod-log channel is set AND at least one moderator role exists. Admin roles alone do NOT count
+ * as staff here — `setupIssues` in `apps/api/src/routes/guilds.ts` only ever checks `modRoleIds`, so this must
+ * match it or `/setup status` and the dashboard overview would disagree about whether a guild is done.
+ * `setupCompletedAt` only says the wizard ran; it is never inferred or back-filled here.
  */
 export function deriveSetupState(config: {
   setupCompletedAt: string | null;
@@ -83,7 +85,7 @@ export function deriveSetupState(config: {
 }): SetupState {
   if (config.setupCompletedAt) return { kind: 'wizard', completedAt: config.setupCompletedAt };
   const missing: SetupMissing[] = [];
-  if (config.modRoleIds.length === 0 && config.adminRoleIds.length === 0) missing.push('modRoles');
+  if (config.modRoleIds.length === 0) missing.push('modRoles');
   if (config.modLogChannelId === null) missing.push('modLogChannel');
   return missing.length === 0 ? { kind: 'configured' } : { kind: 'incomplete', missing };
 }

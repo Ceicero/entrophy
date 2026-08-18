@@ -31,13 +31,18 @@ const rolePersistenceSchema = z.object({
   maxDays: z.number().int().min(1).max(365).default(30),
 });
 
+/** A Discord snowflake id (17-20 decimal digits). Mirrors `apps/api/src/lib/schemas.ts`'s `snowflakeSchema` —
+ * kept as a local literal rather than a cross-package import so this plugin package stays free of an `@entrophy/api`
+ * dependency edge. */
+const roleSnowflakeSchema = z.string().regex(/^\d{17,20}$/, 'Must be a valid Discord snowflake id.');
+
 /** Auto-roles: roles handed to every member (humans / bots separately) once they've fully joined (after Discord's membership screening, if on). */
 const autoRolesSchema = z.object({
   enabled: z.boolean().default(false),
   /** Roles given to human members. */
-  roleIds: z.array(z.string()).max(5).default([]),
+  roleIds: z.array(roleSnowflakeSchema).max(5).default([]),
   /** Roles given to bot accounts (many servers tag bots). */
-  botRoleIds: z.array(z.string()).max(3).default([]),
+  botRoleIds: z.array(roleSnowflakeSchema).max(3).default([]),
   /** 0 = immediately; otherwise queue a delayed job. Max 7 days. */
   delaySeconds: z.number().int().min(0).max(604_800).default(0),
 });

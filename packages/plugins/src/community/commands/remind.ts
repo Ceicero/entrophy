@@ -101,7 +101,7 @@ async function handleSet(c: CommandContext): Promise<void> {
   const queue = ctx.queue('reminder-deliver');
   if (recurring) {
     await queue.upsertJobScheduler(
-      `rem:${reminder.id}`,
+      `rem-${reminder.id}`,
       { pattern: recurring, tz: timezone },
       { name: 'reminder-deliver', data: { reminderId: reminder.id } },
     );
@@ -109,7 +109,7 @@ async function handleSet(c: CommandContext): Promise<void> {
     await queue.add(
       'reminder-deliver',
       { reminderId: reminder.id },
-      { jobId: `rem:${reminder.id}`, delay: Math.max(0, parsedAt.date.getTime() - Date.now()) },
+      { jobId: `rem-${reminder.id}`, delay: Math.max(0, parsedAt.date.getTime() - Date.now()) },
     );
   }
 

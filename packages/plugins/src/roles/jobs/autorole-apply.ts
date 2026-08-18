@@ -5,7 +5,7 @@ import { AUTO_ROLE_JOB_NAME, grantAutoRoles, type AutoRoleJobData } from '../ser
 
 /**
  * Delayed auto-role delivery (queue `roles.autorole-apply`). Scheduled by `applyAutoRoles` when
- * `config.autoRoles.delaySeconds > 0`, with jobId `autorole:<guildId>:<userId>` so a leave+rejoin inside the
+ * `config.autoRoles.delaySeconds > 0`, with jobId `autorole-<guildId>-<userId>` so a leave+rejoin inside the
  * window doesn't double-schedule. When it fires: the member must still be here and no longer `pending`, and
  * only roles that are STILL in the current config list are applied (an admin may have removed some while the
  * job waited). Every actual grant goes through `grantAutoRoles`, which re-checks assignability and audits.

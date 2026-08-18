@@ -1,5 +1,6 @@
 import { ChannelType, type Guild } from 'discord.js';
 import type { Queue } from 'bullmq';
+import type { Logger } from 'pino';
 import { describe, expect, it, vi } from 'vitest';
 import { createTestContext } from '../../sdk/testing';
 import { configSchema, type CommunityConfig } from '../manifest';
@@ -22,6 +23,8 @@ function makeConfig(patch: Partial<CommunityConfig['birthdays']> = {}): Communit
 
 interface FakeGuildOptions {
   memberPresent?: boolean;
+  /** Discord.js `Guild.available` — false during a regional outage. Defaults to true. */
+  available?: boolean;
 }
 
 /** Minimal discord.js Guild stand-in covering everything the birthday job touches. */
@@ -59,6 +62,7 @@ function makeFakeGuild(opts: FakeGuildOptions = {}) {
   const guild = {
     id: GUILD_ID,
     name: 'Test Guild',
+    available: opts.available ?? true,
     memberCount: 42,
     members: {
       me: { roles: { highest: { position: 10 } } },
@@ -82,6 +86,18 @@ interface Setup {
     lastAnnouncedYear: number | null;
   }[];
   guildOptions?: FakeGuildOptions;
+  /** Overrides the queue's `add` implementation (default just records the call). Used to simulate an enqueue failure. */
+  queueAdd?: (name: string, data: unknown, opts: unknown) => Promise<void>;
+  /** Overrides `ctx.logger` (default is the real silent pino logger from `createTestContext`). Used to spy on warn calls. */
+  logger?: Logger;
+}
+
+/** Shape of the `where` clause `announceBirthdaysForGuild` sends — kept in sync with the real query so the
+ * fixture below exercises the exact same NULL-vs-not-equal logic Postgres would apply. */
+interface BirthdayWhere {
+  guildId: string;
+  OR: { month: number; day: number }[];
+  AND: [{ OR: [{ lastAnnouncedYear: null }, { lastAnnouncedYear: { not: number } }] }];
 }
 
 function setup(input: Setup = {}) {
@@ -92,20 +108,24 @@ function setup(input: Setup = {}) {
   const findManyArgs: unknown[] = [];
   const queued: { name: string; data: unknown; opts: unknown }[] = [];
   const fake = makeFakeGuild(input.guildOptions);
+  const queueAdd =
+    input.queueAdd ??
+    (async (name: string, data: unknown, opts: unknown) => {
+      queued.push({ name, data, opts });
+    });
 
   const { ctx } = createTestContext({
     prismaOverrides: {
       birthday: {
-        // Honour the `NOT lastAnnouncedYear` + month/day filters the job sends, like a real DB would.
+        // Honour the real where-clause (OR date match + NULL-safe year check) exactly like Postgres would:
+        // a NULL `lastAnnouncedYear` is due; a row whose year equals this year is not.
         findMany: async (args: unknown) => {
           findManyArgs.push(args);
-          const where = (
-            args as { where: { NOT: { lastAnnouncedYear: number }; OR: { month: number; day: number }[] } }
-          ).where;
+          const where = (args as { where: BirthdayWhere }).where;
+          const yearNotCondition = where.AND[0].OR[1].lastAnnouncedYear.not;
+          const isDue = (year: number | null) => year === null || year !== yearNotCondition;
           return rows.filter(
-            (r) =>
-              r.lastAnnouncedYear !== where.NOT.lastAnnouncedYear &&
-              where.OR.some((md) => md.month === r.month && md.day === r.day),
+            (r) => isDue(r.lastAnnouncedYear) && where.OR.some((md) => md.month === r.month && md.day === r.day),
           );
         },
         update: async (args: unknown) => {
@@ -118,12 +138,8 @@ function setup(input: Setup = {}) {
       },
     },
     overrides: {
-      queue: () =>
-        ({
-          add: async (name: string, data: unknown, opts: unknown) => {
-            queued.push({ name, data, opts });
-          },
-        }) as unknown as Queue,
+      queue: () => ({ add: queueAdd }) as unknown as Queue,
+      ...(input.logger ? { logger: input.logger } : {}),
     },
   });
 
@@ -147,8 +163,28 @@ describe('announceBirthdaysForGuild', () => {
     const second = await announceBirthdaysForGuild(s.ctx, s.guild, makeConfig(), NOW);
     expect(second.announced).toBe(0);
     expect(s.sent).toHaveLength(1);
-    // The query itself excludes already-announced rows for the current year.
-    expect(s.findManyArgs[0]).toMatchObject({ where: { NOT: { lastAnnouncedYear: 2026 } } });
+    // The query itself excludes already-announced rows for the current year — but via a NULL-safe OR, not a
+    // plain NOT (see the next test for why that distinction matters).
+    expect(s.findManyArgs[0]).toMatchObject({
+      where: { AND: [{ OR: [{ lastAnnouncedYear: null }, { lastAnnouncedYear: { not: 2026 } }] }] },
+    });
+  });
+
+  it('a NULL lastAnnouncedYear row is due, and a same-year row is not — Postgres NULL comparison, not JS !==', async () => {
+    // `NOT: { lastAnnouncedYear: year }` reads like "year !== lastAnnouncedYear" but Postgres's `<>` against a
+    // NULL column evaluates to NULL (never TRUE), so that predicate would silently exclude every never-announced
+    // row. This fixture's `findMany` mock mirrors that exact NULL-safe semantics (see `setup()` above), so this
+    // test only passes when the real query is built the NULL-safe way.
+    const s = setup({
+      birthdayRows: [
+        { id: 'b-null', userId: USER_ID, month: 3, day: 4, lastAnnouncedYear: null },
+        { id: 'b-same-year', userId: USER_ID, month: 3, day: 4, lastAnnouncedYear: 2026 },
+      ],
+    });
+    const result = await announceBirthdaysForGuild(s.ctx, s.guild, makeConfig(), NOW);
+    expect(result.announced).toBe(1);
+    expect(s.updates).toHaveLength(1);
+    expect(s.updates[0]).toMatchObject({ where: { id: 'b-null' } });
   });
 
   it('skips when the guild-local hour does not match the configured hour', async () => {
@@ -184,8 +220,40 @@ describe('announceBirthdaysForGuild', () => {
     expect(withRole.queued[0]).toMatchObject({
       name: 'birthday-role-remove',
       data: { guildId: GUILD_ID, userId: USER_ID, roleId: ROLE_ID },
-      opts: { delay: 86_400_000, jobId: `bday-role:${GUILD_ID}:${USER_ID}:2026`, removeOnComplete: true },
+      // Dash-separated: BullMQ 5.x rejects a custom jobId containing ':' unless it has exactly 3 segments, and
+      // this one has 4 (bday-role, guildId, userId, year).
+      opts: { delay: 86_400_000, jobId: `bday-role-${GUILD_ID}-${USER_ID}-2026`, removeOnComplete: true },
     });
+  });
+
+  it('rolls back the role grant (best-effort) and logs accurately when scheduling the removal job fails', async () => {
+    const warnings: unknown[][] = [];
+    const fakeLogger = {
+      warn: (...args: unknown[]) => {
+        warnings.push(args);
+      },
+      info: () => undefined,
+      error: () => undefined,
+      debug: () => undefined,
+    } as unknown as Logger;
+    const s = setup({
+      logger: fakeLogger,
+      queueAdd: async () => {
+        throw new Error('redis unavailable');
+      },
+    });
+
+    const result = await announceBirthdaysForGuild(s.ctx, s.guild, makeConfig({ roleId: ROLE_ID }), NOW);
+
+    // The announcement message itself still goes out even though the role bookkeeping failed.
+    expect(result.announced).toBe(1);
+    expect(s.rolesAdded).toEqual([ROLE_ID]);
+    // ...but since the 24h auto-removal couldn't be scheduled, the grant is rolled back so it can't become permanent.
+    expect(s.rolesRemoved).toEqual([ROLE_ID]);
+    expect(s.memberRoleIds.has(ROLE_ID)).toBe(false);
+    expect(
+      warnings.some(([, msg]) => msg === 'community: could not schedule birthday role removal'),
+    ).toBe(true);
   });
 
   it('skips (without deleting) a member who has left, and still announces on Feb 28 for Feb 29 birthdays', async () => {
@@ -248,6 +316,48 @@ describe('birthdayAnnounceJob processor', () => {
     }
     // The bad guild's channel fetch throws inside resolveTextChannel (caught → null → skipped); the good one posts.
     expect(good.sent).toHaveLength(1);
+  });
+
+  it('skips an unavailable guild before doing any work (regional outage) — never queried, never messaged', async () => {
+    const good = makeFakeGuild();
+    const unavailable = makeFakeGuild({ available: false });
+    const queriedGuildIds: string[] = [];
+    const config = makeConfig();
+    const { ctx } = createTestContext({
+      config,
+      prismaOverrides: {
+        birthday: {
+          findMany: async (args: unknown) => {
+            const guildId = (args as { where: { guildId: string } }).where.guildId;
+            queriedGuildIds.push(guildId);
+            return [
+              { id: `b-${guildId}`, guildId, userId: USER_ID, month: 3, day: 4, lastAnnouncedYear: null },
+            ];
+          },
+        },
+      },
+      overrides: {
+        client: {
+          guilds: {
+            cache: new Map([
+              ['guild-unavailable', { ...unavailable.guild, id: 'guild-unavailable' } as unknown as Guild],
+              [GUILD_ID, good.guild],
+            ]),
+          },
+        } as never,
+      },
+    });
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    try {
+      await birthdayAnnounceJob.processor(ctx, {} as never);
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(queriedGuildIds).toEqual([GUILD_ID]);
+    expect(good.sent).toHaveLength(1);
+    expect(unavailable.sent).toHaveLength(0);
   });
 
   it('is scheduled hourly on the community.birthday-announce queue', () => {
