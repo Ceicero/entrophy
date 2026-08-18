@@ -116,6 +116,45 @@ export interface CommunityEventDto {
   updatedAt: string;
 }
 
+export type TagTriggerModeDto = 'NONE' | 'EXACT' | 'CONTAINS' | 'STARTS_WITH';
+
+/** Flat embed payload stored on a tag (same shape as `/embed builder`'s `EmbedBuilderPayload`). */
+export interface TagEmbedDto {
+  title?: string;
+  description?: string;
+  colorHex?: string;
+  imageUrl?: string;
+  footer?: string;
+}
+
+/** A custom command (`/tag show <name>`) with its optional keyword auto-responder settings (spec CG-02). */
+export interface TagDto {
+  id: string;
+  name: string;
+  content: string | null;
+  embed: TagEmbedDto | null;
+  triggerMode: TagTriggerModeDto;
+  trigger: string | null;
+  triggerChannelIds: string[];
+  staffOnly: boolean;
+  uses: number;
+  createdBy: string;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Body for `POST`/`PUT /guilds/:guildId/community/tags` (validated by `tagBodySchema`). */
+export interface TagBodyDto {
+  name: string;
+  content?: string | null;
+  embed?: TagEmbedDto | null;
+  triggerMode?: TagTriggerModeDto;
+  trigger?: string | null;
+  triggerChannelIds?: string[];
+  staffOnly?: boolean;
+}
+
 export interface EconomySettingsDto {
   currencyName: string;
   currencySymbol: string;

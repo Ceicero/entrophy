@@ -119,15 +119,15 @@ _Leveling/XP with anti-farming controls, leaderboards, a reputation system, a st
 
 ### Community (`community`)
 
-_Polls, giveaways, suggestions, scheduled announcements, reminders, and event RSVPs._ (enabled by default, community)
+_Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs, and tags (custom commands / auto-responders)._ (enabled by default, community)
 
-| Permission            | Feature                                                     | Required? | Fallback if missing                                                                      |
-| --------------------- | ----------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------- |
-| Send Messages         | posting polls/giveaways/suggestions/announcements/events    | Required  | The bot cannot post in the configured channel; the command replies with an error.        |
-| Embed Links           | result and status embeds                                    | Required  | Falls back to plain text where possible.                                                 |
-| Manage Threads        | auto-threading suggestions                                  | Optional  | The suggestion is still posted; no thread is created.                                    |
-| Create Public Threads | auto-threading suggestions                                  | Optional  | The suggestion is still posted; no thread is created.                                    |
-| Manage Events         | creating a native Discord scheduled event for /event create | Optional  | The event is still tracked and announced in-channel; no Discord Events entry is created. |
+| Permission            | Feature                                                                                 | Required? | Fallback if missing                                                                      |
+| --------------------- | --------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------- |
+| Send Messages         | posting polls/giveaways/suggestions/announcements/events, tag replies / auto-responders | Required  | The bot cannot post in the configured channel; the command replies with an error.        |
+| Embed Links           | result and status embeds                                                                | Required  | Falls back to plain text where possible.                                                 |
+| Manage Threads        | auto-threading suggestions                                                              | Optional  | The suggestion is still posted; no thread is created.                                    |
+| Create Public Threads | auto-threading suggestions                                                              | Optional  | The suggestion is still posted; no thread is created.                                    |
+| Manage Events         | creating a native Discord scheduled event for /event create                             | Optional  | The event is still tracked and announced in-channel; no Discord Events entry is created. |
 
 ### Economy (`economy`)
 
@@ -197,6 +197,7 @@ Intent" eligibility in the Developer Portal) — see the README's Discord Develo
 | Logging (`logging`)       | Message edit/delete logs still fire, but record metadata (author, channel, time) only — never the before/after text.                                                                                                                             |
 | Tickets (`tickets`)       | Transcripts still record who said something and when, but not the message text itself.                                                                                                                                                           |
 | Engagement (`engagement`) | Leveling, XP, and reputation are unaffected (message events fire regardless of content). Only the starboard's message-content preview in its embed is unavailable and falls back to a jump link.                                                 |
+| Community (`community`)   | _(see the plugin README for what degrades without this intent)_                                                                                                                                                                                  |
 
 ## Invite permissions
 

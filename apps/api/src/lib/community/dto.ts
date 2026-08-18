@@ -9,6 +9,7 @@ import type {
   PollVote,
   ScheduledAnnouncement,
   Suggestion,
+  Tag,
 } from '@entrophy/database';
 import type {
   AnnouncementContentDto,
@@ -19,7 +20,10 @@ import type {
   PollOptionDto,
   PollResultsDto,
   SuggestionDto,
+  TagDto,
+  TagEmbedDto,
 } from '@entrophy/types/community';
+import { isTagEmbedEmpty, tagEmbedSchema } from './tag-schemas';
 
 export function toPollOptionDto(row: PollOption, votes: PollVote[], anonymous: boolean): PollOptionDto {
   const optionVotes = votes.filter((v) => v.optionId === row.id);
@@ -157,6 +161,31 @@ export function toCommunityEventDto(row: CommunityEvent, rsvps: EventRsvp[]): Co
       maybe: rsvps.filter((r) => r.status === 'MAYBE').length,
       declined: rsvps.filter((r) => r.status === 'DECLINED').length,
     },
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function toTagEmbedDto(raw: unknown): TagEmbedDto | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const parsed = tagEmbedSchema.safeParse(raw);
+  if (!parsed.success || isTagEmbedEmpty(parsed.data)) return null;
+  return parsed.data;
+}
+
+export function toTagDto(row: Tag): TagDto {
+  return {
+    id: row.id,
+    name: row.name,
+    content: row.content,
+    embed: toTagEmbedDto(row.embed),
+    triggerMode: row.triggerMode,
+    trigger: row.trigger,
+    triggerChannelIds: row.triggerChannelIds,
+    staffOnly: row.staffOnly,
+    uses: row.uses,
+    createdBy: row.createdBy,
+    updatedBy: row.updatedBy,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

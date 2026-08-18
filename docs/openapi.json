@@ -4656,6 +4656,287 @@
         }
       }
     },
+    "/guilds/{guildId}/community/tags": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 32
+            },
+            "in": "query",
+            "name": "q",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "content": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "nullable": true
+                  },
+                  "embed": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "maxLength": 256,
+                        "nullable": true
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 4096,
+                        "nullable": true
+                      },
+                      "colorHex": {
+                        "type": "string",
+                        "pattern": "^#?[0-9a-fA-F]{6}$",
+                        "nullable": true
+                      },
+                      "imageUrl": {
+                        "type": "string",
+                        "format": "uri",
+                        "maxLength": 2048,
+                        "nullable": true
+                      },
+                      "footer": {
+                        "type": "string",
+                        "maxLength": 2048,
+                        "nullable": true
+                      }
+                    },
+                    "additionalProperties": false,
+                    "nullable": true
+                  },
+                  "triggerMode": {
+                    "type": "string",
+                    "enum": ["NONE", "EXACT", "CONTAINS", "STARTS_WITH"],
+                    "default": "NONE"
+                  },
+                  "trigger": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "nullable": true
+                  },
+                  "triggerChannelIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{5,25}$"
+                    },
+                    "maxItems": 50,
+                    "default": []
+                  },
+                  "staffOnly": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/guilds/{guildId}/community/tags/{tagId}": {
+      "put": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                  },
+                  "content": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "nullable": true
+                  },
+                  "embed": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "maxLength": 256,
+                        "nullable": true
+                      },
+                      "description": {
+                        "type": "string",
+                        "maxLength": 4096,
+                        "nullable": true
+                      },
+                      "colorHex": {
+                        "type": "string",
+                        "pattern": "^#?[0-9a-fA-F]{6}$",
+                        "nullable": true
+                      },
+                      "imageUrl": {
+                        "type": "string",
+                        "format": "uri",
+                        "maxLength": 2048,
+                        "nullable": true
+                      },
+                      "footer": {
+                        "type": "string",
+                        "maxLength": 2048,
+                        "nullable": true
+                      }
+                    },
+                    "additionalProperties": false,
+                    "nullable": true
+                  },
+                  "triggerMode": {
+                    "type": "string",
+                    "enum": ["NONE", "EXACT", "CONTAINS", "STARTS_WITH"],
+                    "default": "NONE"
+                  },
+                  "trigger": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "nullable": true
+                  },
+                  "triggerChannelIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{5,25}$"
+                    },
+                    "maxItems": 50,
+                    "default": []
+                  },
+                  "staffOnly": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "tagId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{17,20}$"
+            },
+            "in": "path",
+            "name": "guildId",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "path",
+            "name": "tagId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
     "/guilds/{guildId}/economy/config": {
       "get": {
         "parameters": [

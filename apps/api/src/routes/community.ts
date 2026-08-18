@@ -1,6 +1,7 @@
 import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
-import { NotFoundError, buildPaginated, paginate } from '@entrophy/core';
+import { AppError, AuditAction, NotFoundError, buildPaginated, paginate } from '@entrophy/core';
+import { Prisma } from '@entrophy/database';
 import type { Paginated } from '@entrophy/types';
 import type {
   AnnouncementDto,
@@ -10,6 +11,7 @@ import type {
   PollDto,
   PollResultsDto,
   SuggestionDto,
+  TagDto,
 } from '@entrophy/types/community';
 import {
   toAnnouncementDto,
@@ -18,13 +20,59 @@ import {
   toPollDto,
   toPollResultsDto,
   toSuggestionDto,
+  toTagDto,
 } from '../lib/community/dto';
 import { cancelAnnouncementJob } from '../lib/community/queue';
+import { tagBodySchema, tagTriggersCacheKey, type TagBody } from '../lib/community/tag-schemas';
 import { writeDashboardAudit } from '../lib/audit';
 import { requireGuildAccess } from '../lib/guild-access';
 import { guildIdParamSchema, paginationQuerySchema } from '../lib/schemas';
 
 const ECONOMY_PLUGIN_ID = 'economy' as const;
+const COMMUNITY_PLUGIN_ID = 'community' as const;
+/** Mirrors the plugin config default (`tags.maxTags`) as a hard fallback if the config store is unavailable. */
+const DEFAULT_MAX_TAGS = 200;
+
+const tagParamSchema = guildIdParamSchema.extend({ tagId: z.string().min(1) });
+const tagListQuerySchema = paginationQuerySchema.extend({ q: z.string().trim().max(32).optional() });
+
+/** 409 — a tag with that name already exists in the guild. */
+function tagExistsError(name: string): AppError {
+  return new AppError('tag_exists', `A tag named "${name}" already exists.`, { status: 409, expose: true });
+}
+
+/** Maps the validated body to Prisma column values (`embed` → `Prisma.DbNull` when absent so an edit can clear it). */
+function tagDataFromBody(body: TagBody) {
+  return {
+    name: body.name,
+    content: body.content ?? null,
+    embed: body.embed ? (body.embed as Prisma.InputJsonValue) : Prisma.DbNull,
+    triggerMode: body.triggerMode,
+    trigger: body.triggerMode === 'NONE' ? null : (body.trigger ?? null),
+    triggerChannelIds: body.triggerMode === 'NONE' ? [] : body.triggerChannelIds,
+    staffOnly: body.staffOnly,
+  };
+}
+
+function tagAuditSnapshot(body: {
+  name: string;
+  triggerMode: string;
+  trigger: string | null | undefined;
+  triggerChannelIds: string[];
+  staffOnly: boolean;
+  content: string | null | undefined;
+  embed: unknown;
+}) {
+  return {
+    name: body.name,
+    triggerMode: body.triggerMode,
+    trigger: body.trigger ?? null,
+    triggerChannelIds: body.triggerChannelIds,
+    staffOnly: body.staffOnly,
+    hasContent: Boolean(body.content),
+    hasEmbed: Boolean(body.embed),
+  };
+}
 
 const suggestionParamSchema = guildIdParamSchema.extend({ suggestionId: z.string().min(1) });
 const suggestionStatusSchema = z.object({
@@ -259,6 +307,146 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
       });
       const dtos = rows.map((row) => toCommunityEventDto(row, row.rsvps));
       return buildPaginated(dtos, limit, offset);
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // Tags (custom commands + auto-responders, spec CG-02). Every write audits and DELs the bot's Redis-cached
+  // trigger list for the guild so the auto-responder picks the change up on the next message.
+  // -------------------------------------------------------------------------
+
+  app.get(
+    '/:guildId/community/tags',
+    {
+      schema: { params: guildIdParamSchema, querystring: tagListQuerySchema },
+      preHandler: requireGuildAccess(),
+    },
+    async (request): Promise<Paginated<TagDto>> => {
+      const guildId = request.guildId!;
+      const { cursor, limit: rawLimit, q } = request.query;
+      const { limit, offset } = paginate({ cursor, limit: rawLimit });
+      const prefix = q ? q.toLowerCase() : undefined;
+      const rows = await app.prisma.tag.findMany({
+        where: { guildId, ...(prefix ? { name: { startsWith: prefix } } : {}) },
+        orderBy: { name: 'asc' },
+        skip: offset,
+        take: limit + 1,
+      });
+      return buildPaginated(rows.map(toTagDto), limit, offset);
+    },
+  );
+
+  app.post(
+    '/:guildId/community/tags',
+    { schema: { params: guildIdParamSchema, body: tagBodySchema }, preHandler: requireGuildAccess() },
+    async (request, reply): Promise<TagDto> => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const body = request.body;
+
+      const existing = await app.prisma.tag.findUnique({
+        where: { guildId_name: { guildId, name: body.name } },
+        select: { id: true },
+      });
+      if (existing) throw tagExistsError(body.name);
+
+      const config = await app.configStore.getConfig<{ tags?: { maxTags?: number } }>(
+        guildId,
+        COMMUNITY_PLUGIN_ID,
+      );
+      const maxTags = config?.tags?.maxTags ?? DEFAULT_MAX_TAGS;
+      const count = await app.prisma.tag.count({ where: { guildId } });
+      if (count >= maxTags) {
+        throw new AppError('tag_limit', `This server has reached its limit of ${maxTags} tags.`, {
+          status: 400,
+          expose: true,
+        });
+      }
+
+      const row = await app.prisma.tag.create({
+        data: { guildId, ...tagDataFromBody(body), createdBy: session.userId },
+      });
+
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.CommunityTagCreate,
+        targetType: 'tag',
+        targetId: row.id,
+        after: tagAuditSnapshot(row),
+      });
+      await app.redis.del(tagTriggersCacheKey(guildId));
+
+      reply.status(201);
+      return toTagDto(row);
+    },
+  );
+
+  app.put(
+    '/:guildId/community/tags/:tagId',
+    { schema: { params: tagParamSchema, body: tagBodySchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<TagDto> => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { tagId } = request.params as { tagId: string };
+      const body = request.body;
+
+      const existing = await app.prisma.tag.findFirst({ where: { id: tagId, guildId } });
+      if (!existing) throw new NotFoundError('Tag not found.');
+
+      if (body.name !== existing.name) {
+        const clash = await app.prisma.tag.findUnique({
+          where: { guildId_name: { guildId, name: body.name } },
+          select: { id: true },
+        });
+        if (clash && clash.id !== existing.id) throw tagExistsError(body.name);
+      }
+
+      const updated = await app.prisma.tag.update({
+        where: { id: existing.id },
+        data: { ...tagDataFromBody(body), updatedBy: session.userId },
+      });
+
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.CommunityTagUpdate,
+        targetType: 'tag',
+        targetId: existing.id,
+        before: tagAuditSnapshot(existing),
+        after: tagAuditSnapshot(updated),
+      });
+      await app.redis.del(tagTriggersCacheKey(guildId));
+
+      return toTagDto(updated);
+    },
+  );
+
+  app.delete(
+    '/:guildId/community/tags/:tagId',
+    { schema: { params: tagParamSchema }, preHandler: requireGuildAccess() },
+    async (request, reply) => {
+      const guildId = request.guildId!;
+      const session = request.session!;
+      const { tagId } = request.params as { tagId: string };
+
+      const existing = await app.prisma.tag.findFirst({ where: { id: tagId, guildId } });
+      if (!existing) throw new NotFoundError('Tag not found.');
+
+      await app.prisma.tag.delete({ where: { id: existing.id } });
+
+      await writeDashboardAudit(app.prisma, {
+        guildId,
+        actorId: session.userId,
+        action: AuditAction.CommunityTagDelete,
+        targetType: 'tag',
+        targetId: existing.id,
+        before: { ...tagAuditSnapshot(existing), uses: existing.uses },
+      });
+      await app.redis.del(tagTriggersCacheKey(guildId));
+
+      reply.status(204);
+      return null;
     },
   );
 

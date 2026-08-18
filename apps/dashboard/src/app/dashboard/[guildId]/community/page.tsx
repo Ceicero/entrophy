@@ -8,6 +8,7 @@ import { GiveawaysTab } from '../../../../components/community/giveaways-tab';
 import { OverviewTab } from '../../../../components/community/overview-tab';
 import { PollsTab } from '../../../../components/community/polls-tab';
 import { SuggestionsTab } from '../../../../components/community/suggestions-tab';
+import { TagsTab } from '../../../../components/community/tags-tab';
 
 export default function CommunityPage() {
   const { guildId } = useParams<{ guildId: string }>();
@@ -16,7 +17,7 @@ export default function CommunityPage() {
     <div className="space-y-6">
       <PageHeader
         title="Community"
-        description="Polls, giveaways, the suggestion box, scheduled announcements, and events."
+        description="Polls, giveaways, the suggestion box, scheduled announcements, events, and tags (custom commands / auto-responders)."
       />
 
       <Tabs defaultValue="overview">
@@ -27,6 +28,7 @@ export default function CommunityPage() {
           <TabsTrigger value="polls">Polls</TabsTrigger>
           <TabsTrigger value="announcements">Announcements</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
+          <TabsTrigger value="tags">Tags</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -46,6 +48,9 @@ export default function CommunityPage() {
         </TabsContent>
         <TabsContent value="events">
           <EventsTab guildId={guildId} />
+        </TabsContent>
+        <TabsContent value="tags">
+          <TagsTab guildId={guildId} />
         </TabsContent>
       </Tabs>
     </div>

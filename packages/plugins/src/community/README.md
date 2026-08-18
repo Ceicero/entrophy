@@ -1,6 +1,7 @@
 # Community plugin (`community`)
 
-Polls, giveaways, a suggestion box, scheduled announcements, reminders, and event RSVPs. Enabled by default.
+Polls, giveaways, a suggestion box, scheduled announcements, reminders, event RSVPs, and tags (custom commands with
+optional keyword auto-responders). Enabled by default.
 
 ## Commands
 
@@ -21,6 +22,13 @@ Polls, giveaways, a suggestion box, scheduled announcements, reminders, and even
 | `/remind list \| cancel`                             | Manage your reminders                                                     | Owner, or moderator+ to cancel others' |
 | `/event create`                                      | Create an event with RSVP, optionally as a native Discord scheduled event | Helper+                                |
 | `/event list \| cancel \| rsvps`                     | Manage events                                                             | Helper+                                |
+| `/tag show <name> [ephemeral]`                       | Post a tag (custom command); staff-only tags need helper+                 | Everyone                               |
+| `/tag list`                                          | List this server's tags (staff-only tags hidden from non-staff)           | Everyone                               |
+| `/tag create <name> [content] [staff_only]`          | Create a tag; omit `content` to open a modal with embed fields            | Moderator+                             |
+| `/tag edit <name>`                                   | Edit a tag's content / embed title / embed description in a modal         | Moderator+                             |
+| `/tag delete <name>`                                 | Delete a tag (confirmation prompt)                                        | Moderator+                             |
+| `/tag trigger <name> <mode> [phrase] [channel]`      | Set/clear a keyword auto-responder (exact / contains / starts_with)       | Admin                                  |
+| `/tag info <name>`                                   | Uses, trigger, channels, created/updated by                               | Helper+                                |
 
 ## Config keys (`configSchema`)
 
@@ -31,18 +39,39 @@ suggestions.dmAuthorOnStatus boolean       DM the author when their suggestion's
 giveaways.defaultWinners     number        Default winner count for /giveaway start (default: 1)
 eventReminderMinutes         number[]      Minutes-before-start marks to remind RSVP'd members (default: [60, 10])
 polls.maxOptions             number        Maximum options per poll, 2-10 (default: 10)
+tags.enabled                 boolean       Turn the /tag commands on or off (default: true)
+tags.maxTags                 number        Hard cap on tags per server, 1-500 (default: 200) — abuse guard, not a paywall
+tags.triggersEnabled         boolean       Master switch for keyword auto-responders (default: false; needs Message Content intent)
+tags.triggerCooldownSeconds  number        Minimum seconds between auto-responder replies per tag, 1-3600 (default: 15)
 ```
+
+### Tags (custom commands / auto-responders)
+
+- A tag is plain text (≤2000 chars) and/or a flat embed (title, description, color, image URL, footer). Content is
+  rendered with the same fixed, non-recursive variable set as welcome messages — `{user}`, `{user.tag}`,
+  `{user.id}`, `{server}`, `{memberCount}`, `{mention}` — and **nothing else is ever evaluated** (no scripting
+  language, no nested tags). Unknown tokens are left as-is.
+- Replies always use `allowedMentions: { parse: [] }`; the only mention a tag can produce is the invoker's own
+  `{mention}`. Tags can never ping `@everyone`, `@here`, or roles.
+- Names are 1-32 chars, lowercase `a-z0-9` plus `-`/`_`, unique per server.
+- Auto-responders are opt-in per tag (`/tag trigger` or the dashboard) **and** per server (`tags.triggersEnabled`),
+  and only run when the bot has the Message Content privileged intent. Without it `/tag show` still works, `/plugin
+status community` reports the plugin as degraded, and triggers are simply inactive. Modes: `exact` (whole message
+  equals the phrase), `contains` (phrase appears as a whole word), `starts_with`. Optional channel restriction;
+  one reply per tag per `tags.triggerCooldownSeconds`.
+- Every create/edit/delete (bot or dashboard) writes an audit row (`community.tag.create|update|delete`).
 
 ## Permissions
 
-| Permission                             | Feature                                                  | Optional | Fallback                                        |
-| -------------------------------------- | -------------------------------------------------------- | -------- | ----------------------------------------------- |
-| Send Messages                          | Posting polls/giveaways/suggestions/announcements/events | No       | Command replies with an error                   |
-| Embed Links                            | Result/status embeds                                     | No       | N/A                                             |
-| Manage Threads / Create Public Threads | Auto-threading suggestions                               | Yes      | Suggestion still posts, no thread               |
-| Manage Events                          | Native Discord scheduled event for `/event create`       | Yes      | Event is still tracked and announced in-channel |
+| Permission                             | Feature                                                                                 | Optional | Fallback                                        |
+| -------------------------------------- | --------------------------------------------------------------------------------------- | -------- | ----------------------------------------------- |
+| Send Messages                          | Posting polls/giveaways/suggestions/announcements/events, tag replies / auto-responders | No       | Command replies with an error                   |
+| Embed Links                            | Result/status embeds                                                                    | No       | N/A                                             |
+| Manage Threads / Create Public Threads | Auto-threading suggestions                                                              | Yes      | Suggestion still posts, no thread               |
+| Manage Events                          | Native Discord scheduled event for `/event create`                                      | Yes      | Event is still tracked and announced in-channel |
 
-No privileged intents are required.
+Privileged intents: **Message Content — auto-responders only.** Everything else in the plugin (including `/tag
+show`) works without it; the plugin degrades rather than disables when the intent is off.
 
 ## Privacy notes
 
@@ -51,6 +80,9 @@ No privileged intents are required.
 - **Anonymous polls never store or display who voted for which option** — only per-option counts are shown or
   returned by `/poll results`.
 - Reminder message text is stored until it is delivered or cancelled.
+- Tags store the text/embed staff wrote and a use counter. Auto-responder triggers compare incoming messages
+  against your trigger phrases in memory only when the Message Content intent is enabled; the messages themselves
+  are never stored (and never logged, even on error).
 
 ## Background jobs
 
@@ -65,4 +97,5 @@ No privileged intents are required.
 ## Dashboard
 
 `/dashboard/[guildId]/community` — Overview, Suggestions (status workflow), Giveaways, Polls (results bars),
-Announcements, and Events (RSVP counts) tabs.
+Announcements, Events (RSVP counts), and Tags (create/edit/delete tags, embed fields, staff-only, auto-responder
+trigger + channels) tabs. Tags API: `GET/POST /guilds/:guildId/community/tags`, `PUT/DELETE .../tags/:tagId`.

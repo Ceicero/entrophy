@@ -9,6 +9,8 @@ import type {
   PollDto,
   PollResultsDto,
   SuggestionDto,
+  TagBodyDto,
+  TagDto,
 } from '@entrophy/types/community';
 import { apiFetch, toQueryString } from './api';
 
@@ -26,6 +28,8 @@ export const communityQueryKeys = {
     ['guilds', guildId, 'community', 'announcements', cursor ?? null] as const,
   events: (guildId: string, cursor?: string) =>
     ['guilds', guildId, 'community', 'events', cursor ?? null] as const,
+  tags: (guildId: string, q: string | undefined, cursor?: string) =>
+    ['guilds', guildId, 'community', 'tags', q ?? '', cursor ?? null] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -137,5 +141,51 @@ export function useCommunityEvents(guildId: string | undefined, cursor?: string)
         `/guilds/${guildId}/community/events${toQueryString({ cursor })}`,
       ),
     enabled: Boolean(guildId),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Tags (custom commands / auto-responders, spec CG-02)
+// ---------------------------------------------------------------------------
+
+export function useCommunityTags(guildId: string | undefined, q?: string, cursor?: string) {
+  return useQuery({
+    queryKey: communityQueryKeys.tags(guildId ?? '', q || undefined, cursor),
+    queryFn: () =>
+      apiFetch<Paginated<TagDto>>(
+        `/guilds/${guildId}/community/tags${toQueryString({ q: q || undefined, cursor })}`,
+      ),
+    enabled: Boolean(guildId),
+  });
+}
+
+function invalidateTags(queryClient: ReturnType<typeof useQueryClient>, guildId: string) {
+  void queryClient.invalidateQueries({ queryKey: ['guilds', guildId, 'community', 'tags'] });
+}
+
+export function useCreateTag(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: TagBodyDto) =>
+      apiFetch<TagDto>(`/guilds/${guildId}/community/tags`, { method: 'POST', body }),
+    onSuccess: () => invalidateTags(queryClient, guildId),
+  });
+}
+
+export function useUpdateTag(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tagId, body }: { tagId: string; body: TagBodyDto }) =>
+      apiFetch<TagDto>(`/guilds/${guildId}/community/tags/${tagId}`, { method: 'PUT', body }),
+    onSuccess: () => invalidateTags(queryClient, guildId),
+  });
+}
+
+export function useDeleteTag(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (tagId: string) =>
+      apiFetch<void>(`/guilds/${guildId}/community/tags/${tagId}`, { method: 'DELETE' }),
+    onSuccess: () => invalidateTags(queryClient, guildId),
   });
 }
