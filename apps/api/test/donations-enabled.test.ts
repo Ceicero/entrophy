@@ -91,6 +91,7 @@ describe('POST /donations/checkout (Stripe configured)', () => {
     expect(payload).toMatchObject({
       mode: 'payment',
       submit_type: 'donate',
+      managed_payments: { enabled: false },
       success_url: 'http://localhost:3003/donate/thanks?session_id={CHECKOUT_SESSION_ID}',
       cancel_url: 'http://localhost:3003/donate/cancelled',
       metadata: { kind: 'donation', donationId: 'donation-1' },

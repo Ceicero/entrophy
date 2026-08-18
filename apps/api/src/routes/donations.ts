@@ -85,6 +85,10 @@ export default async function donationsRoutes(app: ZodFastifyInstance): Promise<
         session = await stripe.checkout.sessions.create({
           mode: 'payment',
           submit_type: 'donate',
+          // Donations aren't a merchant-of-record digital product sale, so opt out of Stripe's Managed Payments
+          // (default-on for new accounts) — otherwise Checkout Session creation fails requiring a product tax
+          // code, and leaving it on would add Stripe's 3.5% Managed Payments fee on top of processing fees.
+          managed_payments: { enabled: false },
           line_items: [
             {
               price_data: {

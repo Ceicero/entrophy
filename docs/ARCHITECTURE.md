@@ -617,11 +617,14 @@ options: [{name, description, required, type}], subcommands: [{ name, fullName, 
 - Env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (already present), `WEB_URL=http://localhost:3003`,
   `DONATION_PRESETS_CENTS=300,500,1000,2500,5000` (optional override), `DONATION_MIN_CENTS=100`,
   `DONATION_MAX_CENTS=50000`. API CORS allowlist = `[DASHBOARD_URL, WEB_URL]`.
-- Dependency: `stripe` ^17 in `apps/api`.
+- Dependency: `stripe` ^22 in `apps/api`.
 - `apps/api/src/routes/donations.ts` (public, no session; rate limit 10/min/IP): `GET /donations/presets` →
   `{ enabled, currency: 'usd', presetsCents: number[], minCents, maxCents }`; `POST /donations/checkout`
   body `{ amountCents: int, currency: 'usd' }` → validates range → creates `Donation` row (PENDING) → Stripe Checkout
-  Session (`mode: 'payment'`, `submit_type: 'donate'`, `line_items[0].price_data = { currency, unit_amount, product_data:
+  Session (`mode: 'payment'`, `submit_type: 'donate'`, `managed_payments: { enabled: false }` — Stripe's Managed
+  Payments (merchant-of-record, adds a 3.5% fee and requires product tax codes) is default-on for new accounts and is
+  explicitly disabled per session since donations aren't a merchant-of-record product sale,
+  `line_items[0].price_data = { currency, unit_amount, product_data:
 { name: 'Entrophy donation' } }`, `success_url: ${WEB_URL}/donate/thanks?session_id={CHECKOUT_SESSION_ID}`,
   `cancel_url: ${WEB_URL}/donate/cancelled`, `metadata: { kind: 'donation', donationId }`) → stores `stripeSessionId` →
   `{ url }`. 503 `{ error: { code: 'donations_unavailable' } }` when `STRIPE_SECRET_KEY` unset.
