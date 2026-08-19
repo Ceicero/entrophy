@@ -424,13 +424,10 @@
       "name": "🎙 VOICE",
       "channels": [
         {
-          "name": "General VC",
-          "type": "voice"
-        },
-        {
           "name": "➕ Join to Create",
           "type": "voice",
-          "note": "tempvoice hub"
+          "existingName": "General",
+          "note": "tempvoice hub; replaces the default General voice channel"
         }
       ]
     },
@@ -464,5 +461,26 @@
     "faqSticky": "**Entrophy FAQ** - Add the bot: <https://entrophybot.com> | Dashboard: <https://app.entrophybot.com> | Commands: <https://entrophybot.com/features> | Need help? Open a ticket in #support. Use /tag <name> for quick answers.",
     "aiChatIntro": "**AI chat** - @mention **Entrophy** in this channel to talk to it (it never replies unless mentioned). Keep it friendly; 30-second cooldown per person. Do not paste secrets.",
     "boosterThanks": "**Thank you for boosting!** Boosters get this lounge, a custom color on request, early looks at bot updates, and priority support. Your boost keeps the hub perks unlocked."
+  },
+  "emojis": {
+    "note": "uploaded via Discord UI (bot lacks Manage Expressions); names skel_* from Pictures/pixel_skeleton_discord_emojis",
+    "names": [
+      "skel_neutral",
+      "skel_wave",
+      "skel_thumbsup",
+      "skel_cheer",
+      "skel_sweat",
+      "skel_confused",
+      "skel_sparkle",
+      "skel_shy",
+      "skel_angry",
+      "skel_heart",
+      "skel_dab",
+      "skel_dance",
+      "skel_sleep",
+      "skel_cry",
+      "skel_popup",
+      "skel_ko"
+    ]
   }
 }
