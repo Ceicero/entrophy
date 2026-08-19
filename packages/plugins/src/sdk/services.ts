@@ -269,8 +269,11 @@ export interface EnforcerFlagResult {
 export interface EnforcerService {
   decide(input: EnforcerDecideInput): Promise<EnforcerDecideResult>;
   flag(input: EnforcerFlagInput): Promise<EnforcerFlagResult>;
-  /** Re-applies the ledger/flag-queue channel permission overwrites (`/enforcer setup` → "repair channel"). */
-  repairChannels(guildId: string): Promise<void>;
+  /** Re-applies the ledger/flag-queue channel permission overwrites, and the mute-role deny-overwrites (when a
+   * mute role is configured and still exists), across every manageable channel (`/enforcer setup` → "repair
+   * channel"). Returns how many channels the mute-role overwrite was applied to / failed on (both 0 when no
+   * mute role is configured or it no longer exists). */
+  repairChannels(guildId: string): Promise<{ muteApplied: number; muteFailed: number }>;
 }
 
 export interface HostEnableActor {

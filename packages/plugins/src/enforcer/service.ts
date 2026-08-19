@@ -768,9 +768,13 @@ export function createEnforcerService(ctx: PluginContext): EnforcerService {
       }
     },
 
-    async repairChannels(guildIdInput: string | { guildId: string }): Promise<void> {
+    async repairChannels(
+      guildIdInput: string | { guildId: string },
+    ): Promise<{ muteApplied: number; muteFailed: number }> {
       const guildId = typeof guildIdInput === 'string' ? guildIdInput : guildIdInput.guildId;
-      const { applyFlagQueueOverwrites, applyLedgerOverwrites } = await import('./channels');
+      const { applyFlagQueueOverwrites, applyLedgerOverwrites, applyMuteRoleToChannels } = await import(
+        './channels'
+      );
 
       const config = await ctx.getConfig<EnforcerConfig>(guildId);
       const guild = await ctx.client.guilds.fetch(guildId);
@@ -787,6 +791,23 @@ export function createEnforcerService(ctx: PluginContext): EnforcerService {
 
       const flagChannel = await fetchManagedTextChannel(guild, config.flagChannelId);
       if (flagChannel) await applyFlagQueueOverwrites(flagChannel, staffRoleIds);
+
+      // Re-apply the mute-role deny-overwrites too, same as `/enforcer setup`'s initial bulk apply — a repair
+      // should put every channel's overwrites (ledger, flag queue, and mute role) back in sync in one go. Skip
+      // silently (0/0) when no mute role is configured, or when the configured role no longer exists (deleted
+      // out-of-band) — there is nothing to re-apply in either case.
+      let muteApplied = 0;
+      let muteFailed = 0;
+      if (config.muteRoleId) {
+        const role = await guild.roles.fetch(config.muteRoleId).catch(() => null);
+        if (role) {
+          const result = await applyMuteRoleToChannels(guild, role);
+          muteApplied = result.applied;
+          muteFailed = result.failed;
+        }
+      }
+
+      return { muteApplied, muteFailed };
     },
   };
 }

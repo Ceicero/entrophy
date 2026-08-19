@@ -146,6 +146,29 @@ export async function ensureMuteRole(options: EnsureMuteRoleOptions): Promise<Ro
 const CHANNEL_BATCH_SIZE = 5;
 const CHANNEL_BATCH_DELAY_MS = 1000;
 
+/** The deny overwrite set every mute-role apply path uses — the single source of truth so `/enforcer setup`'s
+ * bulk apply, `EnforcerService.repairChannels`, and the `channelCreate` upkeep listener can never drift apart. */
+const MUTE_ROLE_DENY_OVERWRITES = {
+  SendMessages: false,
+  SendMessagesInThreads: false,
+  Speak: false,
+  AddReactions: false,
+} as const;
+
+/**
+ * Applies the mute-role deny-overwrite set to a single channel (or category — categories can hold overwrites,
+ * and applying to one means new child channels inherit the deny automatically). Shared by
+ * `applyMuteRoleToChannels` (bulk apply during `/enforcer setup` / repair) and the `channelCreate` listener
+ * (keeping a newly-created channel in sync without a full repair).
+ */
+export async function applyMuteRoleToChannel(
+  channel: Exclude<GuildBasedChannel, ThreadChannel>,
+  role: Role,
+  reason = 'Enforcer: apply mute role overwrite',
+): Promise<void> {
+  await channel.permissionOverwrites.edit(role, MUTE_ROLE_DENY_OVERWRITES, { reason });
+}
+
 /**
  * Applies deny SendMessages/SendMessagesInThreads/Speak/AddReactions overwrites for `role` across every channel
  * the bot can manage, in small batches with a short delay between them to stay rate-limit friendly
@@ -167,20 +190,7 @@ export async function applyMuteRoleToChannels(
   let failed = 0;
 
   for (const batch of batches) {
-    const results = await Promise.allSettled(
-      batch.map((channel) =>
-        channel.permissionOverwrites.edit(
-          role,
-          {
-            SendMessages: false,
-            SendMessagesInThreads: false,
-            Speak: false,
-            AddReactions: false,
-          },
-          { reason: 'Enforcer: apply mute role overwrite' },
-        ),
-      ),
-    );
+    const results = await Promise.allSettled(batch.map((channel) => applyMuteRoleToChannel(channel, role)));
     for (const result of results) {
       if (result.status === 'fulfilled') applied += 1;
       else failed += 1;

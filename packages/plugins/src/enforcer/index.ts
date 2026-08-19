@@ -4,6 +4,7 @@ import { manifest } from './manifest';
 import { registerAppealListeners } from './appeal-listeners';
 import { createEnforcerService } from './service';
 import { messageCreateHandler } from './events/message-create';
+import { channelCreateHandler } from './events/channel-create';
 
 import { addSetupSubcommand, executeSetup } from './commands/setup';
 import { addStatusSubcommand, executeStatus } from './commands/status';
@@ -110,7 +111,7 @@ export const plugin = definePlugin({
   manifest,
   commands: [enforcerCommand, flagContextMenuCommand],
   components,
-  events: [messageCreateHandler],
+  events: [messageCreateHandler, channelCreateHandler],
   async onLoad(ctx) {
     ctx.services.register('enforcer', createEnforcerService(ctx));
     registerAppealListeners(ctx);

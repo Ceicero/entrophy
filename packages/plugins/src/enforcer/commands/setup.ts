@@ -84,9 +84,15 @@ export async function executeSetup(c: CommandContext): Promise<void> {
 
   if (repairOnly) {
     const enforcer = c.ctx.services.get('enforcer');
-    if (enforcer) await enforcer.repairChannels(c.guildId);
+    const { muteApplied, muteFailed } = enforcer
+      ? await enforcer.repairChannels(c.guildId)
+      : { muteApplied: 0, muteFailed: 0 };
+    const muteSuffix =
+      muteApplied > 0 || muteFailed > 0
+        ? `, mute role on ${muteApplied} channel(s)${muteFailed > 0 ? ` (${muteFailed} failed — check my Manage Roles/Manage Channels permission there)` : ''}`
+        : '';
     await c.interaction.editReply({
-      embeds: [successEmbed('Channel permission overwrites re-applied from the current configuration.')],
+      embeds: [successEmbed(`Channel permission overwrites re-applied (ledger, flag queue${muteSuffix}).`)],
     });
     return;
   }

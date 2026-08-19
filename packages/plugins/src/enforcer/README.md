@@ -81,3 +81,8 @@ Queue (pending flags with decision dialogs), Ledger (search/filter/export + deta
 - `/enforcer policy create`/`edit` accept exactly one matcher per invocation (Discord slash command options can't
   express a repeated group) — policies needing several matchers should be built or extended from the dashboard's
   matcher-builder editor.
+- Mute-role overwrites stay in sync without a manual repair: a `channelCreate` listener re-applies the deny
+  SendMessages/SendMessagesInThreads/Speak/AddReactions overwrite to every new channel (and category, so its
+  future children inherit it) as soon as it's created, using the same overwrite set `/enforcer setup` and
+  `repair:true` apply in bulk — both live in one place (`applyMuteRoleToChannel` in `src/enforcer/channels.ts`).
+  All of this is a no-op, silently, when no mute role is configured or the configured role no longer exists.

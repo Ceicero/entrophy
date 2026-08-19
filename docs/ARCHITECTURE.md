@@ -714,6 +714,15 @@ attachments: {name, contentType?}[], links: string[], invites: string[], isStaff
   EmbedLinks, ReadMessageHistory. Setup re-applies overwrites (`/enforcer setup` → "repair channel"). Ledger embed
   fields: `Record #E-n`, `User <@id> (id)`, `When <t:..:F>`, `Action`, `Decided by`, `Policy`, `Case #`, `Context`
   (excerpt + `[Jump]` link), footer with source. Ledger posts never ping (allowedMentions: parse []).
+- Mute-role overwrite upkeep: the deny SendMessages/SendMessagesInThreads/Speak/AddReactions overwrite for the
+  configured mute role is kept in sync by two paths sharing one implementation (`applyMuteRoleToChannel` in
+  `channels.ts`) — the bulk `applyMuteRoleToChannels` (used by `/enforcer setup`'s initial role creation and by
+  `EnforcerService.repairChannels`, which now also returns `{ muteApplied, muteFailed }` alongside re-applying the
+  ledger/flag-queue overwrites) and a `channelCreate` listener (`events/channel-create.ts`) that applies it to a
+  single newly-created channel — including categories, so channels created under one inherit the deny. Both paths
+  no-op silently when no mute role is configured or the configured role no longer resolves (`guild.roles.fetch`
+  failure); the listener also never throws (best-effort, logs at `warn`) and relies on the host's standard
+  `guildIdOf`-based plugin-enablement gating like every other Enforcer event handler.
 - Cross-plugin contract additions:
   - `ServiceMap.moderation` MUST also expose `openAppeal({ guildId, userId, caseNumber?, caseId?, content, source }):
 Promise<{ appealId: string }>` and `getCaseByNumber(guildId, caseNumber)`; the moderation plugin emits
