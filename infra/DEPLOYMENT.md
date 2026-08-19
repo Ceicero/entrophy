@@ -194,6 +194,15 @@ registration to one test server while you're verifying). `set-avatar` uploads
 `assets/brand/entrophy-skull.png` as the bot's Discord avatar — you only need to run it once (Discord
 rate-limits avatar changes).
 
+### 2.6a Setting up a hub/community server from a plan
+
+If you're also running Entrophy's own community hub server (support, announcements, the
+server-owner lounge), it's configured declaratively rather than by hand: `scripts/hub-setup.mjs`
+reconciles a real Discord server's roles, channels, permissions, and pinned messages against a
+plan JSON, idempotently (safe to re-run) and read-only by default (`--dry-run`; pass `--apply` to
+actually write). Run it from a machine with the repo checked out and `DISCORD_TOKEN` set — see
+`infra/hub/README.md` for the plan schema and full usage.
+
 ### 2.7 Health checks
 
 - `api`: `GET https://api.entrophybot.com/health` → `200 {"status":"ok", ...}`.
