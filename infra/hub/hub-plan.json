@@ -2,68 +2,453 @@
   "guildId": "1538693650941354015",
   "ownerUserId": "379422418202132490",
   "existing": {
-    "roles": { "Admin": "1539245802512195644", "Moderator": "1539245573293740032", "Helper": "1539245692315238490", "Muted": "1539129076411932703" },
-    "channels": { "mod-log": "1539246246651240499", "moderator-only": "1539122428444282913", "support": "1539125798387195924", "suggestions": "1539126501864378460", "announcements": "1539124166282706965", "bot-commands": "1539127599219875951", "enforcer-queue": "1539129074599985224", "mod-ledger": "1539129072230207519" }
+    "roles": {
+      "Admin": "1539245802512195644",
+      "Moderator": "1539245573293740032",
+      "Helper": "1539245692315238490",
+      "Muted": "1539129076411932703"
+    },
+    "channels": {
+      "mod-log": "1539246246651240499",
+      "moderator-only": "1539122428444282913",
+      "support": "1539125798387195924",
+      "suggestions": "1539126501864378460",
+      "announcements": "1539124166282706965",
+      "bot-commands": "1539127599219875951",
+      "enforcer-queue": "1539129074599985224",
+      "mod-ledger": "1539129072230207519"
+    }
   },
   "roles_top_to_bottom": [
-    { "name": "Owner", "color": "#f1c40f", "hoist": true, "mentionable": false, "permissions": ["Administrator"], "assignTo": ["379422418202132490"], "note": "Brandon only. Administrator." },
-    { "name": "Admin", "color": "#e74c3c", "hoist": true, "mentionable": true, "permissions": ["ManageGuild","ManageChannels","ManageRoles","ManageMessages","KickMembers","BanMembers","ModerateMembers","ManageThreads","ManageEvents","ManageWebhooks","ViewAuditLog","MentionEveryone","ManageNicknames","MuteMembers","DeafenMembers","MoveMembers"], "note": "exists; ensure perms/color/hoist" },
-    { "name": "Moderator", "color": "#3498db", "hoist": true, "mentionable": true, "permissions": ["ManageMessages","KickMembers","ModerateMembers","ManageThreads","MuteMembers","MoveMembers","ViewAuditLog","ManageNicknames"], "note": "exists" },
-    { "name": "Helper", "color": "#1abc9c", "hoist": true, "mentionable": true, "permissions": ["ManageMessages","ManageThreads"], "note": "exists" },
-    { "name": "Server Owner", "color": "#9b59b6", "hoist": true, "mentionable": false, "permissions": [], "note": "self-assignable via roles panel; gated lounge" },
-    { "name": "Regular", "color": "#95a5a6", "hoist": false, "mentionable": false, "permissions": [], "note": "base member role, auto-role on join" },
-    { "name": "Muted", "color": "#546e7a", "hoist": false, "mentionable": false, "permissions": [], "note": "exists; deny SendMessages/AddReactions/Speak everywhere via overwrites" }
+    {
+      "name": "Owner",
+      "color": "#f1c40f",
+      "hoist": true,
+      "mentionable": false,
+      "permissions": [
+        "ManageGuild",
+        "ManageChannels",
+        "ManageRoles",
+        "ManageMessages",
+        "KickMembers",
+        "BanMembers",
+        "ModerateMembers",
+        "ManageThreads",
+        "ManageEvents",
+        "ManageWebhooks",
+        "ViewAuditLog",
+        "MentionEveryone",
+        "ManageNicknames",
+        "MuteMembers",
+        "DeafenMembers",
+        "MoveMembers"
+      ],
+      "assignTo": [
+        "379422418202132490"
+      ],
+      "note": "Brandon only (guild owner). Same grantable perms as Admin - the bot cannot grant Administrator."
+    },
+    {
+      "name": "Admin",
+      "color": "#e74c3c",
+      "hoist": true,
+      "mentionable": true,
+      "permissions": [
+        "ManageGuild",
+        "ManageChannels",
+        "ManageRoles",
+        "ManageMessages",
+        "KickMembers",
+        "BanMembers",
+        "ModerateMembers",
+        "ManageThreads",
+        "ManageEvents",
+        "ManageWebhooks",
+        "ViewAuditLog",
+        "MentionEveryone",
+        "ManageNicknames",
+        "MuteMembers",
+        "DeafenMembers",
+        "MoveMembers"
+      ],
+      "note": "exists; ensure perms/color/hoist"
+    },
+    {
+      "name": "Moderator",
+      "color": "#3498db",
+      "hoist": true,
+      "mentionable": true,
+      "permissions": [
+        "ManageMessages",
+        "KickMembers",
+        "ModerateMembers",
+        "ManageThreads",
+        "MuteMembers",
+        "MoveMembers",
+        "ViewAuditLog",
+        "ManageNicknames"
+      ],
+      "note": "exists"
+    },
+    {
+      "name": "Helper",
+      "color": "#1abc9c",
+      "hoist": true,
+      "mentionable": true,
+      "permissions": [
+        "ManageMessages",
+        "ManageThreads"
+      ],
+      "note": "exists"
+    },
+    {
+      "name": "Server Owner",
+      "color": "#9b59b6",
+      "hoist": true,
+      "mentionable": false,
+      "permissions": [],
+      "note": "self-assignable via roles panel; gated lounge"
+    },
+    {
+      "name": "Regular",
+      "color": "#95a5a6",
+      "hoist": false,
+      "mentionable": false,
+      "permissions": [],
+      "note": "base member role, auto-role on join"
+    },
+    {
+      "name": "Muted",
+      "color": "#546e7a",
+      "hoist": false,
+      "mentionable": false,
+      "permissions": [],
+      "note": "exists; deny SendMessages/AddReactions/Speak everywhere via overwrites"
+    }
   ],
   "pingRoles": [
-    { "name": "Updates Ping", "color": "#2ecc71" },
-    { "name": "Stream Ping", "color": "#9146ff" },
-    { "name": "Giveaway Ping", "color": "#e67e22" }
+    {
+      "name": "Updates Ping",
+      "color": "#2ecc71"
+    },
+    {
+      "name": "Stream Ping",
+      "color": "#9146ff"
+    },
+    {
+      "name": "Giveaway Ping",
+      "color": "#e67e22"
+    }
   ],
   "categories_in_order": [
-    { "name": "📌 START HERE", "channels": [
-      { "name": "welcome", "type": "text", "topic": "Say hi! Entrophy welcomes every new member here.", "everyone": { "deny": ["SendMessages","CreatePublicThreads","CreatePrivateThreads"] } },
-      { "name": "rules", "type": "text", "existingName": "rules", "topic": "Read before posting. Agreeing = following them.", "everyone": { "deny": ["SendMessages","AddReactions","CreatePublicThreads","CreatePrivateThreads"] } },
-      { "name": "announcements", "type": "announcement", "existingKey": "announcements", "topic": "Official Entrophy hub announcements.", "everyone": { "deny": ["SendMessages"] } },
-      { "name": "updates", "type": "announcement", "existingName": "updates", "topic": "Entrophy bot changelog and release notes (auto-published).", "everyone": { "deny": ["SendMessages"] } },
-      { "name": "roles", "type": "text", "topic": "Pick your roles: Server Owner, Updates Ping, Stream Ping, Giveaway Ping.", "everyone": { "deny": ["SendMessages","AddReactions"] } }
-    ]},
-    { "name": "💬 COMMUNITY", "channels": [
-      { "name": "general", "type": "text", "existingName": "general", "topic": "Main chat. Be kind; no invite spam." },
-      { "name": "media", "type": "text", "topic": "Clips, screenshots, memes. Keep it SFW.", "slowmode": 10 },
-      { "name": "showcase", "type": "text", "topic": "Show off your server running Entrophy: setups, automations, ledgers.", "slowmode": 30 },
-      { "name": "suggestions", "type": "text", "existingKey": "suggestions", "topic": "Ideas for the bot or the hub. The bot turns these into votable threads." },
-      { "name": "bot-commands", "type": "text", "existingKey": "bot-commands", "topic": "Slash commands, /level rank, /birthday, /tag. Keep spam here." },
-      { "name": "ai-chat", "type": "text", "topic": "Chat with Entrophy AI: @mention the bot to talk to it. 30s cooldown per person.", "slowmode": 5 },
-      { "name": "level-ups", "type": "text", "topic": "Level-up announcements from the leveling system.", "everyone": { "deny": ["SendMessages"] } },
-      { "name": "giveaways", "type": "text", "topic": "Giveaways run by staff with /giveaway.", "everyone": { "deny": ["SendMessages"] } }
-    ]},
-    { "name": "📺 STREAMS", "channels": [
-      { "name": "stream-alerts", "type": "announcement", "topic": "Go-live alerts (Twitch: Siizzaro). Pings @Stream Ping.", "everyone": { "deny": ["SendMessages"] } }
-    ]},
-    { "name": "🛠 ENTROPHY SUPPORT", "channels": [
-      { "name": "support", "type": "text", "existingKey": "support", "topic": "Open a ticket with the panel below. Staff reply in private threads." },
-      { "name": "faq", "type": "text", "topic": "Sticky FAQ and /tag answers. Ask in #support if it is not here.", "everyone": { "deny": ["SendMessages"] } },
-      { "name": "feature-requests", "type": "text", "topic": "Server owners: what should Entrophy do next?", "roleOnly": ["Server Owner","Helper","Moderator","Admin","Owner"] },
-      { "name": "server-owners", "type": "text", "topic": "Lounge for people running Entrophy on their own servers.", "roleOnly": ["Server Owner","Helper","Moderator","Admin","Owner"] }
-    ]},
-    { "name": "💎 BOOSTERS", "channels": [
-      { "name": "booster-lounge", "type": "text", "topic": "Thank you for boosting! Perks: custom color, early access to updates, priority support.", "boosterOnly": true }
-    ]},
-    { "name": "🔒 STAFF", "channels": [
-      { "name": "admin-chat", "type": "text", "topic": "Owner and Admins.", "roleOnly": ["Admin","Owner"] },
-      { "name": "moderator-only", "type": "text", "existingKey": "moderator-only", "roleOnly": ["Helper","Moderator","Admin","Owner"] },
-      { "name": "mod-log", "type": "text", "existingKey": "mod-log", "roleOnly": ["Helper","Moderator","Admin","Owner"], "botNeeds": ["ViewChannel","SendMessages","EmbedLinks"] },
-      { "name": "mod-ledger", "type": "text", "existingKey": "mod-ledger", "roleOnly": ["Helper","Moderator","Admin","Owner"], "botNeeds": ["ViewChannel","SendMessages","EmbedLinks"] },
-      { "name": "enforcer-queue", "type": "text", "existingKey": "enforcer-queue", "roleOnly": ["Helper","Moderator","Admin","Owner"], "botNeeds": ["ViewChannel","SendMessages","EmbedLinks"] },
-      { "name": "Staff Voice", "type": "voice", "roleOnly": ["Helper","Moderator","Admin","Owner"] }
-    ]},
-    { "name": "🎙 VOICE", "channels": [
-      { "name": "General VC", "type": "voice" },
-      { "name": "➕ Join to Create", "type": "voice", "note": "tempvoice hub" }
-    ]},
-    { "name": "📊 SERVER STATS", "channels": [] }
+    {
+      "name": "📌 START HERE",
+      "channels": [
+        {
+          "name": "welcome",
+          "type": "text",
+          "topic": "Say hi! Entrophy welcomes every new member here.",
+          "everyone": {
+            "deny": [
+              "SendMessages",
+              "CreatePublicThreads",
+              "CreatePrivateThreads"
+            ]
+          }
+        },
+        {
+          "name": "rules",
+          "type": "text",
+          "existingName": "rules",
+          "topic": "Read before posting. Agreeing = following them.",
+          "everyone": {
+            "deny": [
+              "SendMessages",
+              "AddReactions",
+              "CreatePublicThreads",
+              "CreatePrivateThreads"
+            ]
+          }
+        },
+        {
+          "name": "announcements",
+          "type": "announcement",
+          "existingKey": "announcements",
+          "topic": "Official Entrophy hub announcements.",
+          "everyone": {
+            "deny": [
+              "SendMessages"
+            ]
+          }
+        },
+        {
+          "name": "updates",
+          "type": "announcement",
+          "existingName": "updates",
+          "topic": "Entrophy bot changelog and release notes (auto-published).",
+          "everyone": {
+            "deny": [
+              "SendMessages"
+            ]
+          }
+        },
+        {
+          "name": "roles",
+          "type": "text",
+          "topic": "Pick your roles: Server Owner, Updates Ping, Stream Ping, Giveaway Ping.",
+          "everyone": {
+            "deny": [
+              "SendMessages",
+              "AddReactions"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "💬 COMMUNITY",
+      "channels": [
+        {
+          "name": "general",
+          "type": "text",
+          "existingName": "general",
+          "topic": "Main chat. Be kind; no invite spam."
+        },
+        {
+          "name": "media",
+          "type": "text",
+          "topic": "Clips, screenshots, memes. Keep it SFW.",
+          "slowmode": 10
+        },
+        {
+          "name": "showcase",
+          "type": "text",
+          "topic": "Show off your server running Entrophy: setups, automations, ledgers.",
+          "slowmode": 30
+        },
+        {
+          "name": "suggestions",
+          "type": "text",
+          "existingKey": "suggestions",
+          "topic": "Ideas for the bot or the hub. The bot turns these into votable threads."
+        },
+        {
+          "name": "bot-commands",
+          "type": "text",
+          "existingKey": "bot-commands",
+          "topic": "Slash commands, /level rank, /birthday, /tag. Keep spam here."
+        },
+        {
+          "name": "ai-chat",
+          "type": "text",
+          "topic": "Chat with Entrophy AI: @mention the bot to talk to it. 30s cooldown per person.",
+          "slowmode": 5
+        },
+        {
+          "name": "level-ups",
+          "type": "text",
+          "topic": "Level-up announcements from the leveling system.",
+          "everyone": {
+            "deny": [
+              "SendMessages"
+            ]
+          }
+        },
+        {
+          "name": "giveaways",
+          "type": "text",
+          "topic": "Giveaways run by staff with /giveaway.",
+          "everyone": {
+            "deny": [
+              "SendMessages"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "📺 STREAMS",
+      "channels": [
+        {
+          "name": "stream-alerts",
+          "type": "announcement",
+          "topic": "Go-live alerts (Twitch: Siizzaro). Pings @Stream Ping.",
+          "everyone": {
+            "deny": [
+              "SendMessages"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛠 ENTROPHY SUPPORT",
+      "channels": [
+        {
+          "name": "support",
+          "type": "text",
+          "existingKey": "support",
+          "topic": "Open a ticket with the panel below. Staff reply in private threads."
+        },
+        {
+          "name": "faq",
+          "type": "text",
+          "topic": "Sticky FAQ and /tag answers. Ask in #support if it is not here.",
+          "everyone": {
+            "deny": [
+              "SendMessages"
+            ]
+          }
+        },
+        {
+          "name": "feature-requests",
+          "type": "text",
+          "topic": "Server owners: what should Entrophy do next?",
+          "roleOnly": [
+            "Server Owner",
+            "Helper",
+            "Moderator",
+            "Admin",
+            "Owner"
+          ]
+        },
+        {
+          "name": "server-owners",
+          "type": "text",
+          "topic": "Lounge for people running Entrophy on their own servers.",
+          "roleOnly": [
+            "Server Owner",
+            "Helper",
+            "Moderator",
+            "Admin",
+            "Owner"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "💎 BOOSTERS",
+      "channels": [
+        {
+          "name": "booster-lounge",
+          "type": "text",
+          "topic": "Thank you for boosting! Perks: custom color, early access to updates, priority support.",
+          "boosterOnly": true
+        }
+      ]
+    },
+    {
+      "name": "🔒 STAFF",
+      "channels": [
+        {
+          "name": "admin-chat",
+          "type": "text",
+          "topic": "Owner and Admins.",
+          "roleOnly": [
+            "Admin",
+            "Owner"
+          ]
+        },
+        {
+          "name": "moderator-only",
+          "type": "text",
+          "existingKey": "moderator-only",
+          "roleOnly": [
+            "Helper",
+            "Moderator",
+            "Admin",
+            "Owner"
+          ]
+        },
+        {
+          "name": "mod-log",
+          "type": "text",
+          "existingKey": "mod-log",
+          "roleOnly": [
+            "Helper",
+            "Moderator",
+            "Admin",
+            "Owner"
+          ],
+          "botNeeds": [
+            "ViewChannel",
+            "SendMessages",
+            "EmbedLinks"
+          ]
+        },
+        {
+          "name": "mod-ledger",
+          "type": "text",
+          "existingKey": "mod-ledger",
+          "roleOnly": [
+            "Helper",
+            "Moderator",
+            "Admin",
+            "Owner"
+          ],
+          "botNeeds": [
+            "ViewChannel",
+            "SendMessages",
+            "EmbedLinks"
+          ]
+        },
+        {
+          "name": "enforcer-queue",
+          "type": "text",
+          "existingKey": "enforcer-queue",
+          "roleOnly": [
+            "Helper",
+            "Moderator",
+            "Admin",
+            "Owner"
+          ],
+          "botNeeds": [
+            "ViewChannel",
+            "SendMessages",
+            "EmbedLinks"
+          ]
+        },
+        {
+          "name": "Staff Voice",
+          "type": "voice",
+          "roleOnly": [
+            "Helper",
+            "Moderator",
+            "Admin",
+            "Owner"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🎙 VOICE",
+      "channels": [
+        {
+          "name": "General VC",
+          "type": "voice"
+        },
+        {
+          "name": "➕ Join to Create",
+          "type": "voice",
+          "note": "tempvoice hub"
+        }
+      ]
+    },
+    {
+      "name": "📊 SERVER STATS",
+      "channels": []
+    }
   ],
-  "mutedOverwrites": { "deny": ["SendMessages","SendMessagesInThreads","AddReactions","Speak","CreatePublicThreads","CreatePrivateThreads"] },
+  "mutedOverwrites": {
+    "deny": [
+      "SendMessages",
+      "SendMessagesInThreads",
+      "AddReactions",
+      "Speak",
+      "CreatePublicThreads",
+      "CreatePrivateThreads"
+    ]
+  },
   "messages": {
     "rules": [
       "**Welcome to the Entrophy hub.** This is the home for the Entrophy Discord bot: support, updates, and a community of server owners and players.",
