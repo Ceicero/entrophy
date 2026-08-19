@@ -1,18 +1,28 @@
 'use client';
 
 import { X } from 'lucide-react';
-import { Badge, ChannelPicker, Input } from '@entrophy/ui';
+import { Badge, ChannelPicker, Input, type ChannelKind } from '@entrophy/ui';
 import { useGuildChannels } from '../../lib/queries';
+
+const DEFAULT_KINDS: ChannelKind[] = ['text', 'announcement', 'forum', 'voice'];
 
 export interface ChannelAllowlistPickerProps {
   guildId: string;
   value: string[];
   onChange: (next: string[]) => void;
   disabled?: boolean;
+  /** Restrict selectable channels to these kinds. Defaults to the original `/ask`/`/summarize` allowlist's set. */
+  kinds?: ChannelKind[];
 }
 
-/** Add-one-at-a-time multi-select over guild text channels (the `/ask`/`/summarize` allowlist), with removable chips. Falls back to a comma-separated id input if the channels endpoint is unavailable. */
-export function ChannelAllowlistPicker({ guildId, value, onChange, disabled }: ChannelAllowlistPickerProps) {
+/** Add-one-at-a-time multi-select over guild channels (used for the `/ask`/`/summarize` allowlist and the mention-chat channel list), with removable chips. Falls back to a comma-separated id input if the channels endpoint is unavailable. */
+export function ChannelAllowlistPicker({
+  guildId,
+  value,
+  onChange,
+  disabled,
+  kinds = DEFAULT_KINDS,
+}: ChannelAllowlistPickerProps) {
   const { data: channels, isError, isLoading } = useGuildChannels(guildId);
 
   const channelName = (id: string) => channels?.find((c) => c.id === id)?.name ?? id;
@@ -63,7 +73,7 @@ export function ChannelAllowlistPicker({ guildId, value, onChange, disabled }: C
         placeholder="Add a channel…"
         allowNone={false}
         disabled={disabled || isLoading}
-        kinds={['text', 'announcement', 'forum', 'voice']}
+        kinds={kinds}
       />
     </div>
   );

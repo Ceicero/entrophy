@@ -4694,10 +4694,10 @@
     {
       "id": "ai",
       "name": "AI Assistant",
-      "description": "Optional, disabled-by-default AI helper (/ask, /summarize, /draft, /mod-assist) with per-server opt-in, per-channel allowlisting, cooldowns, and token budgets.",
+      "description": "Optional, disabled-by-default AI helper (/ask, /summarize, /draft, /mod-assist, @mention chat) with per-server opt-in, per-channel allowlisting, cooldowns, and token budgets.",
       "category": "ai",
       "defaultEnabled": false,
-      "privilegedIntents": [],
+      "privilegedIntents": ["MessageContent"],
       "commands": [
         {
           "name": "ask",
@@ -4882,6 +4882,63 @@
                 {
                   "name": "per-user",
                   "description": "Per-user daily token budget",
+                  "required": true,
+                  "type": "Integer"
+                }
+              ]
+            },
+            {
+              "name": "enable",
+              "fullName": "/ai chat enable",
+              "description": "Turn mention chat on for this server.",
+              "options": []
+            },
+            {
+              "name": "disable",
+              "fullName": "/ai chat disable",
+              "description": "Turn mention chat off for this server.",
+              "options": []
+            },
+            {
+              "name": "channel",
+              "fullName": "/ai chat channel",
+              "description": "Add, remove, or list the channels mention chat responds in.",
+              "options": [
+                {
+                  "name": "action",
+                  "description": "add, remove, or list",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel (required for add/remove)",
+                  "required": false,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
+              "name": "persona",
+              "fullName": "/ai chat persona",
+              "description": "Set, clear, or view the mention-chat persona.",
+              "options": [
+                {
+                  "name": "action",
+                  "description": "set, clear, or view",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "history",
+              "fullName": "/ai chat history",
+              "description": "How many recent messages to include as context (0-10).",
+              "options": [
+                {
+                  "name": "count",
+                  "description": "Message count",
                   "required": true,
                   "type": "Integer"
                 }

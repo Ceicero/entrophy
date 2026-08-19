@@ -7,6 +7,15 @@ import { guildIdParamSchema } from '../lib/schemas';
 
 const AI_PLUGIN_ID = 'ai' as const;
 
+/** Mirrors `packages/plugins/src/ai/manifest.ts`'s `configSchema`'s `chat` sub-object. */
+interface AiChatConfigShape {
+  enabled: boolean;
+  channelIds: string[];
+  persona: string | null;
+  historyMessages: number;
+  maxReplyChars: number;
+}
+
 /** Mirrors `packages/plugins/src/ai/manifest.ts`'s `configSchema` — kept local (rather than importing the plugins package into the API) per ARCHITECTURE.md §10's config-store note that the API only ever needs manifest-level shape, read/validated generically via `app.configStore`. */
 interface AiConfigShape {
   provider: 'openai' | 'anthropic' | 'compatible';
@@ -18,7 +27,16 @@ interface AiConfigShape {
   userCooldownSeconds: number;
   dailyTokenBudget: number;
   perUserDailyTokenBudget: number;
+  chat: AiChatConfigShape;
 }
+
+const chatSettingsSchema = z.object({
+  enabled: z.boolean(),
+  channelIds: z.array(z.string().regex(/^\d{17,20}$/)).max(20),
+  persona: z.string().trim().min(1).max(1500).nullable(),
+  historyMessages: z.number().int().min(0).max(10),
+  maxReplyChars: z.number().int().min(200).max(2000),
+});
 
 const settingsBodySchema = z.object({
   provider: z.enum(['openai', 'anthropic', 'compatible']).optional(),
@@ -34,6 +52,11 @@ const settingsBodySchema = z.object({
   userCooldownSeconds: z.number().int().min(0).max(3600).optional(),
   dailyTokenBudget: z.number().int().min(1000).max(10_000_000).optional(),
   perUserDailyTokenBudget: z.number().int().min(100).max(1_000_000).optional(),
+  // Sent whole (never a partial patch) — the dashboard form keeps `chat` as one draft object, same as every
+  // other settings field; `configStore.setConfig` shallow-merges at the top level, so a whole-object replace here
+  // is intentional and correct (unlike the bot's `/ai chat` subcommands, which each patch one field and so have
+  // to spread the current `chat` object themselves — see `packages/plugins/src/ai/commands/config.ts`).
+  chat: chatSettingsSchema.optional(),
 });
 
 const usageQuerySchema = z.object({
@@ -52,6 +75,7 @@ function toSettingsDto(guildId: string, config: AiConfigShape): AiSettingsDto {
     userCooldownSeconds: config.userCooldownSeconds,
     dailyTokenBudget: config.dailyTokenBudget,
     perUserDailyTokenBudget: config.perUserDailyTokenBudget,
+    chat: config.chat,
   };
 }
 

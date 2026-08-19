@@ -12,6 +12,10 @@
     "replyTitle": "Moderation suggestion",
     "disclaimer": "**Suggestion only — you decide.** This is never automatically acted on."
   },
+  "mentionChat": {
+    "emptyPrompt": "Mention me along with what you'd like to ask — for example \"{mention} what's the rules channel?\"",
+    "unavailable": "AI is unavailable right now."
+  },
   "config": {
     "viewTitle": "AI Assistant — configuration",
     "keyCleared": "API key removed.",
@@ -20,7 +24,18 @@
     "modelSet": "Model set to **{model}**.",
     "channelAdded": "Added **#{channel}** to the allowed channels for /ask and /summarize.",
     "channelRemoved": "Removed **#{channel}** from the allowed channels.",
-    "budgetSet": "Daily token budget set to **{daily}** (server) / **{perUser}** (per user)."
+    "budgetSet": "Daily token budget set to **{daily}** (server) / **{perUser}** (per user).",
+    "chat": {
+      "enabled": "Mention chat is now **on**. The bot replies when @mentioned in one of its configured channels.",
+      "disabled": "Mention chat is now **off**.",
+      "channelListTitle": "Mention chat — channels",
+      "channelAdded": "Added **#{channel}** to mention chat's channels.",
+      "channelRemoved": "Removed **#{channel}** from mention chat's channels.",
+      "personaSet": "Mention-chat persona saved.",
+      "personaCleared": "Mention-chat persona cleared — back to the default persona.",
+      "personaViewTitle": "Mention chat — current persona",
+      "historySet": "Mention chat now includes the last **{count}** message(s) as context."
+    }
   },
   "errors": {
     "channelNotAllowed": "This channel isn't on the AI assistant's allowed-channel list. An admin can add it with `/ai config channels add`.",
@@ -37,6 +52,9 @@
     "userBudgetExhausted": "You've used up your daily AI token allowance. It resets at midnight UTC.",
     "compatibleNeedsBaseUrl": "The OpenAI-compatible provider needs a base URL.",
     "perUserBudgetExceedsDaily": "The per-user budget can't be larger than the server-wide daily budget.",
-    "emptyKey": "The API key can't be empty."
+    "emptyKey": "The API key can't be empty.",
+    "emptyPersona": "The persona can't be empty — use `/ai chat persona clear` to remove it instead.",
+    "chatChannelRequired": "Pick a channel for add/remove (list doesn't need one).",
+    "chatChannelLimit": "Mention chat supports at most 20 channels per server."
   }
 }

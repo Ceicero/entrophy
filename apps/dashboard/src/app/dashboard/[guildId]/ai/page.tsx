@@ -27,6 +27,7 @@ import { usePlugins, useTogglePlugin } from '../../../../lib/queries';
 import { ErrorState } from '../../../../components/error-state';
 import { ApiClientError } from '../../../../lib/api';
 import { AiSettingsForm } from '../../../../components/ai/ai-settings-form';
+import { MentionChatForm } from '../../../../components/ai/mention-chat-form';
 import { UsageChart } from '../../../../components/ai/usage-chart';
 
 const RANGE_OPTIONS = [
@@ -67,7 +68,7 @@ export default function AiPage() {
     <div className="space-y-6">
       <PageHeader
         title="AI Assistant"
-        description="Optional, opt-in help: /ask, /summarize, /draft, and /mod-assist. Disabled by default."
+        description="Optional, opt-in help: /ask, /summarize, /draft, /mod-assist, and mention chat. Disabled by default."
       />
 
       <Alert>
@@ -119,6 +120,33 @@ export default function AiPage() {
             </div>
           ) : (
             <AiSettingsForm guildId={guildId} settings={settingsQuery.data} />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Mention chat</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Alert>
+            <Sparkles className="h-4 w-4" />
+            <AlertDescription>
+              The bot only replies when @mentioned in these channels — never passively, and never just because
+              a message replies to it. The mentioning message plus a short window of recent context (redacted)
+              go to the same provider configured above; nothing is stored beyond usage counters.
+            </AlertDescription>
+          </Alert>
+          {settingsQuery.error ? (
+            <ErrorState error={settingsQuery.error} onRetry={() => settingsQuery.refetch()} />
+          ) : settingsQuery.isLoading || !settingsQuery.data ? (
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : (
+            <MentionChatForm guildId={guildId} settings={settingsQuery.data} />
           )}
         </CardContent>
       </Card>

@@ -21,6 +21,24 @@ export const configSchema = z.object({
   userCooldownSeconds: z.number().int().min(0).max(3600).default(30),
   dailyTokenBudget: z.number().int().min(1000).max(10_000_000).default(200_000),
   perUserDailyTokenBudget: z.number().int().min(100).max(1_000_000).default(20_000),
+  /**
+   * "Mention chat" — members can talk to the bot in designated channels by @mentioning it, with a per-server
+   * persona. Separate from `allowedChannelIds` (which only gates `/ask` and `/summarize`): a channel needs to be
+   * in `chat.channelIds`, not `allowedChannelIds`, for mention chat to respond there.
+   */
+  chat: z
+    .object({
+      enabled: z.boolean().default(false),
+      /** Channels the bot replies in when @mentioned. Empty = mention chat never triggers, even if `enabled`. */
+      channelIds: z.array(z.string()).max(20).default([]),
+      /** Plain-text addition to the system prompt (tone/name only). Null = the built-in `DEFAULT_PERSONA` (see prompt.ts). Never overrides `BASE_SAFETY_PROMPT`, which always takes precedence. */
+      persona: z.string().trim().min(1).max(1500).nullable().default(null),
+      /** How many prior messages (by the mentioning user or the bot, in the same channel) to include as short-term context. */
+      historyMessages: z.number().int().min(0).max(10).default(4),
+      /** Hard cap on the reply text sent back to Discord; the completion itself is separately capped by `AI_MAX_OUTPUT_TOKENS`. */
+      maxReplyChars: z.number().int().min(200).max(2000).default(1200),
+    })
+    .default({}),
 });
 export type AiConfig = z.infer<typeof configSchema>;
 
@@ -28,7 +46,7 @@ export const manifest = defineManifest({
   id: 'ai',
   name: 'AI Assistant',
   description:
-    'Optional, disabled-by-default AI helper (/ask, /summarize, /draft, /mod-assist) with per-server opt-in, per-channel allowlisting, cooldowns, and token budgets.',
+    'Optional, disabled-by-default AI helper (/ask, /summarize, /draft, /mod-assist, @mention chat) with per-server opt-in, per-channel allowlisting, cooldowns, and token budgets.',
   category: 'ai',
   version: '0.1.0',
   defaultEnabled: false,
@@ -39,6 +57,10 @@ export const manifest = defineManifest({
   // optional env fallback (config.allowEnvKeys) checked at request time, not at plugin-availability time.
   requiredEnv: [],
   optionalEnv: ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY'],
+  // `/summarize` reads channel history and mention chat reads the mentioning message's raw content — both need
+  // the privileged Message Content intent. Without it the registry marks this plugin `degraded` (not
+  // unavailable): `/ask`, `/draft`, and `/mod-assist` are unaffected either way.
+  privilegedIntents: ['MessageContent'],
   configSchema,
   dashboard: { path: '/dashboard/[guildId]/ai', label: 'AI Assistant', icon: 'sparkles' },
   privacyNotes: [
@@ -49,5 +71,6 @@ export const manifest = defineManifest({
     "/summarize only reads messages the invoking user could already see and permits (channel view + read history) — it never reads other channels on the user's behalf.",
     '/mod-assist reads moderation case metadata (types, counts, reasons) for context, never raw message content, and only ever suggests — it can never perform a moderation action itself.',
     'Only token counts (prompt/completion), not message content, are stored in usage records (`AiUsage`), visible to server staff in the dashboard.',
+    'Mention chat (chat.enabled) only ever replies when a member explicitly @mentions the bot in one of the configured chat.channelIds — never passively, and never just because a message replies to the bot. The mentioning message plus up to chat.historyMessages recent messages from that channel (redacted, same as everything else) are sent to the configured provider for that one reply; nothing is stored beyond the usual token-count usage record.',
   ],
 });

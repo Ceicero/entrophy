@@ -2,6 +2,22 @@
 
 export type AiProviderId = 'openai' | 'anthropic' | 'compatible';
 
+/**
+ * "Mention chat" settings — members talk to the bot by @mentioning it in one of `channelIds`, with an optional
+ * per-server persona. Separate from `AiSettingsDto.allowedChannelIds`, which only gates `/ask` and `/summarize`.
+ */
+export interface AiChatSettingsDto {
+  enabled: boolean;
+  /** Channels the bot replies in when @mentioned (max 20). Empty = mention chat never triggers. */
+  channelIds: string[];
+  /** Null = the built-in default persona. Max 1500 chars. */
+  persona: string | null;
+  /** How many prior messages (by the mentioning user or the bot) to include as context. 0-10. */
+  historyMessages: number;
+  /** Hard cap on the reply length sent back to Discord. 200-2000. */
+  maxReplyChars: number;
+}
+
 /** `GET/PUT /guilds/:guildId/ai/settings` response shape. The encrypted key itself is never returned — only `hasKey`. */
 export interface AiSettingsDto {
   guildId: string;
@@ -15,6 +31,7 @@ export interface AiSettingsDto {
   userCooldownSeconds: number;
   dailyTokenBudget: number;
   perUserDailyTokenBudget: number;
+  chat: AiChatSettingsDto;
 }
 
 /** `PUT /guilds/:guildId/ai/settings` request body. `apiKey` sets a new key (encrypted server-side); `clearKey` removes it. */
@@ -29,6 +46,8 @@ export interface AiSettingsPatchDto {
   userCooldownSeconds?: number;
   dailyTokenBudget?: number;
   perUserDailyTokenBudget?: number;
+  /** Always sent whole — the dashboard form keeps `chat` as one draft object, same as every other settings field. */
+  chat?: AiChatSettingsDto;
 }
 
 export interface AiUsageDailyPointDto {
