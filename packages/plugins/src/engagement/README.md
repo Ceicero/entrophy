@@ -21,7 +21,9 @@ temporary voice channels (SPEC.md §G subset; ARCHITECTURE.md §7.1 row `engagem
   `service.ts`, unit tested for monotonicity and exact inverse behavior).
 - **Level-up announcement**: `config.leveling.levelUpChannel` — `'current'` (the channel the
   triggering message/voice activity happened in), `'dm'`, `'none'`, or a channel id — using
-  `config.leveling.levelUpMessage` (`{user}`/`{level}` placeholders).
+  `config.leveling.levelUpMessage` (`{user}`/`{level}` placeholders). Settable from the dashboard or
+  with `/level announce <mode> [channel]` (validates the bot can View Channel + Send Messages there
+  before saving).
 - **Level-role rewards** (`LevelReward`): applied automatically on level-up, and recomputable for
   every ranked member via `/level rewards sync`. `config.leveling.rewardMode` — `'stack'` grants
   every reward at or below the new level; `'replace'` keeps only the single highest-earned reward
@@ -66,6 +68,7 @@ temporary voice channels (SPEC.md §G subset; ARCHITECTURE.md §7.1 row `engagem
 | `/level xp give\|remove\|set <user> <amount>`                             | Admin. Audited.                                                                             |
 | `/level rewards add\|remove\|list\|sync`                                  | Admin. `sync` recomputes rewards for every ranked member.                                   |
 | `/level ignore add\|remove <channel\|role>`                               | Admin. Exactly one of channel/role per call.                                                |
+| `/level announce <mode> [channel]`                                        | Admin. Sets `leveling.levelUpChannel` (same-channel/dm/off/a specific channel).             |
 | `/level reset <user?>`                                                    | Admin. Confirmation prompt (skipped if `fastActions` is on). Omit `user` to reset everyone. |
 | `/rep give\|check\|leaderboard`                                           | Public.                                                                                     |
 | `/rep revoke <user> <amount>`                                             | Admin.                                                                                      |

@@ -2435,6 +2435,25 @@
               "options": []
             },
             {
+              "name": "announce",
+              "fullName": "/level announce",
+              "description": "Set where level-up announcements are sent.",
+              "options": [
+                {
+                  "name": "mode",
+                  "description": "Where to announce level-ups.",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Channel to announce in (required when mode is \"Specific channel\").",
+                  "required": false,
+                  "type": "Channel"
+                }
+              ]
+            },
+            {
               "name": "reset",
               "fullName": "/level reset",
               "description": "Reset leveling data for one member, or everyone.",

@@ -14,9 +14,11 @@ import {
   buildCustomId,
   errorEmbed,
   fetchMemberSafe,
+  isSnowflake,
   listEmbed,
   registerConfirmHandlers,
   requestConfirmation,
+  resolveTextChannel,
   successEmbed,
   type ComponentHandler,
   type PluginCommand,
@@ -47,6 +49,29 @@ const data = new SlashCommandBuilder()
       ),
   )
   .addSubcommand((sub) => sub.setName('config').setDescription('View the leveling configuration.'))
+  .addSubcommand((sub) =>
+    sub
+      .setName('announce')
+      .setDescription('Set where level-up announcements are sent.')
+      .addStringOption((opt) =>
+        opt
+          .setName('mode')
+          .setDescription('Where to announce level-ups.')
+          .setRequired(true)
+          .addChoices(
+            { name: 'Same channel as the activity', value: 'same-channel' },
+            { name: 'DM the member', value: 'dm' },
+            { name: 'Off', value: 'off' },
+            { name: 'Specific channel', value: 'channel' },
+          ),
+      )
+      .addChannelOption((opt) =>
+        opt
+          .setName('channel')
+          .setDescription('Channel to announce in (required when mode is "Specific channel").')
+          .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+      ),
+  )
   .addSubcommand((sub) =>
     sub
       .setName('reset')
@@ -153,6 +178,15 @@ const data = new SlashCommandBuilder()
 function xpBar(xp: number): { level: number; intoLevel: number; span: number; bar: string } {
   const { level, intoLevel, span } = levelProgress(xp);
   return { level, intoLevel, span, bar: formatProgressBar(intoLevel, span) };
+}
+
+/** Renders `leveling.levelUpChannel` for display: the special modes as words, a channel snowflake as `<#id>`. */
+function formatLevelUpChannel(levelUpChannel: string, t: (key: string) => string): string {
+  if (levelUpChannel === 'current') return t('level.announce.targetCurrent');
+  if (levelUpChannel === 'dm') return t('level.announce.targetDm');
+  if (levelUpChannel === 'none') return t('level.announce.targetOff');
+  if (isSnowflake(levelUpChannel)) return `<#${levelUpChannel}>`;
+  return levelUpChannel;
 }
 
 async function fetchLeaderboardPage(ctx: PluginContext, guildId: string, page: number) {
@@ -488,12 +522,59 @@ export const command: PluginCommand = {
         `XP cooldown: ${l.xpCooldownSeconds}s`,
         `Max XP/hour: ${l.maxXpPerHour}`,
         `Voice XP/minute: ${l.voiceXpPerMinute}`,
-        `Level-up announcement: ${l.levelUpChannel}`,
+        `Level-up announcement: ${formatLevelUpChannel(l.levelUpChannel, c.t)}`,
         `Reward mode: ${l.rewardMode}`,
         `Ignored channels: ${l.ignoredChannelIds.length}`,
         `Ignored roles: ${l.ignoredRoleIds.length}`,
       ];
       await c.interaction.reply({ embeds: [listEmbed(c.t('level.config.title'), lines)], ephemeral: true });
+      return;
+    }
+
+    if (sub === 'announce') {
+      assertStaffLevel(c.staffLevel, 'admin', c.t);
+      const mode = c.interaction.options.getString('mode', true);
+      const channelOption = c.interaction.options.getChannel('channel', false);
+
+      let levelUpChannel: string;
+      if (mode === 'same-channel') {
+        levelUpChannel = 'current';
+      } else if (mode === 'dm') {
+        levelUpChannel = 'dm';
+      } else if (mode === 'off') {
+        levelUpChannel = 'none';
+      } else {
+        // mode === 'channel'
+        if (!channelOption) {
+          await c.interaction.reply({
+            embeds: [errorEmbed(c.t('level.announce.channelRequired'))],
+            ephemeral: true,
+          });
+          return;
+        }
+        const resolved = await resolveTextChannel(c.interaction.guild, channelOption.id);
+        if (!resolved) {
+          await c.interaction.reply({
+            embeds: [errorEmbed(c.t('level.announce.channelNotUsable'))],
+            ephemeral: true,
+          });
+          return;
+        }
+        levelUpChannel = resolved.id;
+      }
+
+      await c.ctx.setConfig<EngagementConfig>(
+        c.guildId,
+        { leveling: { ...config.leveling, levelUpChannel } },
+        { id: c.interaction.user.id, source: 'bot' },
+      );
+
+      await c.interaction.reply({
+        embeds: [
+          successEmbed(c.t('level.announce.updated', { target: formatLevelUpChannel(levelUpChannel, c.t) })),
+        ],
+        ephemeral: true,
+      });
       return;
     }
 

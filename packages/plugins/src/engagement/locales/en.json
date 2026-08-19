@@ -41,6 +41,14 @@
       "addedRole": "Members with {role} no longer earn XP.",
       "removedRole": "Members with {role} earn XP again."
     },
+    "announce": {
+      "channelRequired": "Pick a channel with `channel:` when using the \"Specific channel\" mode.",
+      "channelNotUsable": "I need View Channel and Send Messages permissions in that channel before I can announce there.",
+      "updated": "Level-up announcements will now go to {target}.",
+      "targetCurrent": "the channel where the activity happened",
+      "targetDm": "the member's DMs",
+      "targetOff": "nowhere (announcements are off)"
+    },
     "reset": {
       "confirmTitle": "Reset XP?",
       "confirmDescriptionUser": "This clears {user}'s XP, level, message count, and voice minutes in this server. This can't be undone.",
