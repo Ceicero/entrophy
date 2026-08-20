@@ -52,6 +52,43 @@ describe('redactText — custom patterns', () => {
   });
 });
 
+describe('redactText — Discord snowflakes vs credit cards', () => {
+  it('leaves a channel mention completely unchanged', () => {
+    expect(redactText('<#1539837857747832943>')).toBe('<#1539837857747832943>');
+  });
+
+  it('leaves a bare snowflake id completely unchanged', () => {
+    expect(redactText('1539837857747832943')).toBe('1539837857747832943');
+  });
+
+  it('leaves a user mention unchanged', () => {
+    expect(redactText('welcome <@1539837857747832943> to the server')).toBe(
+      'welcome <@1539837857747832943> to the server',
+    );
+  });
+
+  it('leaves a role mention unchanged', () => {
+    expect(redactText('pinging <@&1539837857747832943> now')).toBe('pinging <@&1539837857747832943> now');
+  });
+
+  it('round-trips the exact production "Channel created" log line unchanged', () => {
+    const line = '<#1539837857747832943> (1539837857747832943) was created.';
+    expect(redactText(line)).toBe(line);
+  });
+
+  it('still redacts a Luhn-valid card number, including spaced and dashed forms', () => {
+    expect(redactText('card 4242424242424242 on file')).toBe('card [redacted:credit_card] on file');
+    expect(redactText('card 4242 4242 4242 4242 on file')).toBe('card [redacted:credit_card] on file');
+    expect(redactText('card 4242-4242-4242-4242 on file')).toBe('card [redacted:credit_card] on file');
+  });
+
+  it('redacts only the card when a Luhn-valid card sits next to a bare snowflake', () => {
+    expect(redactText('user 1539837857747832943 paid with card 4242424242424242 today')).toBe(
+      'user 1539837857747832943 paid with card [redacted:credit_card] today',
+    );
+  });
+});
+
 describe('testRedactionPatterns', () => {
   it('reports which patterns matched and returns the redacted text', () => {
     const result = testRedactionPatterns('email me at a@b.com or call 555-000-1234', []);
