@@ -13,7 +13,10 @@ export const messageCreateHandler: PluginEventHandler<'messageCreate'> = {
   event: 'messageCreate',
   guildIdOf: (message) => message.guild?.id ?? null,
   async handler(ctx, message: Message) {
-    if (!message.guild || message.author.bot) return;
+    // A system message (join/boost/pin notice) carries the real member as `author` with `bot: false`, so
+    // without these filters simply joining or boosting the server earns XP. Matches the guards in
+    // community/events/{tag-triggers,sticky}.ts.
+    if (!message.guild || message.author.bot || message.webhookId || message.system) return;
 
     const config = await ctx.getConfig<EngagementConfig>(message.guild.id);
     if (!config.leveling.enabled) return;

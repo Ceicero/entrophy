@@ -1,7 +1,10 @@
 import RedisMock from 'ioredis-mock';
 import type Redis from 'ioredis';
 import { describe, expect, it } from 'vitest';
+import { redisKey } from '@entrophy/core';
 import {
+  MAX_VOICE_SESSION_MINUTES,
+  MAX_VOICE_SESSION_SECONDS,
   canGiveRep,
   channelQualifiesForVoiceXp,
   computeLevelRewardPlan,
@@ -149,6 +152,28 @@ describe('voice XP sessions (Redis-backed)', () => {
   it('stopping a session that was never started is a no-op returning 0', async () => {
     const redis = await freshRedis();
     expect(await stopVoiceSession(redis, 'guild1', 'nobody')).toBe(0);
+  });
+
+  // A session is only settled by a voiceStateUpdate, so a missed leave event (redeploy, gateway reconnect)
+  // would otherwise leave the start timestamp in Redis forever and pay it all out days later.
+  it('writes the session key with an expiry so a missed leave event cannot leak it forever', async () => {
+    const redis = await freshRedis();
+    await startVoiceSession(redis, 'guild1', 'user1');
+
+    const ttl = await redis.ttl(redisKey('engagement', 'voicesession', 'guild1', 'user1'));
+    expect(ttl).toBeGreaterThan(0);
+    expect(ttl).toBeLessThanOrEqual(MAX_VOICE_SESSION_SECONDS);
+  });
+
+  it('clamps a resurrected (days-old) session to the maximum plausible session length', async () => {
+    const redis = await freshRedis();
+    const start = Date.now();
+
+    await startVoiceSession(redis, 'guild1', 'user1', start);
+    const minutes = await stopVoiceSession(redis, 'guild1', 'user1', start + 3 * 24 * 60 * 60_000);
+
+    expect(minutes).toBe(MAX_VOICE_SESSION_MINUTES);
+    expect(voiceXpForMinutes(minutes, 5)).toBe(MAX_VOICE_SESSION_MINUTES * 5);
   });
 
   it('voiceXpForMinutes multiplies minutes by the configured rate, floored and non-negative', () => {

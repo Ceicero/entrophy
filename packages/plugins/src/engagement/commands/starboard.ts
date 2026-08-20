@@ -1,6 +1,7 @@
 import { ChannelType, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { errorEmbed, listEmbed, successEmbed, type PluginCommand } from '../../sdk';
 import type { EngagementConfig } from '../manifest';
+import { resolveStarboardEmoji } from '../service';
 
 const data = new SlashCommandBuilder()
   .setName('starboard')
@@ -104,11 +105,22 @@ export const command: PluginCommand = {
       }
 
       if (sub === 'emoji') {
-        const emoji = c.interaction.options.getString('emoji', true).trim();
-        if (emoji.length === 0) {
-          await c.interaction.reply({ embeds: [errorEmbed('Emoji cannot be empty.')], ephemeral: true });
+        const raw = c.interaction.options.getString('emoji', true);
+        // Slash-command string options arrive verbatim — a shortcode like `:sparkle:` is not substituted by
+        // the client — so anything that isn't a form `emojiMatches` can compare against is rejected here
+        // rather than stored as a value no reaction will ever equal.
+        const resolved = resolveStarboardEmoji(raw, (name) =>
+          c.interaction.guild.emojis.cache.find((e) => e.name === name) ?? null,
+        );
+        if (!resolved.ok) {
+          const message =
+            resolved.reason === 'unknown_custom'
+              ? c.t('starboard.set.emojiUnknown', { name: resolved.name })
+              : c.t('starboard.set.emojiInvalid');
+          await c.interaction.reply({ embeds: [errorEmbed(message)], ephemeral: true });
           return;
         }
+        const emoji = resolved.emoji;
         await c.ctx.setConfig<EngagementConfig>(
           c.guildId,
           { starboard: { ...config.starboard, emoji } },

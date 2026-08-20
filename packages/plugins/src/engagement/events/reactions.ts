@@ -2,9 +2,7 @@ import { EMBED_LIMITS, truncate } from '@entrophy/core';
 import type { Message, MessageReaction, PartialMessageReaction, PartialUser, User } from 'discord.js';
 import { brandEmbed, resolveTextChannel, type PluginContext, type PluginEventHandler } from '../../sdk';
 import type { EngagementConfig, EngagementStarboardConfig } from '../manifest';
-import { countEligibleReactors, decideStarboardAction } from '../service';
-
-const CUSTOM_EMOJI_PATTERN = /^<a?:\w+:(\d+)>$/;
+import { CUSTOM_EMOJI_PATTERN, countEligibleReactors, decideStarboardAction } from '../service';
 
 /** True if the reaction's emoji matches the configured starboard emoji (unicode, or `<a?:name:id>` for a custom emoji). */
 function emojiMatches(
@@ -13,7 +11,7 @@ function emojiMatches(
 ): boolean {
   const customMatch = CUSTOM_EMOJI_PATTERN.exec(configuredEmoji);
   if (customMatch) {
-    return reactionEmoji.id === customMatch[1];
+    return reactionEmoji.id === customMatch[2];
   }
   return reactionEmoji.name === configuredEmoji;
 }

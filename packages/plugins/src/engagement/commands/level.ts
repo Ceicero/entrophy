@@ -30,6 +30,9 @@ import { computeLevelRewardPlan, formatProgressBar, levelFromXp, levelProgress }
 
 const LEADERBOARD_PAGE_SIZE = 10;
 
+/** Most ranked members one `/level rewards sync` will touch, highest-XP first (see the `sync` branch). */
+const REWARD_SYNC_LIMIT = 500;
+
 const data = new SlashCommandBuilder()
   .setName('level')
   .setDescription('Leveling: rank, leaderboard, XP, and level-role rewards.')
@@ -379,10 +382,19 @@ export const command: PluginCommand = {
       }
 
       // sub === 'sync'
+      // Every ranked member can cost a member fetch plus two role writes, so this blows past Discord's
+      // 3-second ack deadline on any real server — defer first, and cap the pass so one command can never
+      // fan out an unbounded number of role writes into the shared REST queue.
+      await c.interaction.deferReply({ ephemeral: true });
       const rewards = await c.ctx.prisma.levelReward.findMany({ where: { guildId: c.guildId } });
-      const profiles = await c.ctx.prisma.levelProfile.findMany({
+      // One row over the cap, so "were there more?" is answered without a second query.
+      const ranked = await c.ctx.prisma.levelProfile.findMany({
         where: { guildId: c.guildId, level: { gt: 0 } },
+        orderBy: { xp: 'desc' },
+        take: REWARD_SYNC_LIMIT + 1,
       });
+      const capped = ranked.length > REWARD_SYNC_LIMIT;
+      const profiles = capped ? ranked.slice(0, REWARD_SYNC_LIMIT) : ranked;
       let synced = 0;
       for (const profile of profiles) {
         const member = await fetchMemberSafe(c.interaction.guild, profile.userId);
@@ -404,9 +416,14 @@ export const command: PluginCommand = {
           // Missing permission/hierarchy for this member; skip and keep going.
         }
       }
-      await c.interaction.reply({
-        embeds: [successEmbed(c.t('level.rewards.syncDone', { count: synced }))],
-        ephemeral: true,
+      await c.interaction.editReply({
+        embeds: [
+          successEmbed(
+            capped
+              ? c.t('level.rewards.syncCapped', { count: synced, limit: REWARD_SYNC_LIMIT })
+              : c.t('level.rewards.syncDone', { count: synced }),
+          ),
+        ],
       });
       return;
     }

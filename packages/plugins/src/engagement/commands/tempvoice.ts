@@ -151,6 +151,7 @@ export const command: PluginCommand = {
       });
       await owned.channel.permissionOverwrites
         .edit(c.interaction.user.id, {
+          Connect: true,
           ManageChannels: true,
           MoveMembers: true,
           MuteMembers: true,
@@ -170,6 +171,12 @@ export const command: PluginCommand = {
     }
 
     if (sub === 'lock') {
+      // The @everyone deny below applies to the owner too — only Administrator bypasses a channel Connect
+      // denial. Re-grant it on the owner's own overwrite first, so this also repairs channels created
+      // before Connect was part of the creation overwrite.
+      await owned.channel.permissionOverwrites
+        .edit(owned.row.ownerId, { Connect: true })
+        .catch(() => undefined);
       await owned.channel.permissionOverwrites
         .edit(c.interaction.guild.roles.everyone, { Connect: false })
         .catch(() => undefined);

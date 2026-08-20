@@ -153,14 +153,29 @@ function voiceSessionKey(guildId: string, userId: string): string {
   return redisKey('engagement', 'voicesession', guildId, userId);
 }
 
-/** Starts (or restarts) a user's voice-XP session clock. Idempotent — calling it again just resets the start time. */
+/**
+ * Upper bound on a single voice-XP session, in minutes (12h). A session is only settled by a
+ * `voiceStateUpdate`, so a missed leave event (bot redeploy, gateway reconnect) would otherwise leave the
+ * start timestamp in Redis forever and pay it all out days later. 12h is longer than any plausible
+ * uninterrupted call — so a genuine marathon session is still credited in full — while capping what a
+ * resurrected key can ever be worth. The TTL bounds how long a leaked key survives; the clamp bounds the
+ * payout of one settled just under that TTL (and covers clock skew between the writer and the settler).
+ */
+export const MAX_VOICE_SESSION_MINUTES = 12 * 60;
+export const MAX_VOICE_SESSION_SECONDS = MAX_VOICE_SESSION_MINUTES * 60;
+
+/**
+ * Starts (or restarts) a user's voice-XP session clock. Idempotent — calling it again just resets the start
+ * time. The key expires after `MAX_VOICE_SESSION_SECONDS`; if it expires while the member is genuinely still
+ * connected, the next `voiceStateUpdate` in that channel sees no session and starts a fresh one.
+ */
 export async function startVoiceSession(
   redis: Redis,
   guildId: string,
   userId: string,
   atMs = Date.now(),
 ): Promise<void> {
-  await redis.set(voiceSessionKey(guildId, userId), String(atMs));
+  await redis.set(voiceSessionKey(guildId, userId), String(atMs), 'EX', MAX_VOICE_SESSION_SECONDS);
 }
 
 /** True if `userId` currently has an open voice-XP session. */
@@ -169,8 +184,8 @@ export async function hasVoiceSession(redis: Redis, guildId: string, userId: str
 }
 
 /**
- * Stops a user's voice-XP session (if any) and returns the whole minutes elapsed since it started.
- * Returns 0 (no-op) if the user had no open session.
+ * Stops a user's voice-XP session (if any) and returns the whole minutes elapsed since it started, clamped
+ * to `MAX_VOICE_SESSION_MINUTES`. Returns 0 (no-op) if the user had no open session.
  */
 export async function stopVoiceSession(
   redis: Redis,
@@ -184,7 +199,8 @@ export async function stopVoiceSession(
   await redis.del(key);
   const startedAt = Number(raw);
   if (!Number.isFinite(startedAt)) return 0;
-  return Math.max(0, Math.floor((atMs - startedAt) / 60_000));
+  const elapsed = Math.max(0, Math.floor((atMs - startedAt) / 60_000));
+  return Math.min(elapsed, MAX_VOICE_SESSION_MINUTES);
 }
 
 /** XP earned for `minutes` of qualifying voice presence at `xpPerMinute`. */
@@ -309,6 +325,57 @@ export function countEligibleReactors(
   const set = new Set(reactorUserIds);
   if (ignoreSelfStar) set.delete(authorId);
   return set.size;
+}
+
+/** Discord's wire form for a custom emoji: `<:name:id>` / `<a:name:id>`. Emoji names are 2-32 word chars. */
+export const CUSTOM_EMOJI_PATTERN = /^<a?:(\w{2,32}):(\d+)>$/;
+
+/** A bare shortcode as typed into a text option (`:sparkle:`) — Discord does not substitute these itself. */
+const SHORTCODE_PATTERN = /^:(\w{2,32}):$/;
+
+// Built via `new RegExp` rather than a literal so the unicode property escapes don't depend on the
+// TypeScript target. One "element" is a pictograph (optionally skin-toned, VS16'd or tag-sequenced), a
+// two-character regional-indicator flag, or a keycap; a full emoji is one or more elements joined by ZWJ.
+const EMOJI_ELEMENT =
+  '(?:\\p{Regional_Indicator}{2}|[0-9#*]\\uFE0F?\\u20E3|\\p{Extended_Pictographic}(?:\\p{Emoji_Modifier}|\\uFE0F)?[\\u{E0020}-\\u{E007F}]*)';
+const UNICODE_EMOJI_PATTERN = new RegExp(`^${EMOJI_ELEMENT}(?:\\u200D${EMOJI_ELEMENT})*$`, 'u');
+
+/** The subset of a discord.js `GuildEmoji` this module needs, so `service.ts` stays discord.js-free. */
+export interface GuildEmojiLike {
+  id: string;
+  name: string | null;
+  animated: boolean | null;
+}
+
+export type EmojiResolution =
+  | { ok: true; emoji: string }
+  | { ok: false; reason: 'empty' | 'invalid' }
+  | { ok: false; reason: 'unknown_custom'; name: string };
+
+/**
+ * Validates a user-typed starboard emoji and normalises it into a form `emojiMatches` can actually match:
+ * a unicode emoji is kept as-is, `<a?:name:id>` is kept as-is, and a bare `:name:` shortcode is resolved
+ * against the guild's own emoji (Discord delivers slash-command string options verbatim, so a shortcode
+ * would otherwise be stored as a string that no reaction can ever equal).
+ */
+export function resolveStarboardEmoji(
+  raw: string,
+  findGuildEmojiByName: (name: string) => GuildEmojiLike | null = () => null,
+): EmojiResolution {
+  const value = raw.trim();
+  if (value.length === 0) return { ok: false, reason: 'empty' };
+  if (CUSTOM_EMOJI_PATTERN.test(value)) return { ok: true, emoji: value };
+  if (UNICODE_EMOJI_PATTERN.test(value)) return { ok: true, emoji: value };
+
+  const shortcode = SHORTCODE_PATTERN.exec(value);
+  if (shortcode) {
+    const name = shortcode[1]!;
+    const found = findGuildEmojiByName(name);
+    if (!found) return { ok: false, reason: 'unknown_custom', name };
+    return { ok: true, emoji: `<${found.animated ? 'a' : ''}:${found.name ?? name}:${found.id}>` };
+  }
+
+  return { ok: false, reason: 'invalid' };
 }
 
 // ---------------------------------------------------------------------------

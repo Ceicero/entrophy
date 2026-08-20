@@ -106,6 +106,10 @@ async function createTempVoiceChannel(
         {
           id: member.id,
           allow: [
+            // Connect is explicit because `/tempvoice lock` denies it to @everyone, and only Administrator
+            // bypasses a channel Connect denial — ManageChannels does not, so without this the owner locks
+            // themselves out of their own channel.
+            PermissionFlagsBits.Connect,
             PermissionFlagsBits.ManageChannels,
             PermissionFlagsBits.MoveMembers,
             PermissionFlagsBits.MuteMembers,

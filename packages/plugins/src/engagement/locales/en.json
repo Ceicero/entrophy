@@ -33,7 +33,8 @@
       "removed": "Removed that level reward.",
       "notFound": "No level reward found with that id.",
       "empty": "No level rewards configured yet.",
-      "syncDone": "Synced level rewards for {count} member(s)."
+      "syncDone": "Synced level rewards for {count} member(s).",
+      "syncCapped": "Synced level rewards for {count} member(s). Only the {limit} highest-XP ranked members were processed — this server has more ranked members than one sync can handle."
     },
     "ignore": {
       "addedChannel": "{channel} is now ignored for XP.",
@@ -78,6 +79,8 @@
       "channelCleared": "Starboard disabled (no channel set).",
       "threshold": "Starboard threshold set to {threshold} stars.",
       "emoji": "Starboard emoji set to {emoji}.",
+      "emojiInvalid": "That isn't an emoji I can use. Give me a unicode emoji (like ⭐) or a custom emoji from this server — pick it from the emoji picker, or type its name as `:name:`.",
+      "emojiUnknown": "This server has no custom emoji called `:{name}:`. Pick one from the emoji picker, or use a unicode emoji.",
       "selfstar": "Self-stars are now {state}."
     },
     "status": {
