@@ -123,6 +123,41 @@ export function renderTemplateDeep<T>(value: T, vars: TemplateVars): T {
   return value;
 }
 
+/** Largest value Discord accepts for `embeds[].color` (0xFFFFFF). */
+const EMBED_COLOR_MAX = 0xff_ff_ff;
+
+const EMBED_COLOR_HEX_PATTERN = /^#?[0-9a-fA-F]{6}$/;
+
+/**
+ * Coerces a stored embed `color` into the integer Discord's API requires (it answers `400 BASE_TYPE_INT` for a
+ * string and drops the whole message). `welcome.embed`/`goodbye.embed` are free-form Json columns and earlier
+ * builds of both writers persisted `#rrggbb` text, so live guild configs hold either shape. Anything that isn't
+ * a usable colour returns undefined — a bad colour must cost the guild its colour, never its welcome message.
+ */
+export function normalizeEmbedColor(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isInteger(value) && value >= 0 && value <= EMBED_COLOR_MAX ? value : undefined;
+  }
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!EMBED_COLOR_HEX_PATTERN.test(trimmed)) return undefined;
+  return parseInt(trimmed.replace(/^#/, ''), 16);
+}
+
+/** Formats a stored embed colour (integer, or legacy `#rrggbb` text) back into the hex the embed modal shows. Empty string when there's no usable colour. */
+export function formatEmbedColorHex(value: unknown): string {
+  const color = normalizeEmbedColor(value);
+  return color === undefined ? '' : `#${color.toString(16).padStart(6, '0')}`;
+}
+
+/** Returns `embed` with its `color` normalised to an integer, dropping the key entirely when the stored value is unusable. */
+export function normalizeStoredEmbed(embed: Record<string, unknown>): Record<string, unknown> {
+  if (!('color' in embed)) return embed;
+  const { color: stored, ...rest } = embed;
+  const color = normalizeEmbedColor(stored);
+  return color === undefined ? rest : { ...rest, color };
+}
+
 // ---------------------------------------------------------------------------
 // Role group exclusivity / max-selection resolution
 // ---------------------------------------------------------------------------

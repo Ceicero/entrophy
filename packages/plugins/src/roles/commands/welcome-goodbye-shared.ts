@@ -9,9 +9,26 @@ import {
 } from 'discord.js';
 import { AuditAction } from '@entrophy/core';
 import { buildCustomId, errorEmbed, successEmbed, type CommandContext, type PluginCommand } from '../../sdk';
+import { formatEmbedColorHex } from '../engine';
 import type { RolesConfig, WelcomeGoodbyeConfig } from '../manifest';
 
 export type Section = 'welcome' | 'goodbye';
+
+/**
+ * Reads one text value back out of the stored embed for the modal's prefill. `embed` is a free-form Json column
+ * whose `footer` both writers store as `{ text }`, and `TextInputBuilder.setValue` throws on anything that is
+ * not a string — which would blow up before `showModal`, making the embed uneditable from Discord for good.
+ * `maxLength` mirrors the input's own `setMaxLength`: the REST API imposes no length cap on `embed`, and Discord
+ * rejects `showModal` outright when a prefilled value is longer than its input allows — same dead end.
+ */
+function embedTextValue(value: unknown, maxLength: number): string {
+  if (typeof value === 'string') return value.slice(0, maxLength);
+  if (value !== null && typeof value === 'object' && 'text' in value) {
+    const text = (value as { text?: unknown }).text;
+    return typeof text === 'string' ? text.slice(0, maxLength) : '';
+  }
+  return '';
+}
 
 export function buildSectionCommand(section: Section): PluginCommand['data'] {
   const noun = section === 'welcome' ? 'welcome' : 'goodbye';
@@ -114,12 +131,7 @@ export function buildSectionExecute(section: Section) {
 
     if (sub === 'embed') {
       const current = (await c.config<RolesConfig>())[section];
-      const existing = (current.embed ?? {}) as {
-        title?: string;
-        description?: string;
-        color?: string;
-        footer?: string;
-      };
+      const existing = (current.embed ?? {}) as Record<string, unknown>;
 
       const modal = new ModalBuilder()
         .setCustomId(buildCustomId('roles', `${section}-embed-modal`, interaction.user.id))
@@ -134,7 +146,7 @@ export function buildSectionExecute(section: Section) {
                 .setStyle(TextInputStyle.Short)
                 .setRequired(false)
                 .setMaxLength(256)
-                .setValue(existing.title ?? '')
+                .setValue(embedTextValue(existing.title, 256))
                 .toJSON(),
             ],
           } as never,
@@ -143,11 +155,14 @@ export function buildSectionExecute(section: Section) {
             components: [
               new TextInputBuilder()
                 .setCustomId('description')
-                .setLabel('Description. Vars: {user} {user.tag} {server} {memberCount}')
+                // Discord caps a text input's label at 45 characters and the builder throws above it, so the
+                // variable list lives in the placeholder (cap 100) instead.
+                .setLabel('Description')
+                .setPlaceholder('Vars: {user} {user.tag} {server} {memberCount} {mention}')
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(false)
                 .setMaxLength(2000)
-                .setValue(existing.description ?? '')
+                .setValue(embedTextValue(existing.description, 2000))
                 .toJSON(),
             ],
           } as never,
@@ -160,7 +175,7 @@ export function buildSectionExecute(section: Section) {
                 .setStyle(TextInputStyle.Short)
                 .setRequired(false)
                 .setMaxLength(7)
-                .setValue(existing.color ?? '')
+                .setValue(formatEmbedColorHex(existing.color))
                 .toJSON(),
             ],
           } as never,
@@ -173,7 +188,7 @@ export function buildSectionExecute(section: Section) {
                 .setStyle(TextInputStyle.Short)
                 .setRequired(false)
                 .setMaxLength(256)
-                .setValue(existing.footer ?? '')
+                .setValue(embedTextValue(existing.footer, 256))
                 .toJSON(),
             ],
           } as never,

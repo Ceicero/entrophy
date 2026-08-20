@@ -10,6 +10,7 @@ import type {
 import { errorEmbed, resolveTextChannel, safeDm, successEmbed, type PluginContext } from '../sdk';
 import {
   checkRoleAssignable,
+  normalizeStoredEmbed,
   parseOnboardingProgress,
   renderTemplate,
   renderTemplateDeep,
@@ -17,7 +18,12 @@ import {
   type RoleAssignabilityReason,
   type TemplateVars,
 } from './engine';
-import { buildPanelMessagePayload, reactionRoleMap, type PanelWithOptions } from './panel-render';
+import {
+  buildPanelMessagePayload,
+  panelEmojiKey,
+  reactionRoleMap,
+  type PanelWithOptions,
+} from './panel-render';
 import type { RolesConfig, WelcomeGoodbyeConfig } from './manifest';
 
 async function getRolesConfig(ctx: PluginContext, guildId: string): Promise<RolesConfig> {
@@ -226,11 +232,31 @@ export function renderWelcomeGoodbye(
   if (!section.enabled) return null;
   const vars = templateVarsFor(member, guild);
   const content = section.message ? renderTemplate(section.message, vars) : undefined;
+  // `embed` is free-form Json: normalise the colour on the way out so a stored `#rrggbb` (what the dashboard
+  // and older builds of the `/welcome embed` modal wrote) doesn't make Discord reject the entire message.
   const embed = section.embed
-    ? (renderTemplateDeep(section.embed, vars) as Record<string, unknown>)
+    ? normalizeStoredEmbed(renderTemplateDeep(section.embed, vars) as Record<string, unknown>)
     : undefined;
   if (!content && !embed) return null;
   return { content, embed };
+}
+
+/**
+ * The slice of a discord.js `Message` the reaction reconciler needs. Structural (like `deliverWelcomeGoodbye`'s
+ * `fetchUser`) so a freshly-sent message and a re-fetched one are the same shape here, and so it stays testable.
+ */
+interface PanelMessageLike {
+  react: (emoji: string) => Promise<unknown>;
+  reactions: {
+    cache: {
+      values: () => Iterable<{
+        emoji: { id?: string | null; name?: string | null; animated?: boolean | null };
+        /** True when the bot is one of the users who reacted with this emoji. */
+        me: boolean;
+        users: { remove: () => Promise<unknown> };
+      }>;
+    };
+  };
 }
 
 async function deliverWelcomeGoodbye(params: {
@@ -376,6 +402,38 @@ export function createRolesService(ctx: PluginContext): RolesService {
     });
   }
 
+  /**
+   * Brings a posted REACTIONS panel's reactions in line with its current options: adds any the bot hasn't put
+   * there yet, and drops its own reaction for options that are gone (a leftover emoji still looks clickable but
+   * maps to nothing). Only the bot's own reactions are touched, so this needs no Manage Messages.
+   */
+  async function syncPanelReactions(message: PanelMessageLike, panel: PanelWithOptions): Promise<void> {
+    const wanted = reactionRoleMap(panel).map(({ emoji }) => emoji);
+    const wantedSet = new Set(wanted);
+    const present = [...message.reactions.cache.values()];
+
+    for (const reaction of present) {
+      if (!reaction.me || wantedSet.has(panelEmojiKey(reaction.emoji))) continue;
+      await reaction.users.remove().catch((err: unknown) => {
+        ctx.logger.warn(
+          { err: err instanceof Error ? err.message : String(err), guildId: panel.guildId, panelId: panel.id },
+          'roles: failed to remove a stale reaction from a reaction-style panel',
+        );
+      });
+    }
+
+    for (const emoji of wanted) {
+      const already = present.some((r) => r.me && panelEmojiKey(r.emoji) === emoji);
+      if (already) continue;
+      await message.react(emoji).catch((err: unknown) => {
+        ctx.logger.warn(
+          { err: err instanceof Error ? err.message : String(err), guildId: panel.guildId, panelId: panel.id },
+          'roles: failed to add a reaction to a reaction-style panel',
+        );
+      });
+    }
+  }
+
   async function postPanelCore(guildId: string, panelId: string, requestedBy?: string): Promise<void> {
     const panel = await ctx.prisma.rolePanel.findFirst({
       where: { id: panelId, guildId, deletedAt: null },
@@ -402,6 +460,12 @@ export function createRolesService(ctx: PluginContext): RolesService {
       const existingMessage = await channel.messages.fetch(messageId).catch(() => null);
       if (existingMessage) {
         await existingMessage.edit(payload as never);
+        // A REACTIONS panel carries no components, so the edit alone would freeze the emoji set at whatever was
+        // on the message when it was first posted — options added since would list in the embed with nothing to
+        // click. Reconcile the reactions on every post, not just the first one.
+        if (panel.style === 'REACTIONS') {
+          await syncPanelReactions(existingMessage, panel as PanelWithOptions);
+        }
       } else {
         messageId = null;
       }
@@ -412,14 +476,7 @@ export function createRolesService(ctx: PluginContext): RolesService {
       messageId = sent.id;
 
       if (panel.style === 'REACTIONS') {
-        for (const { emoji } of reactionRoleMap(panel as PanelWithOptions)) {
-          await sent.react(emoji).catch((err: unknown) => {
-            ctx.logger.warn(
-              { err: err instanceof Error ? err.message : String(err), guildId, panelId },
-              'roles: failed to add a reaction to a reaction-style panel',
-            );
-          });
-        }
+        await syncPanelReactions(sent, panel as PanelWithOptions);
       }
     }
 

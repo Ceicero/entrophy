@@ -1,16 +1,8 @@
 import type { MessageReaction, PartialMessageReaction, PartialUser, User } from 'discord.js';
 import type { PluginEventHandler } from '../../sdk';
 import { checkRoleAssignable } from '../engine';
+import { panelEmojiKey } from '../panel-render';
 import type { RolesConfig } from '../manifest';
-
-/** Builds the same emoji key format `RolePanelOption.emoji` is stored in: unicode emoji as-is, custom emoji as `<:name:id>`/`<a:name:id>`. */
-function emojiKeyFromReaction(reaction: MessageReaction | PartialMessageReaction): string {
-  const emoji = reaction.emoji;
-  if (emoji.id) {
-    return `<${emoji.animated ? 'a' : ''}:${emoji.name}:${emoji.id}>`;
-  }
-  return emoji.name ?? '';
-}
 
 async function resolveReactionContext(
   reaction: MessageReaction | PartialMessageReaction,
@@ -45,7 +37,7 @@ async function handleReactionRole(
   });
   if (!panel) return;
 
-  const emojiKey = emojiKeyFromReaction(resolved.reaction);
+  const emojiKey = panelEmojiKey(resolved.reaction.emoji);
   const option = panel.options.find((opt) => opt.emoji === emojiKey);
   if (!option) return;
 

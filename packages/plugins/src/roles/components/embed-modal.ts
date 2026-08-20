@@ -1,6 +1,7 @@
 import type { ModalSubmitInteraction } from 'discord.js';
 import { AuditAction } from '@entrophy/core';
 import { errorEmbed, successEmbed, type ComponentHandler } from '../../sdk';
+import { normalizeEmbedColor } from '../engine';
 import type { RolesConfig } from '../manifest';
 
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
@@ -34,10 +35,13 @@ function buildEmbedModalHandler(section: 'welcome' | 'goodbye'): ComponentHandle
       }
 
       const current = await c.config<RolesConfig>();
+      // Discord's API wants `color` as an integer and rejects the whole message for a string, so the hex the
+      // member typed is converted here rather than at send time.
+      const colorInt = normalizeEmbedColor(color);
       const embed = {
         ...(title ? { title } : {}),
         ...(description ? { description } : {}),
-        ...(color ? { color } : {}),
+        ...(colorInt !== undefined ? { color: colorInt } : {}),
         ...(footer ? { footer: { text: footer } } : {}),
       };
 

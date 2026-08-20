@@ -85,6 +85,22 @@ export function buildPanelMessagePayload(panel: PanelWithOptions): PanelMessageP
   return { embeds: [embed], components: [] };
 }
 
+/**
+ * The key format `RolePanelOption.emoji` is stored in: unicode emoji as-is, custom emoji as `<:name:id>` /
+ * `<a:name:id>`. Shared so the reaction listener and the panel-post reconciler compare a live reaction against
+ * a stored option the same way.
+ */
+export function panelEmojiKey(emoji: {
+  id?: string | null;
+  name?: string | null;
+  animated?: boolean | null;
+}): string {
+  if (emoji.id) {
+    return `<${emoji.animated ? 'a' : ''}:${emoji.name}:${emoji.id}>`;
+  }
+  return emoji.name ?? '';
+}
+
 /** For REACTIONS-style panels: the ordered list of `{ emoji, roleId }` pairs to react with after posting, skipping options with no emoji set. */
 export function reactionRoleMap(panel: PanelWithOptions): { emoji: string; roleId: string }[] {
   return panel.options

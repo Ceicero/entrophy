@@ -3,7 +3,6 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ChannelType,
-  PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
 import {
@@ -19,11 +18,13 @@ import {
 import { buildOnboardingChecklist, parseOnboardingProgress } from '../engine';
 import type { RolesConfig } from '../manifest';
 
+// No `setDefaultMemberPermissions`: Discord applies it to the whole command, and `/onboarding checklist` is
+// written for ordinary members (it shows their own progress). The staff-only subcommands are gated at runtime by
+// the `assertStaffLevel` below instead — same approach as `/verify` and `/ticket`.
 const data = new SlashCommandBuilder()
   .setName('onboarding')
   .setDescription('Rules acknowledgement and the member onboarding checklist.')
   .setDMPermission(false)
-  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
   .addSubcommand((sub) => sub.setName('checklist').setDescription('See your onboarding progress.'))
   .addSubcommand((sub) =>
     sub

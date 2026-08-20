@@ -67,24 +67,29 @@ export const panelToggleHandler: ComponentHandler = {
 
     if (panel.groupId) {
       const group = await c.ctx.prisma.roleGroup.findUnique({ where: { id: panel.groupId } });
-      if (group) {
+      // An option whose role isn't in the group falls through to the plain add below — the group's exclusivity
+      // has nothing to say about it, and resolveGroupSelection would silently drop it from the selection.
+      if (group?.roleIds.includes(option.roleId)) {
         const currentGroupRoles = group.roleIds.filter((id) => member.roles.cache.has(id));
+        // The clicked role goes FIRST: resolveGroupSelection truncates the requested selection to the group's
+        // cap keeping the *earliest* entries, so trailing it means an exclusive group (cap 1) throws away the
+        // very role the member just asked for and the click becomes a no-op.
         const { toAdd, toRemove } = resolveGroupSelection(
           group,
-          [...currentGroupRoles, option.roleId],
+          [option.roleId, ...currentGroupRoles],
           currentGroupRoles,
         );
         if (toRemove.length > 0) await member.roles.remove(toRemove, `Role panel group: ${group.name}`);
         if (toAdd.length > 0) await member.roles.add(toAdd, `Role panel: ${panel.title}`);
-        await interaction.reply({
-          embeds: [
-            successEmbed(
-              `Added <@&${option.roleId}>.${toRemove.length > 0 ? ` Removed: ${toRemove.map((id) => `<@&${id}>`).join(', ')}` : ''}`,
-            ),
-          ],
-          ephemeral: true,
-        });
-        await markRolesPicked(c);
+
+        // Report what actually changed rather than asserting the click worked.
+        const lines: string[] = [];
+        if (toAdd.length > 0) lines.push(`Added: ${toAdd.map((id) => `<@&${id}>`).join(', ')}`);
+        if (toRemove.length > 0) lines.push(`Removed: ${toRemove.map((id) => `<@&${id}>`).join(', ')}`);
+        if (lines.length === 0) lines.push('No changes.');
+
+        await interaction.reply({ embeds: [successEmbed(lines.join('\n'))], ephemeral: true });
+        if (toAdd.length > 0) await markRolesPicked(c);
         return;
       }
     }
