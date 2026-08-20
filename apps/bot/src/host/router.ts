@@ -16,7 +16,9 @@ import { isAppError, resolveLocale, t as coreT } from '@entrophy/core';
 import {
   assertBotPermissions,
   errorEmbed,
+  handlePaginationInteraction,
   parseCustomId,
+  PAGINATION_ACTION,
   type AutocompleteContext,
   type CommandContext,
   type ComponentContext,
@@ -492,6 +494,26 @@ async function handleComponent(
   logger: Logger,
 ): Promise<void> {
   const parsed = parseCustomId(interaction.customId);
+
+  // The shared pagination row (`sdk/pagination.ts`) belongs to no plugin — its pages live in the SDK's session
+  // map — so there is nothing in `host.components` to find and the host answers the reserved `page` action
+  // itself. Handled before the requirement pipeline below because flipping a page is a pure in-memory
+  // re-render: it must not wait on `getGuildConfig`/Redis, nor be refused by the global limiter, to stay
+  // inside Discord's 3s acknowledgement window.
+  if (parsed.action === PAGINATION_ACTION) {
+    if (!interaction.isButton()) {
+      await replyError(interaction, coreT('errors.not_found', { thing: 'Interaction' }), logger);
+      return;
+    }
+    try {
+      await handlePaginationInteraction(interaction);
+    } catch (err) {
+      logger.error({ customId: interaction.customId, err }, 'router: pagination handler threw');
+      await replyError(interaction, coreT('errors.generic'), logger);
+    }
+    return;
+  }
+
   const entry = host.components.get(`${parsed.pluginId}:${parsed.action}`);
 
   if (!entry || entry.handler.kind !== componentKindOf(interaction)) {

@@ -1,5 +1,6 @@
 import type Redis from 'ioredis';
-import { AuditAction, redisKey, type PlatformEvents } from '@entrophy/core';
+import { z } from 'zod';
+import { AuditAction, redisKey, ValidationError, type PlatformEvents } from '@entrophy/core';
 import {
   writeAudit,
   redactForAudit,
@@ -80,6 +81,56 @@ function actorTypeFor(actor: ConfigActor): 'user' | 'system' {
 }
 
 /**
+ * Best-effort extraction of a plugin `configSchema`'s top-level key names. `configSchema` is typed as
+ * `z.ZodTypeAny` (see sdk/types.ts) so a manifest is technically free to define it through `.default()` /
+ * `.optional()` / `.nullable()` or a `.refine()`/`.transform()` (`ZodEffects`) — unwrap those defensively
+ * (mirrors apps/api/src/lib/zod-json-schema.ts's own unwrapping) to reach the underlying `ZodObject`. Returns
+ * `null` (never throws) when the schema isn't ultimately a plain object schema, so callers can fall back to
+ * permissive behaviour instead of guarding against a shape we don't understand.
+ */
+export function configSchemaKeys(schema: z.ZodTypeAny): string[] | null {
+  let current: z.ZodTypeAny = schema;
+  while (
+    current instanceof z.ZodDefault ||
+    current instanceof z.ZodOptional ||
+    current instanceof z.ZodNullable ||
+    current instanceof z.ZodEffects
+  ) {
+    current = (
+      current instanceof z.ZodEffects ? current._def.schema : current._def.innerType
+    ) as z.ZodTypeAny;
+  }
+  return current instanceof z.ZodObject ? Object.keys(current.shape) : null;
+}
+
+/**
+ * Throws a 400 {@link ValidationError} naming every top-level key of `patch` that isn't part of `pluginId`'s
+ * own `configSchema`. Guards the failure mode that let a wrongly-shaped write (e.g. `{ config: {...} }` instead
+ * of the bare config object) come back as a silent no-op 200 — zod objects strip unknown keys by default, so
+ * the bad key was dropped, nothing changed, and the junk key still got merged into the stored raw JSON. Checked
+ * against the *full* `configSchema` (secret fields included, e.g. `ai`'s `apiKeyEnc`) so a legitimate secret
+ * field name is never mistaken for an unknown/typo'd key — callers that need to keep secrets out of a
+ * dashboard-facing write (like the generic `/plugins/:pluginId/config` route) still do that themselves via
+ * `omitSecretFields` before/after this check, as appropriate for that call site. No-ops when
+ * {@link configSchemaKeys} can't determine the schema's shape.
+ */
+export function assertKnownConfigKeys(
+  pluginId: PluginId,
+  configSchema: z.ZodTypeAny,
+  patch: Record<string, unknown>,
+): void {
+  const validKeys = configSchemaKeys(configSchema);
+  if (!validKeys) return;
+
+  const unknownKeys = Object.keys(patch).filter((key) => !validKeys.includes(key));
+  if (unknownKeys.length === 0) return;
+
+  throw new ValidationError(
+    `Unknown config field(s): ${unknownKeys.map((key) => `"${key}"`).join(', ')}. Valid fields for plugin "${pluginId}": ${validKeys.join(', ')}.`,
+  );
+}
+
+/**
  * Reads/writes per-guild plugin config (`PluginConfig`) and enablement (`PluginState`), plus core per-guild
  * config (`GuildConfig`) — with a shared Redis cache layer (ARCHITECTURE.md §7.4). Used by both the bot host
  * and the API so dashboard writes are visible to the bot after cache invalidation.
@@ -147,6 +198,9 @@ export class GuildConfigStore {
     actor: ConfigActor,
   ): Promise<T> {
     const plugin = this.requirePlugin(pluginId);
+    // Backstop for every caller of this store (not just the generic dashboard config route, which already
+    // checks this itself before redacting secrets) — see `assertKnownConfigKeys`'s doc comment.
+    assertKnownConfigKeys(pluginId, plugin.manifest.configSchema, patch as Record<string, unknown>);
     const defaults = plugin.manifest.defaultConfig as Record<string, unknown>;
 
     const existingRow = await this.prisma.pluginConfig.findUnique({
