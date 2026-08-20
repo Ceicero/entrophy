@@ -719,10 +719,13 @@ attachments: {name, contentType?}[], links: string[], invites: string[], isStaff
   `channels.ts`) — the bulk `applyMuteRoleToChannels` (used by `/enforcer setup`'s initial role creation and by
   `EnforcerService.repairChannels`, which now also returns `{ muteApplied, muteFailed }` alongside re-applying the
   ledger/flag-queue overwrites) and a `channelCreate` listener (`events/channel-create.ts`) that applies it to a
-  single newly-created channel — including categories, so channels created under one inherit the deny. Both paths
-  no-op silently when no mute role is configured or the configured role no longer resolves (`guild.roles.fetch`
-  failure); the listener also never throws (best-effort, logs at `warn`) and relies on the host's standard
-  `guildIdOf`-based plugin-enablement gating like every other Enforcer event handler.
+  single newly-created channel. Both paths cover categories as well as text/voice channels — a category is
+  neither text- nor voice-based but still holds its own overwrites, so leaving it out of the bulk path would mean
+  a category that existed before setup/repair never got the deny while one created afterward did; applying it
+  consistently in both places means a category's current children AND any future ones inherit the deny. Both
+  paths no-op silently when no mute role is configured or the configured role no longer resolves
+  (`guild.roles.fetch` failure); the listener also never throws (best-effort, logs at `warn`) and relies on the
+  host's standard `guildIdOf`-based plugin-enablement gating like every other Enforcer event handler.
 - Cross-plugin contract additions:
   - `ServiceMap.moderation` MUST also expose `openAppeal({ guildId, userId, caseNumber?, caseId?, content, source }):
 Promise<{ appealId: string }>` and `getCaseByNumber(guildId, caseNumber)`; the moderation plugin emits

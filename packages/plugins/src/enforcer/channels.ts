@@ -171,8 +171,10 @@ export async function applyMuteRoleToChannel(
 
 /**
  * Applies deny SendMessages/SendMessagesInThreads/Speak/AddReactions overwrites for `role` across every channel
- * the bot can manage, in small batches with a short delay between them to stay rate-limit friendly
- * (ARCHITECTURE.md §19's "/enforcer setup" mute-role step).
+ * the bot can manage — including categories, so a category's current children AND any future ones inherit the
+ * deny (matching the `channelCreate` listener's own scope in `events/channel-create.ts`; a repair must not leave
+ * pre-existing categories out of sync with newly-created ones) — in small batches with a short delay between
+ * them to stay rate-limit friendly (ARCHITECTURE.md §19's "/enforcer setup" mute-role step).
  */
 export async function applyMuteRoleToChannels(
   guild: Guild,
@@ -180,9 +182,13 @@ export async function applyMuteRoleToChannels(
 ): Promise<{ applied: number; failed: number }> {
   // Threads are text-based but don't carry their own `permissionOverwrites` (they inherit the parent
   // channel's), so they must be excluded explicitly even though `isTextBased()` alone would include them.
+  // Categories are neither text- nor voice-based (`isTextBased()`/`isVoiceBased()` both false for them), so
+  // they need their own explicit type check to be included.
   const manageable = [...guild.channels.cache.values()].filter(
     (channel): channel is Exclude<GuildBasedChannel, ThreadChannel> =>
-      !channel.isThread() && channel.manageable && (channel.isTextBased() || channel.isVoiceBased()),
+      !channel.isThread() &&
+      channel.manageable &&
+      (channel.isTextBased() || channel.isVoiceBased() || channel.type === ChannelType.GuildCategory),
   );
   const batches = chunk(manageable, CHANNEL_BATCH_SIZE);
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Client } from 'discord.js';
+import { ChannelType, type Client } from 'discord.js';
 import { createTestContext } from '../../sdk/testing';
 import { createEnforcerService } from '../service';
 import type { EnforcerConfig } from '../manifest';
@@ -73,6 +73,19 @@ function fakeManageableChannel(edit: (...args: unknown[]) => Promise<unknown>) {
   };
 }
 
+/** A manageable category fake — neither text- nor voice-based, only `type === GuildCategory` identifies it. */
+function fakeCategoryChannel(edit: (...args: unknown[]) => Promise<unknown>) {
+  return {
+    id: 'cat-1',
+    type: ChannelType.GuildCategory,
+    isThread: () => false,
+    manageable: true,
+    isTextBased: () => false,
+    isVoiceBased: () => false,
+    permissionOverwrites: { edit },
+  };
+}
+
 function fakeClientWithGuild(opts: {
   roleFetch: (roleId: string) => Promise<unknown>;
   channels?: unknown[];
@@ -112,6 +125,28 @@ describe('EnforcerService.repairChannels — mute role overwrites', () => {
       { reason: 'Enforcer: apply mute role overwrite' },
     );
     expect(edit2).toHaveBeenCalledTimes(1);
+  });
+
+  it('also re-applies to categories (they are neither text- nor voice-based, but hold their own overwrites — matching the channelCreate listener\'s scope, so "children inherit the deny" holds for categories that existed before setup/repair, not only ones created afterward)', async () => {
+    const editCategory = vi.fn(async () => undefined);
+    const editText = vi.fn(async () => undefined);
+    const role = { id: 'role-1' };
+    const client = fakeClientWithGuild({
+      roleFetch: async () => role,
+      channels: [fakeCategoryChannel(editCategory), fakeManageableChannel(editText)],
+    });
+    const { ctx } = createTestContext({ config: defaultConfig({ muteRoleId: 'role-1' }), overrides: { client } });
+    ctx.services.register('host', fakeHost());
+    const service = createEnforcerService(ctx);
+
+    const result = await service.repairChannels('g1');
+
+    expect(result).toEqual({ muteApplied: 2, muteFailed: 0 });
+    expect(editCategory).toHaveBeenCalledWith(
+      role,
+      { SendMessages: false, SendMessagesInThreads: false, Speak: false, AddReactions: false },
+      { reason: 'Enforcer: apply mute role overwrite' },
+    );
   });
 
   it('skips the mute-role re-apply (returns 0/0) when muteRoleId is set but the role no longer exists', async () => {
