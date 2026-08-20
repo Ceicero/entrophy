@@ -1,4 +1,11 @@
-import type { Guild, GuildMember, User } from 'discord.js';
+import {
+  ChannelType,
+  PermissionFlagsBits,
+  type Guild,
+  type GuildMember,
+  type GuildTextBasedChannel,
+  type User,
+} from 'discord.js';
 import { NotFoundError, ValidationError, redisKey } from '@entrophy/core';
 import {
   nextCaseNumber,
@@ -44,6 +51,25 @@ const APPEAL_SYNC_LOCK_TTL_MS = 30_000;
 
 /** Minimal shape used to build a DM before a kick/ban/softban actually happens (see `sendCaseDmToUser` callers). */
 type PreDmCase = Pick<ModerationCase, 'type' | 'reason' | 'caseNumber'>;
+
+/** A guild text channel that carries its own permission overwrites (i.e. everything except threads). */
+type ManageableChannel = Extract<GuildTextBasedChannel, { permissionOverwrites: unknown }>;
+
+/** What the bot needs to rewrite a channel's overwrites (`lock`/`unlock`) — notably *not* SendMessages. */
+const OVERWRITE_REQUIRED_PERMISSIONS = [
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.ManageRoles,
+] as const;
+
+/** What the bot needs to change a channel's own settings (`slowmode`). */
+const CHANNEL_SETTINGS_REQUIRED_PERMISSIONS = [
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.ManageChannels,
+] as const;
+
+/** Exactly the allow bits `lock()` grants the bot — used to recognise (and only then remove) its own overwrite. */
+const BOT_LOCK_ALLOW_BITS =
+  PermissionFlagsBits.SendMessages | PermissionFlagsBits.SendMessagesInThreads;
 
 /** Case types whose affected user is worth DMing (excludes channel-level/administrative/self-explanatory types). */
 const DM_ELIGIBLE_TYPES = new Set<ModerationCaseType>([
@@ -292,7 +318,7 @@ export class ModerationServiceImpl implements ModerationService {
     // ROLE_ADD cases with a duration (e.g. the `enforcer` plugin's timed MUTE) are not otherwise scheduled by
     // any caller — `timeout()`/`ban()` schedule their own expiry explicitly, but a generic `createCase` caller
     // has no other way to get a timed role removed automatically. `scheduleExpiry` is a no-op when
-    // `durationMs` is unset, and BullMQ dedupes on `jobId: case:<id>` so this can never double-schedule.
+    // `durationMs` is unset, and BullMQ dedupes on `jobId: case-<id>` so this can never double-schedule.
     if (row.type === 'ROLE_ADD' && row.durationMs) {
       await this.scheduleExpiry(row);
     }
@@ -469,7 +495,9 @@ export class ModerationServiceImpl implements ModerationService {
     try {
       await this.ctx
         .queue('expire')
-        .add('expire', { caseId: row.id }, { jobId: `case:${row.id}`, delay: row.durationMs });
+        // BullMQ rejects a custom job id containing `:` unless it has exactly three segments
+        // (`Job.validateOptions`), so every jobId in this repo uses `-` as the separator.
+        .add('expire', { caseId: row.id }, { jobId: `case-${row.id}`, delay: row.durationMs });
     } catch (err) {
       this.ctx.logger.error(
         { err: String(err), caseId: row.id },
@@ -726,11 +754,72 @@ export class ModerationServiceImpl implements ModerationService {
     return { case: row, deletedCount };
   }
 
+  /**
+   * Resolves a channel for a channel-*management* action (lock/unlock/slowmode). Unlike `resolveTextChannel`
+   * this never asks whether the bot can *speak* in the channel: `lock()` denies SendMessages on `@everyone`,
+   * which Discord applies to the bot too, so a send-based guard would make a locked channel unlockable.
+   */
+  private async resolveManageableChannel(
+    guild: Guild,
+    channelId: string,
+    required: readonly bigint[],
+  ): Promise<GuildTextBasedChannel | null> {
+    let channel;
+    try {
+      channel = await guild.channels.fetch(channelId);
+    } catch {
+      return null;
+    }
+    if (!channel || !channel.isTextBased() || channel.type === ChannelType.GuildStageVoice) {
+      return null;
+    }
+
+    const botMember = guild.members.me;
+    if (!botMember) return null;
+
+    const perms = channel.permissionsFor(botMember);
+    if (!perms || !perms.has(required)) return null;
+
+    return channel as GuildTextBasedChannel;
+  }
+
+  /**
+   * Drops the send-allow `lock()` gave the bot — but only when that overwrite is *exactly* what `lock()` wrote.
+   * Anything richer (hub-setup grants the bot View/Send/Embed in staff channels) predates the lock and is not
+   * ours to delete.
+   */
+  private async clearBotLockOverwrite(channel: ManageableChannel, reason?: string): Promise<void> {
+    const botMember = channel.guild.members.me;
+    if (!botMember) return;
+
+    const existing = channel.permissionOverwrites.cache.get(botMember.id);
+    if (!existing || existing.deny.bitfield !== 0n || existing.allow.bitfield !== BOT_LOCK_ALLOW_BITS) {
+      return;
+    }
+    await channel.permissionOverwrites.delete(botMember, reason);
+  }
+
   async lock(input: ChannelActionInput): Promise<ModerationCase> {
     const guild = await this.fetchGuild(input.guildId);
-    const channel = await resolveTextChannel(guild, input.channelId);
+    const channel = await this.resolveManageableChannel(
+      guild,
+      input.channelId,
+      OVERWRITE_REQUIRED_PERMISSIONS,
+    );
     if (!channel || !('permissionOverwrites' in channel))
       throw new ValidationError('That channel cannot be locked.');
+
+    // The `@everyone` deny below hits the bot as well (it is deliberately never Administrator), which would
+    // leave it unable to unlock, purge or post a mod-log embed here. Take the explicit allow for ourselves
+    // first, so if the deny then fails the channel is merely still unlocked rather than locked against us.
+    const botMember = guild.members.me;
+    if (botMember) {
+      await channel.permissionOverwrites.edit(
+        botMember,
+        { SendMessages: true, SendMessagesInThreads: true },
+        { reason: input.reason },
+      );
+    }
     await channel.permissionOverwrites.edit(
       guild.roles.everyone,
       { SendMessages: false, SendMessagesInThreads: false },
@@ -751,7 +840,11 @@ export class ModerationServiceImpl implements ModerationService {
 
   async unlock(input: ChannelActionInput): Promise<ModerationCase> {
     const guild = await this.fetchGuild(input.guildId);
-    const channel = await resolveTextChannel(guild, input.channelId);
+    const channel = await this.resolveManageableChannel(
+      guild,
+      input.channelId,
+      OVERWRITE_REQUIRED_PERMISSIONS,
+    );
     if (!channel || !('permissionOverwrites' in channel))
       throw new ValidationError('That channel cannot be unlocked.');
     await channel.permissionOverwrites.edit(
@@ -759,6 +852,7 @@ export class ModerationServiceImpl implements ModerationService {
       { SendMessages: null, SendMessagesInThreads: null },
       { reason: input.reason },
     );
+    await this.clearBotLockOverwrite(channel, input.reason);
 
     return this.createCase({
       guildId: input.guildId,
@@ -774,7 +868,11 @@ export class ModerationServiceImpl implements ModerationService {
 
   async slowmode(input: SlowmodeInput): Promise<ModerationCase> {
     const guild = await this.fetchGuild(input.guildId);
-    const channel = await resolveTextChannel(guild, input.channelId);
+    const channel = await this.resolveManageableChannel(
+      guild,
+      input.channelId,
+      CHANNEL_SETTINGS_REQUIRED_PERMISSIONS,
+    );
     if (!channel || !('setRateLimitPerUser' in channel))
       throw new ValidationError('Slowmode cannot be set on that channel.');
     await channel.setRateLimitPerUser(input.seconds ?? 0, input.reason);
@@ -881,7 +979,11 @@ export class ModerationServiceImpl implements ModerationService {
   // Appeals
   // ---------------------------------------------------------------------
 
-  async openAppeal(input: OpenAppealInput): Promise<OpenAppealResult> {
+  /**
+   * Widens the cross-plugin `OpenAppealResult` with `staffNotified` so the caller can tell the user the truth:
+   * a guild with no appeals channel (or one the bot can't post in) still gets the row, but nobody is notified.
+   */
+  async openAppeal(input: OpenAppealInput): Promise<OpenAppealResult & { staffNotified: boolean }> {
     let caseId = input.caseId ?? null;
     let caseNumber: number | null = input.caseNumber ?? null;
 
@@ -897,12 +999,13 @@ export class ModerationServiceImpl implements ModerationService {
       data: { guildId: input.guildId, caseId, userId: input.userId, content: input.content.trim() },
     });
 
-    await this.postAppealPrompt(appeal, caseNumber).catch((err: unknown) =>
+    const staffNotified = await this.postAppealPrompt(appeal, caseNumber).catch((err: unknown) => {
       this.ctx.logger.warn(
         { err: String(err), appealId: appeal.id },
         'moderation: failed to post appeal prompt',
-      ),
-    );
+      );
+      return false;
+    });
 
     this.ctx.events.emit('moderation.appealOpened', {
       guildId: input.guildId,
@@ -912,15 +1015,19 @@ export class ModerationServiceImpl implements ModerationService {
       userId: input.userId,
     });
 
-    return { appealId: appeal.id };
+    return { appealId: appeal.id, staffNotified };
   }
 
-  private async postAppealPrompt(appeal: ModerationAppeal, caseNumber: number | null): Promise<void> {
+  /** Returns whether the appeal actually reached a staff channel (false when none is configured or reachable). */
+  private async postAppealPrompt(
+    appeal: ModerationAppeal,
+    caseNumber: number | null,
+  ): Promise<boolean> {
     const channelId = await this.resolveAppealsChannelId(appeal.guildId);
-    if (!channelId) return;
+    if (!channelId) return false;
     const guild = await this.fetchGuild(appeal.guildId);
     const channel = await resolveTextChannel(guild, channelId);
-    if (!channel) return;
+    if (!channel) return false;
 
     const message = await channel.send({
       embeds: [buildAppealEmbed(appeal, caseNumber)],
@@ -948,6 +1055,8 @@ export class ModerationServiceImpl implements ModerationService {
     await this.ctx.prisma.moderationAppeal
       .update({ where: { id: appeal.id }, data: { staffMessageId: message.id } })
       .catch(() => undefined);
+
+    return true;
   }
 
   /** Bot-path decision (Accept/Deny buttons on the appeal prompt). Dashboard decisions write the DB directly and are picked up by the `appeal-sync` job. */

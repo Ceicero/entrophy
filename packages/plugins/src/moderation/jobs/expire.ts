@@ -12,7 +12,7 @@ function enforcerMuteRoleId(metadata: unknown): string | null {
   return m.enforcerMute === true && typeof m.roleId === 'string' ? m.roleId : null;
 }
 
-/** Fires once when a specific TIMEOUT, (temp) BAN, or timed ROLE_ADD (enforcer mute) case's duration elapses (scheduled with `jobId: case:<id>`). */
+/** Fires once when a specific TIMEOUT, (temp) BAN, or timed ROLE_ADD (enforcer mute) case's duration elapses (scheduled with `jobId: case-<id>`). */
 export const expireJob: PluginJob<ExpireJobData> = {
   name: 'expire',
   async processor(ctx, job) {

@@ -1,6 +1,6 @@
 import type { ButtonInteraction, ModalSubmitInteraction } from 'discord.js';
 import { NotFoundError, PermissionError } from '@entrophy/core';
-import { successEmbed, type ComponentHandler } from '../../sdk';
+import { infoEmbed, successEmbed, type ComponentHandler } from '../../sdk';
 import { moderationService } from '../commands/shared';
 
 class AppealAlreadyDecidedError extends PermissionError {
@@ -108,7 +108,7 @@ const appealModalHandler: ComponentHandler = {
     const caseNumber = caseNumberRaw ? Number(caseNumberRaw) : undefined;
 
     const service = moderationService(c.ctx);
-    await service.openAppeal({
+    const { staffNotified } = await service.openAppeal({
       guildId: c.guildId,
       userId: c.interaction.user.id,
       caseNumber,
@@ -116,7 +116,16 @@ const appealModalHandler: ComponentHandler = {
       source: 'bot',
     });
 
-    await interaction.reply({ embeds: [successEmbed(c.t('appeal.submitted'))], ephemeral: true });
+    // Never claim staff will review it when no appeals channel is configured (or the bot can't post in the one
+    // that is) — the row is saved either way, but nobody was told about it.
+    await interaction.reply({
+      embeds: [
+        staffNotified
+          ? successEmbed(c.t('appeal.submitted'))
+          : infoEmbed(c.t('appeal.notRoutedTitle'), c.t('appeal.notRouted')),
+      ],
+      ephemeral: true,
+    });
   },
 };
 

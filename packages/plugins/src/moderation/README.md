@@ -22,7 +22,9 @@ All moderation actions live under one `/mod` command group (plus two standalone 
   honored when the guild's `MessageContent` intent is enabled (`ENABLE_MESSAGE_CONTENT_INTENT=true`); otherwise
   the bot explains and asks you to drop the filter. Confirmation required unless `fastActions` is on.
 - `/mod lock [channel] [reason]` / `/mod unlock [channel] [reason]` — toggles `@everyone`'s send-message
-  permission on a channel (defaults to the current one).
+  permission on a channel (defaults to the current one). Lock also grants the bot itself an explicit send-allow
+  there (the `@everyone` deny applies to the bot too, and it is never Administrator) so it can still unlock,
+  purge and post; unlock removes that allow again unless the bot already had a broader overwrite.
 - `/mod slowmode <seconds|off> [channel]` — sets (or clears) a channel's slowmode.
 - `/mod nick <user> <nickname|reset>` — changes a member's nickname (`reset` clears it).
 - `/mod note <user> <text>` — adds a staff-only note about a member. Notes are intentionally stored as free text
@@ -56,7 +58,8 @@ Discord permission the action needs before attempting it.
 ## Permissions (why)
 
 ModerateMembers (timeout), KickMembers (kick/softban), BanMembers (ban/unban/softban), ManageMessages + ReadMessageHistory (purge),
-ManageChannels (lock/unlock/slowmode), ManageNicknames (nick), ManageRoles (role add/remove), EmbedLinks (mod-log/appeal embeds).
+ManageChannels (slowmode, plus the lock/unlock pre-flight check), ManageRoles (lock/unlock channel overwrites, role add/remove),
+ManageNicknames (nick), EmbedLinks (mod-log/appeal embeds).
 Never requests Administrator. Missing permissions surface a friendly error naming the exact permission.
 
 ## Privileged intents
@@ -82,18 +85,20 @@ triggering warning, with reason `"Automatic escalation: reached N active warning
 
 ## Temporary punishments & expiry
 
-`/mod timeout` and `/mod ban <duration>` schedule a one-shot BullMQ job (`moderation:expire`, `jobId: case:<id>`,
-delayed by the duration) that reverses the action. A repeatable sweep (`moderation:sweep`, every 5 minutes)
+`/mod timeout` and `/mod ban <duration>` schedule a one-shot BullMQ job (`moderation.expire`, `jobId: case-<id>`,
+delayed by the duration) that reverses the action. A repeatable sweep (`moderation.sweep`, every 5 minutes)
 catches anything the delayed job missed (a Redis flush, worker downtime) by scanning for `TIMEOUT`/`BAN` cases
 whose `expiresAt` has passed but `expiredAt` is still null.
 
 ## Appeals
 
 `/appeal <case>` (member) and the **Warn user**/context-menu flows post to the resolved appeals channel with
-Accept/Deny buttons. Accepting a `TIMEOUT` case automatically removes the timeout; accepting a `BAN` case posts
+Accept/Deny buttons. When no appeals channel is configured (or the bot can't post in the one that is) the appeal
+row is still saved, and the member is told plainly that staff have *not* been notified — never "staff will
+review it soon". Accepting a `TIMEOUT` case automatically removes the timeout; accepting a `BAN` case posts
 an explicit "Unban now" button instead of auto-unbanning (a deliberate extra step for the most consequential
 reversal). The dashboard's appeal-decide endpoint only writes the database row (the API process has no Discord
-client) — a repeatable job (`moderation:appeal-sync`, every minute) picks up appeals decided from the dashboard
+client) — a repeatable job (`moderation.appeal-sync`, every minute) picks up appeals decided from the dashboard
 (only those reviewed in the last 24h with `effectsAppliedAt` still null) and applies the same Discord-side
 effects. Idempotency is tracked with the durable `ModerationAppeal.effectsAppliedAt` column, set once the
 effects are applied and never expiring — a short-lived Redis key is used only as an in-flight lock so two

@@ -13,7 +13,9 @@ const data = new ContextMenuCommandBuilder()
   .setName('View cases')
   .setType(ApplicationCommandType.User)
   .setDMPermission(false)
-  .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers);
+  // Helper-level command (see `requirement` below), so it must not be gated on ModerateMembers — same reasoning
+  // as `/mod` in commands/mod.ts.
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
 
 export const command: PluginCommand = {
   data,

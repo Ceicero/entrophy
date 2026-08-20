@@ -72,7 +72,10 @@ const data = new SlashCommandBuilder()
   .setName('mod')
   .setDescription('Moderation actions: warnings, timeouts, kicks, bans, cases, and more.')
   .setDMPermission(false)
-  .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
+  // Discord-side visibility gate on top of (not instead of) the `staffLevel: 'helper'` requirement below.
+  // ModerateMembers would hide the whole command from helper-level staff, yet `warnings`/`note`/`case`/`cases`
+  // are deliberately helper-level — ManageMessages is the permission a Helper role actually carries.
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
   .addSubcommand((sub) =>
     sub
       .setName('warn')
@@ -657,7 +660,14 @@ async function handlePurge(c: CommandContext): Promise<void> {
     payload,
     fastActions: await getFastActions(c.ctx, c.guildId),
   });
+  // A confirmation prompt was sent (it is the interaction's reply) and the purge itself runs later, in the
+  // `confirm-purge` component handler.
   if (!confirmed.confirmed) return;
+
+  // Only `fastActions` gets here, and it short-circuited `requestConfirmation` without replying — so this path
+  // owns the acknowledgement. Defer first: the fetch + bulkDelete + case write can outrun Discord's 3s window,
+  // and `followUp` on an unacknowledged interaction throws (the messages would be gone with only an error shown).
+  await c.interaction.deferReply({ ephemeral: true });
 
   const service = moderationService(c.ctx);
   const result = await service.purge({
@@ -666,9 +676,8 @@ async function handlePurge(c: CommandContext): Promise<void> {
     source: 'BOT',
     ...payload,
   });
-  await c.interaction.followUp({
+  await c.interaction.editReply({
     embeds: [successEmbed(c.t('purge.success', { count: result.deletedCount }))],
-    ephemeral: true,
   });
 }
 

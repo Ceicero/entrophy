@@ -88,9 +88,9 @@ export const manifest = defineManifest({
     },
     {
       permission: PermissionFlagsBits.ManageRoles,
-      feature: 'role add / remove',
+      feature: 'lock / unlock (channel overwrites), role add / remove',
       optional: false,
-      fallback: '/mod role fails with a friendly error until granted.',
+      fallback: '/mod role and /mod lock|unlock fail with a friendly error until granted.',
     },
     {
       permission: PermissionFlagsBits.EmbedLinks,

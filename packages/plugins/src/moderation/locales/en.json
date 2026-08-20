@@ -36,6 +36,8 @@
   },
   "appeal": {
     "notYours": "You can only appeal your own cases.",
-    "submitted": "Your appeal has been submitted. Staff will review it soon."
+    "submitted": "Your appeal has been submitted. Staff will review it soon.",
+    "notRoutedTitle": "Appeal saved — but staff weren't notified",
+    "notRouted": "Your appeal was recorded, but this server has no appeals channel set up (or I can't post in the one it has), so no one has been alerted. Contact a moderator directly if you need it looked at."
   }
 }
