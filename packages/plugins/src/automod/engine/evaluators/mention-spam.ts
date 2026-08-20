@@ -11,11 +11,12 @@ export const evaluateMentionSpam: MessageEvaluator<Config> = async ({ message },
     (config.includeRoleMentions ? message.roleMentionCount : 0) +
     (message.everyoneMentioned ? 1 : 0);
 
+  // Inclusive: maxMentions is the count that flags, not an allowance (see "Threshold semantics" in ../types).
   if (total < config.maxMentions) return NO_MATCH;
 
   return {
     matched: true,
-    reason: `Message mentions ${total} users/roles (limit ${config.maxMentions}).`,
+    reason: `Message mentions ${total} users/roles (flags at ${config.maxMentions} or more).`,
     evidence: {
       total,
       userMentionCount: message.userMentionCount,

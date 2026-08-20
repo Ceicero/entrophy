@@ -105,6 +105,22 @@ export function isMessageRuleType(type: AutomodRuleTypeValue): boolean {
   return (MESSAGE_RULE_TYPES as readonly string[]).includes(type);
 }
 
+/** Rule types whose evaluator counts events over a time window (`WindowStore.pushAndCount`) rather than judging one message on its own. */
+export const WINDOW_BACKED_RULE_TYPES = [
+  'MESSAGE_FREQUENCY',
+  'DUPLICATE_MESSAGES',
+  'RAID_DETECTION',
+] as const satisfies readonly AutomodRuleTypeValue[];
+
+/**
+ * True if evaluating `type` twice for the same message/join would double-count it. Re-evaluation paths
+ * (`messageUpdate`) skip these: an edit is not a new message, but `pushAndCount` cannot tell the difference, so
+ * counting it would make a user look like they had sent several.
+ */
+export function isWindowBackedRuleType(type: AutomodRuleTypeValue): boolean {
+  return (WINDOW_BACKED_RULE_TYPES as readonly string[]).includes(type);
+}
+
 /**
  * Runs the evaluator for `config.type` against a normalized message. Returns `NO_MATCH` (never throws) for a
  * join-only rule type passed here by mistake — callers should route by `isMessageRuleType` first; this defensive

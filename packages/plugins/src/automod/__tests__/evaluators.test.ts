@@ -60,6 +60,15 @@ describe('MESSAGE_FREQUENCY', () => {
     expect(last?.matched).toBe(true);
   });
 
+  it('says the allowance is exclusive, so "3" cannot be read as a trigger point', async () => {
+    const windowStore = new MemoryWindowStore();
+    let last;
+    for (let i = 0; i < 4; i += 1) {
+      last = await evaluateMessageRule(config, { message: msg({ messageId: `m${i}` }), windowStore });
+    }
+    expect(last?.reason).toContain('flags above 3');
+  });
+
   it('is per-author (a different user is not affected)', async () => {
     const windowStore = new MemoryWindowStore();
     for (let i = 0; i < 4; i += 1) {
@@ -148,6 +157,15 @@ describe('MENTION_SPAM', () => {
       windowStore: new MemoryWindowStore(),
     });
     expect(result.matched).toBe(false);
+  });
+
+  it('says the threshold is inclusive, so "5" cannot be read as an allowance', async () => {
+    const result = await evaluateMessageRule(config, {
+      message: msg({ userMentionCount: 5 }),
+      windowStore: new MemoryWindowStore(),
+    });
+    expect(result.matched).toBe(true);
+    expect(result.reason).toContain('flags at 5 or more');
   });
 
   it('counts @everyone as one mention', async () => {

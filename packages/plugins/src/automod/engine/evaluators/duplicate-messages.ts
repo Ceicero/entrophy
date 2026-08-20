@@ -17,11 +17,12 @@ export const evaluateDuplicateMessages: MessageEvaluator<Config> = async (
   const key = `dup:${message.authorId}:${hashNormalizedText(normalized)}`;
   const count = await windowStore.pushAndCount(key, message.messageId, message.createdAt.getTime(), windowMs);
 
+  // Inclusive threshold (see "Threshold semantics" in ../types).
   if (count < config.maxDuplicates) return NO_MATCH;
 
   return {
     matched: true,
-    reason: `Repeated the same message ${count} times in ${config.windowSeconds}s (limit ${config.maxDuplicates}).`,
+    reason: `Repeated the same message ${count} times in ${config.windowSeconds}s (flags at ${config.maxDuplicates} or more).`,
     evidence: { count, maxDuplicates: config.maxDuplicates, windowSeconds: config.windowSeconds },
   };
 };

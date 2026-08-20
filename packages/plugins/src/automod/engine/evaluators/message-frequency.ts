@@ -17,11 +17,12 @@ export const evaluateMessageFrequency: MessageEvaluator<Config> = async (
     windowMs,
   );
 
+  // Exclusive: maxMessages is an allowance a member may use in full (see "Threshold semantics" in ../types).
   if (count <= config.maxMessages) return NO_MATCH;
 
   return {
     matched: true,
-    reason: `Sent ${count} messages in ${config.windowSeconds}s (limit ${config.maxMessages}).`,
+    reason: `Sent ${count} messages in ${config.windowSeconds}s (flags above ${config.maxMessages}).`,
     evidence: { count, maxMessages: config.maxMessages, windowSeconds: config.windowSeconds },
   };
 };

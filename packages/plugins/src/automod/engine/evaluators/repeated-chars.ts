@@ -14,7 +14,7 @@ export const evaluateRepeatedChars: MessageEvaluator<Config> = async ({ message 
 
   return {
     matched: true,
-    reason: `Message contains "${match[1]}" repeated ${match[0].length} times (limit ${config.maxRepeats}).`,
+    reason: `Message contains "${match[1]}" repeated ${match[0].length} times (flags at ${config.maxRepeats} or more).`,
     evidence: { character: match[1], repeatCount: match[0].length, maxRepeats: config.maxRepeats },
   };
 };

@@ -16,6 +16,7 @@ import {
   type CommandContext,
 } from '../../sdk';
 import { testRuleWithText } from '../engine';
+import type { AutomodConfig } from '../manifest';
 import {
   AUTOMOD_RULE_TYPES,
   automodActionTypeSchema,
@@ -110,6 +111,9 @@ export async function handleRuleCreateModalSubmit(c: ComponentContext, pendingId
       name: payload.name,
       type: payload.type,
       enabled: true,
+      // A brand-new rule has never been seen against real traffic, so it starts inert on purpose. It is cleared
+      // from Discord with `/automod rule dryrun <rule> off` (handleRuleDryRun) — `automod.rule.created` names
+      // that command, and both flags must be off before anything acts (see service.ts's `config.dryRun || rule.dryRun`).
       dryRun: true,
       config: config as unknown as Prisma.InputJsonValue,
       actions: actions as unknown as Prisma.InputJsonValue,
@@ -188,6 +192,56 @@ export async function handleRuleToggle(c: CommandContext): Promise<void> {
     embeds: [
       successEmbed(
         c.t(updated.enabled ? 'automod.rule.enabled' : 'automod.rule.disabled', { name: updated.name }),
+      ),
+    ],
+    ephemeral: true,
+  });
+}
+
+/**
+ * `/automod rule dryrun <rule> <on|off>` — the per-rule dry-run flag. Distinct from `/automod dryrun`, which is
+ * the guild-wide switch: `service.ts` ORs the two, so a rule only ever acts when BOTH are off. Without this
+ * command a rule created from Discord could never leave dry-run at all (only the dashboard writes the column),
+ * which made every Discord-created rule permanently inert.
+ */
+export async function handleRuleDryRun(c: CommandContext): Promise<void> {
+  assertStaffLevel(c.staffLevel, 'moderator', c.t);
+  const rule = await resolveRuleByOption(c);
+  const dryRun = c.interaction.options.getString('state', true) === 'on';
+
+  const updated = await c.ctx.prisma.automodRule.update({
+    where: { id: rule.id },
+    data: { dryRun },
+  });
+
+  await c.ctx.audit({
+    guildId: c.guildId,
+    actorId: c.interaction.user.id,
+    actorType: 'user',
+    action: AuditAction.AutomodRuleUpdate,
+    targetType: 'automod_rule',
+    targetId: rule.id,
+    before: { dryRun: rule.dryRun },
+    after: { dryRun: updated.dryRun },
+    source: 'bot',
+  });
+
+  // Turning a rule live while the guild-wide switch is still on changes nothing the moderator can observe, so
+  // say so rather than reporting a success they'd then have to debug.
+  const config = await c.config<AutomodConfig>();
+  const guildDryRun = config.dryRun;
+
+  await c.interaction.reply({
+    embeds: [
+      successEmbed(
+        c.t(
+          updated.dryRun
+            ? 'automod.rule.dryRunOn'
+            : guildDryRun
+              ? 'automod.rule.dryRunOffGuildDryRun'
+              : 'automod.rule.dryRunOff',
+          { name: updated.name },
+        ),
       ),
     ],
     ephemeral: true,

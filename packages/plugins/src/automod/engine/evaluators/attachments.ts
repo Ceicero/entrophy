@@ -26,7 +26,7 @@ export const evaluateAttachments: MessageEvaluator<Config> = async ({ message },
   if (config.maxAttachments !== undefined && message.attachments.length > config.maxAttachments) {
     return {
       matched: true,
-      reason: `Message has ${message.attachments.length} attachments (limit ${config.maxAttachments}).`,
+      reason: `Message has ${message.attachments.length} attachments (flags above ${config.maxAttachments}).`,
       evidence: { attachmentCount: message.attachments.length, maxAttachments: config.maxAttachments },
     };
   }

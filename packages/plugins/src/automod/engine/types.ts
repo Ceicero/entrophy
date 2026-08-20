@@ -1,3 +1,17 @@
+// Threshold semantics — the one place the convention is written down, because the two families genuinely differ
+// and every evaluator, modal label and match reason has to agree with it:
+//
+//   * "N or more" (fires AT the number): MENTION_SPAM, DUPLICATE_MESSAGES, CAPS, REPEATED_CHARS, RAID_DETECTION.
+//     The configured number is the point at which the behaviour becomes a violation, so hitting it exactly
+//     flags. Their modal labels read "... to flag" and their reasons say "flags at N or more".
+//   * "more than N" (fires ABOVE the number): MESSAGE_FREQUENCY and ATTACHMENTS' maxAttachments. The number is
+//     an allowance a member may use in full, so only exceeding it flags. Labels read "Max ... allowed" and
+//     reasons say "flags above N".
+//   * ACCOUNT_AGE's minAccountAgeHours is a floor, not a ceiling: an account exactly that old is let through.
+//
+// Both readings are deliberate and pinned by __tests__/evaluators.test.ts, and rules already live in guilds were
+// configured against them — so the comparisons must not be "harmonised" into one. What has to stay true is that
+// the wording a moderator reads always says which one applies, so a "5" never means two different things.
 import type { AutomodRuleConfig } from '../schemas';
 
 /**

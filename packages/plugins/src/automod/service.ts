@@ -21,6 +21,7 @@ import {
   evaluateMessageRule,
   isMessageRuleType,
   isRuleTypeActive,
+  isWindowBackedRuleType,
   scopedWindowStore,
 } from './engine';
 import type { EvaluatorResult } from './engine';
@@ -34,6 +35,13 @@ import {
 } from './schemas';
 
 const RAID_LOCKDOWN_KEY_PREFIX = 'automod:raidlockdown';
+const MATCH_CLAIM_KEY_PREFIX = 'automod:match';
+/**
+ * How long one rule's claim on a message is held. Long enough to cover Discord re-delivering the same message
+ * (a gateway resume, an embed unfurl, a burst of quick edits); short enough that a member who edits the same
+ * message into a fresh violation much later is still flagged for it.
+ */
+const MATCH_CLAIM_TTL_SECONDS = 300;
 
 export interface StaffContext {
   isStaff: boolean;
@@ -379,8 +387,29 @@ async function getLogMessageContentEnabled(ctx: PluginContext, guildId: string):
   }
 }
 
+/**
+ * Claims the right to act on `messageId` for `ruleId`, returning false when something already claimed it.
+ * `AutomodEvent` has no unique key on (rule, message) and nothing else de-duplicates, so without this a second
+ * delivery of the same message — an edit, an embed unfurl, a gateway resume — repeats the punishment, the stored
+ * event and the staff alert. Redis `SET NX` makes the claim atomic across the bot's workers.
+ */
+async function claimMatch(ctx: PluginContext, ruleId: string, messageId: string): Promise<boolean> {
+  const key = redisKey(MATCH_CLAIM_KEY_PREFIX, ruleId, messageId);
+  const claimed = await ctx.redis.set(key, '1', 'EX', MATCH_CLAIM_TTL_SECONDS, 'NX');
+  return claimed === 'OK';
+}
+
+export interface HandleMessageOptions {
+  /** True when re-checking a message automod has already seen (`messageUpdate`), which skips window-backed rules. */
+  reevaluation?: boolean;
+}
+
 /** Runs every enabled, active, non-exempt message rule against a normalized message and applies matches (TASK: the whole automod pipeline for `messageCreate`/`messageUpdate`). */
-export async function handleMessage(ctx: PluginContext, message: Message | PartialMessage): Promise<void> {
+export async function handleMessage(
+  ctx: PluginContext,
+  message: Message | PartialMessage,
+  options: HandleMessageOptions = {},
+): Promise<void> {
   const guildId = message.guildId;
   if (!guildId) return;
   if (message.author?.bot || message.author?.system) return;
@@ -411,6 +440,9 @@ export async function handleMessage(ctx: PluginContext, message: Message | Parti
 
   for (const rule of rules) {
     if (!isRuleTypeActive(rule.type, ctx.intentsEnabled)) continue;
+    // An edit is one message being re-read, not a new one — feeding it back into a frequency/duplicate window
+    // would count it twice and fire the rule before the member actually reached the threshold.
+    if (options.reevaluation && isWindowBackedRuleType(rule.type)) continue;
 
     if (
       isExempt(
@@ -457,6 +489,11 @@ export async function handleMessage(ctx: PluginContext, message: Message | Parti
     const matchedDomain =
       typeof result.evidence?.matchedDomain === 'string' ? result.evidence.matchedDomain : null;
     if (matchedDomain && isTrustedDomain(matchedDomain, rule.trustedDomains)) continue;
+
+    // Claimed before anything else this rule could spend on the message, so a repeat delivery can't punish twice
+    // (see `claimMatch`). Ahead of the cooldown on purpose: `cooldowns.take` *arms* the cooldown, so claiming
+    // second would let a re-delivered message re-arm it and swallow the member's next, genuinely new violation.
+    if (!(await claimMatch(ctx, rule.id, normalized.messageId))) continue;
 
     if (rule.cooldownSeconds > 0) {
       const cooldownResult = await cooldowns.take(

@@ -11,8 +11,12 @@ Every enabled rule is evaluated (in priority order) against each new message (an
 content-dependent rules) or each new member join. A match can trigger one or more configured actions — warn,
 delete, timeout, quarantine, alert staff, or just log ("ignore") — unless the user/role/channel is exempt, the
 rule is on cooldown for that user, or dry-run is on (guild-wide or per-rule), in which case the match is only
-logged. Every match is recorded as an `AutomodEvent`, which shows up in `/automod review` and the dashboard's
-review queue until a moderator marks it **Confirm violation** or **False positive**.
+logged. A message is re-evaluated on edit whenever its text may have changed — Discord also fires `messageUpdate`
+for embed unfurls and pins, and those are filtered out — window-backed rules are skipped on that re-check, and
+each rule can only act once per message — so one violation never produces two punishments, two alerts, or two
+review rows. Every match is
+recorded as an `AutomodEvent`, which shows up in `/automod review` and the dashboard's review queue until a
+moderator marks it **Confirm violation** or **False positive**.
 
 Raid detection (`RAID_DETECTION`) never bans automatically. Beyond its own per-rule actions, a guild can configure
 `raidLockdown` (`none` / `raise-verification` / `quarantine-new-joins`) as an additional guild-wide response to a
@@ -36,6 +40,12 @@ detected join burst.
 | `ACCOUNT_AGE`        | New accounts under a minimum age, on join                            | No                            | Yes                         |
 | `RAID_DETECTION`     | A burst of joins within a time window                                | No                            | Yes                         |
 
+Thresholds come in two flavours, and each rule's field label and match reason says which one it is:
+`MESSAGE_FREQUENCY` and `ATTACHMENTS`' max-attachments are allowances ("Max … allowed" — they flag _above_ the
+number), while `MENTION_SPAM`, `DUPLICATE_MESSAGES`, `CAPS`, `REPEATED_CHARS` and `RAID_DETECTION` are trigger
+points ("… to flag" — they flag _at_ the number or more). The convention is written down once, in
+`engine/types.ts`.
+
 \* `NSFW_ENFORCEMENT` doesn't _require_ the Message Content intent to stay "active", but its keyword matching is a
 no-op without it (Discord doesn't deliver message text to the bot otherwise).
 
@@ -45,7 +55,8 @@ A rule whose required privileged intent isn't enabled shows as **inactive: requi
 ## Commands
 
 All commands require at least `helper` staff level (or an equivalent Discord permission); `rule create/edit/
-delete/toggle` and `exempt add/remove` additionally require `moderator`; `dryrun` requires `admin`.
+delete/toggle/dryrun` and `exempt add/remove` additionally require `moderator`; guild-wide `dryrun` requires
+`admin`.
 
 - `/automod rule create <type> <name> <action> [timeout_minutes]` — opens a form for the rule's type-specific settings
 - `/automod rule list` — every rule, with status
@@ -53,6 +64,7 @@ delete/toggle` and `exempt add/remove` additionally require `moderator`; `dryrun
 - `/automod rule edit <rule>` — opens a prefilled form for the type-specific settings
 - `/automod rule delete <rule>` — soft-deletes, with confirmation
 - `/automod rule toggle <rule>` — enable/disable
+- `/automod rule dryrun <rule> <on|off>` — that one rule's dry-run flag (a rule acts only when this **and** the guild-wide switch are off)
 - `/automod rule test <rule> <text>` — dry-runs the rule's evaluator against sample text, no action taken
 - `/automod exempt add|remove <rule> <kind> [role|channel|user|domain]` — per-rule exemptions
 - `/automod exempt list <rule>` — a rule's current exemptions
@@ -62,15 +74,15 @@ delete/toggle` and `exempt add/remove` additionally require `moderator`; `dryrun
 
 ## Config keys (`/config set automod.<key>` or the dashboard)
 
-| Key                   | Default        | Notes                                                            |
-| --------------------- | -------------- | ---------------------------------------------------------------- |
-| `dryRun`              | `true`         | Guild-wide; ORed with each rule's own `dryRun`                   |
-| `alertChannelId`      | `null`         | Where the "alert staff" action and review-queue embeds post      |
-| `quarantineRoleId`    | `null`         | Role assigned by the "quarantine" action and raid lockdown       |
-| `exemptStaff`         | `true`         | Members at/above `helper` staff level are exempt from every rule |
-| `defaultTimeoutMs`    | `600000` (10m) | Used when a "timeout" action doesn't specify its own duration    |
-| `raidLockdown`        | `'none'`       | `none` / `raise-verification` / `quarantine-new-joins`           |
-| `raidLockdownMinutes` | `15`           | Duration of a `quarantine-new-joins` lockdown                    |
+| Key                   | Default        | Notes                                                                   |
+| --------------------- | -------------- | ----------------------------------------------------------------------- |
+| `dryRun`              | `true`         | Guild-wide; ORed with each rule's own `dryRun` (`/automod rule dryrun`) |
+| `alertChannelId`      | `null`         | Where the "alert staff" action and review-queue embeds post             |
+| `quarantineRoleId`    | `null`         | Role assigned by the "quarantine" action and raid lockdown              |
+| `exemptStaff`         | `true`         | Members at/above `helper` staff level are exempt from every rule        |
+| `defaultTimeoutMs`    | `600000` (10m) | Used when a "timeout" action doesn't specify its own duration           |
+| `raidLockdown`        | `'none'`       | `none` / `raise-verification` / `quarantine-new-joins`                  |
+| `raidLockdownMinutes` | `15`           | Duration of a `quarantine-new-joins` lockdown                           |
 
 ## Permissions (why, and fallback if missing)
 

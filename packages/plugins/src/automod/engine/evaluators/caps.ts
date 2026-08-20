@@ -17,11 +17,12 @@ export const evaluateCaps: MessageEvaluator<Config> = async ({ message }, config
   const upperCount = letters.filter((ch) => UPPER_PATTERN.test(ch)).length;
   const percent = (upperCount / letters.length) * 100;
 
+  // Inclusive threshold (see "Threshold semantics" in ../types).
   if (percent < config.maxCapsPercent) return NO_MATCH;
 
   return {
     matched: true,
-    reason: `Message is ${Math.round(percent)}% uppercase (limit ${config.maxCapsPercent}%).`,
+    reason: `Message is ${Math.round(percent)}% uppercase (flags at ${config.maxCapsPercent}% or more).`,
     evidence: { capsPercent: Math.round(percent * 100) / 100, letterCount: letters.length },
   };
 };

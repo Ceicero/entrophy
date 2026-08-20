@@ -10,11 +10,12 @@ export const evaluateRaidDetection: JoinEvaluator<Config> = async ({ join, windo
   // Deliberately guild-wide, not per-user: a raid is many *different* accounts joining in a burst.
   const count = await windowStore.pushAndCount('raid', join.userId, join.joinedAt.getTime(), windowMs);
 
+  // Inclusive threshold (see "Threshold semantics" in ../types).
   if (count < config.joinBurstCount) return NO_MATCH;
 
   return {
     matched: true,
-    reason: `${count} members joined within ${config.joinBurstWindowSeconds}s (threshold ${config.joinBurstCount}).`,
+    reason: `${count} members joined within ${config.joinBurstWindowSeconds}s (flags at ${config.joinBurstCount} or more).`,
     evidence: {
       joinCount: count,
       joinBurstCount: config.joinBurstCount,

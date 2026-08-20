@@ -8,6 +8,7 @@ import {
   RULE_TYPE_CHOICES,
   handleRuleCreate,
   handleRuleDelete,
+  handleRuleDryRun,
   handleRuleEdit,
   handleRuleList,
   handleRuleTest,
@@ -88,6 +89,21 @@ const data = new SlashCommandBuilder()
         ruleOption(sub.setName('delete').setDescription('Delete a rule (asks for confirmation).')),
       )
       .addSubcommand((sub) => ruleOption(sub.setName('toggle').setDescription('Enable/disable a rule.')))
+      .addSubcommand((sub) =>
+        ruleOption(
+          sub
+            .setName('dryrun')
+            .setDescription(
+              "Turn one rule's dry-run on or off (a rule acts only when guild-wide is off too).",
+            ),
+        ).addStringOption((opt) =>
+          opt
+            .setName('state')
+            .setDescription('On = log matches without acting. Off = this rule takes real action.')
+            .setRequired(true)
+            .addChoices({ name: 'On (dry run)', value: 'on' }, { name: 'Off (live)', value: 'off' }),
+        ),
+      )
       .addSubcommand((sub) =>
         ruleOption(
           sub.setName('test').setDescription('Test a rule against sample text — no action is taken.'),
@@ -188,6 +204,8 @@ export const command: PluginCommand = {
           return handleRuleDelete(c);
         case 'toggle':
           return handleRuleToggle(c);
+        case 'dryrun':
+          return handleRuleDryRun(c);
         case 'test':
           return handleRuleTest(c);
       }
