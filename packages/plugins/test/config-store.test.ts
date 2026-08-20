@@ -146,6 +146,20 @@ describe('GuildConfigStore', () => {
     );
   });
 
+  it('setConfig rejects a patch with an unknown top-level key instead of silently dropping it', async () => {
+    const registry = buildModerationRegistry();
+    const redis = new RedisMock();
+    const { prisma, calls } = createPrismaStub();
+    const store = new GuildConfigStore(prisma, redis, registry);
+
+    await expect(
+      store.setConfig('g1', 'moderation', { notAField: true }, { id: 'u1', source: 'bot' }),
+    ).rejects.toThrow(/Unknown config field\(s\): "notAField".*Valid fields for plugin "moderation": enabled, threshold/);
+    // Rejected before touching prisma at all — this backstop protects every caller (dashboard routes and bot
+    // commands alike), not just the ones that already validate keys themselves.
+    expect(calls).toHaveLength(0);
+  });
+
   it('getGuildConfig returns platform defaults when no row exists, without writing one', async () => {
     const registry = buildModerationRegistry();
     const redis = new RedisMock();

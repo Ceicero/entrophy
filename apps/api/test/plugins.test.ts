@@ -188,4 +188,103 @@ describe('generic plugin config route never leaks or accepts a secret field', ()
 
     await app.close();
   });
+
+  it('PUT rejects a secret field alongside a genuinely unknown one, naming only the unknown one', async () => {
+    // Guards the ordering decision: the unknown-key check runs against the *full* configSchema (before
+    // omitSecretFields strips anything), so a real secret field name is never reported as "unknown" — only an
+    // actual typo/extra key is.
+    const { overrides, store } = pluginConfigOverrides();
+    const { app, redis } = await buildTestApp(overrides);
+    const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
+    await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/plugins/ai/config`,
+      headers: { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken },
+      payload: { model: 'gpt-4o', apiKeyEnc: 'attacker-supplied-ciphertext', bogus: true },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/^Unknown config field\(s\): "bogus"\./);
+    expect(store.has(`${GUILD_ID}:ai`)).toBe(false); // rejected before any write happened
+
+    await app.close();
+  });
+});
+
+describe('generic plugin config route rejects unknown top-level keys', () => {
+  it('PUT rejects a wrongly-wrapped body (e.g. `{ config: {...} }`) with 400 and names the offending + valid keys', async () => {
+    const { overrides, store } = pluginConfigOverrides();
+    const { app, redis } = await buildTestApp(overrides);
+    const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
+    await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/plugins/engagement/config`,
+      headers: { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken },
+      payload: { config: { rep: { cooldownHours: 1 } } },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({
+      error: {
+        code: 'validation_error',
+        message:
+          'Unknown config field(s): "config". Valid fields for plugin "engagement": leveling, rep, starboard, tempVoice.',
+      },
+    });
+    expect(store.has(`${GUILD_ID}:engagement`)).toBe(false); // rejected before any write happened
+
+    await app.close();
+  });
+
+  it('PUT accepts a valid partial patch (one top-level key) and merges it over the stored config', async () => {
+    const { overrides, store } = pluginConfigOverrides();
+    const { app, redis } = await buildTestApp(overrides);
+    const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
+    await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/plugins/engagement/config`,
+      headers: { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken },
+      payload: { rep: { cooldownHours: 48 } },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.config.rep).toEqual({ enabled: true, cooldownHours: 48 });
+    // Other sub-sections still come back with their own defaults, untouched by this partial patch.
+    expect(body.config.leveling.rewardMode).toBe('stack');
+
+    const stored = store.get(`${GUILD_ID}:engagement`)!;
+    expect(Object.keys(stored)).toEqual(['rep']); // only the patched key was merged into the raw stored config
+    expect(stored.rep).toEqual({ cooldownHours: 48 });
+
+    await app.close();
+  });
+
+  it('rejects any key for a plugin whose configSchema is z.object({}) (integrations)', async () => {
+    const { overrides, store } = pluginConfigOverrides();
+    const { app, redis } = await buildTestApp(overrides);
+    const { cookieHeader, session } = await loginAs(app, redis, { userId: USER_ID });
+    await seedUserGuilds(redis, USER_ID, [{ id: GUILD_ID, owner: true, permissions: '8' }]);
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/guilds/${GUILD_ID}/plugins/integrations/config`,
+      headers: { cookie: cookieHeader, origin: 'http://localhost:3000', 'x-csrf-token': session.csrfToken },
+      payload: { enabled: true },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toBe(
+      'Unknown config field(s): "enabled". Valid fields for plugin "integrations": .',
+    );
+    expect(store.has(`${GUILD_ID}:integrations`)).toBe(false);
+
+    await app.close();
+  });
 });

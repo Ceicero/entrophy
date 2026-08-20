@@ -1,6 +1,7 @@
 import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
 import { NotFoundError } from '@entrophy/core';
+import { assertKnownConfigKeys } from '@entrophy/plugins';
 import { PLUGIN_IDS, type PluginId, type PluginSummary } from '@entrophy/types';
 import { requireGuildAccess } from '../lib/guild-access';
 import { buildPluginSummaries } from '../lib/plugin-summaries';
@@ -78,6 +79,12 @@ export default async function pluginsRoutes(app: ZodFastifyInstance): Promise<vo
       const session = request.session!;
       const manifest = app.registry.get(pluginId)?.manifest;
       if (!manifest) throw new NotFoundError(`Unknown plugin "${pluginId}".`);
+      // Reject any top-level key this plugin's configSchema doesn't recognize *before* redacting secrets, and
+      // check it against the *full* (unredacted) configSchema — so a legitimate secret field name (e.g. ai's
+      // apiKeyEnc) is never mistaken for an unknown/typo'd key. This is what turns a wrongly-shaped write (e.g.
+      // `{ config: {...} }` instead of the bare config object) into a loud 400 instead of a silent no-op 200 with
+      // the junk key persisted into the stored raw JSON forever (zod objects strip unknown keys by default).
+      assertKnownConfigKeys(pluginId, manifest.configSchema, request.body);
       // Never let this generic path write a secret field — silently drop it rather than let the dashboard
       // corrupt (or spoof) a plugin's encrypted key/token by round-tripping the auto-form.
       const body = omitSecretFields(request.body);
