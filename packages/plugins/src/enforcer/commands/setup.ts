@@ -64,6 +64,22 @@ export function addSetupSubcommand(builder: SlashCommandBuilder): SlashCommandBu
   ) as SlashCommandBuilder;
 }
 
+/**
+ * One sentence describing a bulk mute-role apply. Channels that failed and channels the bot cannot manage at all
+ * are both named: a mute that silently doesn't reach part of the server is the failure mode this command has to
+ * make visible, not summarise away.
+ */
+function describeMuteApply(result: { applied: number; failed: number; skipped: number }): string {
+  const problems: string[] = [];
+  if (result.failed > 0) problems.push(`${result.failed} failed`);
+  if (result.skipped > 0) problems.push(`${result.skipped} skipped — I can't manage them`);
+  const suffix =
+    problems.length > 0
+      ? ` (${problems.join(', ')}; check my Manage Roles/Manage Channels permission there)`
+      : '';
+  return `applied deny-overwrites to ${result.applied} channel(s)${suffix}`;
+}
+
 export async function executeSetup(c: CommandContext): Promise<void> {
   assertStaffLevel(c.staffLevel, 'admin', c.t);
 
@@ -125,12 +141,17 @@ export async function executeSetup(c: CommandContext): Promise<void> {
   let muteRoleReport = 'unchanged';
   if (muteRoleOpt) {
     muteRoleId = muteRoleOpt.id;
-    muteRoleReport = `using <@&${muteRoleId}>`;
+    // A supplied role carries no permissions of its own — it silences people only once the deny-overwrites are
+    // on the channels, exactly like the role this command creates below. Without this the setup reports success
+    // and every later Mute decision is a no-op the ledger still records.
+    const role = await guild.roles.fetch(muteRoleId).catch(() => null);
+    muteRoleReport = role
+      ? `using <@&${muteRoleId}> and ${describeMuteApply(await applyMuteRoleToChannels(guild, role))}`
+      : `using <@&${muteRoleId}> — I could not read that role just now, so no deny-overwrites were applied; run \`/enforcer setup repair:true\` once I can`;
   } else if (!config.muteRoleId) {
     const role = await ensureMuteRole({ guild, existingRoleId: null, reason: 'Enforcer setup: mute role' });
     muteRoleId = role.id;
-    const { applied, failed } = await applyMuteRoleToChannels(guild, role);
-    muteRoleReport = `created <@&${role.id}> and applied deny-overwrites to ${applied} channel(s)${failed > 0 ? ` (${failed} failed — check my Manage Roles/Manage Channels permission there)` : ''}`;
+    muteRoleReport = `created <@&${role.id}> and ${describeMuteApply(await applyMuteRoleToChannels(guild, role))}`;
   }
 
   await c.ctx.setConfig<EnforcerConfig>(

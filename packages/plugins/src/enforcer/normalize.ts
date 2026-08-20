@@ -17,7 +17,7 @@ function extractInvites(content: string): string[] {
 }
 
 export interface NormalizeOptions {
-  /** True if the author has any configured staff role, or Administrator/ManageGuild (ARCHITECTURE.md §19 `exemptStaff`). */
+  /** True if the author resolves to helper or above via `resolveStaffLevel` (ARCHITECTURE.md §19 `exemptStaff`). */
   isStaff: boolean;
 }
 

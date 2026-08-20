@@ -576,7 +576,13 @@ export function createEnforcerService(ctx: PluginContext): EnforcerService {
             guardTarget();
             // Do not swallow the Discord API failure (missing KickMembers, role hierarchy, etc.) — a case,
             // ledger entry, and user DM must never be recorded for an action that never actually happened.
-            if (targetMember) await targetMember.kick(input.reason);
+            // A target who already left is the same thing by another route: there is nobody to kick, so refuse
+            // rather than fall through and book a phantom KICK. (BAN below is the exception — it works on a
+            // user who has left, so it lets `guild.members.ban` speak for itself.)
+            if (!targetMember) {
+              throw new ValidationError('They are no longer in this server, so there is nothing to kick.');
+            }
+            await targetMember.kick(input.reason);
             const created = await moderation.createCase({
               guildId: input.guildId,
               type: 'KICK',
@@ -613,7 +619,14 @@ export function createEnforcerService(ctx: PluginContext): EnforcerService {
             if (!config.muteRoleId)
               throw new ValidationError('No mute role is configured. Run `/enforcer setup` first.');
             guardTarget();
-            if (targetMember) await targetMember.roles.add(config.muteRoleId, input.reason);
+            // Same rule as KICK: no member, no role to add, so no case/ledger row claiming they were muted.
+            // (A rejoining user comes back with no roles anyway, so the recorded mute would never take effect.)
+            if (!targetMember) {
+              throw new ValidationError(
+                'They are no longer in this server, so the mute role could not be applied.',
+              );
+            }
+            await targetMember.roles.add(config.muteRoleId, input.reason);
             durationMs =
               durationMs ?? (config.defaultMuteMinutes ? config.defaultMuteMinutes * 60_000 : undefined);
             const created = await moderation.createCase({

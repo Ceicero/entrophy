@@ -1,5 +1,5 @@
 import type { Message } from 'discord.js';
-import { redisKey } from '@entrophy/core';
+import { hasStaffLevel, redisKey, resolveStaffLevel } from '@entrophy/core';
 import type { PluginEventHandler } from '../../sdk';
 import { evaluate } from '../engine';
 import type { EnforcerConfig } from '../manifest';
@@ -25,19 +25,34 @@ export const messageCreateHandler: PluginEventHandler<'messageCreate'> = {
     const config = await ctx.getConfig<EnforcerConfig>(message.guildId);
     if (!config.autoFlagEnabled) return;
 
-    const memberRoleIds = message.member ? [...message.member.roles.cache.keys()] : [];
+    const member = message.member;
     let isStaff = false;
-    if (config.exemptStaff) {
+    if (config.exemptStaff && member) {
+      // Same resolution the router uses to gate every `/enforcer` command, rather than a role-id set of its own:
+      // the configured staff-role arrays are empty on a fresh guild, so a permission-based moderator — and the
+      // guild owner, who holds no staff role at all — would otherwise be auto-flagged on a server whose
+      // `/enforcer status` reads "Exempt staff from auto-flagging: Yes".
       const host = ctx.services.get('host');
       const guildConfig = host ? await host.getGuildConfig(message.guildId) : null;
-      if (guildConfig) {
-        const staffRoleIds = new Set([
-          ...guildConfig.adminRoleIds,
-          ...guildConfig.modRoleIds,
-          ...guildConfig.helperRoleIds,
-        ]);
-        isStaff = memberRoleIds.some((id) => staffRoleIds.has(id));
-      }
+      const level = resolveStaffLevel({
+        member: {
+          id: member.id,
+          roleIds: [...member.roles.cache.keys()],
+          permissions: member.permissions.bitfield,
+          highestRolePosition: member.roles.highest.position,
+          isBot: member.user.bot,
+        },
+        guildOwnerId: message.guild.ownerId,
+        botOwnerIds: ctx.botOwnerIds,
+        // Falling back to empty arrays (rather than skipping the check) keeps the owner/permission fallbacks
+        // working even if the host service is momentarily unavailable.
+        staffRoles: {
+          adminRoleIds: guildConfig?.adminRoleIds ?? [],
+          modRoleIds: guildConfig?.modRoleIds ?? [],
+          helperRoleIds: guildConfig?.helperRoleIds ?? [],
+        },
+      });
+      isStaff = hasStaffLevel(level, 'helper');
       if (isStaff) return;
     }
 

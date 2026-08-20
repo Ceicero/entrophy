@@ -493,6 +493,88 @@ describe('EnforcerService.decide — Discord action failures are not swallowed',
   });
 });
 
+describe('EnforcerService.decide — target who has already left the guild', () => {
+  /** Only the moderator resolves; `fetchMemberSafe` returns null for the target, exactly as it does for a member who left. */
+  function clientWithoutTarget(ban?: (userId: string, opts: unknown) => Promise<void>): Client<true> {
+    return fakeClientWithMembers({ 'mod-1': { highestRolePosition: 50 } }, { ban });
+  }
+
+  it('refuses KICK instead of writing a case and ledger row for a kick that never happened', async () => {
+    const record = baseRecord({ userId: 'departed-1' });
+    const prisma = makeFakePrisma(record);
+    const { ctx } = createTestContext({
+      config: defaultConfig(),
+      overrides: { prisma, client: clientWithoutTarget() },
+    });
+    const createCase = vi.fn(async () => ({ id: 'case-1', caseNumber: 1 }) as never);
+    ctx.services.register('moderation', { ...fakeModeration(), createCase });
+    const service = createEnforcerService(ctx);
+
+    await expect(
+      service.decide({
+        guildId: 'g1',
+        recordId: 'rec-1',
+        decision: 'KICK',
+        moderatorId: 'mod-1',
+        reason: 'test reason',
+        source: 'bot',
+      }),
+    ).rejects.toThrow(/no longer in this server/i);
+    expect(createCase).not.toHaveBeenCalled();
+    // The flag is left for someone to decide properly rather than silently marked ACTIONED.
+    expect(record.status).toBe('PENDING');
+  });
+
+  it('refuses MUTE instead of recording a mute role that was never applied', async () => {
+    const record = baseRecord({ userId: 'departed-1' });
+    const prisma = makeFakePrisma(record);
+    const { ctx } = createTestContext({
+      config: defaultConfig({ muteRoleId: 'role-1' }),
+      overrides: { prisma, client: clientWithoutTarget() },
+    });
+    const createCase = vi.fn(async () => ({ id: 'case-1', caseNumber: 1 }) as never);
+    ctx.services.register('moderation', { ...fakeModeration(), createCase });
+    const service = createEnforcerService(ctx);
+
+    await expect(
+      service.decide({
+        guildId: 'g1',
+        recordId: 'rec-1',
+        decision: 'MUTE',
+        moderatorId: 'mod-1',
+        source: 'bot',
+      }),
+    ).rejects.toThrow(/no longer in this server/i);
+    expect(createCase).not.toHaveBeenCalled();
+    expect(record.status).toBe('PENDING');
+  });
+
+  it('still allows BAN on a member who has left — a ban works on a user id, so that action really does happen', async () => {
+    const record = baseRecord({ userId: 'departed-1' });
+    const prisma = makeFakePrisma(record);
+    const ban = vi.fn(async () => undefined);
+    const { ctx } = createTestContext({
+      config: defaultConfig(),
+      overrides: { prisma, client: clientWithoutTarget(ban) },
+    });
+    const createCase = vi.fn(async () => ({ id: 'case-1', caseNumber: 1 }) as never);
+    ctx.services.register('moderation', { ...fakeModeration(), createCase });
+    const service = createEnforcerService(ctx);
+
+    await service.decide({
+      guildId: 'g1',
+      recordId: 'rec-1',
+      decision: 'BAN',
+      moderatorId: 'mod-1',
+      reason: 'test reason',
+      source: 'bot',
+    });
+
+    expect(ban).toHaveBeenCalledTimes(1);
+    expect(createCase).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('flagRecord — captureContext gates the stored excerpt, not just the context snapshot', () => {
   function fakeClientForFlag(): Client<true> {
     const guild = { id: 'g1', channels: { fetch: () => Promise.resolve(null) } };
