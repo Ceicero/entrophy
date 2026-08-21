@@ -324,6 +324,12 @@ https://api.entrophybot.com/webhooks/stripe
 If `STRIPE_SECRET_KEY` isn't set, the **Donate** page shows a clear "not configured" notice instead
 of a broken checkout — donations are entirely optional infrastructure.
 
+The **Support** page (`/support`) is the primary support destination: joining the community Discord
+server is the main call to action, with pointers to the dashboard (configuration) and `/features`
+(command reference). Also linked from the primary nav and the footer. Optional env:
+`NEXT_PUBLIC_SUPPORT_SERVER_URL` — the page (and every other surface that links the server) shows
+nothing/a plain notice instead of a broken link when it's unset.
+
 ## Development
 
 Root scripts (`package.json`), run from the repo root:
@@ -361,9 +367,11 @@ a plugin's permissions and forget to run the export, CI catches it, not a user r
 
 ## Troubleshooting
 
-Real problems and fixes — bot won't start, commands not showing, "Missing Permissions", dashboard
-login loops, webhook delivery, Prisma/Redis errors, Windows notes, Railway specifics:
-**`docs/TROUBLESHOOTING.md`**.
+**First-line support is the community Discord server** — linked on the website's `/support` page,
+its footer, and in the dashboard sidebar and error states (`NEXT_PUBLIC_SUPPORT_SERVER_URL`; hidden
+everywhere it isn't configured). For self-serve fixes — bot won't start, commands not showing,
+"Missing Permissions", dashboard login loops, webhook delivery, Prisma/Redis errors, Windows notes,
+Railway specifics: **`docs/TROUBLESHOOTING.md`**.
 
 ## Roadmap
 

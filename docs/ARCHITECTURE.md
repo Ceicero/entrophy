@@ -549,6 +549,10 @@ Also `apps/bot/src/host/bot-actions.ts`: processes `bot-actions` queue jobs `{ t
 - Data layer: `src/lib/api.ts` — `apiFetch(path, init)` with `credentials: 'include'`, adds `X-CSRF-Token` from `/auth/me` (cached in a React context `SessionProvider`), throws `ApiClientError`. React Query hooks in `src/lib/queries.ts`. Discord embed preview component `EmbedPreview` in `@entrophy/ui`.
 - Auth gate: `src/app/dashboard/layout.tsx` is a client component that calls `/auth/me`; unauthenticated → redirect `/`. (Also `middleware.ts` checks the `sid` cookie exists for a fast redirect — cookies are same-site so present on the dashboard origin only when COOKIE_DOMAIN is a shared parent; skip the middleware check when not.)
 - Playwright: `e2e/` with `playwright.config.ts` (`webServer` for dashboard; expects API running with `E2E_TEST_MODE=true`); tests: `login.spec.ts` (unauthenticated redirect; test-login → guild selector visible), `config.spec.ts` (toggle a plugin, change a setting, see audit entry).
+- Support link: `src/lib/site.ts#supportServerUrl()` reads `NEXT_PUBLIC_SUPPORT_SERVER_URL` (mirrors the website's
+  helper of the same name; `null` when unset). Surfaced as a "Get help on Discord" row in `AppSidebar`'s `Sidebar`
+  `footer` slot, and as an extra action in `ErrorState`'s "something went wrong" display — both render nothing
+  when the env var is unset.
 
 ## 12. `@entrophy/ui`
 
@@ -603,13 +607,18 @@ options: [{name, description, required, type}], subcommands: [{ name, fullName, 
   `src/content/plugins.ts` (`Record<PluginId, { headline, whyGaming: string[], highlights: string[] }>`) and
   `src/content/site.ts`.
 - Pages: `/`, `/features` (all plugins; anchors per plugin; `/features/[pluginId]` detail with full command table),
-  `/enforcer`, `/donate`, `/donate/thanks`, `/donate/cancelled`, `/privacy`, `/terms`, `not-found`.
+  `/enforcer`, `/donate`, `/donate/thanks`, `/donate/cancelled`, `/support`, `/privacy`, `/terms`, `not-found`.
 - Donate page: presets [3, 5, 10, 25, 50] USD (from `GET {API}/donations/presets`, which also returns `enabled`),
   custom amount input ($1–$500, whole dollars or cents), single "Donate" CTA → `POST {API}/donations/checkout`
   `{ amountCents, currency: 'usd' }` → `{ url }` → `window.location.assign(url)`. `enabled=false` → explanatory notice.
+- Support page (`/support`): the primary support destination — leads with joining the Discord server
+  (`supportServerUrl()`; renders a "not linked yet" notice instead of a CTA when unset, same degrade-to-nothing
+  contract as the footer), then points to the dashboard (config) and `/features` (command reference). No invented
+  SLA or community-size claims. Also linked from the primary nav (`Nav.tsx`) alongside the existing footer link.
 - Env (public): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_DASHBOARD_URL`, `NEXT_PUBLIC_DISCORD_CLIENT_ID`,
   `NEXT_PUBLIC_INVITE_PERMISSIONS` (integer string; default = core `INVITE_PERMISSIONS_BITFIELD`, also exported by the
-  commands export as `docs/invite.json`), `NEXT_PUBLIC_SUPPORT_SERVER_URL` (optional). Server env: `WEB_URL`.
+  commands export as `docs/invite.json`), `NEXT_PUBLIC_SUPPORT_SERVER_URL` (optional; also read by `apps/dashboard`
+  via its own `src/lib/site.ts#supportServerUrl()` — see §11). Server env: `WEB_URL`.
 - Docker: `infra/docker/Dockerfile.web` (same shape as dashboard, standalone), compose service `web` on 3003.
 
 ## 18. Donations API

@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { MessageCircle } from 'lucide-react';
 import { Sidebar, SidebarNavItem, SidebarSection, Badge } from '@entrophy/ui';
 import { NAV } from './nav';
 import { BrandWordmark } from './brand-wordmark';
 import { GuildSwitcher } from './guild-switcher';
 import { usePlugins } from '../lib/queries';
+import { supportServerUrl } from '../lib/site';
 
 export interface AppSidebarProps {
   guildId: string;
@@ -18,6 +20,7 @@ export interface AppSidebarProps {
 export function AppSidebar({ guildId, mobileOpen, onMobileOpenChange }: AppSidebarProps) {
   const pathname = usePathname();
   const { data: plugins } = usePlugins(guildId);
+  const support = supportServerUrl();
 
   return (
     <Sidebar
@@ -28,6 +31,13 @@ export function AppSidebar({ guildId, mobileOpen, onMobileOpenChange }: AppSideb
           <BrandWordmark />
           <GuildSwitcher currentGuildId={guildId} />
         </div>
+      }
+      footer={
+        support ? (
+          <SidebarNavItem icon={<MessageCircle />} href={support} target="_blank" rel="noopener noreferrer">
+            Get help on Discord
+          </SidebarNavItem>
+        ) : undefined
       }
     >
       <SidebarSection>

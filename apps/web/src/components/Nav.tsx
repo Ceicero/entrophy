@@ -6,6 +6,7 @@ const LINKS = [
   { href: '/features', label: 'Features' },
   { href: '/enforcer', label: 'Enforcer' },
   { href: '/donate', label: 'Donate' },
+  { href: '/support', label: 'Support' },
 ];
 
 export function Nav() {

@@ -2,8 +2,10 @@
 
 This is the plain-language version. It walks through getting Entrophy live on
 `entrophybot.com` using accounts and web forms only — every command you need to copy-paste is
-in a grey box, and every click is spelled out. If a step ever produces an error message, check
-`docs/TROUBLESHOOTING.md` first.
+in a grey box, and every click is spelled out. If a step ever produces an error message, the
+fastest way to get unstuck is to ask in the **Entrophy support Discord server** (linked on the
+website's `/support` page and in its footer) — after that, check `docs/TROUBLESHOOTING.md` for the
+specific error.
 
 ## 1. Accounts you need before you start
 
@@ -170,6 +172,8 @@ directly — that's the intended purpose stated on the page itself.
 
 ## If something goes wrong
 
+- **First stop: the Entrophy support Discord server** (linked on the website's `/support` page and
+  in its footer) — ask there first, especially if you don't have a developer on hand.
 - Nothing loads at all → check the Railway **Deployments** tab for a red/failed build on any of
   the four services, and open its logs.
 - Bot doesn't respond in Discord → see `docs/TROUBLESHOOTING.md` → "The bot won't start" and

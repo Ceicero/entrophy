@@ -1,8 +1,9 @@
 # Troubleshooting
 
-Real problems, real fixes. If something here doesn't match what you're seeing, check
-`infra/DEPLOYMENT.md` (production operations) or open an issue with the exact error text and which
-of `bot` / `api` / `dashboard` / `web` printed it.
+Real problems, real fixes. If something here doesn't match what you're seeing, ask in the
+**Entrophy support Discord server** (linked on the website's `/support` page and footer, and in the
+dashboard) — check `infra/DEPLOYMENT.md` (production operations) or open an issue with the exact
+error text and which of `bot` / `api` / `dashboard` / `web` printed it.
 
 - [The bot won't start](#the-bot-wont-start)
 - [Slash commands aren't showing up in Discord](#slash-commands-arent-showing-up-in-discord)

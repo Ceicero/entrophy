@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { inviteUrl } from '../src/lib/site';
+import { inviteUrl, supportServerUrl } from '../src/lib/site';
 
 const ADMINISTRATOR_BIT = 8n; // 1 << 3
 
@@ -46,5 +46,29 @@ describe('inviteUrl', () => {
     expect(url).not.toBeNull();
     const permissions = BigInt(new URL(url!).searchParams.get('permissions')!);
     expect(permissions & ADMINISTRATOR_BIT).toBe(0n);
+  });
+});
+
+describe('supportServerUrl', () => {
+  const original = process.env.NEXT_PUBLIC_SUPPORT_SERVER_URL;
+
+  afterEach(() => {
+    if (original === undefined) delete process.env.NEXT_PUBLIC_SUPPORT_SERVER_URL;
+    else process.env.NEXT_PUBLIC_SUPPORT_SERVER_URL = original;
+  });
+
+  it('returns null when unset, so callers (footer, nav, /support CTA) can render nothing instead of a broken link', () => {
+    delete process.env.NEXT_PUBLIC_SUPPORT_SERVER_URL;
+    expect(supportServerUrl()).toBeNull();
+  });
+
+  it('returns null when set to an empty/whitespace-only string', () => {
+    process.env.NEXT_PUBLIC_SUPPORT_SERVER_URL = '   ';
+    expect(supportServerUrl()).toBeNull();
+  });
+
+  it('returns the configured invite URL unchanged', () => {
+    process.env.NEXT_PUBLIC_SUPPORT_SERVER_URL = 'https://discord.gg/example';
+    expect(supportServerUrl()).toBe('https://discord.gg/example');
   });
 });

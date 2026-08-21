@@ -93,10 +93,13 @@ STRIPE_SECRET_KEY=<optional — see donations>
 STRIPE_WEBHOOK_SECRET=<optional — see donations>
 ```
 
-**`dashboard` only**:
+**`dashboard` only** (build-time — Next.js inlines `NEXT_PUBLIC_*` at build, so set these as Railway
+variables _and_ trigger a redeploy after any change, since a variable-only save doesn't rebuild the
+image):
 
 ```
 NEXT_PUBLIC_API_URL=https://api.entrophybot.com
+NEXT_PUBLIC_SUPPORT_SERVER_URL=<optional — same value as web's, see below>
 ```
 
 **`web` only** (these are build-time — Next.js inlines `NEXT_PUBLIC_*` at build, so set them as
@@ -108,7 +111,7 @@ NEXT_PUBLIC_API_URL=https://api.entrophybot.com
 NEXT_PUBLIC_DASHBOARD_URL=https://app.entrophybot.com
 NEXT_PUBLIC_DISCORD_CLIENT_ID=<same as DISCORD_CLIENT_ID>
 NEXT_PUBLIC_INVITE_PERMISSIONS=<invite permission integer — see docs/invite.json>
-NEXT_PUBLIC_SUPPORT_SERVER_URL=<optional>
+NEXT_PUBLIC_SUPPORT_SERVER_URL=<optional — also shown in the dashboard's sidebar/error states, set the same invite link on both services>
 ```
 
 **`bot` only**:
@@ -353,7 +356,7 @@ list with comments; every var there is also documented in `docs/ARCHITECTURE.md`
 | `NEXT_PUBLIC_API_URL`                                                                                                                                                                                                                                        | Yes                      | dashboard, web                                     | `https://api.entrophybot.com`                                                                                                                                                  |
 | `NEXT_PUBLIC_DASHBOARD_URL`                                                                                                                                                                                                                                  | Yes                      | web                                                | `https://app.entrophybot.com`                                                                                                                                                  |
 | `NEXT_PUBLIC_INVITE_PERMISSIONS`                                                                                                                                                                                                                             | No                       | web                                                | Integer permission bitfield — see `docs/invite.json` (generated)                                                                                                               |
-| `NEXT_PUBLIC_SUPPORT_SERVER_URL`                                                                                                                                                                                                                             | No                       | web                                                | Your support Discord server invite link, if you have one                                                                                                                       |
+| `NEXT_PUBLIC_SUPPORT_SERVER_URL`                                                                                                                                                                                                                             | No                       | web, dashboard                                     | Your support Discord server invite link, if you have one                                                                                                                       |
 | `COOKIE_DOMAIN`                                                                                                                                                                                                                                              | Recommended              | api                                                | `.entrophybot.com`                                                                                                                                                             |
 | `SESSION_COOKIE_SAMESITE`                                                                                                                                                                                                                                    | No (defaults `lax`)      | api                                                | `lax` on custom domains; `none` only if temporarily using platform default subdomains — see §5                                                                                 |
 | `TRUST_PROXY`                                                                                                                                                                                                                                                | Yes in production        | api                                                | `true` (all three cloud paths put the API behind a reverse proxy/load balancer)                                                                                                |
