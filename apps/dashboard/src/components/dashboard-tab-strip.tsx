@@ -17,6 +17,16 @@ export interface DashboardTabStripProps {
  * hamburger becomes the only way to navigate — easy to miss on a narrow window. This renders
  * the same `NAV` list as a persistent, horizontally-scrollable tab strip so every section stays
  * reachable without opening the menu. Hidden at `lg` and above, where the sidebar takes over.
+ *
+ * `sticky top-14` pins it flush under `TopBar` (`top-bar.tsx`'s `<header>` is `sticky top-0` and
+ * `h-14`, so `top-14` is that same 56px, not a guess) — without this, scrolling any config page
+ * scrolls the strip away too and the dashboard is right back to looking like it has no
+ * navigation, which is the exact bug this component exists to fix. `z-20` sits above ordinary
+ * (non-positioned) page content, below `TopBar`'s own `z-30`, and well below the `z-50` used by
+ * `Sheet`/`DropdownMenu`/`Dialog`/`Select`/`Tooltip` overlays (packages/ui) and the `z-[100]`
+ * toast viewport, so the mobile nav sheet and any dropdown still draw over it. At `lg` and above
+ * `lg:hidden` sets `display: none`, which removes the element from layout entirely — the sticky
+ * positioning has nothing left to apply to, so it cannot affect the desktop sidebar layout.
  */
 export function DashboardTabStrip({ guildId }: DashboardTabStripProps) {
   const pathname = usePathname();
@@ -30,7 +40,10 @@ export function DashboardTabStrip({ guildId }: DashboardTabStripProps) {
   }, []);
 
   return (
-    <nav aria-label="Dashboard sections" className="border-b border-border bg-card lg:hidden">
+    <nav
+      aria-label="Dashboard sections"
+      className="sticky top-14 z-20 border-b border-border bg-card lg:hidden"
+    >
       <div className="flex gap-1 overflow-x-auto px-3 py-2">
         {NAV.map((item) => {
           const href = item.href(guildId);
