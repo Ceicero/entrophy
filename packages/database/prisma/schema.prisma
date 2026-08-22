@@ -183,6 +183,17 @@ enum DonationStatus {
   EXPIRED
 }
 
+enum DeveloperReportKind {
+  BUG
+  FEEDBACK
+  QUESTION
+}
+
+enum DeveloperReportStatus {
+  OPEN
+  HANDLED
+}
+
 enum PolicySeverity {
   LOW
   MEDIUM
@@ -284,6 +295,7 @@ model Guild {
   analyticsDaily         GuildAnalyticsDaily[]
   enforcerPolicies       EnforcerPolicy[]
   enforcerRecords        EnforcerRecord[]
+  developerReports       DeveloperReport[]
 }
 
 model GuildConfig {
@@ -1339,6 +1351,36 @@ model Donation {
   createdAt             DateTime       @default(now())
   paidAt                DateTime?
   updatedAt             DateTime       @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Developer reports — guild admin → bot developer support channel (`admin`
+// plugin's `/entrophy report`). Only what the admin typed plus unavoidable
+// routing metadata is ever stored here; never message history or member lists.
+// ---------------------------------------------------------------------------
+
+model DeveloperReport {
+  id         String                @id @default(cuid())
+  guildId    String
+  guild      Guild                 @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  guildName  String
+  senderId   String
+  senderTag  String
+  kind       DeveloperReportKind
+  subject    String
+  body       String
+  botVersion String
+  status     DeveloperReportStatus @default(OPEN)
+  /// Internal-only notes for the bot developer (never shown to the reporting guild).
+  notes      String?
+  handledAt  DateTime?
+  handledBy  String?
+  createdAt  DateTime              @default(now())
+
+  @@index([guildId])
+  @@index([status, createdAt])
+  @@index([kind, createdAt])
+  @@index([senderId])
 }
 
 // ---------------------------------------------------------------------------
