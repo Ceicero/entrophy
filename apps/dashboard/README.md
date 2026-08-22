@@ -1,13 +1,39 @@
 # @entrophy/dashboard
 
-The Entrophy admin dashboard — a Next.js 15 (App Router) app for configuring the bot per Discord server.
+`app.entrophybot.com`. **This is not the per-guild config dashboard anymore** — that moved into
+`apps/web` at `entrophybot.com/dashboard/**` (see `apps/web/README.md` and
+`docs/ARCHITECTURE.md` §11). This service's job today is narrower:
 
-## What it talks to
+1. **Redirect old links.** Every `app.entrophybot.com/` and `app.entrophybot.com/dashboard/...`
+   request 308s to the equivalent `WEB_URL` path (`next.config.ts`'s `redirects()`), so bookmarks,
+   the Top.gg listing, and a live Reddit post pointing at the old domain never 404. The redirect is
+   **path-scoped, not a blanket catch-all** — see the next point.
+2. **Host Brandon's upcoming owner-only ops console.** Cross-server support tickets, fleet metrics,
+   error monitoring, bot health — planned for this same service, most likely on a separate
+   `dev.entrophybot.com` domain. That's why the redirect above only covers `/` and `/dashboard/*`:
+   a wildcard redirect would fight future `/ops/...` routes.
 
-The dashboard **never** imports `@entrophy/core`, `@entrophy/database`, or `@entrophy/plugins`. It only imports
-`@entrophy/ui` (component library) and `@entrophy/types` (shared DTOs), and talks to `apps/api` over HTTP
-(`NEXT_PUBLIC_API_URL`, default `http://localhost:3001`). See `docs/ARCHITECTURE.md` §10–§11 for the full route/DTO
-contract.
+## What's still real here (not stripped out)
+
+This is a fully working, deployable Next.js app, not a bare config file — kept that way
+deliberately so the ops console above has a real foundation to build on:
+
+- `src/app/layout.tsx` + `src/components/providers.tsx` — theme (`next-themes`, class-based dark
+  mode) + React Query + a `Toaster`, same pattern the dashboard used before the merge.
+- `src/lib/api.ts` / `src/lib/session.tsx` — the same `apiFetch`/`SessionProvider`/`useSession()`
+  pair the config dashboard uses in `apps/web`, so an auth-gated ops page can be added the same way.
+- `@entrophy/ui` + Tailwind wiring (`tailwind.config.ts`, `postcss.config.mjs`) — the shared
+  component library still works here.
+- `src/app/page.tsx` — an honest placeholder ("nothing here yet") that exercises the session/theme/
+  UI wiring above, so it's a verified baseline rather than dead scaffolding. It is **not** reachable
+  at `app.entrophybot.com/` in production (the redirect above sends `/` to the website first) —
+  it's what you see running this app directly (e.g. locally, or before `WEB_URL`/DNS are wired up).
+
+Not carried over: the per-guild config pages, components, and React Query hooks
+(`moderation`/`automod`/`tickets`/etc.) — those are guild-config-specific, not ops-console-shaped,
+and now live in `apps/web/src/app/dashboard/**` and `apps/web/src/{components,lib}/dashboard/**`.
+Pull specific pieces back here if the ops console ends up needing them (`src/lib/format.ts`'s date
+helpers are a likely candidate — generic and cheap to restore).
 
 ## Running locally
 
@@ -15,88 +41,25 @@ contract.
 pnpm --filter @entrophy/dashboard dev     # http://localhost:3000
 ```
 
-Requires `apps/api` running (see its README) for anything beyond the landing page — the guild selector, plugin
-config, audit log, and every other authenticated page all fetch from the API.
+Visiting `/` or `/dashboard/*` locally redirects to `WEB_URL` (defaults to
+`http://localhost:3003`, the web app's dev server — not the production domain, so this never
+bounces a local run out to the real site). Any other path (once the ops console has routes) falls
+through to this app normally.
 
 Environment variables (see root `.env.example`):
 
-- `NEXT_PUBLIC_API_URL` — base URL of the API (`GET /guilds`, `/auth/*`, etc.)
-- `COOKIE_DOMAIN` — only set in production when the API and dashboard share a parent domain; enables the
-  fast `sid`-cookie redirect in `src/middleware.ts`. Leave unset locally.
-
-## Structure
-
-- `src/app/` — App Router pages. `/` is the public landing page; everything under `/dashboard` requires a session
-  (gated client-side in `src/app/dashboard/layout.tsx` via `useSession()`, backed by `GET /auth/me`).
-- `src/app/dashboard/[guildId]/` — the per-guild shell (sidebar + top bar) and every guild-scoped page from
-  `docs/ARCHITECTURE.md` §11. Pages for moderation, automod, logging, tickets, roles, engagement, community,
-  integrations, and AI are intentionally simple placeholders (`ComingSoonPage`) — later build stages replace them
-  with the real UI. Overview, Plugins, Settings, Audit log, Analytics, and Privacy are fully built.
-- `src/lib/api.ts` — `apiFetch()`, the one place that talks to the network: attaches cookies, JSON-encodes bodies,
-  adds `X-CSRF-Token` on mutations, and throws `ApiClientError` on failure.
-- `src/lib/session.tsx` — `SessionProvider` / `useSession()`, backed by `GET /auth/me`.
-- `src/lib/queries.ts` — every React Query hook the pages use, with a shared `queryKeys` object for cache
-  invalidation.
-- `src/lib/format.ts` — date, Discord snowflake, and number formatting helpers.
-- `src/lib/json-schema.ts` — the minimal JSON Schema type `JsonSchemaForm` renders from.
-- `src/components/` — dashboard-specific components (sidebar, top bar, guild switcher, plugin card, the
-  JSON-Schema-driven plugin config form, confirm dialog, data table, error/empty states). Design-system primitives
-  (buttons, dialogs, tables, the Discord embed preview, etc.) live in `@entrophy/ui` instead.
-
-## Known gaps (flagged honestly, not hidden)
-
-- A few API response shapes (`GET /guilds/:id` overview, `GET /guilds/:id/privacy/retention`, `GET /guilds/:id/data/*`) are not yet covered by shared DTOs in `@entrophy/types` as of this build.
-  The dashboard code calls the paths described in `docs/ARCHITECTURE.md` §10 and is written defensively (optional
-  fields, graceful fallbacks) so it degrades rather than crashes if the live API differs slightly. Confirm exact
-  shapes against `apps/api`'s OpenAPI docs (`/docs`) once both sides are integrated, and adjust `src/lib/queries.ts`
-  if needed.
-- `GET /guilds/:id/discord/channels` and `/roles` are served by `apps/api/src/routes/discord.ts` (bot-token
-  backed, cached 60s; shapes `DiscordChannelOption[]`/`DiscordRoleOption[]` from `@entrophy/types`). They return
-  503 `bot_token_missing` when the API process has no `DISCORD_TOKEN`; in that case every channel/role picker in
-  the dashboard (settings, plugin config forms) automatically falls back to a plain text input for the raw Discord id.
+- `NEXT_PUBLIC_API_URL` — base URL of the API, kept wired for the session/theme scaffolding above.
+- `WEB_URL` — redirect target for the legacy `/` and `/dashboard/*` paths (server-side; read at
+  request time by `next.config.ts`, not a build-time `NEXT_PUBLIC_*` var).
 
 ## Testing
 
 - `pnpm --filter @entrophy/dashboard typecheck`
 - `pnpm --filter @entrophy/dashboard lint`
-- `pnpm --filter @entrophy/dashboard build` (needs `NEXT_PUBLIC_API_URL` set; falls back to the local default)
-- `pnpm --filter @entrophy/dashboard test:e2e` — Playwright specs in `e2e/`. They self-skip unless `E2E_API_URL` is
-  set to a running API instance with `E2E_TEST_MODE=true` (never enable that in production).
+- `pnpm --filter @entrophy/dashboard test` — `test/next-config.test.ts` (the redirect rules) and
+  `test/brand-wordmark.test.ts` (the restored brand mark).
+- `pnpm --filter @entrophy/dashboard build`
 
-### Running e2e tests locally
-
-The dashboard's own `test:e2e` (like the root `pnpm test:e2e`) is safe to run on any machine — with no API
-running it just prints "skipped" for every test in `e2e/`. To actually exercise `login.spec.ts` and
-`config.spec.ts`, start Postgres/Redis and a real API in test mode first:
-
-1. **Start Postgres + Redis** (from the repo root, needs Docker Desktop running):
-   ```bash
-   docker compose up -d postgres redis
-   ```
-2. **Point the API at them and enable test mode**, then run migrations and start the API (in a separate terminal,
-   also from the repo root):
-   ```bash
-   export DATABASE_URL=postgresql://entrophy:entrophy@localhost:5432/entrophy
-   export REDIS_URL=redis://localhost:6379
-   export E2E_TEST_MODE=true
-   export SESSION_SECRET=local-e2e-session-secret
-   export ENCRYPTION_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))")
-   pnpm db:migrate
-   pnpm --filter @entrophy/api dev
-   ```
-   (PowerShell: use `$env:NAME = "value"` instead of `export NAME=value`.) Wait for `GET http://localhost:3001/health`
-   to respond before continuing — `E2E_TEST_MODE=true` is what registers the `/auth/test-login` route the specs use
-   to sign in without real Discord OAuth, and it's refused outright in production regardless of the flag.
-3. **Run the dashboard e2e suite** against it (third terminal):
-   ```bash
-   export E2E_API_URL=http://localhost:3001
-   pnpm --filter @entrophy/dashboard test:e2e
-   ```
-   This also boots the dashboard itself via the Playwright `webServer` config (`next dev` on port 3000), so you
-   don't need to start it separately.
-4. When done, stop the compose services with `docker compose down` (add `-v` to also drop the seeded Postgres
-   volume).
-
-CI runs this same flow automatically in the `e2e` job of `.github/workflows/ci.yml` (Postgres/Redis as GitHub
-Actions services instead of `docker compose`), gated with `continue-on-error: true` so a flaky browser test never
-blocks a merge.
+`e2e/` has no specs right now (the old `login.spec.ts`/`config.spec.ts` moved to `apps/web/e2e/`
+along with the pages they tested) — `playwright.config.ts` is kept in place for whenever the ops
+console has real flows to cover.

@@ -30,10 +30,11 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # NEXT_PUBLIC_* values are inlined by `next build`, so they must be present at BUILD time.
 # Railway/Render populate declared ARGs from the service's environment variables.
+# (COOKIE_DOMAIN used to be baked in here for the old src/middleware.ts auth fast-redirect; that
+# file is gone — this service's redirects are now in next.config.ts, read server-side from WEB_URL
+# at request time, not a build-time ARG.)
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001
-ARG COOKIE_DOMAIN
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
-    COOKIE_DOMAIN=${COOKIE_DOMAIN}
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN node scripts/sync-brand.mjs
 RUN pnpm --filter @entrophy/dashboard build
 

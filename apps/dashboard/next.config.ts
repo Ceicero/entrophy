@@ -25,6 +25,24 @@ const nextConfig: NextConfig = {
   // lands at .next/standalone/apps/dashboard/server.js (what Dockerfile.dashboard's CMD expects).
   outputFileTracingRoot: monorepoRoot,
   reactStrictMode: true,
+  // The per-guild config dashboard that used to live on this service moved to apps/web
+  // (entrophybot.com/dashboard/**). These two redirects are deliberately path-scoped, NOT a
+  // blanket catch-all: bookmarks, the Top.gg listing, and a live Reddit post point at
+  // app.entrophybot.com/dashboard/... and must keep resolving, but this service is also going to
+  // host an owner-only ops console on a separate domain (dev.entrophybot.com) next. A wildcard
+  // redirect here would swallow those future /ops/... routes too, so only the two path families
+  // that actually used to be served here are redirected — everything else (e.g. `/`'s
+  // placeholder today, `/ops/...` later) falls through to this app normally.
+  async redirects() {
+    // Falls back to the web app's local dev URL (not the production domain — see .env.example),
+    // so running this service locally without WEB_URL set never bounces `/` off to the real site.
+    const target = (process.env.WEB_URL ?? 'http://localhost:3003').replace(/\/+$/, '');
+    return [
+      { source: '/', destination: target, permanent: true },
+      { source: '/dashboard', destination: `${target}/dashboard`, permanent: true },
+      { source: '/dashboard/:path*', destination: `${target}/dashboard/:path*`, permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;
