@@ -1,11 +1,20 @@
 import type { Config } from 'tailwindcss';
+import { preset } from '@entrophy/ui/tailwind.preset';
 
-// Monochrome tokens only (ARCHITECTURE.md §17 / §O) — no colour accents anywhere on the website. These map to
-// the CSS variables defined in `src/app/globals.css` so both Tailwind utility classes (`bg-ink-2`, `text-grey-4`,
-// ...) and raw CSS (`var(--ink-2)`) stay in sync with one source of truth.
+// The dashboard (formerly apps/dashboard, now apps/web/src/app/dashboard/**) brought its
+// `@entrophy/ui` component library and shadcn-style tokens (`bg-background`, `text-foreground`,
+// `border-border`, ...) with it — this preset supplies those, scanning `packages/ui/src` below.
+// Marketing pages are untouched: they keep using the monochrome `ink`/`grey`/`paper` tokens
+// defined below and in `src/app/globals.css` (ARCHITECTURE.md §17 / §O), which the preset's
+// tokens don't overlap with (different color keys entirely), so both systems coexist without
+// either one clobbering the other. `darkMode: 'class'` matches the preset (dashboard theme
+// toggle uses `next-themes` `attribute="class"`); the marketing look is dark-by-default via plain
+// CSS (`html[data-theme='light']` overrides in globals.css), not Tailwind's `dark:` variant, so it
+// is unaffected either way.
 const config: Config = {
+  presets: [preset],
   darkMode: 'class',
-  content: ['./src/**/*.{ts,tsx}'],
+  content: ['./src/**/*.{ts,tsx}', '../../packages/ui/src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {

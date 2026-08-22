@@ -1,8 +1,17 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+ * `@entrophy/ui`'s stylesheet supplies its own `@tailwind base/components/utilities` directives
+ * (Tailwind requires `@layer base` blocks that use them to live in the same processed file as
+ * those directives — see its own doc comment) plus the shadcn-style tokens (`--background`,
+ * `--border`, ...) and `.dark` overrides the moved dashboard pages/components use. This must be
+ * the first rule in the file (import order requirement); the monochrome tokens/rules below are
+ * plain (non-`@layer`) CSS, so they still win the cascade over `@entrophy/ui`'s `@layer base`
+ * rules for the marketing site's own selectors (`body`, `.smoke-layer`, ...) — see the plain
+ * `body` rule below, which overrides `@entrophy/ui`'s `@layer base body` background/color despite
+ * loading first, because unlayered rules always beat layered ones regardless of source order.
+ */
+@import '@entrophy/ui/styles.css';
 
-/* Monochrome palette (ARCHITECTURE.md §17). Nothing else — no colour accents anywhere on the website. */
+/* Monochrome palette (ARCHITECTURE.md §17). Nothing else — no colour accents anywhere on the marketing site. */
 :root {
   --ink-0: #050505;
   --ink-1: #0a0a0a;
