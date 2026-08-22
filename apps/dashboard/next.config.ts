@@ -34,9 +34,14 @@ const nextConfig: NextConfig = {
   // that actually used to be served here are redirected — everything else (e.g. `/`'s
   // placeholder today, `/ops/...` later) falls through to this app normally.
   async redirects() {
-    // Falls back to the web app's local dev URL (not the production domain — see .env.example),
-    // so running this service locally without WEB_URL set never bounces `/` off to the real site.
-    const target = (process.env.WEB_URL ?? 'http://localhost:3003').replace(/\/+$/, '');
+    // `redirects()` is evaluated at BUILD time and baked into the route manifest — it is never re-read at
+    // runtime, so a missing WEB_URL cannot be corrected by setting the variable and restarting; it needs a
+    // rebuild. That makes the fallback safety-critical: this shipped once with a localhost fallback and sent
+    // real app.entrophybot.com traffic to http://localhost:3003. So the fallback is environment-aware and
+    // fails SAFE — production defaults to the real site, and only non-production falls back to the web app's
+    // local dev URL so running this service locally never bounces `/` off to the live domain.
+    const fallback = process.env.NODE_ENV === 'production' ? 'https://entrophybot.com' : 'http://localhost:3003';
+    const target = (process.env.WEB_URL ?? fallback).replace(/\/+$/, '');
     return [
       { source: '/', destination: target, permanent: true },
       { source: '/dashboard', destination: `${target}/dashboard`, permanent: true },
