@@ -14,14 +14,13 @@ import {
 } from '@entrophy/ui';
 import { Logo } from './Logo';
 import { ButtonLink } from './Button';
-import { NAV } from './dashboard/nav';
 import { GuildSwitcher } from './dashboard/guild-switcher';
 import { ThemeToggle } from './dashboard/theme-toggle';
 import { useSession } from '@/lib/dashboard/session';
 import { inviteUrl } from '@/lib/site';
 
-/** The site's info pages, reachable from the hamburger's "Entrophy" group on every page (dashboard included),
- * and — outside the dashboard — also shown inline on desktop, matching the old marketing `Nav`. */
+/** The site's info pages, reachable from the hamburger on every page (dashboard included), and —
+ * outside the dashboard — also shown inline on desktop, matching the old marketing `Nav`. */
 const SITE_LINKS = [
   { href: '/features', label: 'Commands' },
   { href: '/enforcer', label: 'Enforcer' },
@@ -48,13 +47,14 @@ const SITE_LINKS = [
  *   `Providers` only makes meaningful once a user can be signed in, and marketing pages have no
  *   equivalent concept. The marketing "Open dashboard"/"Add to Discord" CTAs and inline link row
  *   are the mirror image, shown only outside the dashboard.
- * - The one hamburger opens a single grouped menu — "This server" (the 16 dashboard sections,
- *   only when inside a guild) and "Entrophy" (Commands/Enforcer/Support/Donate, always) — which is
- *   what makes the site reachable from inside the dashboard at every breakpoint. It replaces the
- *   old dashboard `TopBar`'s mobile-only hamburger, which just toggled the sidebar's slide-in
- *   Sheet — now redundant with `DashboardTabStrip` (already gives every breakpoint below `lg` a
- *   way to reach all 16 sections). `AppSidebar`'s Sheet is left wired but nothing opens it anymore;
- *   see that file's doc comment.
+ * - The one hamburger opens a single flat menu of the site's info pages (`SITE_LINKS`:
+ *   Commands/Enforcer/Support/Donate) on every page, dashboard included — its one job is getting
+ *   back to the rest of the site. It used to also list the 16 dashboard sections in a "This
+ *   server" group, but that was redundant: those sections are always reachable via `AppSidebar`
+ *   (`lg` and up) or `DashboardTabStrip` (below `lg`, sticky beneath this bar), so the group was
+ *   dropped. It replaces the old dashboard `TopBar`'s mobile-only hamburger, which just toggled
+ *   the sidebar's slide-in Sheet — now redundant with `DashboardTabStrip`. `AppSidebar`'s Sheet is
+ *   left wired but nothing opens it anymore; see that file's doc comment.
  */
 export function TopBar() {
   const pathname = usePathname();
@@ -110,7 +110,7 @@ export function TopBar() {
         {inDashboard ? <ThemeToggle /> : null}
         {inDashboard ? <AccountMenu /> : null}
 
-        <HamburgerMenu guildId={guildId} />
+        <HamburgerMenu />
       </div>
     </header>
   );
@@ -143,8 +143,14 @@ function AccountMenu() {
   );
 }
 
-/** The one hamburger: "This server" (only inside a guild) + "Entrophy" (always). */
-function HamburgerMenu({ guildId }: { guildId?: string }) {
+/**
+ * The one hamburger: a flat list of `SITE_LINKS`, always. No group label — a lone
+ * `DropdownMenuLabel` above one short list reads as clutter, not a group, since there's nothing
+ * else in the menu for it to distinguish. Previously also listed the 16 dashboard sections in a
+ * "This server" group when inside a guild; that was redundant with `AppSidebar`/
+ * `DashboardTabStrip` and was removed (see `TopBar`'s doc comment).
+ */
+function HamburgerMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -153,21 +159,6 @@ function HamburgerMenu({ guildId }: { guildId?: string }) {
         </IconButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        {guildId ? (
-          <>
-            <DropdownMenuLabel>This server</DropdownMenuLabel>
-            {NAV.map((item) => (
-              <DropdownMenuItem asChild key={item.href(guildId)}>
-                <Link href={item.href(guildId)}>
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-          </>
-        ) : null}
-        <DropdownMenuLabel>Entrophy</DropdownMenuLabel>
         {SITE_LINKS.map((link) => (
           <DropdownMenuItem asChild key={link.href}>
             <Link href={link.href}>{link.label}</Link>

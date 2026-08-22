@@ -11,9 +11,8 @@ import { DashboardTabStrip } from '@/components/dashboard/dashboard-tab-strip';
  * (`apps/web/src/components/TopBar.tsx`, mounted once in the root layout) — see that file's doc
  * comment for why. `AppSidebar`'s `mobileOpen` Sheet is effectively superseded by
  * `DashboardTabStrip` (which already gives every breakpoint below `lg` a way to reach all 16
- * sections) plus the unified hamburger's own "This server" menu group, so nothing opens it
- * anymore; it's kept wired (rather than ripped out of `AppSidebar`, a shared/reused component)
- * since leaving it permanently closed is harmless.
+ * sections), so nothing opens it anymore; it's kept wired (rather than ripped out of
+ * `AppSidebar`, a shared/reused component) since leaving it permanently closed is harmless.
  */
 export default function GuildLayout({ children }: { children: React.ReactNode }) {
   const params = useParams<{ guildId: string }>();
