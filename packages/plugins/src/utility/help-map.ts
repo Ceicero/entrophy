@@ -17,6 +17,7 @@ export const HELP_MAP: Record<string, PluginId> = {
   plugin: 'admin',
   permissions: 'admin',
   health: 'admin',
+  entrophy: 'admin',
 
   // moderation
   mod: 'moderation',

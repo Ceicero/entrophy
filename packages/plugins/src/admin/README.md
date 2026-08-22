@@ -24,6 +24,32 @@ disabled per guild, since it's what lets staff configure and manage every other 
   (hierarchy risk), and if a plugin needing a privileged intent (e.g. Message Content) is enabled without it.
 - **`/health`** — gateway ping, uptime, guild count, memory, Redis ping, a `SELECT 1` database check, and each
   loaded plugin's `health()` result. Available to moderators, not just admins.
+- **`/entrophy report kind:<bug|feedback|question>`** — the developer support channel: sends a message straight
+  to the Entrophy developer. Two-step flow (Discord interactions can only be acknowledged once, so the privacy
+  disclosure and the subject/body modal can't both ride the same interaction): the command replies ephemerally
+  with a plain-language disclosure of what leaves the server plus a "Write report" button; clicking it opens a
+  modal (subject + body). See "Developer reports" below for exactly what's stored/sent and the rate limits.
+
+## Developer reports (`/entrophy report`)
+
+- **What leaves the server**: only what the admin types into the modal (subject, body) plus unavoidable routing
+  metadata — this server's id and name, the sender's user id and tag, a timestamp, and the running bot version.
+  Never surrounding messages, channel history, or a member list. The disclosure embed shown before the modal
+  opens says exactly this.
+- **Storage**: one `DeveloperReport` row per submission (`packages/database/prisma/schema.prisma`), read by the
+  owner-only API (`apps/api/src/routes/developer-reports.ts`, gated on bot-owner identity via
+  `requireBotOwner`/`BOT_OWNER_IDS` — never `requireGuildAccess`, since this is intentionally cross-guild data)
+  for a future ops-console UI. `status` (`OPEN`/`HANDLED`), `handledAt`/`handledBy`, and an internal `notes`
+  field are owner-only triage state — never surfaced back to the reporting guild.
+- **Transparency both ways**: submitting writes an entry to the reporting guild's own audit log
+  (`AuditAction.DeveloperReportSubmit`), so that server's other admins can see a report was sent (not its full
+  body — the audit `after` payload is just `{ kind, subject }`).
+- **Rate limits** (`report-shared.ts`, via `ctx.rateLimiter`, the same Redis-backed `RateLimiterLike` every
+  plugin context carries — no new infrastructure): 2 reports per admin per 30 minutes, and 5 reports per guild
+  (any combination of its admins) per 60 minutes, so one noisy or malicious guild can't flood the inbox. Checked
+  at modal-submission time (the only point actual inbox load happens), guild-limit first.
+- **Access**: admin staff level only for now (Brandon's explicit call — start narrow, widen once real volume is
+  known), same `staffLevel: 'admin'` convention as every other admin-only command here.
 
 ## Config keys
 
@@ -62,6 +88,7 @@ plain text; see `redactForAudit` in `@entrophy/database`).
 | `/plugin enable\|disable\|status\|list` | admin               |
 | `/permissions audit`                    | admin               |
 | `/health`                               | moderator           |
+| `/entrophy report`                      | admin               |
 
 ## Files
 
@@ -70,6 +97,7 @@ manifest.ts             PluginManifest (alwaysEnabled, defaultConfig, dashboard 
 config-keys.ts           /config set|reset key introspection + value parsing (pure, unit-tested)
 format.ts                 shared embed-formatting helpers (bot permission diffing, uptime/memory formatting)
 wizard.ts                 /setup wizard session store + per-step render logic + Finish persistence
+report-shared.ts           /entrophy report: kind validation, length validation, rate limiting, bot version (pure, unit-tested)
 index.ts                   wires manifest + commands + components, registers locales
 commands/
   setup.ts                 /setup wizard|status
@@ -77,10 +105,13 @@ commands/
   plugin.ts                 /plugin enable|disable|status|list
   permissions.ts             /permissions audit
   health.ts                   /health
+  report.ts                    /entrophy report kind:<bug|feedback|question> (step 1: disclosure + button)
 components/
   wizard.ts                 all /setup wizard button + select-menu handlers
+  report.ts                  report-continue (opens modal) + report-modal (persists + audits) handlers
 locales/en.json            admin namespace strings
 __tests__/config-keys.test.ts   unit tests for config-keys.ts
+__tests__/report.test.ts        unit tests for /entrophy report (permission gate, rate limit, stored-field regression, audit)
 ```
 
 ## Notes for the bot-host implementation

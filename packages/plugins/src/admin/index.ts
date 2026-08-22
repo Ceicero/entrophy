@@ -5,7 +5,9 @@ import { command as configCommand } from './commands/config';
 import { command as pluginCommand } from './commands/plugin';
 import { command as permissionsCommand } from './commands/permissions';
 import { command as healthCommand } from './commands/health';
+import { command as reportCommand } from './commands/report';
 import { wizardComponents } from './components/wizard';
+import { reportComponents } from './components/report';
 import { retentionSweepJob } from './jobs/retention-sweep';
 import en from './locales/en.json';
 
@@ -16,8 +18,8 @@ registerPluginLocales('admin', { en });
 
 export const plugin = definePlugin({
   manifest,
-  commands: [setupCommand, configCommand, pluginCommand, permissionsCommand, healthCommand],
-  components: [...wizardComponents],
+  commands: [setupCommand, configCommand, pluginCommand, permissionsCommand, healthCommand, reportCommand],
+  components: [...wizardComponents, ...reportComponents],
   jobs: [retentionSweepJob],
   async health() {
     // `admin` is always enabled and has no external dependency of its own; its /health command is what actually
