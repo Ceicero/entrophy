@@ -28,6 +28,18 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Brandon calls the command reference "the command page" even though the canonical URL and nav label are
+  // "Features"/"Commands" (see apps/web/src/app/features/**) — this lets the obvious URL work without moving
+  // the actual pages.
+  async redirects() {
+    return [
+      {
+        source: '/commands',
+        destination: '/features',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

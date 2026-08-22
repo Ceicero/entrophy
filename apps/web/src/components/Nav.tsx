@@ -3,7 +3,7 @@ import { ButtonLink } from './Button';
 import { dashboardUrl, inviteUrl } from '../lib/site';
 
 const LINKS = [
-  { href: '/features', label: 'Features' },
+  { href: '/features', label: 'Commands' },
   { href: '/enforcer', label: 'Enforcer' },
   { href: '/donate', label: 'Donate' },
   { href: '/support', label: 'Support' },

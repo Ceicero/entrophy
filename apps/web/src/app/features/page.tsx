@@ -3,6 +3,7 @@ import { Section } from '../../components/Section';
 import { Glass } from '../../components/Glass';
 import { Badge } from '../../components/Badge';
 import { CommandTable } from '../../components/CommandTable';
+import { PluginSwitcher } from '../../components/PluginSwitcher';
 import { allPluginExports } from '../../lib/commands';
 import { pluginCopy } from '../../content/plugins';
 
@@ -22,17 +23,7 @@ export default function FeaturesPage() {
         title="Every plugin, every command, generated from the real registry"
         subtitle="This page can never drift from what the bot actually does — it's built directly from the same plugin registry the bot registers commands from."
       >
-        <nav aria-label="Jump to plugin" className="flex flex-wrap gap-2">
-          {plugins.map((plugin) => (
-            <a
-              key={plugin.id}
-              href={`#${plugin.id}`}
-              className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-grey-3 transition-colors hover:border-white/25 hover:text-grey-7"
-            >
-              {plugin.name}
-            </a>
-          ))}
-        </nav>
+        <PluginSwitcher plugins={plugins} hrefFor={(id) => `#${id}`} ariaLabel="Jump to plugin" />
       </Section>
 
       <div className="mx-auto max-w-6xl space-y-16 px-6 pb-24">
