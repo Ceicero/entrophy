@@ -1,94 +1,49 @@
 'use client';
 
-import Link from 'next/link';
-import { ShieldCheck, Gavel, Boxes, ScrollText, Sparkles } from 'lucide-react';
-import { Button } from '@entrophy/ui';
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { Skeleton } from '@entrophy/ui';
 import { useSession } from '../lib/session';
 import { API_BASE_URL } from '../lib/api';
 
-const FEATURES = [
-  {
-    icon: Gavel,
-    title: 'Moderation with receipts',
-    body: 'Case IDs, hierarchy checks, and an admin enforcer that keeps every action bookkept and appealable.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Compliance by default',
-    body: 'Least-privilege permissions, privacy-first defaults, and every config change audit-logged.',
-  },
-  {
-    icon: Boxes,
-    title: 'Modular plugins',
-    body: 'Enable exactly what your server needs — moderation, tickets, roles, engagement, and more — per guild.',
-  },
-  {
-    icon: ScrollText,
-    title: 'A transparent audit trail',
-    body: 'Every configuration change and plugin toggle is logged and searchable from this dashboard.',
-  },
-];
-
-export default function LandingPage() {
+/**
+ * Dashboard root (`app.entrophybot.com/`). This never renders marketing content — that's
+ * `apps/web` (entrophybot.com), a separate app on a separate domain. Anyone who lands here is
+ * trying to get into the dashboard, so this sends them straight there instead of showing a
+ * duplicate hero/feature list:
+ *  - signed in  → `/dashboard` (the guild picker)
+ *  - signed out → the same Discord OAuth login the old landing page's "Log in with Discord" CTA
+ *    pointed at (`${API_BASE_URL}/auth/discord/login`) — reused as-is, not reinvented.
+ *
+ * In production, `src/middleware.ts` already redirects signed-out visitors straight to Discord
+ * login at the edge (when `COOKIE_DOMAIN` is configured), so this component's effect never even
+ * mounts for that case there. This client path is what actually runs: locally (no shared cookie
+ * domain for the edge to check) for both directions, and in production for the signed-in
+ * fast-path, which is deliberately *not* done in middleware — see its docstring for why (cookie
+ * presence alone can't prove a still-valid session; only `GET /auth/me`, via `useSession()`, can).
+ * While that check is in flight this renders the same loading skeleton `dashboard/layout.tsx`
+ * uses, never the old marketing markup, so there's no flash of stale content either way.
+ */
+export default function DashboardRootRedirect() {
   const { status } = useSession();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace('/dashboard');
+    } else if (status === 'unauthenticated') {
+      window.location.href = `${API_BASE_URL}/auth/discord/login`;
+    }
+  }, [status, router]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-5xl flex-col px-6">
-      <header className="flex items-center justify-between py-6">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <span className="text-lg font-semibold">Entrophy</span>
-        </div>
-        {status === 'authenticated' ? (
-          <Button asChild>
-            <Link href="/dashboard">Open dashboard</Link>
-          </Button>
-        ) : null}
-      </header>
-
-      <section className="flex flex-1 flex-col items-center justify-center gap-6 py-20 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          A modular, compliance-first Discord bot platform
-        </h1>
-        <p className="max-w-2xl text-balance text-muted-foreground sm:text-lg">
-          Entrophy gives your server moderation, automod, tickets, roles, engagement, and an admin enforcer
-          workflow — all configurable per guild, all logged, none of it hidden from you.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {status === 'authenticated' ? (
-            <Button size="lg" asChild>
-              <Link href="/dashboard">Open dashboard</Link>
-            </Button>
-          ) : (
-            <Button size="lg" asChild>
-              <a href={`${API_BASE_URL}/auth/discord/login`}>Log in with Discord</a>
-            </Button>
-          )}
-          <Button size="lg" variant="outline" asChild>
-            <a href={`${API_BASE_URL}/auth/invite`}>Add to a server</a>
-          </Button>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-6 pb-20 sm:grid-cols-2">
-        {FEATURES.map((f) => (
-          <div key={f.title} className="flex gap-4 rounded-lg border border-border p-5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
-              <f.icon className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="font-medium">{f.title}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{f.body}</p>
-            </div>
-          </div>
+    <div className="mx-auto max-w-5xl space-y-4 p-6">
+      <Skeleton className="h-8 w-48" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-32 w-full" />
         ))}
-      </section>
-
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        Entrophy — least-privilege by default, never Administrator.
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }
