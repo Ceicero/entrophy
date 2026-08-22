@@ -81,6 +81,11 @@ export const INVITE_PERMISSIONS: bigint[] = [
   PermissionFlagsBits.Speak,
   PermissionFlagsBits.MoveMembers,
   PermissionFlagsBits.ManageEvents,
+  // Optional per engagement's manifest (temp voice: owner can mute/deafen members in their own channel) — the
+  // bot degrades gracefully without these, but without inviting with them, Discord will never let the bot grant
+  // them via a channel permission overwrite at all (see engagement/events/voice-state-update.ts).
+  PermissionFlagsBits.MuteMembers,
+  PermissionFlagsBits.DeafenMembers,
 ];
 
 /** The combined bitfield of `INVITE_PERMISSIONS`. */

@@ -108,14 +108,16 @@ _Self-assignable role panels, welcome/goodbye messages, onboarding checklists, r
 
 _Leveling/XP with anti-farming controls, leaderboards, a reputation system, a starboard, and temporary voice channels._ (enabled by default, community)
 
-| Permission           | Feature                                                              | Required? | Fallback if missing                                                                           |
-| -------------------- | -------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------- |
-| Manage Roles         | level-up role rewards                                                | Optional  | Level-ups still announce; role rewards are skipped and logged.                                |
-| Manage Channels      | temporary voice channels                                             | Optional  | Members can still join a hub channel; the bot cannot create/rename/delete their temp channel. |
-| Move Members         | temporary voice channels (moving the creator into their new channel) | Optional  | The temp channel is still created; the member has to move into it themselves.                 |
-| Send Messages        | level-up announcements, starboard posts                              | Required  | Announcements/starboard posts silently fail to send; nothing else is affected.                |
-| Embed Links          | starboard posts, leaderboard/rank embeds                             | Required  | Falls back to plain text where possible.                                                      |
-| Read Message History | starboard (reading reaction counts on older messages)                | Optional  | Starboard may miss reactions added to messages the bot has not seen since restart.            |
+| Permission           | Feature                                                                  | Required? | Fallback if missing                                                                                 |
+| -------------------- | ------------------------------------------------------------------------ | --------- | --------------------------------------------------------------------------------------------------- |
+| Manage Roles         | level-up role rewards                                                    | Optional  | Level-ups still announce; role rewards are skipped and logged.                                      |
+| Manage Channels      | temporary voice channels                                                 | Optional  | Members can still join a hub channel; the bot cannot create/rename/delete their temp channel.       |
+| Move Members         | temporary voice channels (moving the creator into their new channel)     | Optional  | The temp channel is still created; the member has to move into it themselves.                       |
+| Mute Members         | temporary voice channels (owner can mute members in their own channel)   | Optional  | The temp voice owner cannot mute other members in their own channel; everything else still works.   |
+| Deafen Members       | temporary voice channels (owner can deafen members in their own channel) | Optional  | The temp voice owner cannot deafen other members in their own channel; everything else still works. |
+| Send Messages        | level-up announcements, starboard posts                                  | Required  | Announcements/starboard posts silently fail to send; nothing else is affected.                      |
+| Embed Links          | starboard posts, leaderboard/rank embeds                                 | Required  | Falls back to plain text where possible.                                                            |
+| Read Message History | starboard (reading reaction counts on older messages)                    | Optional  | Starboard may miss reactions added to messages the bot has not seen since restart.                  |
 
 ### Community (`community`)
 
@@ -205,11 +207,11 @@ Intent" eligibility in the Developer Portal) — see the README's Discord Develo
 
 ## Invite permissions
 
-Permission integer: `1504198388950`
+Permission integer: `1504210971862`
 
 Scopes: `bot`, `applications.commands`
 
-Example invite URL: `https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applications.commands&permissions=1504198388950`
+Example invite URL: `https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applications.commands&permissions=1504210971862`
 
 Permissions included (never Administrator):
 
@@ -227,6 +229,8 @@ Permissions included (never Administrator):
 - Use External Emoji
 - Connect
 - Speak
+- Mute Members
+- Deafen Members
 - Move Members
 - Manage Nicknames
 - Manage Roles

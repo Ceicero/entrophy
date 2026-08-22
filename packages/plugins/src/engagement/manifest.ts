@@ -84,6 +84,20 @@ export const manifest = defineManifest({
       fallback: 'The temp channel is still created; the member has to move into it themselves.',
     },
     {
+      permission: PermissionFlagsBits.MuteMembers,
+      feature: 'temporary voice channels (owner can mute members in their own channel)',
+      optional: true,
+      fallback:
+        'The temp voice owner cannot mute other members in their own channel; everything else still works.',
+    },
+    {
+      permission: PermissionFlagsBits.DeafenMembers,
+      feature: 'temporary voice channels (owner can deafen members in their own channel)',
+      optional: true,
+      fallback:
+        'The temp voice owner cannot deafen other members in their own channel; everything else still works.',
+    },
+    {
       permission: PermissionFlagsBits.SendMessages,
       feature: 'level-up announcements, starboard posts',
       optional: false,

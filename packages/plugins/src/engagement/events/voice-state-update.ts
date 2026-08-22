@@ -3,6 +3,7 @@ import {
   PermissionFlagsBits,
   type Guild,
   type GuildMember,
+  type PermissionsBitField,
   type VoiceBasedChannel,
   type VoiceState,
 } from 'discord.js';
@@ -84,6 +85,37 @@ async function reconcileChannelVoiceXp(
   }
 }
 
+// The permissions (beyond Connect) that make the owner feel like they control their own channel. Discord
+// rejects a permission overwrite that grants a bit the bot does not itself hold in the guild (50013 Missing
+// Permissions) — that used to be requested unconditionally here, so on any guild where the bot was missing one
+// of these, the whole `channels.create` call was rejected and temp voice silently did nothing.
+const OWNER_OWNERSHIP_PERMISSIONS = [
+  PermissionFlagsBits.ManageChannels,
+  PermissionFlagsBits.MoveMembers,
+  PermissionFlagsBits.MuteMembers,
+  PermissionFlagsBits.DeafenMembers,
+] as const;
+
+/**
+ * Builds the owner's permission overwrite `allow` list from the permissions the bot actually holds in `guild`
+ * (`botPermissions`, read from `guild.members.me`) — always `Connect`, plus whichever ownership permissions the
+ * bot holds; the rest are silently dropped instead of being requested and rejected. When the bot's own
+ * permissions aren't known (not cached), falls back to requesting every ownership permission, matching prior
+ * behavior for that edge case.
+ */
+function buildOwnerAllowList(botPermissions: Readonly<PermissionsBitField> | null): bigint[] {
+  const allow: bigint[] = [
+    // Connect is explicit because `/tempvoice lock` denies it to @everyone, and only Administrator
+    // bypasses a channel Connect denial — ManageChannels does not, so without this the owner locks
+    // themselves out of their own channel.
+    PermissionFlagsBits.Connect,
+  ];
+  for (const permission of OWNER_OWNERSHIP_PERMISSIONS) {
+    if (!botPermissions || botPermissions.has(permission)) allow.push(permission);
+  }
+  return allow;
+}
+
 /** Creates a fresh temp-voice channel and moves `member` into it when they join a configured hub channel. */
 async function createTempVoiceChannel(
   ctx: PluginContext,
@@ -94,6 +126,18 @@ async function createTempVoiceChannel(
   config: EngagementTempVoiceConfig,
 ): Promise<void> {
   try {
+    // Manage Channels is required to create a channel at all (independent of the owner's overwrite below) — if
+    // the bot's own guild permissions are known and it lacks this, every create attempt will fail identically,
+    // so say so plainly instead of letting each one fail opaquely into the catch below.
+    const botPermissions = guild.members?.me?.permissions ?? null;
+    if (botPermissions && !botPermissions.has(PermissionFlagsBits.ManageChannels)) {
+      ctx.logger.warn(
+        { guildId, hubChannelId: hub.id },
+        'engagement: cannot create temp voice channel — the bot is missing the "Manage Channels" permission in this guild. Grant it (Server Settings → Roles, or re-invite the bot) to enable temp voice.',
+      );
+      return;
+    }
+
     const name = renderTempVoiceName(config.nameTemplate, {
       user: member.displayName || member.user.username,
     });
@@ -105,16 +149,7 @@ async function createTempVoiceChannel(
       permissionOverwrites: [
         {
           id: member.id,
-          allow: [
-            // Connect is explicit because `/tempvoice lock` denies it to @everyone, and only Administrator
-            // bypasses a channel Connect denial — ManageChannels does not, so without this the owner locks
-            // themselves out of their own channel.
-            PermissionFlagsBits.Connect,
-            PermissionFlagsBits.ManageChannels,
-            PermissionFlagsBits.MoveMembers,
-            PermissionFlagsBits.MuteMembers,
-            PermissionFlagsBits.DeafenMembers,
-          ],
+          allow: buildOwnerAllowList(botPermissions),
         },
       ],
     });
