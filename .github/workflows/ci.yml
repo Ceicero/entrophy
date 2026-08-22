@@ -91,7 +91,6 @@ jobs:
       - name: Build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
-          NEXT_PUBLIC_DASHBOARD_URL: http://localhost:3000
           NEXT_PUBLIC_DISCORD_CLIENT_ID: ''
           NEXT_PUBLIC_INVITE_PERMISSIONS: ''
           NEXT_PUBLIC_SUPPORT_SERVER_URL: ''
@@ -164,7 +163,7 @@ jobs:
         run: pnpm db:migrate
 
       - name: Install Playwright browsers
-        run: pnpm --filter @entrophy/dashboard exec playwright install --with-deps chromium
+        run: pnpm --filter @entrophy/web exec playwright install --with-deps chromium
 
       - name: Start API in E2E test mode
         run: |
@@ -183,8 +182,8 @@ jobs:
           echo "API did not become healthy in time"
           exit 1
 
-      - name: Build dashboard
-        run: pnpm --filter @entrophy/dashboard build
+      - name: Build web
+        run: pnpm --filter @entrophy/web build
 
       - name: Run e2e tests
         run: pnpm test:e2e

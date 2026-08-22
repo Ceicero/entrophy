@@ -65,7 +65,9 @@ services:
       - key: API_BASE_URL
         value: https://api.entrophybot.com
       - key: DASHBOARD_URL
-        value: https://app.entrophybot.com
+        # Same value as WEB_URL: the config dashboard is served by `web` now (entrophybot.com/dashboard/**),
+        # not by the separate `app.entrophybot.com` service (see docs/ARCHITECTURE.md §11/§11a).
+        value: https://entrophybot.com
       - key: WEB_URL
         value: https://entrophybot.com
       - key: COOKIE_DOMAIN
@@ -152,15 +154,23 @@ services:
 
   # --- apps/dashboard — Next.js admin dashboard ----------------------------------------------------
   - type: web
+    # Legacy app.entrophybot.com redirector today (the config dashboard moved into `web`, see
+    # docs/ARCHITECTURE.md §11/§11a); Brandon's owner-only ops console is planned for this same
+    # service next. healthCheckPath is NOT `/`: that path now 308-redirects to WEB_URL rather than
+    # returning 200, which would make Render treat this service as down.
     name: dashboard
     runtime: docker
     dockerfilePath: ./infra/docker/Dockerfile.dashboard
     dockerContext: .
     plan: starter
-    healthCheckPath: /
+    healthCheckPath: /icon.png
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://api.entrophybot.com
+      # Server-side (not NEXT_PUBLIC_*): redirect target for this service's own `/` and
+      # `/dashboard/*` legacy-link redirects (apps/dashboard/next.config.ts).
+      - key: WEB_URL
+        value: https://entrophybot.com
 
   # --- apps/web — public marketing website -----------------------------------------------------------
   # NEXT_PUBLIC_* vars must be present at *build* time (Next.js inlines them into the JS bundle) —
@@ -176,8 +186,6 @@ services:
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://api.entrophybot.com
-      - key: NEXT_PUBLIC_DASHBOARD_URL
-        value: https://app.entrophybot.com
       - key: NEXT_PUBLIC_DISCORD_CLIENT_ID
         sync: false
       - key: NEXT_PUBLIC_INVITE_PERMISSIONS

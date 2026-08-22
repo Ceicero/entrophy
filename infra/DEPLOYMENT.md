@@ -16,13 +16,24 @@ Four deployables, all built from this one GitHub repo, plus two managed data sto
 | ----------- | ------------------------------------------------------- | ----------------------------------- | ------------------------------------------------ |
 | `bot`       | Discord gateway process + background job workers        | `infra/docker/Dockerfile.bot`       | No (outbound only; has a private `/health` port) |
 | `api`       | REST API, Discord OAuth, webhook receivers              | `infra/docker/Dockerfile.api`       | Yes — `api.entrophybot.com`                      |
-| `dashboard` | Admin dashboard (Next.js)                               | `infra/docker/Dockerfile.dashboard` | Yes — `app.entrophybot.com`                      |
-| `web`       | Public marketing website (Next.js)                      | `infra/docker/Dockerfile.web`       | Yes — `entrophybot.com`                          |
+| `dashboard` | Legacy-link redirector today; owner-only ops console next (Next.js) | `infra/docker/Dockerfile.dashboard` | Yes — `app.entrophybot.com`                      |
+| `web`       | Public marketing website + the per-guild config dashboard (`/dashboard/**`) | `infra/docker/Dockerfile.web`       | Yes — `entrophybot.com`                          |
 | Postgres 16 | System of record — everything durable                   | — (managed plugin/add-on)           | No                                               |
 | Redis 7     | Sessions, cache, job queues (BullMQ) — not durable data | — (managed plugin/add-on)           | No                                               |
 
 All four deployables build from the **same repo** with **Root Directory `/`** and a different
 Dockerfile path each — there is nothing to fork or split out.
+
+**Topology note (post dashboard→web merge):** the per-guild config dashboard that used to be its
+own app now lives inside `web` at `entrophybot.com/dashboard/**` — there is no separate admin UI
+domain anymore. The `dashboard` service still exists and still deploys as a real, working Next.js
+app (theme, `@entrophy/ui`, and session wiring all still work) — today its only job is redirecting
+old `app.entrophybot.com/dashboard/...` links (bookmarks, the Top.gg listing, a live Reddit post) to
+the new `entrophybot.com/dashboard/...` URLs, 308, so nothing 404s. Brandon is building an
+owner-only ops console (cross-server support tickets, fleet metrics, error monitoring, bot health)
+to live on this same service next, most likely on a separate `dev.entrophybot.com` domain — see
+`apps/dashboard/next.config.ts`'s `redirects()` doc comment for why the redirect is scoped to just
+`/` and `/dashboard/*` rather than a blanket catch-all.
 
 ## 2. RECOMMENDED — Railway
 
@@ -84,7 +95,7 @@ DISCORD_OAUTH_REDIRECT_URI=https://api.entrophybot.com/auth/discord/callback
 SESSION_SECRET=<openssl rand -base64 32>
 API_PORT=3001
 API_BASE_URL=https://api.entrophybot.com
-DASHBOARD_URL=https://app.entrophybot.com
+DASHBOARD_URL=https://entrophybot.com
 WEB_URL=https://entrophybot.com
 COOKIE_DOMAIN=.entrophybot.com
 TRUST_PROXY=true
@@ -93,14 +104,19 @@ STRIPE_SECRET_KEY=<optional — see donations>
 STRIPE_WEBHOOK_SECRET=<optional — see donations>
 ```
 
-**`dashboard` only** (build-time — Next.js inlines `NEXT_PUBLIC_*` at build, so set these as Railway
-variables _and_ trigger a redeploy after any change, since a variable-only save doesn't rebuild the
-image):
+**`dashboard` only** (still a real Next.js app — see §1's topology note. `NEXT_PUBLIC_*` vars are
+build-time, so set these as Railway variables _and_ trigger a redeploy after any change, since a
+variable-only save doesn't rebuild the image):
 
 ```
 NEXT_PUBLIC_API_URL=https://api.entrophybot.com
-NEXT_PUBLIC_SUPPORT_SERVER_URL=<optional — same value as web's, see below>
+WEB_URL=https://entrophybot.com
 ```
+
+`WEB_URL` here is server-side (read at request time by this service's own `next.config.ts`
+`redirects()`, not inlined at build) — it's the redirect target for the legacy `/` and
+`/dashboard/*` paths (see §1). `NEXT_PUBLIC_API_URL` keeps this service's restored session/theme/UI
+wiring real and working, ready for the ops console routes Brandon is building next.
 
 **`web` only** (these are build-time — Next.js inlines `NEXT_PUBLIC_*` at build, so set them as
 Railway variables _and_ trigger a redeploy after any change, since a variable-only save doesn't
@@ -108,10 +124,9 @@ rebuild the image):
 
 ```
 NEXT_PUBLIC_API_URL=https://api.entrophybot.com
-NEXT_PUBLIC_DASHBOARD_URL=https://app.entrophybot.com
 NEXT_PUBLIC_DISCORD_CLIENT_ID=<same as DISCORD_CLIENT_ID>
 NEXT_PUBLIC_INVITE_PERMISSIONS=<invite permission integer — see docs/invite.json>
-NEXT_PUBLIC_SUPPORT_SERVER_URL=<optional — also shown in the dashboard's sidebar/error states, set the same invite link on both services>
+NEXT_PUBLIC_SUPPORT_SERVER_URL=<optional — shown in the dashboard sidebar/error states (now part of this service) and the site's footer/support page>
 ```
 
 **`bot` only**:
@@ -212,7 +227,12 @@ actually write). Run it from a machine with the repo checked out and `DISCORD_TO
 - `bot`: has no public URL; Railway pings its private health port directly (`bot.railway.json`
   configures `healthcheckPath` — see `infra/railway/README.md` for why the bot's healthcheck is
   handled differently from the other three).
-- `dashboard` / `web`: `GET /` returning `200` is the healthcheck.
+- `web`: `GET /` returning `200` is the healthcheck.
+- `dashboard`: **`GET /` now returns a 308 redirect, not 200** (see §1's topology note) — a
+  healthcheck configured to require exactly `200` on `/` will misreport this service as down. Both
+  `render.yaml` and `infra/railway/dashboard.railway.json` now point `healthcheckPath` at
+  `/icon.png` instead — a real static file, always 200, unaffected by the `/`/`/dashboard/*`-only
+  redirect scope. Swap it for a real ops-console route once one exists.
 
 Each service's **Deployments** tab shows the healthcheck result for the active deploy — a red X
 there is the first place to look when something doesn't come up.
@@ -351,12 +371,11 @@ list with comments; every var there is also documented in `docs/ARCHITECTURE.md`
 | `SESSION_SECRET`                                                                                                                                                                                                                                             | Yes                      | api                                                | You generate it: `openssl rand -base64 32`                                                                                                                                     |
 | `API_PORT`                                                                                                                                                                                                                                                   | No (defaults `3001`)     | api                                                | Literal `3001`                                                                                                                                                                 |
 | `API_BASE_URL`                                                                                                                                                                                                                                               | Yes                      | api                                                | `https://api.entrophybot.com`                                                                                                                                                  |
-| `DASHBOARD_URL`                                                                                                                                                                                                                                              | Yes                      | api                                                | `https://app.entrophybot.com` (CORS allowlist + OAuth redirect target)                                                                                                         |
-| `WEB_URL`                                                                                                                                                                                                                                                    | Yes                      | api, web (server-side)                             | `https://entrophybot.com` (CORS allowlist entry + brand links)                                                                                                                 |
+| `DASHBOARD_URL`                                                                                                                                                                                                                                              | Yes                      | api                                                | `https://entrophybot.com` — same value as `WEB_URL` now that the dashboard UI lives in `web` (CORS allowlist + OAuth post-login redirect target)                              |
+| `WEB_URL`                                                                                                                                                                                                                                                    | Yes                      | api, web (server-side), dashboard (server-side)    | `https://entrophybot.com` (CORS allowlist entry + brand links on api/web; redirect target for `dashboard`'s legacy `/` and `/dashboard/*` paths)                               |
 | `NEXT_PUBLIC_API_URL`                                                                                                                                                                                                                                        | Yes                      | dashboard, web                                     | `https://api.entrophybot.com`                                                                                                                                                  |
-| `NEXT_PUBLIC_DASHBOARD_URL`                                                                                                                                                                                                                                  | Yes                      | web                                                | `https://app.entrophybot.com`                                                                                                                                                  |
 | `NEXT_PUBLIC_INVITE_PERMISSIONS`                                                                                                                                                                                                                             | No                       | web                                                | Integer permission bitfield — see `docs/invite.json` (generated)                                                                                                               |
-| `NEXT_PUBLIC_SUPPORT_SERVER_URL`                                                                                                                                                                                                                             | No                       | web, dashboard                                     | Your support Discord server invite link, if you have one                                                                                                                       |
+| `NEXT_PUBLIC_SUPPORT_SERVER_URL`                                                                                                                                                                                                                             | No                       | web                                                | Your support Discord server invite link, if you have one                                                                                                                       |
 | `COOKIE_DOMAIN`                                                                                                                                                                                                                                              | Recommended              | api                                                | `.entrophybot.com`                                                                                                                                                             |
 | `SESSION_COOKIE_SAMESITE`                                                                                                                                                                                                                                    | No (defaults `lax`)      | api                                                | `lax` on custom domains; `none` only if temporarily using platform default subdomains — see §5                                                                                 |
 | `TRUST_PROXY`                                                                                                                                                                                                                                                | Yes in production        | api                                                | `true` (all three cloud paths put the API behind a reverse proxy/load balancer)                                                                                                |
@@ -427,7 +446,11 @@ means checking the health endpoints and logs:
 - `bot`'s private health port (`BOT_HEALTH_PORT`) — Railway/Render check this automatically per
   §2.7/§3; on a VPS, `docker compose ps` shows each service's healthcheck status, or curl it directly
   from inside the container network.
-- `GET https://app.entrophybot.com/` and `GET https://entrophybot.com/` — should return `200`.
+- `GET https://entrophybot.com/` — should return `200`.
+- `GET https://app.entrophybot.com/` — now expected to return a `308` redirect to
+  `https://entrophybot.com/`, not `200` (see §1's topology note); update any existing uptime check
+  that asserted `200` here, or point it at `https://entrophybot.com/dashboard/123/automod`-style
+  legacy link instead and assert it redirects rather than 404s.
 - Set up an external uptime check (UptimeRobot, Better Uptime, or similar — any free tier is fine)
   against those four URLs if you want to be notified before a user tells you something's down.
 - Watch each platform's built-in resource graphs (CPU/memory) for `bot` and `api` — a slow creep

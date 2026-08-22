@@ -13,15 +13,16 @@ entrophy/
 ├── apps/
 │   ├── bot/            @entrophy/bot        Discord gateway process + BullMQ workers
 │   ├── api/            @entrophy/api        Fastify REST API, Discord OAuth, webhook receivers, OpenAPI
-│   └── dashboard/      @entrophy/dashboard  Next.js 15 (App Router) admin dashboard
+│   ├── web/            @entrophy/web        Next.js 15 (App Router) marketing site + per-guild config dashboard (/dashboard/**, §11)
+│   └── dashboard/      @entrophy/dashboard  Next.js 15 (App Router); legacy app.entrophybot.com redirector today, owner-only ops console next (§11a)
 ├── packages/
 │   ├── types/          @entrophy/types      Shared TS types (no runtime deps)
 │   ├── core/           @entrophy/core       env config, logger, errors, encryption, permissions, rate limiting, i18n, utils
 │   ├── database/       @entrophy/database   Prisma schema, client singleton, migrations, seed
 │   ├── plugins/        @entrophy/plugins    Plugin SDK + every feature plugin
-│   └── ui/             @entrophy/ui         Dashboard component library (Tailwind + Radix)
+│   └── ui/             @entrophy/ui         Shared component library (Tailwind + Radix), used by both apps/web's dashboard routes and apps/dashboard
 ├── infra/
-│   ├── docker/         Dockerfile.bot, Dockerfile.api, Dockerfile.dashboard
+│   ├── docker/         Dockerfile.bot, Dockerfile.api, Dockerfile.web, Dockerfile.dashboard
 │   └── DEPLOYMENT.md
 ├── docs/               SPEC.md, ARCHITECTURE.md, PERMISSIONS.md, SECURITY.md, PRIVACY_POLICY_TEMPLATE.md, ROADMAP.md, PLUGINS.md, TROUBLESHOOTING.md
 ├── .github/workflows/ci.yml
@@ -136,8 +137,8 @@ ENCRYPTION_KEY=               # 32 bytes, base64. Generate: openssl rand -base64
 SESSION_SECRET=               # >=32 chars random. cookie signing
 API_PORT=3001
 API_BASE_URL=http://localhost:3001
-DASHBOARD_URL=http://localhost:3000            # CORS allowlist + OAuth return
-NEXT_PUBLIC_API_URL=http://localhost:3001      # dashboard → api
+DASHBOARD_URL=http://localhost:3003            # CORS allowlist + OAuth return (config dashboard lives in web now, §11)
+NEXT_PUBLIC_API_URL=http://localhost:3001      # web (marketing + dashboard routes) → api
 ```
 
 Optional:
@@ -522,12 +523,19 @@ Also `apps/bot/src/host/bot-actions.ts`: processes `bot-actions` queue jobs `{ t
 - Errors: `setErrorHandler` → `toPublicError` → `{ error: { code, message, details? } }`, zod errors → 400 with issues. Fastify `FST_ERR_*` client errors keep their own 4xx status with a fixed public message table (`empty_body`, `invalid_json`, `unsupported_media_type`, `payload_too_large`); `@fastify/rate-limit`'s 429 → `rate_limited`.
 - Tests: `vitest` with `app.inject()` for auth guard, csrf, guild access (mock Redis via `ioredis-mock`), signature verification.
 
-## 11. Dashboard (`apps/dashboard`)
+## 11. Per-guild config dashboard (lives in `apps/web`, not `apps/dashboard`)
 
-- Next.js 15 App Router, `src/app/`. Tailwind + `@entrophy/ui`. `next-themes` dark mode (class). Responsive sidebar layout.
-- Routes:
+**Merged into the main site (`entrophybot.com`).** The per-guild config dashboard described below
+is served by `apps/web` at `/dashboard/**` — there is no separate dashboard domain or app anymore.
+`apps/dashboard` (`app.entrophybot.com`) is a different, much smaller thing now — see §11a.
+
+- Next.js 15 App Router, `apps/web/src/app/dashboard/**`. Reuses `apps/web`'s root layout/providers
+  (Tailwind + `@entrophy/ui` + `next-themes` dark mode (class) + React Query + session, all mounted
+  once for the whole app — see §17) rather than a per-route provider tree. Responsive sidebar
+  layout (`components/dashboard/app-sidebar.tsx`) + below-`lg` tab strip
+  (`components/dashboard/dashboard-tab-strip.tsx`).
+- Routes (all under `apps/web/src/app/dashboard/`):
   ```
-  /                                  landing + "Login with Discord" (→ NEXT_PUBLIC_API_URL/auth/discord/login)
   /dashboard                         guild selector (cards; "Add to server" for guilds without bot)
   /dashboard/[guildId]               overview: stats, plugin health, quick links
   /dashboard/[guildId]/plugins       marketplace grid: enable/disable switch, availability badges, config drawer (auto-form from JSON schema of configSchema → API returns `configJsonSchema`)
@@ -546,17 +554,49 @@ Also `apps/bot/src/host/bot-actions.ts`: processes `bot-actions` queue jobs `{ t
   /dashboard/[guildId]/privacy       retention, export/delete controls
   /dashboard/[guildId]/settings      staff roles, locale, timezone, fast actions, data collection toggle
   ```
-- Data layer: `src/lib/api.ts` — `apiFetch(path, init)` with `credentials: 'include'`, adds `X-CSRF-Token` from `/auth/me` (cached in a React context `SessionProvider`), throws `ApiClientError`. React Query hooks in `src/lib/queries.ts`. Discord embed preview component `EmbedPreview` in `@entrophy/ui`.
-- Auth gate: `src/app/dashboard/layout.tsx` is a client component that calls `/auth/me`; unauthenticated → redirect `/`. (Also `middleware.ts` checks the `sid` cookie exists for a fast redirect — cookies are same-site so present on the dashboard origin only when COOKIE_DOMAIN is a shared parent; skip the middleware check when not.)
-- Playwright: `e2e/` with `playwright.config.ts` (`webServer` for dashboard; expects API running with `E2E_TEST_MODE=true`); tests: `login.spec.ts` (unauthenticated redirect; test-login → guild selector visible), `config.spec.ts` (toggle a plugin, change a setting, see audit entry).
-- Support link: `src/lib/site.ts#supportServerUrl()` reads `NEXT_PUBLIC_SUPPORT_SERVER_URL` (mirrors the website's
-  helper of the same name; `null` when unset). Surfaced as a "Get help on Discord" row in `AppSidebar`'s `Sidebar`
-  `footer` slot, and as an extra action in `ErrorState`'s "something went wrong" display — both render nothing
-  when the env var is unset.
+  The dashboard's own former `/` landing page ("Login with Discord") is gone — `apps/web`'s actual
+  marketing homepage (§17) has always lived at `/`, and its existing "Open dashboard" CTA now just
+  links to `/dashboard` directly (same origin, no more `NEXT_PUBLIC_DASHBOARD_URL`/cross-domain
+  link).
+- Data layer: `apps/web/src/lib/dashboard/api.ts` — `apiFetch(path, init)` with `credentials: 'include'`, adds `X-CSRF-Token` from `/auth/me` (cached in a React context `SessionProvider`, `apps/web/src/lib/dashboard/session.tsx`), throws `ApiClientError`. React Query hooks in `apps/web/src/lib/dashboard/queries.ts` (+ one `*-queries.ts` per plugin area). Discord embed preview component `EmbedPreview` in `@entrophy/ui`.
+- Auth gate: `apps/web/src/app/dashboard/layout.tsx` is a client component that calls `/auth/me`; unauthenticated → redirect `/`. A fast-path `apps/web/src/middleware.ts` checks the `sid` cookie exists and, when absent, redirects `/dashboard/*` straight to `/` before any client JS runs — same conservative "only when `COOKIE_DOMAIN` is a shared parent" caveat as before; it does not (and must not) touch `/` itself, since `/` is the marketing homepage here, not a login gate.
+- Navigation: **one** top bar for the whole app (`apps/web/src/components/TopBar.tsx`, mounted once
+  in the root layout) — not a dashboard-specific header. It shows the guild switcher
+  (`components/dashboard/guild-switcher.tsx`) only on `/dashboard/[guildId]/**` routes, and the
+  theme toggle/account menu only inside `/dashboard/**` generally. Its one hamburger menu is
+  grouped: "This server" (the 16 sections above, only inside a guild) and "Entrophy" (Commands/
+  Enforcer/Support/Donate, always) — this is what makes the site's marketing pages reachable from
+  inside the dashboard, and vice versa, at every breakpoint. `AppSidebar`'s own mobile slide-in
+  Sheet is effectively superseded by `DashboardTabStrip` (already covers below-`lg` navigation) and
+  is left wired but unused rather than ripped out of a shared component.
+- Playwright: `apps/web/e2e/dashboard-login.spec.ts` (unauthenticated redirect; test-login → guild selector visible), `apps/web/e2e/dashboard-config.spec.ts` (toggle a plugin, change a setting, see audit entry) — both run against `apps/web`'s own dev server now (`apps/web/playwright.config.ts`), expecting the API running with `E2E_TEST_MODE=true`, same as before.
+- Support link: `apps/web/src/lib/site.ts#supportServerUrl()` reads `NEXT_PUBLIC_SUPPORT_SERVER_URL`
+  (one copy now, not mirrored across two apps). Surfaced as a "Get help on Discord" row in
+  `AppSidebar`'s `Sidebar` `footer` slot, and as an extra action in `ErrorState`'s "something went
+  wrong" display — both render nothing when the env var is unset.
+
+## 11a. `apps/dashboard` (`app.entrophybot.com`) — legacy-link redirector today, ops console next
+
+Not deleted — repurposed. Since the dashboard UI above moved into `apps/web`, this service's job
+today is purely to keep old `app.entrophybot.com/dashboard/...` links alive (bookmarks, the Top.gg
+listing, a live Reddit post): its `next.config.ts` `redirects()` 308s `/`, `/dashboard`, and
+`/dashboard/:path*` to the equivalent `WEB_URL` path, read server-side (not a `NEXT_PUBLIC_*`
+build-time var). The redirect is deliberately **path-scoped, not a blanket catch-all** — Brandon is
+building an owner-only ops console (cross-server support tickets, fleet metrics, error monitoring,
+bot health) to live on this same service next, most likely on a separate `dev.entrophybot.com`
+domain, and a wildcard redirect would fight any `/ops/...` routes added later.
+
+The app is kept **fully real and deployable**, not stripped to a config file: its root
+`layout.tsx`/`Providers` (theme + React Query + session), `@entrophy/ui` wiring, and vitest/
+Playwright test setup are all intact and covered by `apps/dashboard/test/*.test.ts`. Its current
+`src/app/page.tsx` is an honest placeholder (not fake ops content) that exercises that session/
+theme/UI wiring so it stays a verified baseline rather than dead scaffolding. `src/middleware.ts`
+(the old cookie-based auth fast-redirect) was removed — superseded by the `next.config.ts`
+redirects, since this service no longer has any dashboard auth flow of its own to fast-path.
 
 ## 12. `@entrophy/ui`
 
-Components (all accessible, keyboard-friendly, dark-mode aware, `cn()` helper): Button, IconButton, Card, Badge, Input, Textarea, Select, Switch, Checkbox, Label, Tabs, Dialog, Sheet/Drawer, DropdownMenu, Tooltip, Table, Pagination, EmptyState, Skeleton, Alert, Toast (sonner-free simple), FormField, ColorPicker (native input), ChannelPicker/RolePicker (props: options), EmbedPreview (Discord-style), CodeBlock, StatCard, PageHeader, Sidebar/Nav, ThemeToggle. `packages/ui/src/index.ts` re-exports; `tailwind.preset.ts` (colors: brand indigo `#6366f1`, semantic tokens) consumed by dashboard `tailwind.config.ts` (`presets: [preset]`, `content` includes `../../packages/ui/src/**/*.{ts,tsx}`).
+Components (all accessible, keyboard-friendly, dark-mode aware, `cn()` helper): Button, IconButton, Card, Badge, Input, Textarea, Select, Switch, Checkbox, Label, Tabs, Dialog, Sheet/Drawer, DropdownMenu, Tooltip, Table, Pagination, EmptyState, Skeleton, Alert, Toast (sonner-free simple), FormField, ColorPicker (native input), ChannelPicker/RolePicker (props: options), EmbedPreview (Discord-style), CodeBlock, StatCard, PageHeader, Sidebar/Nav, ThemeToggle. `packages/ui/src/index.ts` re-exports; `tailwind.preset.ts` (colors: brand indigo `#6366f1`, semantic tokens) consumed by both `apps/dashboard` and `apps/web`'s `tailwind.config.ts` (`presets: [preset]`, `content` includes `../../packages/ui/src/**/*.{ts,tsx}`) — `apps/web` layers its own monochrome `ink`/`grey`/`paper` tokens (§17) on top for marketing pages via the same config's `theme.extend`.
 
 ## 13. Testing conventions
 
@@ -586,8 +626,13 @@ README (top-level): overview, features, prerequisites, Discord Developer Portal 
 
 ## 17. `apps/web` (@entrophy/web)
 
-- Next.js 15 App Router (same versions as dashboard), Tailwind 3, `next dev -p 3003`. Depends only on
-  `@entrophy/types` (NOT ui — the website has its own monochrome component set under `src/components/`; NOT core).
+- Next.js 15 App Router (same versions as dashboard), Tailwind 3, `next dev -p 3003`. Also serves the
+  per-guild config dashboard now (§11) at `/dashboard/**`, merged in from the formerly-separate
+  `apps/dashboard` app. Depends on `@entrophy/types` (still not `core`) and, since that merge, also
+  `@entrophy/ui`/`@tanstack/react-query`/`next-themes` (the dashboard half's dependencies) — but
+  marketing pages still use only the website's own monochrome component set under
+  `src/components/`, not `@entrophy/ui`; the two component systems coexist (§11's Tailwind preset
+  note) without either being forced on the other's pages.
 - Palette tokens (CSS variables in `src/app/globals.css`): `--ink-0:#050505 --ink-1:#0a0a0a --ink-2:#111111
 --ink-3:#171717 --ink-4:#1f1f1f --ink-5:#262626 --ink-6:#333333 --ink-7:#404040 --grey-1:#525252 --grey-2:#737373
 --grey-3:#8a8a8a --grey-4:#a3a3a3 --grey-5:#bdbdbd --grey-6:#d4d4d4 --grey-7:#e5e5e5 --paper:#fafafa`.
@@ -614,11 +659,14 @@ options: [{name, description, required, type}], subcommands: [{ name, fullName, 
 - Support page (`/support`): the primary support destination — leads with joining the Discord server
   (`supportServerUrl()`; renders a "not linked yet" notice instead of a CTA when unset, same degrade-to-nothing
   contract as the footer), then points to the dashboard (config) and `/features` (command reference). No invented
-  SLA or community-size claims. Also linked from the primary nav (`Nav.tsx`) alongside the existing footer link.
-- Env (public): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_DASHBOARD_URL`, `NEXT_PUBLIC_DISCORD_CLIENT_ID`,
+  SLA or community-size claims. Also linked from the single site-wide top bar (`TopBar.tsx`, §11) alongside the
+  existing footer link.
+- Env (public): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_DISCORD_CLIENT_ID`,
   `NEXT_PUBLIC_INVITE_PERMISSIONS` (integer string; default = core `INVITE_PERMISSIONS_BITFIELD`, also exported by the
-  commands export as `docs/invite.json`), `NEXT_PUBLIC_SUPPORT_SERVER_URL` (optional; also read by `apps/dashboard`
-  via its own `src/lib/site.ts#supportServerUrl()` — see §11). Server env: `WEB_URL`.
+  commands export as `docs/invite.json`), `NEXT_PUBLIC_SUPPORT_SERVER_URL` (optional; one copy now — the dashboard
+  UI that used to mirror this in its own `apps/dashboard/src/lib/site.ts` lives here too, see §11). Server env:
+  `WEB_URL`. (`NEXT_PUBLIC_DASHBOARD_URL` is gone: the "Open dashboard" CTA and the `/support` page's dashboard
+  link are now plain same-origin `/dashboard` links, not a cross-domain env-driven URL.)
 - Docker: `infra/docker/Dockerfile.web` (same shape as dashboard, standalone), compose service `web` on 3003.
 
 ## 18. Donations API
@@ -802,8 +850,8 @@ ship `.env.production.example` pre-filled with them, secrets blank):
 
 | Surface                                     | URL                                                                                                        | Env                                                                                          |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Website                                     | `https://entrophybot.com` (+ `www` → redirect to apex)                                                     | `WEB_URL=https://entrophybot.com`                                                            |
-| Dashboard                                   | `https://app.entrophybot.com`                                                                              | `DASHBOARD_URL=https://app.entrophybot.com`, `NEXT_PUBLIC_DASHBOARD_URL`                     |
+| Website + config dashboard (§11)           | `https://entrophybot.com` (+ `www` → redirect to apex; dashboard UI at `/dashboard/**`, no separate domain) | `WEB_URL=https://entrophybot.com`                                                            |
+| Legacy dashboard redirector / ops console (§11a) | `https://app.entrophybot.com` — 308s `/` and `/dashboard/*` to the website above; other paths reach the real (currently placeholder) app | `DASHBOARD_URL=https://entrophybot.com` (same value as `WEB_URL` now), plus `WEB_URL`/`NEXT_PUBLIC_API_URL` set on this service itself (see §11a) |
 | API                                         | `https://api.entrophybot.com`                                                                              | `API_BASE_URL=https://api.entrophybot.com`, `NEXT_PUBLIC_API_URL`, `PUBLIC_WEBHOOK_BASE_URL` |
 | Cookies                                     | shared apex                                                                                                | `COOKIE_DOMAIN=.entrophybot.com`, `SESSION_COOKIE_SAMESITE=lax` (default; `none` not needed) |
 | Discord OAuth redirect                      | `https://api.entrophybot.com/auth/discord/callback`                                                        | `DISCORD_OAUTH_REDIRECT_URI`                                                                 |
@@ -814,7 +862,8 @@ ship `.env.production.example` pre-filled with them, secrets blank):
 
 DNS (documented in `infra/DEPLOYMENT.md`, cloud-first): at the registrar create `CNAME app` / `CNAME api` /
 `CNAME www` → the host's per-service targets, and apex `entrophybot.com` via ALIAS/ANAME (or the host's apex
-instructions); the host provisions TLS automatically. CORS allowlist = `[DASHBOARD_URL, WEB_URL]`.
+instructions); the host provisions TLS automatically. CORS allowlist = `[DASHBOARD_URL, WEB_URL]` — both now the
+same origin (`https://entrophybot.com`) post-merge, so this allowlist has one effective entry in practice, not two.
 
 ## 22. Brand assets (logo = bot avatar)
 

@@ -12,7 +12,7 @@
     "lint": "pnpm -r run lint",
     "typecheck": "pnpm -r run typecheck",
     "test": "pnpm -r run test",
-    "test:e2e": "pnpm --filter @entrophy/web test:e2e && pnpm --filter @entrophy/dashboard test:e2e",
+    "test:e2e": "pnpm --filter @entrophy/web test:e2e",
     "build": "pnpm -r run build",
     "db:generate": "pnpm --filter @entrophy/database generate",
     "db:migrate": "pnpm --filter @entrophy/database migrate:deploy",

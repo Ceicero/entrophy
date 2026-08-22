@@ -89,8 +89,8 @@ entrophy/
 ├── apps/
 │   ├── bot/            Discord gateway process + BullMQ workers
 │   ├── api/             Fastify REST API, Discord OAuth, webhook receivers, OpenAPI
-│   ├── dashboard/       Next.js admin dashboard (app.entrophybot.com)
-│   └── web/             Next.js public marketing site + donations (entrophybot.com)
+│   ├── dashboard/       Next.js app; legacy app.entrophybot.com redirector today, owner-only ops console next
+│   └── web/             Next.js public marketing site + donations + the per-guild config dashboard (entrophybot.com, incl. /dashboard/**)
 ├── packages/
 │   ├── types/           Shared TypeScript types (no runtime deps)
 │   ├── core/             env config, logger, errors, encryption, permissions, rate limiting, i18n
@@ -204,9 +204,12 @@ pnpm --filter @entrophy/bot register --guild YOUR_TEST_SERVER_ID   # instant com
 ```
 
 The `migrate` service in `docker-compose.yml` runs `pnpm db:migrate` automatically before `bot`,
-`api`, and `dashboard` start — you don't need to run it by hand. Open the dashboard at
-<http://localhost:3000>, the API's Swagger docs at <http://localhost:3001/docs>, and the public
-website at <http://localhost:3003>.
+`api`, and `dashboard` start — you don't need to run it by hand. The per-guild config dashboard
+lives inside the website now (not its own app) — open it at <http://localhost:3003/dashboard>. The
+API's Swagger docs are at <http://localhost:3001/docs>, and the public website itself is at
+<http://localhost:3003>. (`apps/dashboard` still runs at <http://localhost:3000> — today it's just
+a legacy-link redirector plus a placeholder for Brandon's upcoming owner-only ops console, see
+`docs/ARCHITECTURE.md` §11a.)
 
 ## Local setup — without Docker
 
@@ -222,8 +225,9 @@ pnpm commands:register
 pnpm dev
 ```
 
-`pnpm dev` runs `bot`, `api`, and `dashboard` together (`apps/web` isn't included in the default
-`dev` script — run `pnpm --filter @entrophy/web dev` alongside it if you need the public site too).
+`pnpm dev` runs `bot`, `api`, `dashboard`, and `web` together (the config dashboard is part of
+`web` now — see above — so this is also how you get it locally; `apps/dashboard`'s own dev server
+has nothing you need for guild config, just the legacy-link redirect and, soon, the ops console).
 
 ## First-run checklist in Discord
 
@@ -253,8 +257,8 @@ Canonical production layout on `entrophybot.com`:
 
 | Surface                        | URL                                                   | Key env var(s)                                                   |
 | ------------------------------ | ----------------------------------------------------- | ---------------------------------------------------------------- |
-| Website                        | `https://entrophybot.com` (+ `www` redirects to apex) | `WEB_URL`                                                        |
-| Dashboard                      | `https://app.entrophybot.com`                         | `DASHBOARD_URL`, `NEXT_PUBLIC_DASHBOARD_URL`                     |
+| Website + config dashboard     | `https://entrophybot.com` (+ `www` redirects to apex), dashboard at `/dashboard/**` | `WEB_URL`                                    |
+| Legacy dashboard redirect / ops console | `https://app.entrophybot.com`                | `DASHBOARD_URL` (same value as `WEB_URL` now)                    |
 | API                            | `https://api.entrophybot.com`                         | `API_BASE_URL`, `NEXT_PUBLIC_API_URL`, `PUBLIC_WEBHOOK_BASE_URL` |
 | Cookies                        | shared apex domain                                    | `COOKIE_DOMAIN=.entrophybot.com`, `SESSION_COOKIE_SAMESITE=lax`  |
 | Discord OAuth redirect         | `https://api.entrophybot.com/auth/discord/callback`   | `DISCORD_OAUTH_REDIRECT_URI`                                     |
@@ -336,11 +340,11 @@ Root scripts (`package.json`), run from the repo root:
 
 | Script                         | What it does                                                                                                                                                            |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm dev`                     | Runs `bot`, `api`, `dashboard` together in watch mode                                                                                                                   |
+| `pnpm dev`                     | Runs `bot`, `api`, `dashboard`, `web` together in watch mode (the config dashboard is part of `web`'s dev server — see above)                                          |
 | `pnpm lint`                    | Lints every package/app                                                                                                                                                 |
 | `pnpm typecheck`               | Type-checks every package/app (`tsc --noEmit`)                                                                                                                          |
 | `pnpm test`                    | Runs every package/app's Vitest suite                                                                                                                                   |
-| `pnpm test:e2e`                | Runs the website's Playwright smoke specs, then the dashboard's (dashboard specs self-skip without a running `E2E_TEST_MODE=true` API — see `apps/dashboard/README.md`) |
+| `pnpm test:e2e`                | Runs the website's Playwright specs — marketing smoke tests plus the dashboard's OAuth login/config flows, now that both live in `apps/web` (they self-skip without a running `E2E_TEST_MODE=true` API — see `apps/web/README.md`) |
 | `pnpm build`                   | Builds everything with a real build step (mainly `dashboard` and `web`)                                                                                                 |
 | `pnpm db:generate`             | Regenerates the Prisma client                                                                                                                                           |
 | `pnpm db:migrate`              | Applies committed migrations (`prisma migrate deploy`) — safe for production                                                                                            |

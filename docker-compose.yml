@@ -113,14 +113,12 @@ services:
       # substitution here, same file `env_file:` loads into the running container below).
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
-        NEXT_PUBLIC_DASHBOARD_URL: ${NEXT_PUBLIC_DASHBOARD_URL:-http://localhost:3000}
         NEXT_PUBLIC_DISCORD_CLIENT_ID: ${NEXT_PUBLIC_DISCORD_CLIENT_ID:-}
         NEXT_PUBLIC_INVITE_PERMISSIONS: ${NEXT_PUBLIC_INVITE_PERMISSIONS:-}
         NEXT_PUBLIC_SUPPORT_SERVER_URL: ${NEXT_PUBLIC_SUPPORT_SERVER_URL:-}
     env_file: .env
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:3001
-      NEXT_PUBLIC_DASHBOARD_URL: http://localhost:3000
     ports:
       - '3003:3003'
     depends_on:
