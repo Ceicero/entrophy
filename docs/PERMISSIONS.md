@@ -22,17 +22,17 @@ _No Discord permissions declared — every command replies over the interaction 
 
 _Warnings, timeouts, kicks, bans, cases, and the moderator hierarchy — the platform's core moderation toolkit._ (enabled by default, moderation)
 
-| Permission           | Feature                             | Required? | Fallback if missing                                                        |
-| -------------------- | ----------------------------------- | --------- | -------------------------------------------------------------------------- |
-| Timeout Members      | timeout / untimeout                 | Required  | Timeout commands fail with a friendly error until granted.                 |
-| Kick Members         | kick / softban                      | Required  | Kick and softban commands fail with a friendly error until granted.        |
-| Ban Members          | ban / unban / softban               | Required  | Ban, unban, and softban commands fail with a friendly error until granted. |
-| Manage Messages      | purge                               | Required  | /mod purge fails with a friendly error until granted.                      |
-| Manage Channels      | lock / unlock / slowmode            | Required  | Channel-lock commands fail with a friendly error until granted.            |
-| Manage Nicknames     | nick                                | Required  | /mod nick fails with a friendly error until granted.                       |
-| Manage Roles         | role add / remove                   | Required  | /mod role fails with a friendly error until granted.                       |
-| Embed Links          | mod-log and appeal embeds           | Required  | Mod-log posts fall back to plain text.                                     |
-| Read Message History | purge (fetching messages to delete) | Required  | /mod purge fails with a friendly error until granted.                      |
+| Permission           | Feature                                               | Required? | Fallback if missing                                                        |
+| -------------------- | ----------------------------------------------------- | --------- | -------------------------------------------------------------------------- |
+| Timeout Members      | timeout / untimeout                                   | Required  | Timeout commands fail with a friendly error until granted.                 |
+| Kick Members         | kick / softban                                        | Required  | Kick and softban commands fail with a friendly error until granted.        |
+| Ban Members          | ban / unban / softban                                 | Required  | Ban, unban, and softban commands fail with a friendly error until granted. |
+| Manage Messages      | purge                                                 | Required  | /mod purge fails with a friendly error until granted.                      |
+| Manage Channels      | lock / unlock / slowmode                              | Required  | Channel-lock commands fail with a friendly error until granted.            |
+| Manage Nicknames     | nick                                                  | Required  | /mod nick fails with a friendly error until granted.                       |
+| Manage Roles         | lock / unlock (channel overwrites), role add / remove | Required  | /mod role and /mod lock\|unlock fail with a friendly error until granted.  |
+| Embed Links          | mod-log and appeal embeds                             | Required  | Mod-log posts fall back to plain text.                                     |
+| Read Message History | purge (fetching messages to delete)                   | Required  | /mod purge fails with a friendly error until granted.                      |
 
 ### Automod (`automod`)
 
@@ -170,7 +170,7 @@ _Secure connector framework for optional external services: Twitch, YouTube, Git
 
 ### AI Assistant (`ai`)
 
-_Optional, disabled-by-default AI helper (/ask, /summarize, /draft, /mod-assist) with per-server opt-in, per-channel allowlisting, cooldowns, and token budgets._ (disabled by default, ai)
+_Optional, disabled-by-default AI helper (/ask, /summarize, /draft, /mod-assist, @mention chat) with per-server opt-in, per-channel allowlisting, cooldowns, and token budgets._ (disabled by default, ai)
 
 _No Discord permissions declared — every command replies over the interaction token and needs no channel-level permission._
 
@@ -204,6 +204,7 @@ Intent" eligibility in the Developer Portal) — see the README's Discord Develo
 | Tickets (`tickets`)       | Transcripts still record who said something and when, but not the message text itself.                                                                                                                                                           |
 | Engagement (`engagement`) | Leveling, XP, and reputation are unaffected (message events fire regardless of content). Only the starboard's message-content preview in its embed is unavailable and falls back to a jump link.                                                 |
 | Community (`community`)   | _(see the plugin README for what degrades without this intent)_                                                                                                                                                                                  |
+| AI Assistant (`ai`)       | _(see the plugin README for what degrades without this intent)_                                                                                                                                                                                  |
 
 ## Invite permissions
 
