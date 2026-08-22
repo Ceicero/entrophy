@@ -170,7 +170,7 @@ your slash commands never appear, even once registered). Permission integer is t
 set in `docs/invite.json` / `packages/core/src/permissions/discord.ts` — **never Administrator**.
 
 ```
-https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applications.commands&permissions=1504198388950
+https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applications.commands&permissions=1504210971862
 ```
 
 Replace `YOUR_CLIENT_ID` with your `DISCORD_CLIENT_ID`. The exact permission list and why each one
