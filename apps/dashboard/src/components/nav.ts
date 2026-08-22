@@ -17,7 +17,7 @@ import {
   Settings,
   type LucideIcon,
 } from 'lucide-react';
-import type { PluginId } from '@entrophy/types';
+import type { PluginId, PluginSummary } from '@entrophy/types';
 
 export interface NavItem {
   href: (guildId: string) => string;
@@ -61,3 +61,22 @@ export const NAV: NavItem[] = [
   { href: (id) => `/dashboard/${id}/privacy`, label: 'Privacy', icon: Lock },
   { href: (id) => `/dashboard/${id}/settings`, label: 'Settings', icon: Settings },
 ];
+
+/**
+ * True when a nav item is gated by a plugin that's disabled for the current guild. Drives the
+ * muted "Off" badge shown by both the sidebar and the below-`lg` tab strip — kept here as the
+ * single source of truth so the two surfaces can't drift.
+ */
+export function isNavItemDisabled(item: NavItem, plugins: PluginSummary[] | undefined): boolean {
+  if (!item.pluginId) return false;
+  const plugin = plugins?.find((p) => p.id === item.pluginId);
+  return plugin ? !plugin.enabled : false;
+}
+
+/**
+ * True when a nav item's href is the current route. The single definition of "active" that both
+ * the sidebar and the below-`lg` tab strip use to decide `aria-current` and the active highlight.
+ */
+export function isNavItemActive(pathname: string | null, href: string): boolean {
+  return pathname === href;
+}

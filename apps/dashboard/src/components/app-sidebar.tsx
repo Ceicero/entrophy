@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { MessageCircle } from 'lucide-react';
 import { Sidebar, SidebarNavItem, SidebarSection, Badge } from '@entrophy/ui';
-import { NAV } from './nav';
+import { NAV, isNavItemActive, isNavItemDisabled } from './nav';
 import { BrandWordmark } from './brand-wordmark';
 import { GuildSwitcher } from './guild-switcher';
 import { usePlugins } from '../lib/queries';
@@ -43,9 +43,8 @@ export function AppSidebar({ guildId, mobileOpen, onMobileOpenChange }: AppSideb
       <SidebarSection>
         {NAV.map((item) => {
           const href = item.href(guildId);
-          const active = pathname === href;
-          const plugin = item.pluginId ? plugins?.find((p) => p.id === item.pluginId) : undefined;
-          const disabled = plugin ? !plugin.enabled : false;
+          const active = isNavItemActive(pathname, href);
+          const disabled = isNavItemDisabled(item, plugins);
 
           return (
             <SidebarNavItem
