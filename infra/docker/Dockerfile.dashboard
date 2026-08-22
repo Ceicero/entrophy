@@ -30,11 +30,18 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # NEXT_PUBLIC_* values are inlined by `next build`, so they must be present at BUILD time.
 # Railway/Render populate declared ARGs from the service's environment variables.
-# (COOKIE_DOMAIN used to be baked in here for the old src/middleware.ts auth fast-redirect; that
-# file is gone — this service's redirects are now in next.config.ts, read server-side from WEB_URL
-# at request time, not a build-time ARG.)
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# WEB_URL is ALSO a build-time input, despite being a plain server-side variable: next.config.ts's
+# `redirects()` is evaluated during `next build` and baked into the route manifest — it is never
+# re-read at runtime. Undeclared here it is simply absent from the build, and no amount of setting
+# it on the service or restarting can change the compiled redirect. That is exactly how
+# app.entrophybot.com shipped pointing at http://localhost:3003. NODE_ENV is likewise forced to
+# production for the build so next.config.ts's fail-safe fallback picks the live site, not the
+# local dev URL, if this ARG is ever missing again.
+ARG WEB_URL=https://entrophybot.com
+ENV WEB_URL=${WEB_URL} \
+    NODE_ENV=production
 RUN node scripts/sync-brand.mjs
 RUN pnpm --filter @entrophy/dashboard build
 
