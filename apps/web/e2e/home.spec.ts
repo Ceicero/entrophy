@@ -16,7 +16,7 @@ test.describe('home page', () => {
 
     const nav = page.getByRole('navigation', { name: 'Primary' });
     await expect(nav).toBeVisible();
-    await expect(nav.getByRole('link', { name: 'Features' })).toHaveAttribute('href', '/features');
+    await expect(nav.getByRole('link', { name: 'Commands' })).toHaveAttribute('href', '/features');
     await expect(nav.getByRole('link', { name: 'Enforcer' })).toHaveAttribute('href', '/enforcer');
     await expect(nav.getByRole('link', { name: 'Donate' })).toHaveAttribute('href', '/donate');
   });

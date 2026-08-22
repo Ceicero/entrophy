@@ -8,11 +8,6 @@ export function apiUrl(): string {
   return (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').replace(/\/+$/, '');
 }
 
-/** Base URL of the Entrophy admin dashboard (`@entrophy/dashboard`). No trailing slash. */
-export function dashboardUrl(): string {
-  return (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
-}
-
 /** Optional public support/community server invite link. `null` when not configured — callers hide the link. */
 export function supportServerUrl(): string | null {
   const url = process.env.NEXT_PUBLIC_SUPPORT_SERVER_URL;

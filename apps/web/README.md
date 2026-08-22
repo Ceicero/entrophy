@@ -1,11 +1,20 @@
 # @entrophy/web
 
-The public Entrophy marketing website — separate from the admin dashboard (`@entrophy/dashboard`). Next.js 15 App
-Router, Tailwind 3, a monochrome (black/grey/white) "smoky UI" theme. See `docs/ARCHITECTURE.md` §17 for the full
-design and `docs/SPEC.md` §M for requirements.
+The public Entrophy marketing website **and, since the dashboard→web merge, the per-guild config
+dashboard** (`/dashboard/**` — formerly its own app, `@entrophy/dashboard`; that app is now a
+legacy-link redirector, see `apps/dashboard/README.md`). Next.js 15 App Router, Tailwind 3. Marketing
+pages use a monochrome (black/grey/white) "smoky UI" theme; dashboard pages use `@entrophy/ui`'s
+shadcn-style tokens. See `docs/ARCHITECTURE.md` §17 (site) and §11 (dashboard) for the full design,
+and `docs/SPEC.md` §M for requirements.
 
-Depends only on `@entrophy/types` — not `@entrophy/core`, not `@entrophy/ui`. The site has its own small
-monochrome component set under `src/components/` and calls the public API directly over `fetch`.
+Marketing pages depend only on `@entrophy/types` and the site's own small monochrome component set
+under `src/components/` (not `@entrophy/ui`, not `@entrophy/core`) — they call the public API
+directly over `fetch`. The dashboard routes under `src/app/dashboard/**` (and their components/lib
+under `src/components/dashboard/**`, `src/lib/dashboard/**`) additionally depend on `@entrophy/ui`,
+`@tanstack/react-query`, and `next-themes`; both component systems coexist via one Tailwind config
+(`tailwind.config.ts`'s `presets: [preset]` plus the site's own `ink`/`grey`/`paper` tokens). One
+top bar (`src/components/TopBar.tsx`) and one root `Providers` (`src/components/Providers.tsx`,
+mounted for the whole app) serve both halves — see their doc comments for how each adapts by route.
 
 ## Pages
 
@@ -18,6 +27,7 @@ monochrome component set under `src/components/` and calls the public API direct
 | `/donate`                             | Stripe-powered donation page: presets + custom amount → hosted Stripe Checkout                                                                 |
 | `/donate/thanks`, `/donate/cancelled` | Post-checkout landing pages (generic; never call Stripe from the client)                                                                       |
 | `/privacy`, `/terms`                  | Template legal pages, clearly labelled as templates for the operator to review                                                                 |
+| `/dashboard/**`                       | The per-guild config dashboard (session-gated) — see `docs/ARCHITECTURE.md` §11 for the full route list          |
 | `not-found`                           | 404 page                                                                                                                                       |
 
 Command documentation is **generated, never hand-maintained** — see "Data" below.
@@ -42,13 +52,20 @@ See the root `.env.example` for the full list. This app reads, all via `NEXT_PUB
 both server and client bundles):
 
 - `NEXT_PUBLIC_API_URL` — base URL of `@entrophy/api`, used for `GET /donations/presets` and
-  `POST /donations/checkout`.
-- `NEXT_PUBLIC_DASHBOARD_URL` — "Open dashboard" link target.
+  `POST /donations/checkout`, and by every dashboard page's `apiFetch`/React Query hooks.
 - `NEXT_PUBLIC_DISCORD_CLIENT_ID` — builds the "Add to Discord" OAuth URL. When unset, the CTA falls back to
   "Explore features" instead of linking to a broken authorize URL.
 - `NEXT_PUBLIC_INVITE_PERMISSIONS` — invite permission bitfield (integer string). Defaults to the value baked
   into `src/data/invite.json` (kept in sync with `INVITE_PERMISSIONS` in `@entrophy/core` by `pnpm commands:export`).
-- `NEXT_PUBLIC_SUPPORT_SERVER_URL` — optional; shows a "Support server" footer link when set.
+- `NEXT_PUBLIC_SUPPORT_SERVER_URL` — optional; shows a "Support server" link in the footer and the dashboard
+  sidebar/error states.
+
+The "Open dashboard" CTA is a plain same-origin `/dashboard` link now (the dashboard UI is part of
+this app) — there's no `NEXT_PUBLIC_DASHBOARD_URL` anymore.
+
+`COOKIE_DOMAIN` (server-side, not `NEXT_PUBLIC_*`) is read by `src/middleware.ts`: when set, it
+fast-redirects a cookie-less `/dashboard/*` visit to `/` at the edge, before any client JS runs.
+Leave it unset locally — see that file's doc comment for the full reasoning.
 
 ## Data
 
@@ -80,5 +97,12 @@ site — headlines, "why gaming communities love it" bullets, the Enforcer FAQ, 
 ```
 pnpm --filter @entrophy/web typecheck
 pnpm --filter @entrophy/web lint
+pnpm --filter @entrophy/web test    # includes the moved dashboard-nav/brand-wordmark/middleware suites
 pnpm --filter @entrophy/web build   # standalone output is auto-skipped on win32; see next.config.ts
+pnpm --filter @entrophy/web test:e2e
 ```
+
+`e2e/` has the marketing smoke specs (`home.spec.ts`, no API/auth needed) plus, since the merge,
+`dashboard-login.spec.ts` and `dashboard-config.spec.ts` (moved from the old `apps/dashboard/e2e/`
+unchanged) — those two self-skip unless `E2E_API_URL` points at a running API with
+`E2E_TEST_MODE=true`, same as before.

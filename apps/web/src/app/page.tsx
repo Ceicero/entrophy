@@ -8,7 +8,7 @@ import { Logo } from '../components/Logo';
 import { siteCopy } from '../content/site';
 import { pluginCopy } from '../content/plugins';
 import { allPluginExports, totalCommandCount } from '../lib/commands';
-import { dashboardUrl, inviteUrl } from '../lib/site';
+import { inviteUrl } from '../lib/site';
 
 const TRUST_ICONS = [ShieldCheck, EyeOff, ScrollText, Gauge];
 
@@ -42,7 +42,7 @@ export default function HomePage() {
                 Explore features
               </ButtonLink>
             )}
-            <ButtonLink href={dashboardUrl()} external variant="outline" size="lg">
+            <ButtonLink href="/dashboard" variant="outline" size="lg">
               Open dashboard
             </ButtonLink>
           </div>

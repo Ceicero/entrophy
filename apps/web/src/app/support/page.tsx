@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Section } from '../../components/Section';
 import { Glass } from '../../components/Glass';
 import { ButtonLink } from '../../components/Button';
-import { supportServerUrl, dashboardUrl } from '../../lib/site';
+import { supportServerUrl } from '../../lib/site';
 
 export const metadata: Metadata = {
   title: 'Support',
@@ -61,7 +61,7 @@ export default function SupportPage() {
 
       <Section eyebrow="Somewhere else to look" title="Already know what you need?">
         <div className="flex flex-wrap gap-4">
-          <ButtonLink href={dashboardUrl()} external variant="outline" size="md">
+          <ButtonLink href="/dashboard" variant="outline" size="md">
             Open the dashboard
           </ButtonLink>
           <ButtonLink href="/features" variant="outline" size="md">
