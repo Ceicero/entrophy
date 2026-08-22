@@ -386,3 +386,13 @@ export function buildAvatarUrl(userId: string, avatarHash: string | null): strin
   const ext = avatarHash.startsWith('a_') ? 'gif' : 'png';
   return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${ext}`;
 }
+
+/**
+ * Discord CDN icon URL for a guild's icon hash, or `null` if it has none — the animated-icon (`a_` prefix)
+ * rule applies wherever a guild icon is rendered. Shared by `routes/guilds.ts` and `routes/owner-metrics.ts`
+ * (ARCHITECTURE.md §10) so both surfaces render the same URL for the same icon hash.
+ */
+export function buildGuildIconUrl(guildId: string, iconHash: string | null | undefined): string | null {
+  if (!iconHash) return null;
+  return `https://cdn.discordapp.com/icons/${guildId}/${iconHash}.${iconHash.startsWith('a_') ? 'gif' : 'png'}`;
+}

@@ -2,16 +2,10 @@ import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
 import type { GuildConfigDto, GuildOverviewDto, GuildSummary } from '@entrophy/types';
 import { decryptAccessToken } from '../lib/session';
-import { getCachedUserGuilds, hasManageAccess } from '../lib/discord';
+import { buildGuildIconUrl, getCachedUserGuilds, hasManageAccess } from '../lib/discord';
 import { requireAuth, requireGuildAccess } from '../lib/guild-access';
 import { buildPluginSummaries } from '../lib/plugin-summaries';
 import { guildIdParamSchema } from '../lib/schemas';
-
-/** Discord CDN icon URL for a guild's icon hash, or `null` if it has none — the animated-icon (`a_` prefix) rule applies wherever a guild icon is rendered. */
-function iconUrlFor(guildId: string, iconHash: string | null | undefined): string | null {
-  if (!iconHash) return null;
-  return `https://cdn.discordapp.com/icons/${guildId}/${iconHash}.${iconHash.startsWith('a_') ? 'gif' : 'png'}`;
-}
 
 function toGuildConfigDto(
   guildId: string,
@@ -66,7 +60,7 @@ export default async function guildsRoutes(app: ZodFastifyInstance): Promise<voi
     return manageable.map((g): GuildSummary => ({
       id: g.id,
       name: g.name,
-      iconUrl: iconUrlFor(g.id, g.icon),
+      iconUrl: buildGuildIconUrl(g.id, g.icon),
       botPresent: botPresentIds.has(g.id),
       canManage: true,
       owner: g.owner,
@@ -99,7 +93,7 @@ export default async function guildsRoutes(app: ZodFastifyInstance): Promise<voi
         ? {
             id: guildRow.id,
             name: guildRow.name,
-            iconUrl: iconUrlFor(guildRow.id, guildRow.iconHash),
+            iconUrl: buildGuildIconUrl(guildRow.id, guildRow.iconHash),
             memberCount: guildRow.memberCount,
             ownerId: guildRow.ownerId,
             joinedAt: guildRow.joinedAt.toISOString(),
