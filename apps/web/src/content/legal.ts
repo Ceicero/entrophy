@@ -3,7 +3,7 @@
 // not a substitute for one an operator has actually reviewed for their deployment and jurisdiction.
 
 export const DEFAULT_OPERATOR = 'Entrophy';
-export const DEFAULT_CONTACT_EMAIL = 'support@entrophybot.com';
+export const DEFAULT_CONTACT_EMAIL = 'entrophybot@gmail.com';
 
 export interface LegalSection {
   title: string;

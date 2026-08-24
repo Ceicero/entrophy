@@ -918,7 +918,7 @@ ship `.env.production.example` pre-filled with them, secrets blank):
 | Stripe webhook                              | `https://api.entrophybot.com/webhooks/stripe`                                                              | `STRIPE_WEBHOOK_SECRET` from that endpoint                                                   |
 | Twitch EventSub / GitHub / generic webhooks | `https://api.entrophybot.com/webhooks/...`                                                                 | —                                                                                            |
 | Brand links                                 | `BRAND.siteUrl = 'https://entrophybot.com'`, embed icon `https://entrophybot.com/brand/entrophy-skull.png` | `WEB_URL`                                                                                    |
-| Placeholders in policy templates            | `support@entrophybot.com` (Brandon to confirm mailbox), operator name "Entrophy"                           | —                                                                                            |
+| Contact in policy templates                 | `entrophybot@gmail.com` (confirmed 2026-08-24, monitored), operator name "Entrophy"                        | —                                                                                            |
 
 DNS (documented in `infra/DEPLOYMENT.md`, cloud-first): at the registrar create `CNAME app` / `CNAME api` /
 `CNAME www` → the host's per-service targets, and apex `entrophybot.com` via ALIAS/ANAME (or the host's apex
