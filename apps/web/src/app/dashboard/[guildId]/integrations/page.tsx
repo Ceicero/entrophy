@@ -37,6 +37,7 @@ import { InboundWebhooksList } from '@/components/dashboard/integrations/inbound
 import { OutboundWebhookDialog } from '@/components/dashboard/integrations/outbound-webhook-dialog';
 import { OutboundWebhooksList } from '@/components/dashboard/integrations/outbound-webhooks-list';
 import { SecretRevealDialog } from '@/components/dashboard/integrations/secret-reveal-dialog';
+import { TwitchChatTab } from '@/components/dashboard/integrations/twitch-chat-tab';
 
 export default function IntegrationsPage() {
   const { guildId } = useParams<{ guildId: string }>();
@@ -145,6 +146,7 @@ export default function IntegrationsPage() {
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
           <TabsTrigger value="inbound">Inbound webhooks</TabsTrigger>
           <TabsTrigger value="outbound">Outbound webhooks</TabsTrigger>
+          <TabsTrigger value="twitch-chat">Twitch chat</TabsTrigger>
         </TabsList>
 
         <TabsContent value="alerts" className="space-y-4 pt-4">
@@ -172,6 +174,10 @@ export default function IntegrationsPage() {
             </Button>
           </div>
           <OutboundWebhooksList guildId={guildId} />
+        </TabsContent>
+
+        <TabsContent value="twitch-chat" className="pt-4">
+          <TwitchChatTab guildId={guildId} />
         </TabsContent>
       </Tabs>
 

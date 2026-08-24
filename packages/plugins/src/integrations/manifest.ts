@@ -72,5 +72,6 @@ export const manifest = defineManifest({
     'Alert connectors (Twitch/YouTube/Reddit/Steam) only read publicly available data about the watched target — no message content or member data is sent to any provider.',
     'Stripe events never carry card data (SPEC.md §J) — only price ids and the Discord user id supplied in checkout metadata are read.',
     'Outbound webhook payloads are whatever the triggering platform event carries (case numbers, user ids, reasons) — never raw message content.',
+    'Twitch chat bot: chat messages are parsed in memory only, to match a command — never persisted, logged, or sent to Discord.',
   ],
 });

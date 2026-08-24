@@ -80,6 +80,7 @@ export const HELP_MAP: Record<string, PluginId> = {
 
   // integrations
   integration: 'integrations',
+  twitch: 'integrations',
 
   // ai
   ask: 'ai',

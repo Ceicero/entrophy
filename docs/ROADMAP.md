@@ -12,9 +12,10 @@ Everything in `docs/ARCHITECTURE.md` §7.1's plugin table is implemented and tes
 covering moderation, automod, the Enforcer dispute/ledger workflow, logging, tickets, roles/
 onboarding/verification, engagement (leveling/reputation/starboard/temp-voice), community (polls/
 giveaways/suggestions/announcements/reminders/events), a virtual-currency economy, utility commands,
-integrations (OAuth connections + inbound/outbound webhooks + alert connectors), and an optional AI
-assistant. The dashboard covers every plugin with a settings page, the marketplace enable/disable
-grid, a JSON-schema-driven config drawer, audit log viewer, and privacy controls (export/delete/
+integrations (OAuth connections + inbound/outbound webhooks + alert connectors + a Twitch chat bot with
+custom commands/timers), and an optional AI assistant. The dashboard covers every plugin with a
+settings page, the marketplace enable/disable grid, a JSON-schema-driven config drawer, audit log
+viewer, and privacy controls (export/delete/
 retention). The public website covers the full command reference (generated from the plugin
 manifests, not hand-maintained — see ARCHITECTURE §17), donations via Stripe Checkout, and
 privacy/terms pages. CI runs lint, typecheck, 931+ tests, and both app builds on every push; the repo
@@ -55,6 +56,13 @@ set` (and the equivalent dashboard action) changes a member's stored XP/level im
   render a visible "this is a template" banner on purpose — see
   `docs/PRIVACY_POLICY_TEMPLATE.md`'s intro. This is intentional, not a gap to close by MVP; it needs an
   operator's actual review before it stops being a template, which is outside engineering scope.
+- **Twitch chat bot needs one owner-only setup step before it's live.** The `integrations` plugin can join
+  a streamer's Twitch chat (EventSub WebSocket + Helix send, custom `!commands`/timers, built-in
+  `!commands`/`!uptime`/`!title`) once a streamer links their channel from the dashboard — but that only
+  starts working once Brandon authorizes Entrophy's own dedicated Twitch bot account once
+  (`POST /owner/twitch-bot/connect`; see `docs/claude-project/06-status-and-open-items.md` §3.7). Until
+  then the feature honestly reports itself as not configured rather than failing silently. No Twitch-side
+  moderation actions (ban/timeout/delete) ship in v1 — custom commands and timers only.
 
 ## v1 — hardening
 

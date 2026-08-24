@@ -201,7 +201,7 @@ Do not implement methods that bypass licensing or platform restrictions. Instead
 
 Secure connector framework for optional integrations:
 
-- Twitch: stream-live alerts using official API/webhooks where available
+- Twitch: stream-live alerts using official API/webhooks where available, plus an opt-in chat bot — a dedicated Twitch bot account (owner-authorized once) joins a streamer's chat, per guild, once the streamer links their channel from the dashboard (OAuth `channel:bot`); it runs custom `!commands`/timers and built-ins over the official EventSub WebSocket + Helix Send Chat Message API, with no chat message content ever persisted and no Twitch-side moderation actions (ban/timeout/delete) in v1
 - YouTube: upload/live alerts through supported APIs
 - GitHub: repository activity via GitHub webhooks
 - Reddit: approved API integration

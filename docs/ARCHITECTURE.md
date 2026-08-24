@@ -227,7 +227,7 @@ PUBLIC_WEBHOOK_BASE_URL=      # public https base for inbound webhooks (EventSub
 | `economy`      | `src/economy`      | `/economy balance\|daily\|give\|leaderboard\|config`, `/economy admin add\|remove` — virtual currency only, **no real money**                                                                                                                                                                                                                                                   | disabled                                               |
 | `utility`      | `src/utility`      | `/help`, `/utility userinfo\|serverinfo\|avatar\|banner\|roleinfo\|channelinfo\|timestamp\|timezone set\|get\|list\|calculator\|afk\|translate\|weather\|status`, `/embed builder`, context menu "User info"                                                                                                                                                                    | enabled                                                |
 | `media`        | `src/media`        | `/music play\|queue\|skip\|pause\|resume\|volume\|loop\|stop\|shuffle\|nowplaying\|playlist save\|load\|list\|delete` — adapter interface only; unavailable unless `MEDIA_PROVIDER` configured with a compliant provider                                                                                                                                                        | disabled                                               |
-| `integrations` | `src/integrations` | `/integration connect\|disconnect\|status\|list`, `/integration alerts add\|remove\|list`, `/integration webhook create\|list\|delete`, `/integration outbound create\|list\|delete\|test`                                                                                                                                                                                      | disabled                                               |
+| `integrations` | `src/integrations` | `/integration connect\|disconnect\|status\|list`, `/integration alerts add\|remove\|list`, `/integration webhook create\|list\|delete`, `/integration outbound create\|list\|delete\|test`, `/twitch status\|setup\|off`, `/twitch command add\|remove\|list`, `/twitch timer add\|remove\|list` (chat bot — §19a)                                                                                                                                                                                      | disabled                                               |
 | `ai`           | `src/ai`           | `/ask`, `/summarize`, `/draft`, `/mod-assist`, `/ai config view\|set-key\|clear-key\|provider\|model\|channels\|budget`                                                                                                                                                                                                                                                         | disabled                                               |
 
 `PluginId` union in `@entrophy/types` = exactly these ids. `packages/plugins/src/index.ts` exports `allPlugins: Plugin[]` in this order and `packages/plugins/src/manifests.ts` exports `allManifests: PluginManifest[]` (import each plugin's `manifest.ts` only — **manifest files must not import discord.js runtime code beyond types/enums** so the API can load them cheaply).
@@ -436,6 +436,7 @@ Helper `definePlugin(p: Plugin): Plugin` (identity, for typing) and `defineManif
 - `logging`: `{ log(guildId, kind: LogKind, payload: LogPayload): Promise<void> }` — kind ∈ `member.join|member.leave|message.edit|message.delete|role.update|channel.update|guild.update|moderation.action|voice.join|voice.leave|invite.use|bot.error|webhook.failure|automod.trigger|ticket.event|verification.event`
 - `automod`: `{ quarantine(guildId, userId, reason) }`
 - `tickets`, `roles` (`assignRoles`, `verifyMember`), `integrations` (`sendOutbound(guildId, endpointId, payload)`), `ai` (`complete(...)`) — each plugin registers its service in `onLoad` and consumers call `ctx.services.get('x')` and no-op gracefully if absent.
+- `twitchChat`: `{ status(): TwitchChatRuntimeStatus; reconcileNow(): Promise<void>; stop(): Promise<void> }` — the `integrations` plugin's Twitch chat bot runtime; registered from the same `onLoad` (§19a).
 
 ### 7.6 Platform events (`@entrophy/types` `PlatformEventMap`)
 
@@ -475,7 +476,7 @@ Helper `definePlugin(p: Plugin): Plugin` (identity, for typing) and `defineManif
 - `prisma/schema.prisma` (postgres). Client singleton in `src/client.ts` (`export const prisma`, `export * from '@prisma/client'` types). `src/index.ts` also exports `writeAudit(prisma, entry)`, `withGuild(guildId)` helpers, and `retention.ts` helpers.
 - Migration: `prisma/migrations/0001_init/migration.sql` + `migration_lock.toml`, generated with `prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script` (no DB needed). Scripts: `generate`, `migrate:dev`, `migrate:deploy`, `migrate:diff`, `seed` (`tsx prisma/seed.ts`), `studio`.
 - Conventions: ids `String @id @default(cuid())` unless a Discord snowflake is natural (`Guild.id`, `UserProfile.id` = discord user id). Every tenant table has `guildId String` + `@@index([guildId])` (+ compound indexes for hot lookups). Timestamps `createdAt @default(now())`, `updatedAt @updatedAt`. Soft delete via `deletedAt DateTime?` on ModerationCase, Ticket, RolePanel, AutomodRule, Suggestion, WebhookEndpoint, IntegrationConnection. FK to `Guild` with `onDelete: Cascade` (guild data deletion = delete Guild row → cascades). Json config columns typed `Json`.
-- Models (minimum): Guild, GuildConfig (1:1; staff role ids, locale, timezone, fastActions, modLogChannelId, dataCollection flags), PluginState, PluginConfig, PluginMigration, UserProfile, ModerationCase (`caseNumber Int` per guild `@@unique([guildId, caseNumber])`, type enum WARN|TIMEOUT|UNTIMEOUT|KICK|BAN|UNBAN|SOFTBAN|PURGE|LOCK|UNLOCK|SLOWMODE|NICK|ROLE_ADD|ROLE_REMOVE|QUARANTINE|NOTE, targetId, moderatorId, reason, evidenceUrls String[], durationMs, expiresAt, expiredAt, dmSent Boolean, metadata Json, source), ModerationWarning, ModerationNote, ModerationAppeal, ModerationEscalationRule (or inside config Json), AutomodRule, AutomodEvent (with reviewStatus enum PENDING|APPROVED|FALSE_POSITIVE), AuditLog, LogEvent (logging plugin searchable store; content fields nullable), Ticket, TicketParticipant, TicketTranscript, TicketPanel, RolePanel, RolePanelOption, RoleGroup, MemberRoleSnapshot (role persistence), VerificationRequest, OnboardingProgress, ScheduledJob, Reminder, ScheduledAnnouncement, Giveaway, GiveawayEntry, Poll, PollOption, PollVote, Suggestion, SuggestionVote, StarboardEntry, TempVoiceChannel, CommunityEvent, EventRsvp, LevelProfile, LevelReward, ReputationEvent, EconomyAccount, EconomyTransaction, AfkStatus, IntegrationConnection, OAuthToken (encrypted fields `accessTokenEnc`, `refreshTokenEnc`, `expiresAt`, `scopes String[]`), WebhookEndpoint (inbound + outbound, `secretEnc`), WebhookDelivery, ProcessedWebhookEvent (idempotency: `@@unique([provider, eventId])`), DataRetentionPolicy, DataRequest (export/delete jobs), AiUsage, GuildAnalyticsDaily.
+- Models (minimum): Guild, GuildConfig (1:1; staff role ids, locale, timezone, fastActions, modLogChannelId, dataCollection flags), PluginState, PluginConfig, PluginMigration, UserProfile, ModerationCase (`caseNumber Int` per guild `@@unique([guildId, caseNumber])`, type enum WARN|TIMEOUT|UNTIMEOUT|KICK|BAN|UNBAN|SOFTBAN|PURGE|LOCK|UNLOCK|SLOWMODE|NICK|ROLE_ADD|ROLE_REMOVE|QUARANTINE|NOTE, targetId, moderatorId, reason, evidenceUrls String[], durationMs, expiresAt, expiredAt, dmSent Boolean, metadata Json, source), ModerationWarning, ModerationNote, ModerationAppeal, ModerationEscalationRule (or inside config Json), AutomodRule, AutomodEvent (with reviewStatus enum PENDING|APPROVED|FALSE_POSITIVE), AuditLog, LogEvent (logging plugin searchable store; content fields nullable), Ticket, TicketParticipant, TicketTranscript, TicketPanel, RolePanel, RolePanelOption, RoleGroup, MemberRoleSnapshot (role persistence), VerificationRequest, OnboardingProgress, ScheduledJob, Reminder, ScheduledAnnouncement, Giveaway, GiveawayEntry, Poll, PollOption, PollVote, Suggestion, SuggestionVote, StarboardEntry, TempVoiceChannel, CommunityEvent, EventRsvp, LevelProfile, LevelReward, ReputationEvent, EconomyAccount, EconomyTransaction, AfkStatus, IntegrationConnection, OAuthToken (encrypted fields `accessTokenEnc`, `refreshTokenEnc`, `expiresAt`, `scopes String[]`), WebhookEndpoint (inbound + outbound, `secretEnc`), WebhookDelivery, ProcessedWebhookEvent (idempotency: `@@unique([provider, eventId])`), DataRetentionPolicy, DataRequest (export/delete jobs), AiUsage, GuildAnalyticsDaily, TwitchBotIdentity (singleton — Entrophy's own Twitch chat-bot account), TwitchChatChannel (a guild's linked Twitch channel), TwitchChatCommand, TwitchChatTimer (enum `TwitchChatLevel` EVERYONE|SUBSCRIBER|VIP|MODERATOR|BROADCASTER — see §19a).
 - Seed (`prisma/seed.ts`): only creates a **demo guild clearly named `Entrophy Demo (seed)`** with id `000000000000000000`, sample plugin states, one sample automod rule in dry-run, sample retention policy. No fake users/messages.
 
 ## 9. Bot host (`apps/bot`)
@@ -515,13 +516,15 @@ Also `apps/bot/src/host/bot-actions.ts`: processes `bot-actions` queue jobs `{ t
   - `routes/roles.ts` — panels CRUD + `POST .../post` (enqueue bot-action), welcome/goodbye config, verification queue approve/deny
   - `routes/engagement.ts`, `routes/community.ts` — leveling config/leaderboard, giveaways/polls/suggestions lists
   - `routes/integrations.ts` — list connections, `GET /:guildId/integrations/:provider/connect` (OAuth start), disconnect, webhook endpoints CRUD (secret shown once), status
+  - `routes/twitch-chat.ts` — Twitch chat bot, per guild, under `/:guildId/integrations/twitch-chat` (§19a): `GET` status (bot identity configured?, channels), `POST /connect` (OAuth `channel:bot` authorize URL), channel `PATCH`/`DELETE`, and CRUD for that channel's commands (`/channels/:channelId/commands`, `/commands/:commandId`; max 50/channel, reserved names `commands`/`uptime`/`title`) and timers (`/channels/:channelId/timers`, `/timers/:timerId`; max 10/channel)
   - `routes/ai.ts` — settings + usage
   - `routes/analytics.ts` — `GET /:guildId/analytics?range=7d|30d|90d` (from GuildAnalyticsDaily; only if `GuildConfig.dataCollectionEnabled`)
   - `routes/privacy.ts` — retention policy get/put, `POST /:guildId/data/export` (queues job → downloadable JSON), `POST /:guildId/data/delete` (requires confirmation phrase, queues deletion), `GET /:guildId/data/requests`
   - `routes/webhooks.ts` (NOT under /guilds): `POST /webhooks/github/:endpointId`, `POST /webhooks/stripe`, `POST /webhooks/twitch`, `POST /webhooks/generic/:endpointId` — raw body, signature verification, idempotency via `ProcessedWebhookEvent`, then enqueue to `integrations.inbound` queue
-  - `routes/oauth-integrations.ts` — `/integrations/:provider/callback`
+  - `routes/oauth-integrations.ts` — `/integrations/:provider/callback`, branching on the OAuth state's `kind`: absent (the original generic per-guild connect flow, unchanged), `twitch_chat` (identifies the broadcaster via Helix, creates the `IntegrationConnection`+`OAuthToken`, upserts `TwitchChatChannel` status PENDING), `twitch_bot` (owner-only — identifies Entrophy's own Twitch account and upserts the singleton `TwitchBotIdentity`, replacing tokens/scopes/expiry on re-auth; returns a small standalone HTML confirmation page instead of a dashboard redirect)
   - `routes/developer-reports.ts` (NOT under `/guilds`, prefix `/owner`, gated on `requireBotOwner`) — ops-console backend for the guild → developer support channel written by the `admin` plugin's `/entrophy report`; intentionally cross-guild data, which is exactly why it is bot-owner-only rather than `requireGuildAccess`: `GET /owner/developer-reports` (cursor-paginated, newest-first, filters `?status=OPEN|HANDLED&kind=BUG|FEEDBACK|QUESTION&guildId=`), `GET /owner/developer-reports/:id`, `PATCH /owner/developer-reports/:id` (`status` and/or `notes`, at least one required — `notes` is internal-only triage text never shown to the reporting guild; flipping to `HANDLED` stamps `handledAt`/`handledBy` from the session, back to `OPEN` clears both)
   - `routes/owner-metrics.ts` (NOT under `/guilds`, prefix `/owner`, gated on `requireBotOwner` like `routes/developer-reports.ts`) — read-only metrics for the local "Entrophy Dev" desktop app: `GET /owner/metrics/overview` (guild presence/growth, member totals + largest guild, developer-report counts, 7d activity), `GET /owner/metrics/guilds` (cursor-paginated, newest-joined first, `?query=&botPresent=`, per-guild plugin/case/ticket/last-activity aggregates), `GET /owner/metrics/errors` (cursor-paginated feed merged from the four models with an error column — `IntegrationConnection.lastError`, `ScheduledJob.lastError`, `WebhookDelivery.error`, `DataRequest.error`, `?source=&guildId=`), `GET /owner/metrics/growth?days=` (daily join/leave counts + running net, zero-filled, clamped 1–365)
+  - `routes/twitch-bot.ts` (NOT under `/guilds`, prefix `/owner`, gated on `requireBotOwner`) — Entrophy's own Twitch chat-bot account identity, the singleton `TwitchBotIdentity` row (§19a): `GET /owner/twitch-bot` → the DTO or `{ configured: false }`, `POST /owner/twitch-bot/connect` → OAuth authorize URL (scopes `user:read:chat user:write:chat user:bot`), `DELETE /owner/twitch-bot`. Never returns the encrypted access/refresh tokens.
 - Errors: `setErrorHandler` → `toPublicError` → `{ error: { code, message, details? } }`, zod errors → 400 with issues. Fastify `FST_ERR_*` client errors keep their own 4xx status with a fixed public message table (`empty_body`, `invalid_json`, `unsupported_media_type`, `payload_too_large`); `@fastify/rate-limit`'s 429 → `rate_limited`.
 - Tests: `vitest` with `app.inject()` for auth guard, csrf, guild access (mock Redis via `ioredis-mock`), signature verification.
 
@@ -806,6 +809,61 @@ search(...) }` — used by the bot-action `enforcer.decide` (dashboard decisions
   test box) · Queue (pending flags with decision buttons + reason/duration dialog) · Ledger (search/filter table, detail
   drawer with context snapshot, CSV export) · Settings.
 - Website `/enforcer` page explains the workflow (from `src/content/enforcer.ts`).
+
+## 19a. Twitch chat bot (inside the `integrations` plugin)
+
+Entrophy joining a streamer's Twitch chat to answer commands — a distinct feature from the `integrations`
+plugin's Twitch stream-live alerts (§J), sharing only the `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` env vars.
+No 15th plugin: lives in `packages/plugins/src/integrations/twitch-chat/` (`helix.ts`, `socket.ts`, `manager.ts`,
+`engine.ts`, `timers.ts`) plus the `twitch-chat-tick` job; command `/twitch` (§7.1).
+
+- **Identity model**: ONE global `TwitchBotIdentity` row — Brandon authorizes Entrophy's own Twitch account once
+  (owner-only `POST /owner/twitch-bot/connect`, scopes `user:read:chat user:write:chat user:bot`). Every chat
+  read/send runs on this token, never a broadcaster's. Per guild, a streamer links their channel from the
+  dashboard (`POST /:guildId/integrations/twitch-chat/connect`, scope `channel:bot`), which upserts a
+  `TwitchChatChannel` row (status `PENDING` until the manager subscribes it).
+- **Transport**: the official EventSub WebSocket (`wss://eventsub.wss.twitch.tv/ws`), using Node 22's built-in
+  global `WebSocket` — no new runtime dependency. `EventSubSocket` (`socket.ts`) is a thin frame classifier
+  (`session_welcome`/`session_keepalive`/`session_reconnect`/`notification`/`revocation`) with a keepalive
+  watchdog (no keepalive/notification within `timeout+5s` → treat the socket as dead) and exponential-backoff
+  reconnect (1s→60s, jittered). A brand-new session invalidates all subscriptions (recreated on the next
+  reconcile); a `session_reconnect`-follow session carries them over automatically.
+- **`TwitchChatManager`** (module-level singleton instantiated in `integrations/index.ts`, so the same instance
+  backs both the job and the registered service) owns the socket and reconciles desired vs. actual
+  `channel.chat.message` v1 EventSub subscriptions every minute via the `twitch-chat-tick` job (cron
+  `* * * * *`): desired = enabled `TwitchChatChannel` rows whose guild currently has `integrations` enabled,
+  capped at 300 (one WebSocket session's zero-cost-subscription limit — excess channels are left unsubscribed
+  with a warning log). Replies go out through Helix `POST /helix/chat/messages` (`sendChatMessage`, client-side
+  throttled to 1 send/sec/broadcaster; anything beyond that is dropped, never queued). On `revocation` (e.g. the
+  broadcaster revoked `channel:bot`) the channel is marked `ERROR` with `lastError`.
+- **Bot-identity token refresh**: Twitch user tokens expire (~4h) and Twitch **rotates the refresh token on every
+  use** — the new one must be persisted or the next refresh fails outright. `helix.ts`'s `getBotAccessToken`
+  refreshes proactively once the token has less than 10 minutes left, under a short Redis lock
+  (`redisKey('integrations','twitchchat','refreshlock')`, TTL 15s) so the bot and api processes don't both spend
+  the one-time-use refresh token at once; a failed refresh marks the identity `ERROR` with `lastError`.
+- **Command engine** (`engine.ts`, pure/testable — no `PluginContext`, no Prisma, no network): prefix match on
+  the channel's `commandPrefix` (default `!`); self-ignore (messages from the bot's own user id); chatter level
+  resolved from the EventSub event's badges (`everyone < subscriber < vip < moderator < broadcaster`) gating a
+  command's `minLevel`; per-`(channelId, commandName)` in-memory cooldown; `{user}`/`{channel}` templating only
+  (no other interpolation). Built-ins `!commands` (lists enabled custom command names), `!uptime` (via Helix
+  `GET /streams`), `!title` (via Helix `GET /channels`) — reserved names a custom command can never take
+  (`commands`/`uptime`/`title`, enforced at the API layer). `timers.ts` fires enabled `TwitchChatTimer`s whose
+  interval has elapsed, only into channels the manager currently holds a live subscription for.
+- **API**: guild-scoped CRUD under `/:guildId/integrations/twitch-chat` and the owner-only bot-identity routes
+  under `/owner/twitch-bot` — see §10. **Dashboard**: a 4th "Twitch chat" tab on
+  `/dashboard/[guildId]/integrations` (status banner, connect button, per-channel card with enable/prefix/delete,
+  commands table + dialog, timers table + dialog).
+- **Privacy contract**: chat message text is parsed **in memory only**, to match a command, and is **never
+  persisted, logged, or sent to Discord**. Pino logs may include a channel login and a command *name*, never
+  message text or chatter identity. No Twitch-side moderation actions (ban/timeout/delete) ship in v1 — no
+  moderator scopes are requested.
+- **Degrades gracefully**: with `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` unset, or before a `TwitchBotIdentity`
+  row exists, the manager stays idle and reports why (`TwitchChatService.status()`), surfaced in `/twitch
+  status`, the dashboard, and the plugin's `health()` — no crash, no error spam. Every `twitch-chat-tick` tick
+  retries, so completing owner setup later brings the manager up with no bot restart.
+- **Shutdown**: `apps/bot/src/index.ts`'s `shutdown()` calls `host.services.get('twitchChat')?.stop()` (closing
+  the socket and clearing in-memory state) before `redis.quit()`/`prisma.$disconnect()`, mirroring how the
+  plugin job workers are closed.
 
 ## 20. Monochrome tokens
 

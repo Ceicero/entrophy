@@ -62,6 +62,32 @@ function webhookPathFor(provider: IntegrationProviderId, endpointId: string): st
   return `/webhooks/generic/${endpointId}`;
 }
 
+/** True when `config` is the shape the twitch-chat OAuth callback stamps onto a connection (`{ kind: 'chat' }`
+ * — see `oauth-integrations.ts`). Such a connection belongs entirely to `TwitchChatChannel`/`routes/twitch-chat.ts`
+ * and must never surface as a generic connection or an alert watch — it carries none of the fields either UI
+ * expects, and disconnecting/deleting one out from under its `TwitchChatChannel` silently breaks the chat
+ * integration (the channel keeps its `connectionId`, now pointing at a dead connection). */
+function isChatKindConnection(config: unknown): boolean {
+  return Boolean(config && typeof config === 'object' && (config as Record<string, unknown>).kind === 'chat');
+}
+
+/**
+ * IDs of every chat-kind connection (see `isChatKindConnection`) in `guildId`, for excluding them from list
+ * queries via `id: { notIn }`. Deliberately not a negated JSON-path `where` filter (e.g.
+ * `NOT: { config: { path: ['kind'], equals: 'chat' } }`): Postgres's JSON path extraction returns SQL NULL for
+ * a `config` that never had a `kind` key at all — which is every normal connection, generic or alert — and
+ * NULL fails a negated comparison under standard three-valued SQL logic, silently excluding those rows too
+ * instead of including them. A plain positive `equals` match to find the (few) chat rows, then excluding their
+ * ids, has no such edge case.
+ */
+async function chatConnectionIds(app: ZodFastifyInstance, guildId: string): Promise<string[]> {
+  const rows = await app.prisma.integrationConnection.findMany({
+    where: { guildId, config: { path: ['kind'], equals: 'chat' } },
+    select: { id: true },
+  });
+  return rows.map((row) => row.id);
+}
+
 const alertCreateSchema = z.object({
   provider: z.enum(ALERT_PROVIDER_IDS as [AlertProviderId, ...AlertProviderId[]]),
   target: z.string().trim().min(1).max(200),
@@ -90,8 +116,14 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
     '/:guildId/integrations',
     { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
     async (request): Promise<IntegrationConnectionDetailDto[]> => {
+      const guildId = request.guildId!;
+      const excludeIds = await chatConnectionIds(app, guildId);
       const rows = await app.prisma.integrationConnection.findMany({
-        where: { guildId: request.guildId!, deletedAt: null },
+        where: {
+          guildId,
+          deletedAt: null,
+          ...(excludeIds.length ? { id: { notIn: excludeIds } } : {}),
+        },
         orderBy: { createdAt: 'desc' },
       });
       return rows.map(toIntegrationConnectionDetailDto);
@@ -187,7 +219,12 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
       const existing = await app.prisma.integrationConnection.findFirst({
         where: { id: connectionId, guildId, deletedAt: null },
       });
-      if (!existing) throw new NotFoundError('Integration connection not found.');
+      // A chat-kind connection isn't a generic connection at all — it belongs to `routes/twitch-chat.ts`'s
+      // channel DELETE, which also retires the connection. Treat it as not-found here rather than letting a
+      // generic disconnect tear its token out from under the still-linked `TwitchChatChannel`.
+      if (!existing || isChatKindConnection(existing.config)) {
+        throw new NotFoundError('Integration connection not found.');
+      }
 
       await app.prisma.integrationConnection.update({
         where: { id: connectionId },
@@ -323,12 +360,14 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
     async (request): Promise<IntegrationConnectionDetailDto[]> => {
       const guildId = request.guildId!;
       const { provider } = request.query;
+      const excludeIds = await chatConnectionIds(app, guildId);
       const where = {
         guildId,
         deletedAt: null,
         provider: provider
           ? CANONICAL_PROVIDER_ENUM_MAP[provider]
           : { in: ALERT_PROVIDER_IDS.map((id) => CANONICAL_PROVIDER_ENUM_MAP[id]) },
+        ...(excludeIds.length ? { id: { notIn: excludeIds } } : {}),
       };
       const rows = await app.prisma.integrationConnection.findMany({ where, orderBy: { createdAt: 'desc' } });
       return rows.map(toIntegrationConnectionDetailDto);
@@ -383,7 +422,10 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
       const existing = await app.prisma.integrationConnection.findFirst({
         where: { id: connectionId, guildId, deletedAt: null },
       });
-      if (!existing) throw new NotFoundError('Alert connection not found.');
+      // A chat-kind connection was never an alert watch (see `isChatKindConnection`) — refuse to touch it here.
+      if (!existing || isChatKindConnection(existing.config)) {
+        throw new NotFoundError('Alert connection not found.');
+      }
 
       await app.prisma.integrationConnection.update({
         where: { id: connectionId },

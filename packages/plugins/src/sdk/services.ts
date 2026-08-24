@@ -276,6 +276,27 @@ export interface EnforcerService {
   repairChannels(guildId: string): Promise<{ muteApplied: number; muteFailed: number }>;
 }
 
+/** Snapshot of the Twitch chat bot's EventSub WebSocket connection, for `/twitch status` and the plugin's `health()`. */
+export interface TwitchChatRuntimeStatus {
+  /** False when TWITCH_CLIENT_ID/TWITCH_CLIENT_SECRET are unset or no `TwitchBotIdentity` row exists — everything else no-ops. */
+  enabled: boolean;
+  /** Why `enabled` is false, or why the socket is currently down; undefined when healthy. */
+  reason?: string;
+  connected: boolean;
+  sessionId: string | null;
+  joinedChannels: number;
+  lastError: string | null;
+}
+
+/** Registered by the `integrations` plugin's Twitch chat runtime (packages/plugins/src/integrations/twitch-chat/manager.ts). */
+export interface TwitchChatService {
+  status(): TwitchChatRuntimeStatus;
+  /** Forces an immediate reconcile (create/delete EventSub subscriptions for changed channels) instead of waiting for the next job tick. */
+  reconcileNow(): Promise<void>;
+  /** Closes the EventSub socket and clears in-memory state; called from the host `shutdown()` before Redis/Prisma disconnect. */
+  stop(): Promise<void>;
+}
+
 export interface HostEnableActor {
   id: string;
   source: 'bot' | 'dashboard' | 'system';
@@ -335,6 +356,7 @@ export interface ServiceMap {
   ai: AiService;
   host: HostService;
   enforcer: EnforcerService;
+  twitchChat: TwitchChatService;
 }
 
 /** Registry of cross-plugin services. Consumers call `.get(key)` and no-op gracefully when the provider isn't loaded. */

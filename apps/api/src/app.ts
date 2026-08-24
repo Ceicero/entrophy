@@ -44,6 +44,7 @@ import rolesRoutes from './routes/roles';
 import engagementRoutes from './routes/engagement';
 import communityRoutes from './routes/community';
 import integrationsRoutes from './routes/integrations';
+import twitchChatRoutes from './routes/twitch-chat';
 import oauthIntegrationsRoutes from './routes/oauth-integrations';
 import aiRoutes from './routes/ai';
 import analyticsRoutes from './routes/analytics';
@@ -55,6 +56,7 @@ import donationsRoutes from './routes/donations';
 import verifyRoutes from './routes/verify';
 import developerReportsRoutes from './routes/developer-reports';
 import ownerMetricsRoutes from './routes/owner-metrics';
+import twitchBotRoutes from './routes/twitch-bot';
 
 export interface BuildAppDeps {
   prisma?: PrismaClient;
@@ -263,6 +265,7 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   await app.register(engagementRoutes, { prefix: '/guilds' });
   await app.register(communityRoutes, { prefix: '/guilds' });
   await app.register(integrationsRoutes, { prefix: '/guilds' });
+  await app.register(twitchChatRoutes, { prefix: '/guilds' });
   await app.register(aiRoutes, { prefix: '/guilds' });
   await app.register(analyticsRoutes, { prefix: '/guilds' });
   await app.register(privacyRoutes, { prefix: '/guilds' });
@@ -274,6 +277,7 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   await app.register(verifyRoutes, { prefix: '/verify' });
   await app.register(developerReportsRoutes, { prefix: '/owner' });
   await app.register(ownerMetricsRoutes, { prefix: '/owner' });
+  await app.register(twitchBotRoutes, { prefix: '/owner' });
 
   app.addHook('onClose', async () => {
     if (!deps.queues) {

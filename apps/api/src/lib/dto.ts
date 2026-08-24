@@ -200,7 +200,11 @@ export function toRolePanelDto(row: RolePanel & { options?: RolePanelOption[] })
   };
 }
 
-const CONNECTION_STATUS_MAP: Record<IntegrationConnection['status'], IntegrationConnectionDto['status']> = {
+/** Exported for reuse by other `ConnectionStatus`-backed rows (e.g. `TwitchChatChannel`/`TwitchBotIdentity` in `lib/integrations/dto.ts`). */
+export const CONNECTION_STATUS_MAP: Record<
+  IntegrationConnection['status'],
+  IntegrationConnectionDto['status']
+> = {
   CONNECTED: 'connected',
   DISCONNECTED: 'disconnected',
   ERROR: 'error',

@@ -22,6 +22,32 @@ degrades independently when its env vars are unset — the plugin itself never b
   JSON payload to any HTTPS URL on selected platform events: `moderation.caseCreated`, `ticket.opened`,
   `ticket.closed`, `member.verified`, `level.up`, `automod.triggered`, `enforcer.decided`).
 
+## Twitch chat bot
+
+Entrophy joining a streamer's Twitch chat to answer commands — a distinct feature from the Twitch stream-live
+alert watcher above, sharing only the `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` env vars. Lives in
+`twitch-chat/` (`helix.ts`, `socket.ts`, `manager.ts`, `engine.ts`, `timers.ts`) + the `twitch-chat-tick` job.
+See `docs/ARCHITECTURE.md` §19a for the full runtime contract.
+
+- **How it works**: Entrophy runs as ONE dedicated Twitch bot account, authorized once by Brandon (owner-only
+  `POST /owner/twitch-bot/connect`, `routes/twitch-bot.ts`). A streamer links their channel from the dashboard's
+  "Twitch chat" tab (`POST /:guildId/integrations/twitch-chat/connect`, OAuth scope `channel:bot`). Chat
+  messages arrive over the official EventSub WebSocket (`channel.chat.message` v1, Node 22's built-in global
+  `WebSocket` — no new dependency); replies go out through Helix "Send Chat Message". All chat reads/sends run
+  on the bot identity's token, never the broadcaster's.
+- **Features**: per-channel custom `!commands` (name, response with `{user}`/`{channel}` placeholders, cooldown,
+  minimum chat level everyone/subscriber/vip/moderator/broadcaster), recurring timers, and built-ins
+  `!commands`/`!uptime`/`!title`. Configured from `/twitch` or the dashboard's Twitch chat tab (max 50 commands
+  and 10 timers per channel).
+- **What is stored**: the bot identity's and each linked channel's OAuth tokens (encrypted, same as every other
+  connection), and the command/timer definitions themselves (name, response text, cooldown, level, interval).
+- **What is NOT stored**: chat message content or chatter identity. Messages are parsed **in memory only**, to
+  match a command, and are never written to a database row, a log line, or Discord. No Twitch-side moderation
+  actions (ban/timeout/delete) ship in v1 — no moderator scopes are requested.
+- **Degradation**: with `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` unset, or before Brandon authorizes the bot
+  account, the feature reports itself as not configured (`/twitch status`, the dashboard tab, and this plugin's
+  `health()`) instead of failing silently or erroring.
+
 ## Commands
 
 `/integration connect <provider> [target] [channel] [role] [template]` — OAuth providers reply with a dashboard
@@ -32,6 +58,8 @@ connection immediately if `target`+`channel` are given.
 per target).
 `/integration webhook create|list|delete` — inbound endpoints; the secret is shown exactly once, at creation.
 `/integration outbound create|list|delete|test` — outbound endpoints.
+`/twitch status|setup|off`, `/twitch command add|remove|list`, `/twitch timer add|remove|list` — the Twitch chat
+bot, above.
 
 ## Config keys
 
@@ -55,6 +83,8 @@ None.
 - Alert connectors only read publicly available data about the watched target; no member data or message content
   is ever sent to a provider.
 - Stripe events never carry card data — only price ids and the Discord user id from checkout metadata.
+- Twitch chat messages are parsed in memory only, to match a command — never persisted, logged, or sent to
+  Discord.
 
 ## Dashboard page
 
@@ -68,10 +98,13 @@ alert watch management, and inbound/outbound webhook tabs with deliveries.
   plugin's `IntegrationsService.sendOutbound`/`testWebhook` are written to tolerate both that call shape and the
   documented positional one (`sdk/services.ts`), but the mismatch itself is a bot-host-owned file this plugin
   cannot fix — flagged for a wiring-stage reconciliation pass.
-- Twitch and Reddit are polled with **app-level** credentials (client-credentials grant), not a per-connection
-  user OAuth token — matching SPEC.md §J's "client-credentials app token" / "app-only OAuth" wording. `twitch` and
-  `reddit` are still listed as OAuth providers in `apps/api/src/lib/integrations/providers.ts` (pre-existing, not
-  changed here); that dashboard OAuth flow links the connecting staff member's own account but isn't required for
-  alerts to work — `/integration alerts add` (app-token based) is what actually watches a target.
+- Twitch **stream-live alerts** and Reddit are polled with **app-level** credentials (client-credentials
+  grant), not a per-connection user OAuth token — matching SPEC.md §J's "client-credentials app token" /
+  "app-only OAuth" wording. `twitch` and `reddit` are still listed as OAuth providers in
+  `apps/api/src/lib/integrations/providers.ts` (pre-existing, not changed here); that dashboard OAuth flow links
+  the connecting staff member's own account but isn't required for alerts to work — `/integration alerts add`
+  (app-token based) is what actually watches a target. The **Twitch chat bot** (above) is the exception: it
+  genuinely runs on real per-connection user OAuth — the broadcaster's `channel:bot` grant plus Entrophy's own
+  dedicated bot-account token — not the app-level client-credentials grant the alert watcher uses.
 - GitHub's optional `repo:`/`branch:` filters are encoded as extra entries in `WebhookEndpoint.events` (there's no
   dedicated filter column on that model) rather than a real event-type allowlist plus separate filter fields.

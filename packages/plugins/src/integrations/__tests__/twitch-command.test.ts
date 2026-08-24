@@ -1,0 +1,509 @@
+import { describe, expect, it, vi } from 'vitest';
+import type { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { env } from '@entrophy/core';
+import { createTestContext } from '../../sdk/testing';
+import type { CommandContext, ServiceRegistry } from '../../sdk';
+import { command as twitchCommand, twitchConfirmComponents } from '../commands/twitch';
+import en from '../locales/en.json';
+
+/** Looks a dotted key up in the plugin's real `en.json` with `{var}` interpolation (same stand-in used by
+ * community/__tests__/tag-command.test.ts and moderation/__tests__/purge-command.test.ts). */
+function realT(key: string, vars?: Record<string, string | number>): string {
+  const parts = key.split('.');
+  let node: unknown = en;
+  for (const part of parts) {
+    if (node && typeof node === 'object' && part in (node as Record<string, unknown>)) {
+      node = (node as Record<string, unknown>)[part];
+    } else {
+      return key;
+    }
+  }
+  if (typeof node !== 'string') return key;
+  let out = node;
+  for (const [k, v] of Object.entries(vars ?? {})) {
+    out = out.replaceAll(`{${k}}`, String(v));
+  }
+  return out;
+}
+
+const GUILD_ID = 'guild-1';
+const USER_ID = '111111111111111111';
+
+const CHANNEL_1 = {
+  id: 'chan1',
+  guildId: GUILD_ID,
+  broadcasterUserId: 'twitch-uid-1',
+  broadcasterLogin: 'streamer_one',
+  enabled: true,
+  status: 'CONNECTED',
+  lastError: null as string | null,
+  lastConnectedAt: null as Date | null,
+  commandPrefix: '!',
+  connectionId: null as string | null,
+  createdBy: USER_ID,
+  createdAt: new Date('2026-01-01T00:00:00Z'),
+  updatedAt: new Date('2026-01-01T00:00:00Z'),
+};
+
+const CHANNEL_2 = {
+  ...CHANNEL_1,
+  id: 'chan2',
+  broadcasterUserId: 'twitch-uid-2',
+  broadcasterLogin: 'streamer_two',
+};
+
+interface ReplyPayload {
+  embeds?: EmbedBuilder[];
+  components?: unknown[];
+  ephemeral?: boolean;
+}
+
+interface FakeOptions {
+  group?: string | null;
+  sub: string;
+  strings?: Record<string, string | null>;
+  integers?: Record<string, number | null>;
+}
+
+function fakeInteraction(opts: FakeOptions) {
+  const replies: ReplyPayload[] = [];
+  const followUps: ReplyPayload[] = [];
+
+  const interaction = {
+    user: { id: USER_ID },
+    guild: { id: GUILD_ID },
+    options: {
+      getSubcommandGroup: () => opts.group ?? null,
+      getSubcommand: () => opts.sub,
+      getString: (name: string) => (opts.strings ?? {})[name] ?? null,
+      getInteger: (name: string) => (opts.integers ?? {})[name] ?? null,
+      getFocused: () => ({ name: 'channel', value: '' }),
+    },
+    reply: vi.fn(async (payload: ReplyPayload) => {
+      replies.push(payload);
+    }),
+    followUp: vi.fn(async (payload: ReplyPayload) => {
+      followUps.push(payload);
+    }),
+    respond: vi.fn(async () => undefined),
+  };
+
+  return { interaction, replies, followUps };
+}
+
+function buildContext(
+  opts: FakeOptions,
+  testCtxOverrides: Parameters<typeof createTestContext>[0] = {},
+): { c: CommandContext; replies: ReplyPayload[]; followUps: ReplyPayload[]; services: ServiceRegistry } {
+  const { interaction, replies, followUps } = fakeInteraction(opts);
+  const { ctx, services } = createTestContext(testCtxOverrides);
+
+  const c: CommandContext = {
+    interaction: interaction as unknown as ChatInputCommandInteraction<'cached'>,
+    ctx,
+    guildId: GUILD_ID,
+    staffLevel: 'admin',
+    locale: 'en-US' as never,
+    t: realT,
+    config: async <T>() => ({}) as T,
+  };
+
+  return { c, replies, followUps, services };
+}
+
+function descriptionOf(payloads: ReplyPayload[]): string {
+  return payloads[0]?.embeds?.[0]?.data.description ?? '';
+}
+
+describe('/twitch status', () => {
+  it('reports no bot identity and no channels honestly', async () => {
+    const { c, replies } = buildContext(
+      { sub: 'status' },
+      {
+        prismaOverrides: {
+          twitchBotIdentity: { findFirst: async () => null },
+          twitchChatChannel: { findMany: async () => [] },
+        },
+      },
+    );
+
+    await twitchCommand.execute(c);
+
+    const desc = descriptionOf(replies);
+    expect(desc).toContain(realT('twitch.status.botNotConfigured'));
+    expect(desc).toContain(realT('twitch.status.noChannels'));
+  });
+
+  it('shows the bot login and per-channel command/timer counts when configured', async () => {
+    const { c, replies } = buildContext(
+      { sub: 'status' },
+      {
+        prismaOverrides: {
+          twitchBotIdentity: { findFirst: async () => ({ botLogin: 'entrophy_bot' }) },
+          twitchChatChannel: { findMany: async () => [CHANNEL_1] },
+          twitchChatCommand: { count: async () => 3 },
+          twitchChatTimer: { count: async () => 1 },
+        },
+      },
+    );
+
+    await twitchCommand.execute(c);
+
+    const desc = descriptionOf(replies);
+    expect(desc).toContain(realT('twitch.status.botConfigured', { login: 'entrophy_bot' }));
+    expect(desc).toContain(
+      realT('twitch.status.channelLine', {
+        status: '🟢 Connected',
+        login: 'streamer_one',
+        prefix: '!',
+        commands: 3,
+        timers: 1,
+        disabled: '',
+      }),
+    );
+  });
+});
+
+describe('/twitch setup', () => {
+  it('includes the dashboard click-path and a caveat when the bot identity is missing', async () => {
+    const { c, replies } = buildContext(
+      { sub: 'setup' },
+      { prismaOverrides: { twitchBotIdentity: { findFirst: async () => null } } },
+    );
+
+    await twitchCommand.execute(c);
+
+    const url = `${env.DASHBOARD_URL ?? 'the dashboard'}/dashboard/${GUILD_ID}/integrations`;
+    const desc = descriptionOf(replies);
+    expect(desc).toContain(realT('twitch.setup.instructions', { url }));
+    expect(desc).toContain(realT('twitch.setup.botNotConfiguredNote'));
+  });
+
+  it('omits the caveat once the bot identity is connected', async () => {
+    const { c, replies } = buildContext(
+      { sub: 'setup' },
+      { prismaOverrides: { twitchBotIdentity: { findFirst: async () => ({ botLogin: 'entrophy_bot' }) } } },
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(descriptionOf(replies)).not.toContain('ask the bot owner');
+  });
+});
+
+describe('/twitch off', () => {
+  it('refuses when the guild has no linked channels', async () => {
+    const { c, replies } = buildContext(
+      { sub: 'off' },
+      { prismaOverrides: { twitchChatChannel: { findMany: async () => [] } } },
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(descriptionOf(replies)).toContain(realT('twitch.off.noChannels'));
+  });
+
+  it('sends a confirmation prompt (and disables nothing yet) when fast actions are off', async () => {
+    const updateMany = vi.fn(async () => ({ count: 0 }));
+    const { c, replies } = buildContext(
+      { sub: 'off' },
+      {
+        prismaOverrides: { twitchChatChannel: { findMany: async () => [CHANNEL_1], updateMany } },
+      },
+    );
+    c.ctx.services.register('host', { getGuildConfig: async () => ({ fastActions: false }) } as never);
+
+    await twitchCommand.execute(c);
+
+    expect(updateMany).not.toHaveBeenCalled();
+    expect(replies).toHaveLength(1);
+    expect(replies[0]?.components).toHaveLength(1);
+  });
+
+  it('disables every channel, audits, and nudges reconcile when fast actions short-circuit the prompt', async () => {
+    const updateMany = vi.fn(async () => ({ count: 1 }));
+    const audit = vi.fn(async () => undefined);
+    const reconcileNow = vi.fn(async () => undefined);
+    const { c, replies } = buildContext(
+      { sub: 'off' },
+      {
+        prismaOverrides: { twitchChatChannel: { findMany: async () => [CHANNEL_1], updateMany } },
+        overrides: { audit },
+      },
+    );
+    c.ctx.services.register('host', { getGuildConfig: async () => ({ fastActions: true }) } as never);
+    c.ctx.services.register(
+      'twitchChat',
+      { status: () => undefined, reconcileNow, stop: async () => undefined } as never,
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(updateMany).toHaveBeenCalledWith({ where: { guildId: GUILD_ID }, data: { enabled: false } });
+    expect(audit).toHaveBeenCalledTimes(1);
+    expect(reconcileNow).toHaveBeenCalledTimes(1);
+    expect(descriptionOf(replies)).toContain(realT('twitch.off.done'));
+  });
+});
+
+describe('/twitch command add — validation', () => {
+  it('rejects an invalid name without touching the database', async () => {
+    const findMany = vi.fn(async () => [CHANNEL_1]);
+    const { c, replies } = buildContext(
+      { group: 'command', sub: 'add', strings: { name: 'Not Valid!', response: 'hi' } },
+      { prismaOverrides: { twitchChatChannel: { findMany } } },
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(findMany).not.toHaveBeenCalled();
+    expect(descriptionOf(replies)).toContain(realT('twitch.errors.invalidName'));
+  });
+
+  it('rejects a reserved built-in command name', async () => {
+    const { c, replies } = buildContext({
+      group: 'command',
+      sub: 'add',
+      strings: { name: 'uptime', response: 'hi' },
+    });
+
+    await twitchCommand.execute(c);
+
+    expect(descriptionOf(replies)).toContain(realT('twitch.errors.reservedName', { name: 'uptime' }));
+  });
+
+  it('rejects a response that is only whitespace', async () => {
+    const { c, replies } = buildContext({
+      group: 'command',
+      sub: 'add',
+      strings: { name: 'hello', response: '   ' },
+    });
+
+    await twitchCommand.execute(c);
+
+    expect(descriptionOf(replies)).toContain(realT('twitch.errors.emptyResponse'));
+  });
+
+  it('requires an explicit channel when more than one is linked', async () => {
+    const { c, replies } = buildContext(
+      { group: 'command', sub: 'add', strings: { name: 'hello', response: 'hi there' } },
+      { prismaOverrides: { twitchChatChannel: { findMany: async () => [CHANNEL_1, CHANNEL_2] } } },
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(descriptionOf(replies)).toContain(realT('twitch.errors.channelRequired'));
+  });
+
+  it('rejects a name that already exists for the resolved channel', async () => {
+    const create = vi.fn();
+    const { c, replies } = buildContext(
+      { group: 'command', sub: 'add', strings: { name: 'hello', response: 'hi there' } },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [CHANNEL_1] },
+          twitchChatCommand: { findUnique: async () => ({ id: 'existing' }), create },
+        },
+      },
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(create).not.toHaveBeenCalled();
+    expect(descriptionOf(replies)).toContain(realT('twitch.errors.commandExists', { name: 'hello' }));
+  });
+
+  it('rejects once the channel is at its command cap', async () => {
+    const create = vi.fn();
+    const { c, replies } = buildContext(
+      { group: 'command', sub: 'add', strings: { name: 'hello', response: 'hi there' } },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [CHANNEL_1] },
+          twitchChatCommand: { findUnique: async () => null, count: async () => 50, create },
+        },
+      },
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(create).not.toHaveBeenCalled();
+    expect(descriptionOf(replies)).toContain(realT('twitch.errors.commandLimit', { max: 50 }));
+  });
+});
+
+describe('/twitch command add — success', () => {
+  it('auto-resolves the only linked channel, creates the row, audits, and nudges reconcile', async () => {
+    const created: unknown[] = [];
+    const audit = vi.fn(async () => undefined);
+    const reconcileNow = vi.fn(async () => undefined);
+    const { c, replies } = buildContext(
+      {
+        group: 'command',
+        sub: 'add',
+        strings: { name: 'HELLO', response: 'Hi {user}!', level: 'moderator' },
+        integers: { cooldown: 10 },
+      },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [CHANNEL_1] },
+          twitchChatCommand: {
+            findUnique: async () => null,
+            count: async () => 0,
+            create: async (args: unknown) => {
+              created.push(args);
+              return { id: 'cmd1', name: 'hello' };
+            },
+          },
+        },
+        overrides: { audit },
+      },
+    );
+    c.ctx.services.register(
+      'twitchChat',
+      { status: () => undefined, reconcileNow, stop: async () => undefined } as never,
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(created).toHaveLength(1);
+    expect((created[0] as { data: Record<string, unknown> }).data).toMatchObject({
+      channelId: CHANNEL_1.id,
+      guildId: GUILD_ID,
+      name: 'hello', // normalized to lowercase
+      response: 'Hi {user}!',
+      cooldownSeconds: 10,
+      minLevel: 'MODERATOR',
+      createdBy: USER_ID,
+    });
+    expect(audit).toHaveBeenCalledTimes(1);
+    expect(reconcileNow).toHaveBeenCalledTimes(1);
+    expect(descriptionOf(replies)).toContain(
+      realT('twitch.command.added', { name: 'hello', channel: CHANNEL_1.broadcasterLogin }),
+    );
+  });
+});
+
+describe('/twitch command remove', () => {
+  it('reports not found when no command matches the name', async () => {
+    const { c, replies } = buildContext(
+      { group: 'command', sub: 'remove', strings: { name: 'missing' } },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [CHANNEL_1] },
+          twitchChatCommand: { findUnique: async () => null },
+        },
+      },
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(descriptionOf(replies)).toContain(realT('twitch.errors.commandNotFound', { name: 'missing' }));
+  });
+
+  it('deletes immediately, audits, and nudges reconcile when fast actions are on', async () => {
+    const del = vi.fn(async () => undefined);
+    const audit = vi.fn(async () => undefined);
+    const reconcileNow = vi.fn(async () => undefined);
+    const { c, replies } = buildContext(
+      { group: 'command', sub: 'remove', strings: { name: 'hello' } },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [CHANNEL_1] },
+          twitchChatCommand: { findUnique: async () => ({ id: 'cmd1', name: 'hello' }), delete: del },
+        },
+      },
+    );
+    c.ctx.services.register('host', { getGuildConfig: async () => ({ fastActions: true }) } as never);
+    c.ctx.services.register(
+      'twitchChat',
+      { status: () => undefined, reconcileNow, stop: async () => undefined } as never,
+    );
+    const auditSpy = vi.spyOn(c.ctx, 'audit').mockImplementation(audit);
+
+    await twitchCommand.execute(c);
+
+    expect(del).toHaveBeenCalledWith({ where: { id: 'cmd1' } });
+    expect(auditSpy).toHaveBeenCalledTimes(1);
+    expect(reconcileNow).toHaveBeenCalledTimes(1);
+    expect(descriptionOf(replies)).toContain(realT('twitch.command.removed', { name: 'hello' }));
+  });
+
+  it('sends a confirmation prompt (and deletes nothing yet) when fast actions are off', async () => {
+    const del = vi.fn(async () => undefined);
+    const { c, replies } = buildContext(
+      { group: 'command', sub: 'remove', strings: { name: 'hello' } },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [CHANNEL_1] },
+          twitchChatCommand: { findUnique: async () => ({ id: 'cmd1', name: 'hello' }), delete: del },
+        },
+      },
+    );
+    c.ctx.services.register('host', { getGuildConfig: async () => ({ fastActions: false }) } as never);
+
+    await twitchCommand.execute(c);
+
+    expect(del).not.toHaveBeenCalled();
+    expect(replies).toHaveLength(1);
+    expect(replies[0]?.components).toHaveLength(1);
+  });
+});
+
+describe('/twitch timer add — success', () => {
+  it('creates a timer row for the resolved channel', async () => {
+    const created: unknown[] = [];
+    const { c, replies } = buildContext(
+      {
+        group: 'timer',
+        sub: 'add',
+        strings: { name: 'social', message: 'Follow us!' },
+        integers: { 'interval-minutes': 30 },
+      },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [CHANNEL_1] },
+          twitchChatTimer: {
+            findUnique: async () => null,
+            count: async () => 0,
+            create: async (args: unknown) => {
+              created.push(args);
+              return { id: 'timer1', name: 'social' };
+            },
+          },
+        },
+      },
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(created).toHaveLength(1);
+    expect((created[0] as { data: Record<string, unknown> }).data).toMatchObject({
+      channelId: CHANNEL_1.id,
+      guildId: GUILD_ID,
+      name: 'social',
+      message: 'Follow us!',
+      intervalMinutes: 30,
+      createdBy: USER_ID,
+    });
+    expect(descriptionOf(replies)).toContain(
+      realT('twitch.timer.added', { name: 'social', channel: CHANNEL_1.broadcasterLogin, interval: 30 }),
+    );
+  });
+});
+
+describe('twitchConfirmComponents', () => {
+  it('registers confirm/cancel handlers for off, command-remove, and timer-remove', () => {
+    const actions = twitchConfirmComponents.map((h) => h.action).sort();
+    expect(actions).toEqual(
+      [
+        'confirm-twitch-off',
+        'cancel-twitch-off',
+        'confirm-twitch-command-remove',
+        'cancel-twitch-command-remove',
+        'confirm-twitch-timer-remove',
+        'cancel-twitch-timer-remove',
+      ].sort(),
+    );
+  });
+});

@@ -46,5 +46,60 @@
   },
   "errors": {
     "invalidUrl": "That URL was rejected: {reason}"
+  },
+  "twitch": {
+    "status": {
+      "title": "Twitch chat status",
+      "botConfigured": "🟢 Entrophy's Twitch bot account is connected — `{login}`.",
+      "botNotConfigured": "🔴 Entrophy's Twitch bot account hasn't been connected yet (owner setup pending).",
+      "runtimeConnected": "🟢 Connected to Twitch chat — {count} channel(s) joined.",
+      "runtimeIdle": "🟡 Idle — {reason}",
+      "runtimeReconnecting": "🔴 Reconnecting — {reason}",
+      "noChannels": "No Twitch channels linked yet. Run `/twitch setup` to connect one.",
+      "channelLine": "{status} **{login}** (prefix `{prefix}`) — {commands} command(s), {timers} timer(s){disabled}",
+      "channelDisabledSuffix": " — disabled"
+    },
+    "setup": {
+      "instructions": "Connect a Twitch channel from the dashboard: **Dashboard → this server → Integrations → \"Twitch chat\" tab → Connect a Twitch channel**.\n{url}",
+      "botNotConfiguredNote": "\n\nNote: Entrophy's Twitch bot account isn't set up yet — ask the bot owner to finish that first."
+    },
+    "off": {
+      "confirmTitle": "Turn off Twitch chat?",
+      "confirmBody": "This disables Entrophy in every linked Twitch channel for this server. You can turn a channel back on from the dashboard.",
+      "done": "Twitch chat turned off for this server.",
+      "noChannels": "No Twitch channels are linked for this server."
+    },
+    "errors": {
+      "channelRequired": "This server has more than one linked Twitch channel — specify `channel`.",
+      "noChannels": "No Twitch channels are linked for this server yet. Run `/twitch setup` first.",
+      "channelNotFound": "No linked Twitch channel matches \"{channel}\".",
+      "invalidName": "Must be 1-32 characters: lowercase letters, numbers, or underscore.",
+      "reservedName": "\"{name}\" is a built-in command name and can't be overridden.",
+      "emptyResponse": "That can't be empty.",
+      "commandExists": "A command named \"{name}\" already exists for this channel.",
+      "commandNotFound": "No command named \"{name}\" was found for this channel.",
+      "commandLimit": "This channel has reached its limit of {max} commands.",
+      "timerExists": "A timer named \"{name}\" already exists for this channel.",
+      "timerNotFound": "No timer named \"{name}\" was found for this channel.",
+      "timerLimit": "This channel has reached its limit of {max} timers."
+    },
+    "command": {
+      "added": "Added `!{name}` for **{channel}**.",
+      "removeConfirmTitle": "Remove `!{name}`?",
+      "removeConfirmBody": "This deletes the `!{name}` command for **{channel}**.",
+      "removed": "Removed `!{name}`.",
+      "listTitle": "Commands — {channel}",
+      "listEmpty": "No custom commands yet. Add one with `/twitch command add`.",
+      "listLine": "**!{name}** ({level}, {cooldown}s cooldown){disabled} — {response}"
+    },
+    "timer": {
+      "added": "Added timer `{name}` for **{channel}** (every {interval}m).",
+      "removeConfirmTitle": "Remove timer `{name}`?",
+      "removeConfirmBody": "This deletes the `{name}` timer for **{channel}**.",
+      "removed": "Removed timer `{name}`.",
+      "listTitle": "Timers — {channel}",
+      "listEmpty": "No timers yet. Add one with `/twitch timer add`.",
+      "listLine": "**{name}** — every {interval}m{disabled}: {message}"
+    }
   }
 }

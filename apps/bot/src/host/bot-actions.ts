@@ -18,6 +18,7 @@ export type BotActionType =
   | 'ai.test'
   | 'enforcer.decide'
   | 'enforcer.repairChannels'
+  | 'twitchChat.reconcile'
   | 'guild.refresh';
 
 export interface BotActionJobData {
@@ -38,6 +39,9 @@ const DISPATCH_TABLE: Partial<Record<BotActionType, { service: keyof ServiceMap;
   'ai.test': { service: 'ai', method: 'test' },
   'enforcer.decide': { service: 'enforcer', method: 'decide' },
   'enforcer.repairChannels': { service: 'enforcer', method: 'repairChannels' },
+  // `reconcileNow()` takes no arguments — it ignores the `{ guildId, payload, requestedBy }` object every other
+  // dispatch target receives, since the Twitch chat reconcile loop isn't scoped to one guild.
+  'twitchChat.reconcile': { service: 'twitchChat', method: 'reconcileNow' },
 };
 
 export interface BotActionsWorkerDeps {

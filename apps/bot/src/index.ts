@@ -195,6 +195,11 @@ async function main(): Promise<void> {
     } catch (err) {
       logger.error({ err }, 'error closing plugin job workers');
     }
+    try {
+      await host.services.get('twitchChat')?.stop();
+    } catch (err) {
+      logger.error({ err }, 'error stopping twitch chat service');
+    }
     for (const queue of host.queueCache.values()) {
       try {
         await queue.close();

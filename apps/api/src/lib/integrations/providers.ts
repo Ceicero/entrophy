@@ -121,23 +121,32 @@ export function isOAuthProviderConfigured(providerId: OAuthProviderId): boolean 
   return Boolean(env[cfg.envKeys.clientId] && env[cfg.envKeys.clientSecret]);
 }
 
-/** Builds the provider's OAuth2 authorize URL with the given anti-CSRF `state`. */
+/**
+ * Builds the provider's OAuth2 authorize URL with the given anti-CSRF `state`.
+ *
+ * `scopeOverride` lets a caller request a different scope than the provider's default `cfg.scope` for this one
+ * authorize URL, without touching that default — used by the Twitch chat-bot flows (`routes/twitch-chat.ts`'s
+ * per-guild `channel:bot` connect, `routes/twitch-bot.ts`'s owner-only `user:read:chat user:write:chat user:bot`
+ * connect) so the existing generic Twitch integration's consent screen (`cfg.scope === ''`) never changes.
+ */
 export function buildProviderAuthorizeUrl(
   providerId: OAuthProviderId,
   state: string,
   redirectUri: string,
+  scopeOverride?: string,
 ): string {
   const cfg = OAUTH_PROVIDERS[providerId];
   const clientId = env[cfg.envKeys.clientId];
   if (!clientId) {
     throw new ExternalServiceError(`${cfg.label} is not configured on this server.`);
   }
+  const scope = scopeOverride ?? cfg.scope;
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
     state,
-    ...(cfg.scope ? { scope: cfg.scope } : {}),
+    ...(scope ? { scope } : {}),
     ...cfg.extraAuthorizeParams,
   });
   return `${cfg.authorizeUrl}?${params.toString()}`;
@@ -197,6 +206,40 @@ export async function exchangeProviderCode(
     tokenType: json.token_type,
     scope: json.scope,
   };
+}
+
+export interface TwitchHelixUser {
+  id: string;
+  login: string;
+  displayName: string;
+}
+
+interface RawTwitchUsersResponse {
+  data?: { id: string; login: string; display_name: string }[];
+}
+
+/**
+ * Identifies the Twitch user behind a freshly-exchanged user access token via Helix `GET /users`. Shared by
+ * both Twitch chat-bot connect flows (`routes/oauth-integrations.ts`'s `twitch_chat` branch identifies the
+ * broadcaster; its `twitch_bot` branch identifies Entrophy's own bot account) — same call, different purpose.
+ */
+export async function identifyTwitchUser(accessToken: string): Promise<TwitchHelixUser> {
+  const clientId = env.TWITCH_CLIENT_ID;
+  if (!clientId) {
+    throw new ExternalServiceError('Twitch is not configured on this server.');
+  }
+  const res = await fetch('https://api.twitch.tv/helix/users', {
+    headers: { Authorization: `Bearer ${accessToken}`, 'Client-Id': clientId },
+  });
+  if (!res.ok) {
+    throw new ExternalServiceError(`Twitch user lookup failed (${res.status}).`);
+  }
+  const json = (await res.json()) as RawTwitchUsersResponse;
+  const user = json.data?.[0];
+  if (!user) {
+    throw new ExternalServiceError('Twitch user lookup returned no user.');
+  }
+  return { id: user.id, login: user.login, displayName: user.display_name };
 }
 
 // ---------------------------------------------------------------------------
