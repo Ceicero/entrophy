@@ -248,12 +248,16 @@ function stubTwitchFetch(
     const url = typeof input === 'string' ? input : input.toString();
     if (url.includes('id.twitch.tv/oauth2/token')) {
       return jsonResponse(
+        // Twitch's real `POST /oauth2/token` returns `scope` as a JSON array of strings, not a space-delimited
+        // string like most other providers — this is the shape that broke the naive `token.scope.split(' ')`
+        // in production. Kept as an array here (rather than the old string form) so every test exercising this
+        // default goes through the array-normalization path.
         opts.tokenBody ?? {
           access_token: 'new-access-token',
           refresh_token: 'new-refresh-token',
           expires_in: 14400,
           token_type: 'bearer',
-          scope: 'channel:bot',
+          scope: ['channel:bot'],
         },
       );
     }
@@ -1179,6 +1183,9 @@ describe('GET /integrations/twitch/callback — twitch_chat / twitch_bot purpose
     const token = [...fixture.oauthTokens.values()][0];
     expect(token.connectionId).toBe(connection.id);
     expect(token.accessTokenEnc).not.toBe('new-access-token'); // stored encrypted, never plaintext
+    // Twitch's real token response sends `scope` as a JSON array (see `stubTwitchFetch`'s default), and it
+    // must land here as the same plain string[] a space-delimited-string provider would produce.
+    expect(token.scopes).toEqual(['channel:bot']);
 
     expect(fixture.channels.size).toBe(1);
     const channel = [...fixture.channels.values()][0];
@@ -1325,6 +1332,16 @@ describe('GET /integrations/twitch/callback — twitch_chat / twitch_bot purpose
     const { cookieHeader } = await loginAs(app, redis, { userId: OWNER_ID });
     await seedState(redis, 'state-bot-1', { provider: 'twitch', userId: OWNER_ID, kind: 'twitch_bot' });
     stubTwitchFetch({
+      // The real bot-connect flow requests three scopes (`buildProviderAuthorizeUrl`'s `scopeOverride` in
+      // `routes/twitch-bot.ts`), and Twitch always returns them back as a JSON array, never a string — exercise
+      // that multi-element array shape here rather than the single-scope default.
+      tokenBody: {
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: 14400,
+        token_type: 'bearer',
+        scope: ['user:read:chat', 'user:write:chat', 'user:bot'],
+      },
       usersBody: { data: [{ id: 'bot-uid', login: 'entrophybot', display_name: 'EntrophyBot' }] },
     });
 
@@ -1345,7 +1362,7 @@ describe('GET /integrations/twitch/callback — twitch_chat / twitch_bot purpose
       botUserId: 'bot-uid',
       botLogin: 'entrophybot',
       status: 'CONNECTED',
-      scopes: ['channel:bot'],
+      scopes: ['user:read:chat', 'user:write:chat', 'user:bot'],
     });
     expect(identity.accessTokenEnc).not.toBe('new-access-token');
 

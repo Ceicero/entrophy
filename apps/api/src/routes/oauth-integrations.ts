@@ -100,7 +100,7 @@ export default async function oauthIntegrationsRoutes(app: ZodFastifyInstance): 
         if (!token.refreshToken || !token.expiresIn) {
           throw new ExternalServiceError('Twitch did not return a refresh token/expiry for the bot account.');
         }
-        const scopes = token.scope ? token.scope.split(' ').filter(Boolean) : [];
+        const scopes = token.scopes;
         const expiresAt = new Date(Date.now() + token.expiresIn * 1000);
 
         const data = {
@@ -182,7 +182,7 @@ export default async function oauthIntegrationsRoutes(app: ZodFastifyInstance): 
             accessTokenEnc: encryptSecret(token.accessToken),
             refreshTokenEnc: token.refreshToken ? encryptSecret(token.refreshToken) : undefined,
             tokenType: token.tokenType,
-            scopes: token.scope ? token.scope.split(' ').filter(Boolean) : [],
+            scopes: token.scopes,
             expiresAt: token.expiresIn ? new Date(Date.now() + token.expiresIn * 1000) : undefined,
           },
         });
@@ -237,7 +237,7 @@ export default async function oauthIntegrationsRoutes(app: ZodFastifyInstance): 
           accessTokenEnc: encryptSecret(token.accessToken),
           refreshTokenEnc: token.refreshToken ? encryptSecret(token.refreshToken) : undefined,
           tokenType: token.tokenType,
-          scopes: token.scope ? token.scope.split(' ').filter(Boolean) : [],
+          scopes: token.scopes,
           expiresAt: token.expiresIn ? new Date(Date.now() + token.expiresIn * 1000) : undefined,
         },
       });

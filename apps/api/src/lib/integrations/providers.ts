@@ -157,7 +157,8 @@ export interface ExchangedProviderToken {
   refreshToken?: string;
   expiresIn?: number;
   tokenType?: string;
-  scope?: string;
+  /** Normalized to a string array regardless of how the provider sent it — see `normalizeScope`. */
+  scopes: string[];
 }
 
 interface RawTokenResponse {
@@ -165,7 +166,18 @@ interface RawTokenResponse {
   refresh_token?: string;
   expires_in?: number;
   token_type?: string;
-  scope?: string;
+  /** Most providers send a space-delimited string, but Twitch's `POST /oauth2/token` sends a JSON array of
+   * strings instead (e.g. `["user:read:chat","user:write:chat","user:bot"]`). Typed as either shape so callers
+   * can't reach for a bare `.split()` that only works for one of them — always go through `normalizeScope`. */
+  scope?: string | string[];
+}
+
+/** Normalizes a provider's token-response `scope` — a space-delimited string for most providers, a JSON array
+ * for Twitch (see `RawTokenResponse.scope`) — into a single consistent `string[]` shape for callers. */
+function normalizeScope(scope: string | string[] | undefined): string[] {
+  if (!scope) return [];
+  if (Array.isArray(scope)) return scope.filter(Boolean);
+  return scope.split(' ').filter(Boolean);
 }
 
 /** Exchanges an OAuth `code` for tokens with the provider's token endpoint. */
@@ -204,7 +216,7 @@ export async function exchangeProviderCode(
     refreshToken: json.refresh_token,
     expiresIn: json.expires_in,
     tokenType: json.token_type,
-    scope: json.scope,
+    scopes: normalizeScope(json.scope),
   };
 }
 
