@@ -56,13 +56,13 @@ set` (and the equivalent dashboard action) changes a member's stored XP/level im
   render a visible "this is a template" banner on purpose — see
   `docs/PRIVACY_POLICY_TEMPLATE.md`'s intro. This is intentional, not a gap to close by MVP; it needs an
   operator's actual review before it stops being a template, which is outside engineering scope.
-- **Twitch chat bot needs one owner-only setup step before it's live.** The `integrations` plugin can join
-  a streamer's Twitch chat (EventSub WebSocket + Helix send, custom `!commands`/timers, built-in
-  `!commands`/`!uptime`/`!title`) once a streamer links their channel from the dashboard — but that only
-  starts working once Brandon authorizes Entrophy's own dedicated Twitch bot account once
-  (`POST /owner/twitch-bot/connect`; see `docs/claude-project/06-status-and-open-items.md` §3.7). Until
-  then the feature honestly reports itself as not configured rather than failing silently. No Twitch-side
-  moderation actions (ban/timeout/delete) ship in v1 — custom commands and timers only.
+- **Twitch chat bot is live.** The `integrations` plugin joins a streamer's Twitch chat (EventSub
+  WebSocket + Helix send, custom `!commands`/timers, built-in `!commands`/`!uptime`/`!title`) once a
+  streamer links their channel from the dashboard. The one-time authorization of the platform's dedicated
+  Twitch bot account is done on the hosted deployment; self-hosters do it once via
+  `POST /owner/twitch-bot/connect`. Until that step, the feature honestly reports itself as not configured
+  rather than failing silently. No Twitch-side moderation actions (ban/timeout/delete) ship in v1 —
+  custom commands and timers only.
 
 ## v1 — hardening
 

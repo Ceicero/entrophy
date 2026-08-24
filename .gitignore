@@ -31,3 +31,8 @@ apps/*/public/brand/
 apps/web/src/app/apple-icon.png
 apps/web/src/app/apple-icon.jpg
 apps/web/src/app/apple-icon.jpeg
+
+# private working docs — not part of the open-source distribution
+/CLAUDE.md
+/docs/claude-project/
+/.claude/

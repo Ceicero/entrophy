@@ -383,8 +383,9 @@ MVP → v1 → future modules, in order: **`docs/ROADMAP.md`**.
 
 ## License
 
-No license has been chosen for this project yet. **Choose a license before distributing or open-sourcing
-this repository** — do not assume any particular license applies until one is explicitly added here.
+Entrophy is open source under the **GNU Affero General Public License v3.0** — see [LICENSE](LICENSE).
+In short: you are free to use, study, modify, and self-host it, but if you run a modified version as a
+network service you must make your modified source available to its users under the same license.
 
 ## Credits
 
