@@ -1,6 +1,6 @@
 import { Logo } from './Logo';
 import { siteCopy } from '../content/site';
-import { supportServerUrl } from '../lib/site';
+import { supportServerUrl, GITHUB_URL } from '../lib/site';
 
 const COLUMNS: { title: string; links: { href: string; label: string; external?: boolean }[] }[] = [
   {
@@ -62,9 +62,14 @@ export function Footer() {
                 </li>
               )}
               <li>
-                <span className="text-sm text-grey-5" title="Repository link coming soon">
-                  GitHub (coming soon)
-                </span>
+                <a
+                  href={GITHUB_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-grey-3 transition-colors hover:text-grey-7"
+                >
+                  GitHub
+                </a>
               </li>
             </ul>
           </div>

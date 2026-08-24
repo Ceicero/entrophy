@@ -49,3 +49,6 @@ export function inviteUrl(): string | null {
 }
 
 export const SITE_URL = 'https://entrophybot.com';
+
+/** Public source repository (AGPL-3.0). Entrophy is open source — linked from the footer. */
+export const GITHUB_URL = 'https://github.com/Ceicero/entrophy';
