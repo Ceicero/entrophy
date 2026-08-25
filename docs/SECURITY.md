@@ -87,12 +87,10 @@ audit`.
 
 ## 3. Reporting a vulnerability
 
-**Placeholder contact — update this before a real deployment goes live**: `security@entrophybot.com`.
-This mailbox does not necessarily exist yet; Brandon needs to confirm it's set up and monitored
-before this section is anything more than a placeholder, the same caveat as the mailbox referenced in
-`docs/PRIVACY_POLICY_TEMPLATE.md`.
+Security contact: `entrophybot@gmail.com` (confirmed and monitored — the project's general contact
+mailbox, also used by the policy pages).
 
-If you find a security issue: email `security@entrophybot.com` with what you found, how to reproduce
+If you find a security issue: email `entrophybot@gmail.com` with what you found, how to reproduce
 it, and its potential impact. Please don't open a public GitHub issue for anything that could be
 actively exploited before a fix ships (encryption bugs, auth bypasses, SSRF/RCE-class findings) —
 issues not already covered by the controls in §2 (e.g. a genuinely new bypass, not "the bot could
