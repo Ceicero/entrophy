@@ -9,6 +9,7 @@ export type PluginId =
   | 'roles'
   | 'engagement'
   | 'community'
+  | 'gamestats'
   | 'economy'
   | 'utility'
   | 'media'
@@ -26,6 +27,7 @@ export const PLUGIN_IDS: readonly PluginId[] = [
   'roles',
   'engagement',
   'community',
+  'gamestats',
   'economy',
   'utility',
   'media',

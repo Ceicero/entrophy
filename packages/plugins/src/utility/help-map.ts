@@ -69,6 +69,9 @@ export const HELP_MAP: Record<string, PluginId> = {
   // economy
   economy: 'economy',
 
+  // gamestats
+  dbd: 'gamestats',
+
   // utility
   help: 'utility',
   utility: 'utility',

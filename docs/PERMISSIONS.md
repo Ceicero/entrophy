@@ -144,6 +144,16 @@ _Polls, giveaways, suggestions, scheduled announcements, reminders, event RSVPs,
 | Manage Roles | birthday role (optional) | Optional | No role is added; the announcement still posts. |
 
 
+### Game Stats (`gamestats`)
+
+_Per-guild leaderboards comparing members' game stats. Members opt in by linking their Steam account; stats are fetched from the public Steam Web API. Steam-only (no public API exists for console platforms) — first game: Dead by Daylight._ (disabled by default, community)
+
+| Permission | Feature | Required? | Fallback if missing |
+|---|---|---|---|
+| Send Messages | stat card / leaderboard replies | Required | The command replies with an error instead of the stat card/leaderboard. |
+| Embed Links | stat card / leaderboard embeds | Required | Falls back to plain text where possible. |
+
+
 ### Economy (`economy`)
 
 _Optional virtual currency: balance, daily rewards with a streak bonus, giving between members, and a leaderboard. Virtual points only — no purchase, no cash-out, no gambling. Disabled by default._ (disabled by default, community)

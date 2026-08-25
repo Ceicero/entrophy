@@ -8,14 +8,14 @@ haven't been started.
 
 ## MVP — what exists now
 
-Everything in `docs/ARCHITECTURE.md` §7.1's plugin table is implemented and tested: 14 plugins
+Everything in `docs/ARCHITECTURE.md` §7.1's plugin table is implemented and tested: 15 plugins
 covering moderation, automod, the Enforcer dispute/ledger workflow, logging, tickets, roles/
 onboarding/verification, engagement (leveling/reputation/starboard/temp-voice), community (polls/
-giveaways/suggestions/announcements/reminders/events), a virtual-currency economy, utility commands,
-integrations (OAuth connections + inbound/outbound webhooks + alert connectors + a Twitch chat bot with
-custom commands/timers), and an optional AI assistant. The dashboard covers every plugin with a
-settings page, the marketplace enable/disable grid, a JSON-schema-driven config drawer, audit log
-viewer, and privacy controls (export/delete/
+giveaways/suggestions/announcements/reminders/events), Steam-linked game-stats leaderboards, a
+virtual-currency economy, utility commands, integrations (OAuth connections + inbound/outbound
+webhooks + alert connectors + a Twitch chat bot with custom commands/timers), and an optional AI
+assistant. The dashboard covers every plugin with a settings page, the marketplace enable/disable
+grid, a JSON-schema-driven config drawer, audit log viewer, and privacy controls (export/delete/
 retention). The public website covers the full command reference (generated from the plugin
 manifests, not hand-maintained — see ARCHITECTURE §17), donations via Stripe Checkout, and
 privacy/terms pages. CI runs lint, typecheck, 931+ tests, and both app builds on every push; the repo
@@ -63,6 +63,15 @@ set` (and the equivalent dashboard action) changes a member's stored XP/level im
   `POST /owner/twitch-bot/connect`. Until that step, the feature honestly reports itself as not configured
   rather than failing silently. No Twitch-side moderation actions (ban/timeout/delete) ship in v1 —
   custom commands and timers only.
+- **Game-stats leaderboards need a Steam Web API key.** The `gamestats` plugin (`/dbd link|unlink|
+  stats|leaderboard|refresh`) lets members opt in with their own Steam account and compares curated
+  stats on a per-guild leaderboard — Dead by Daylight is the first (and, for now, only) supported
+  game. It is **Steam-only, on purpose**: there is no public stats API for console platforms, so this
+  never pretends to support them, and a member's Steam profile/game details must be Public for stats
+  to be fetchable. The plugin declares `STEAM_API_KEY` as required and reports itself `unavailable`
+  (every `/dbd` command replies accordingly, the 30-minute refresh job no-ops) until the operator sets
+  that key — a free key from `steamcommunity.com/dev/apikey`, same manual-step shape as the Twitch bot
+  identity above.
 
 ## v1 — hardening
 

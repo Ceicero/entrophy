@@ -3933,6 +3933,76 @@
       ]
     },
     {
+      "id": "gamestats",
+      "name": "Game Stats",
+      "description": "Per-guild leaderboards comparing members' game stats. Members opt in by linking their Steam account; stats are fetched from the public Steam Web API. Steam-only (no public API exists for console platforms) — first game: Dead by Daylight.",
+      "category": "community",
+      "defaultEnabled": false,
+      "privilegedIntents": [],
+      "commands": [
+        {
+          "name": "dbd",
+          "fullName": "/dbd",
+          "type": "slash",
+          "description": "Dead by Daylight stats: link your Steam account, stat cards, and leaderboards.",
+          "options": [],
+          "subcommands": [
+            {
+              "name": "link",
+              "fullName": "/dbd link",
+              "description": "Link your Steam account to track Dead by Daylight stats.",
+              "options": [
+                {
+                  "name": "account",
+                  "description": "SteamID64, profile URL, or vanity name",
+                  "required": true,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "unlink",
+              "fullName": "/dbd unlink",
+              "description": "Remove your linked Steam account and stats from this server.",
+              "options": []
+            },
+            {
+              "name": "stats",
+              "fullName": "/dbd stats",
+              "description": "Show a Dead by Daylight stat card.",
+              "options": [
+                {
+                  "name": "member",
+                  "description": "Defaults to you.",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
+            },
+            {
+              "name": "leaderboard",
+              "fullName": "/dbd leaderboard",
+              "description": "Show the Dead by Daylight leaderboard for one stat.",
+              "options": [
+                {
+                  "name": "stat",
+                  "description": "Stat to rank by (default: Escapes)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "refresh",
+              "fullName": "/dbd refresh",
+              "description": "Force-refresh your own Dead by Daylight stats.",
+              "options": []
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "economy",
       "name": "Economy",
       "description": "Optional virtual currency: balance, daily rewards with a streak bonus, giving between members, and a leaderboard. Virtual points only — no purchase, no cash-out, no gambling. Disabled by default.",

@@ -224,6 +224,7 @@ PUBLIC_WEBHOOK_BASE_URL=      # public https base for inbound webhooks (EventSub
 | `roles`        | `src/roles`        | `/roles panel create\|edit\|delete\|list\|post\|option-add\|option-remove`, `/roles group create\|edit\|delete\|list`, `/roles persist on\|off\|status`, `/welcome set\|embed\|test\|disable`, `/goodbye set\|embed\|test\|disable`, `/verify` (member-facing), `/verification setup\|queue\|approve\|deny`, `/onboarding checklist\|config\|rules-post\|step-add\|step-remove` | disabled                                               |
 | `engagement`   | `src/engagement`   | `/level rank\|leaderboard\|config\|reset\|xp give\|remove\|set\|rewards add\|remove\|list\|sync\|ignore add\|remove`, `/rep give\|check\|leaderboard\|revoke`, `/starboard set channel\|threshold\|emoji\|selfstar\|status`, `/tempvoice setup\|lock\|unlock\|limit\|rename\|claim\|kick\|permit`                                                                               | enabled (leveling on, rep on, starboard needs channel) |
 | `community`    | `src/community`    | `/poll create\|end\|results`, `/giveaway start\|end\|reroll\|list\|cancel`, `/suggest`, `/suggestions setup\|status\|list`, `/announce schedule\|list\|cancel\|preview`, `/remind set\|list\|cancel`, `/event create\|list\|cancel\|rsvps`                                                                                                                                      | enabled                                                |
+| `gamestats`    | `src/gamestats`    | `/dbd link\|unlink\|stats\|leaderboard\|refresh` — Steam-linked leaderboards, Dead by Daylight first (§19b)                                                                                                                   | disabled, **unavailable without `STEAM_API_KEY`**      |
 | `economy`      | `src/economy`      | `/economy balance\|daily\|give\|leaderboard\|config`, `/economy admin add\|remove` — virtual currency only, **no real money**                                                                                                                                                                                                                                                   | disabled                                               |
 | `utility`      | `src/utility`      | `/help`, `/utility userinfo\|serverinfo\|avatar\|banner\|roleinfo\|channelinfo\|timestamp\|timezone set\|get\|list\|calculator\|afk\|translate\|weather\|status`, `/embed builder`, context menu "User info"                                                                                                                                                                    | enabled                                                |
 | `media`        | `src/media`        | `/music play\|queue\|skip\|pause\|resume\|volume\|loop\|stop\|shuffle\|nowplaying\|playlist save\|load\|list\|delete` — adapter interface only; unavailable unless `MEDIA_PROVIDER` configured with a compliant provider                                                                                                                                                        | disabled                                               |
@@ -476,7 +477,7 @@ Helper `definePlugin(p: Plugin): Plugin` (identity, for typing) and `defineManif
 - `prisma/schema.prisma` (postgres). Client singleton in `src/client.ts` (`export const prisma`, `export * from '@prisma/client'` types). `src/index.ts` also exports `writeAudit(prisma, entry)`, `withGuild(guildId)` helpers, and `retention.ts` helpers.
 - Migration: `prisma/migrations/0001_init/migration.sql` + `migration_lock.toml`, generated with `prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script` (no DB needed). Scripts: `generate`, `migrate:dev`, `migrate:deploy`, `migrate:diff`, `seed` (`tsx prisma/seed.ts`), `studio`.
 - Conventions: ids `String @id @default(cuid())` unless a Discord snowflake is natural (`Guild.id`, `UserProfile.id` = discord user id). Every tenant table has `guildId String` + `@@index([guildId])` (+ compound indexes for hot lookups). Timestamps `createdAt @default(now())`, `updatedAt @updatedAt`. Soft delete via `deletedAt DateTime?` on ModerationCase, Ticket, RolePanel, AutomodRule, Suggestion, WebhookEndpoint, IntegrationConnection. FK to `Guild` with `onDelete: Cascade` (guild data deletion = delete Guild row → cascades). Json config columns typed `Json`.
-- Models (minimum): Guild, GuildConfig (1:1; staff role ids, locale, timezone, fastActions, modLogChannelId, dataCollection flags), PluginState, PluginConfig, PluginMigration, UserProfile, ModerationCase (`caseNumber Int` per guild `@@unique([guildId, caseNumber])`, type enum WARN|TIMEOUT|UNTIMEOUT|KICK|BAN|UNBAN|SOFTBAN|PURGE|LOCK|UNLOCK|SLOWMODE|NICK|ROLE_ADD|ROLE_REMOVE|QUARANTINE|NOTE, targetId, moderatorId, reason, evidenceUrls String[], durationMs, expiresAt, expiredAt, dmSent Boolean, metadata Json, source), ModerationWarning, ModerationNote, ModerationAppeal, ModerationEscalationRule (or inside config Json), AutomodRule, AutomodEvent (with reviewStatus enum PENDING|APPROVED|FALSE_POSITIVE), AuditLog, LogEvent (logging plugin searchable store; content fields nullable), Ticket, TicketParticipant, TicketTranscript, TicketPanel, RolePanel, RolePanelOption, RoleGroup, MemberRoleSnapshot (role persistence), VerificationRequest, OnboardingProgress, ScheduledJob, Reminder, ScheduledAnnouncement, Giveaway, GiveawayEntry, Poll, PollOption, PollVote, Suggestion, SuggestionVote, StarboardEntry, TempVoiceChannel, CommunityEvent, EventRsvp, LevelProfile, LevelReward, ReputationEvent, EconomyAccount, EconomyTransaction, AfkStatus, IntegrationConnection, OAuthToken (encrypted fields `accessTokenEnc`, `refreshTokenEnc`, `expiresAt`, `scopes String[]`), WebhookEndpoint (inbound + outbound, `secretEnc`), WebhookDelivery, ProcessedWebhookEvent (idempotency: `@@unique([provider, eventId])`), DataRetentionPolicy, DataRequest (export/delete jobs), AiUsage, GuildAnalyticsDaily, TwitchBotIdentity (singleton — Entrophy's own Twitch chat-bot account), TwitchChatChannel (a guild's linked Twitch channel), TwitchChatCommand, TwitchChatTimer (enum `TwitchChatLevel` EVERYONE|SUBSCRIBER|VIP|MODERATOR|BROADCASTER — see §19a).
+- Models (minimum): Guild, GuildConfig (1:1; staff role ids, locale, timezone, fastActions, modLogChannelId, dataCollection flags), PluginState, PluginConfig, PluginMigration, UserProfile, ModerationCase (`caseNumber Int` per guild `@@unique([guildId, caseNumber])`, type enum WARN|TIMEOUT|UNTIMEOUT|KICK|BAN|UNBAN|SOFTBAN|PURGE|LOCK|UNLOCK|SLOWMODE|NICK|ROLE_ADD|ROLE_REMOVE|QUARANTINE|NOTE, targetId, moderatorId, reason, evidenceUrls String[], durationMs, expiresAt, expiredAt, dmSent Boolean, metadata Json, source), ModerationWarning, ModerationNote, ModerationAppeal, ModerationEscalationRule (or inside config Json), AutomodRule, AutomodEvent (with reviewStatus enum PENDING|APPROVED|FALSE_POSITIVE), AuditLog, LogEvent (logging plugin searchable store; content fields nullable), Ticket, TicketParticipant, TicketTranscript, TicketPanel, RolePanel, RolePanelOption, RoleGroup, MemberRoleSnapshot (role persistence), VerificationRequest, OnboardingProgress, ScheduledJob, Reminder, ScheduledAnnouncement, Giveaway, GiveawayEntry, Poll, PollOption, PollVote, Suggestion, SuggestionVote, StarboardEntry, TempVoiceChannel, CommunityEvent, EventRsvp, LevelProfile, LevelReward, ReputationEvent, EconomyAccount, EconomyTransaction, AfkStatus, IntegrationConnection, OAuthToken (encrypted fields `accessTokenEnc`, `refreshTokenEnc`, `expiresAt`, `scopes String[]`), WebhookEndpoint (inbound + outbound, `secretEnc`), WebhookDelivery, ProcessedWebhookEvent (idempotency: `@@unique([provider, eventId])`), DataRetentionPolicy, DataRequest (export/delete jobs), AiUsage, GuildAnalyticsDaily, TwitchBotIdentity (singleton — Entrophy's own Twitch chat-bot account), TwitchChatChannel (a guild's linked Twitch channel), TwitchChatCommand, TwitchChatTimer (enum `TwitchChatLevel` EVERYONE|SUBSCRIBER|VIP|MODERATOR|BROADCASTER — see §19a), GameAccountLink, GameStatSnapshot (enum `GameAccountProvider` STEAM only in v1, per-guild opt-in link + latest curated stat snapshot — see §19b).
 - Seed (`prisma/seed.ts`): only creates a **demo guild clearly named `Entrophy Demo (seed)`** with id `000000000000000000`, sample plugin states, one sample automod rule in dry-run, sample retention policy. No fake users/messages.
 
 ## 9. Bot host (`apps/bot`)
@@ -864,6 +865,49 @@ No 15th plugin: lives in `packages/plugins/src/integrations/twitch-chat/` (`heli
 - **Shutdown**: `apps/bot/src/index.ts`'s `shutdown()` calls `host.services.get('twitchChat')?.stop()` (closing
   the socket and clearing in-memory state) before `redis.quit()`/`prisma.$disconnect()`, mirroring how the
   plugin job workers are closed.
+
+## 19b. `gamestats` plugin — Steam leaderboards
+
+Plugin id `gamestats` (§7.1) — the platform's 15th plugin, category `community`, `defaultEnabled: false`. Folder
+`packages/plugins/src/gamestats/`. `requiredEnv: ['STEAM_API_KEY']` — unavailable (see `/plugin status`) without it,
+same "declare it, degrade honestly" pattern as `media`'s `MEDIA_PROVIDER` gate. No privileged intents; no per-guild
+`dashboard` entry (config drawer only — there is nothing to configure, every setting is a member's own link).
+
+- **Opt-in linking, self-reported and unverified, self-service removal**: `/dbd link account:<text>` accepts a
+  pasted SteamID64, profile URL, or vanity name, resolves it (`ISteamUser/ResolveVanityURL/v1` when needed),
+  verifies stats are actually fetchable with a live (cache-bypassing) call, and upserts a `GameAccountLink` row.
+  There is no Steam sign-in, so the bot cannot confirm the linking member actually owns the account — the only
+  enforcement is `GameAccountLink`'s `@@unique([guildId, provider, externalId])` constraint plus a proactive
+  `findFirst` check in `handleLink`: an account already linked by another member in the same guild is rejected
+  with a friendly error (and the constraint's P2002 catches the race between the check and the write). `/dbd
+  unlink` deletes that link and the member's stat snapshots in this guild immediately — no staff approval, and
+  (matching the community plugin's birthdays) not audited, since it is the member's own opt-in data.
+- **Curated snapshot only, no history**: `ISteamUserStats/GetUserStatsForGame/v2` for Steam appid `381210` (Dead by
+  Daylight — the first and only game in v1) is filtered down to the game descriptor's named stat keys
+  (`packages/plugins/src/gamestats/games/dbd.ts`) via `getGameStats`'s `keepKeys` option BEFORE the result is
+  cached or returned — the provider's full stats payload never touches Redis or Prisma. Each refresh overwrites
+  the `GameStatSnapshot` row; `lastError` (e.g. `private`) is surfaced back to the member instead of a stale or
+  blank card.
+- **Refresh job**: `gamestats-refresh`, cron `*/30 * * * *`, iterates `GameAccountLink` rows in guilds where the
+  plugin is enabled and re-fetches each linked member's curated stats, isolating one member's failure from the
+  rest (per-row try/catch). No-ops entirely without `STEAM_API_KEY`. `/dbd refresh` calls the same
+  `refreshMemberStats` with `bypassCache: true` so a member forcing a refresh always sees Steam's current state,
+  never a stale Redis hit.
+- **No resurrecting a deleted link**: `refreshMemberStats` re-checks the `GameAccountLink` row still exists
+  (`findUnique` by id) immediately before writing a `GameStatSnapshot`, skipping the write if the member unlinked
+  while the Steam call was in flight.
+- **Steam-only, honestly labeled**: no public stats API exists for console platforms, so command copy and the
+  plugin README say so plainly rather than guessing or scraping. A private Steam profile ("Game details" not
+  Public) produces a guided error naming the exact fix (Steam profile → Edit Profile → Privacy Settings → Game
+  details → Public), not a silent failure. Steam's `GetUserStatsForGame` returns a 403 when Game details truly
+  isn't Public, but also returns a generic 500 for its own transient hiccups — a 500 is cross-checked against
+  `GetPlayerSummaries`' visibility before deciding `private` vs. a distinct `transient` reason, so a passing Steam
+  outage never sends a member to check a privacy setting that isn't the problem.
+- **Game-pluggable**: built around a `GameDescriptor` (`games/` folder, `GAMES` registry) rather than a hardcoded
+  game, so a second title is a new descriptor file, not a new architecture.
+- **Data export**: `GameAccountLink` and `GameStatSnapshot` rows are included in the guild data-export path
+  (`apps/bot/src/host/data-requests.ts`) and deleted with the guild's data (cascade), same as every other
+  guild-scoped model.
 
 ## 20. Monochrome tokens
 
