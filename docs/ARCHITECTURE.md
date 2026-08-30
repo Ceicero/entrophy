@@ -151,13 +151,14 @@ ENABLE_MESSAGE_CONTENT_INTENT=false   # privileged; enable only after Discord ap
 ENABLE_GUILD_MEMBERS_INTENT=true      # privileged; needed for joins/leaves, welcome, raid detection, role persistence
 ENABLE_GUILD_PRESENCES_INTENT=false   # privileged; not used by default
 COOKIE_DOMAIN=                # prod: shared parent domain for api+dashboard cookies
-TRUST_PROXY=false
+TRUST_PROXY=false             # integer hop count, not a boolean; production behind Railway/Render must be `1` — see infra/DEPLOYMENT.md
 E2E_TEST_MODE=false           # enables /auth/test-login (NEVER in production; api refuses if NODE_ENV=production)
 # Integrations / adapters (all optional; features disable themselves when unset)
 TWITCH_CLIENT_ID= TWITCH_CLIENT_SECRET= TWITCH_EVENTSUB_SECRET=
 YOUTUBE_API_KEY=
 GITHUB_WEBHOOK_SECRET=
-STRIPE_SECRET_KEY= STRIPE_WEBHOOK_SECRET=
+STRIPE_SECRET_KEY= STRIPE_WEBHOOK_SECRET=   # donations also require CAPTCHA_PROVIDER below — see §18
+DONATION_PRESETS_CENTS= DONATION_MIN_CENTS= DONATION_MAX_CENTS= DONATION_MAX_PER_HOUR=   # donation tuning, see §18
 REDDIT_CLIENT_ID= REDDIT_CLIENT_SECRET= REDDIT_USER_AGENT=
 STEAM_API_KEY=
 GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET=
@@ -168,7 +169,7 @@ TRANSLATE_PROVIDER=none       # none | deepl | libretranslate
 DEEPL_API_KEY= LIBRETRANSLATE_URL= LIBRETRANSLATE_API_KEY=
 WEATHER_PROVIDER=none         # none | openweathermap | open-meteo (open-meteo needs no key)
 OPENWEATHERMAP_API_KEY=
-CAPTCHA_PROVIDER=none         # none | hcaptcha | turnstile
+CAPTCHA_PROVIDER=none         # none | hcaptcha | turnstile — REQUIRED for donations (see §18), optional for roles plugin verification
 HCAPTCHA_SITE_KEY= HCAPTCHA_SECRET= TURNSTILE_SITE_KEY= TURNSTILE_SECRET=
 MEDIA_PROVIDER=none           # none | <compliant provider id>; media plugin is unavailable when none
 PUBLIC_WEBHOOK_BASE_URL=      # public https base for inbound webhooks (EventSub, GitHub, Stripe)
@@ -498,8 +499,8 @@ Also `apps/bot/src/host/bot-actions.ts`: processes `bot-actions` queue jobs `{ t
 
 ## 10. API (`apps/api`)
 
-- Fastify 5 + `fastify-type-provider-zod` (`serializerCompiler`, `validatorCompiler`, `jsonSchemaTransform` for swagger). Swagger UI at `/docs`, JSON at `/docs/json`. Script `openapi:export` writes `docs/openapi.json`.
-- Plugins: helmet, cors (`origin: [env.DASHBOARD_URL]`, `credentials: true`), cookie (signed with SESSION_SECRET), rate-limit (global 300/min per IP, auth routes 20/min), sensible.
+- Fastify 5 + `fastify-type-provider-zod` (`serializerCompiler`, `validatorCompiler`, `jsonSchemaTransform` for swagger). Swagger UI at `/docs`, JSON at `/docs/json` — **registered only when `NODE_ENV !== 'production'`**; disabled in production so the exact request shape of public endpoints like `/donations/checkout` isn't handed to anyone who looks (see §18, `docs/SECURITY.md`). Script `openapi:export` writes `docs/openapi.json` from a dev/test run.
+- Plugins: helmet, cors (`origin: [env.DASHBOARD_URL]`, `credentials: true`), cookie (signed with SESSION_SECRET), rate-limit (global 300/min per IP, auth routes 20/min; Redis-backed store, shared across api instances and survives restarts — not per-process memory), sensible.
 - Session: `sid` cookie (httpOnly, sameSite `lax`, secure in prod, `domain: COOKIE_DOMAIN?`), 32-byte random id, Redis hash `entrophy:session:<sid>` TTL 7d: `{ userId, username, avatar, accessTokenEnc, refreshTokenEnc, expiresAt, csrfToken }`. `request.session` decorator. Logout deletes.
 - CSRF: mutating routes require header `X-CSRF-Token` equal to session csrf token (returned by `GET /auth/me`) **and** `Origin`/`Referer` (when present) must be in the allowlist. Dashboard api client sends the header.
 - Auth: `GET /auth/discord/login` (state in Redis 10min, PKCE not required for Discord but include `state`), scopes `identify guilds`; `GET /auth/discord/callback`; `POST /auth/logout`; `GET /auth/me` → `{ user, csrfToken }`. `POST /auth/test-login` only when `E2E_TEST_MODE=true && NODE_ENV!=='production'` (creates a session for a synthetic user + synthetic guild `000000000000000000` where the user is admin) — used by Playwright.
@@ -677,20 +678,49 @@ options: [{name, description, required, type}], subcommands: [{ name, fullName, 
 
 ## 18. Donations API
 
+Hardened 2026-08-26 after a public card-testing incident against this endpoint — see `docs/SECURITY.md` for
+the incident note. The contract below is the post-hardening one; treat any code that still accepts an
+arbitrary `amountCents` or skips CAPTCHA verification as a regression, not an alternate valid mode.
+
 - Env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (already present), `WEB_URL=http://localhost:3003`,
-  `DONATION_PRESETS_CENTS=300,500,1000,2500,5000` (optional override), `DONATION_MIN_CENTS=100`,
-  `DONATION_MAX_CENTS=50000`. API CORS allowlist = `[DASHBOARD_URL, WEB_URL]`.
+  `DONATION_PRESETS_CENTS=500,1000,2500,5000` (optional override), `DONATION_MIN_CENTS=500`,
+  `DONATION_MAX_CENTS=50000`, `DONATION_MAX_PER_HOUR=60`. **Also requires** `CAPTCHA_PROVIDER` set to
+  `hcaptcha` or `turnstile` with that provider's site key + secret (the same env vars the `roles` plugin's
+  optional CAPTCHA verification mode uses — see §4, §7). API CORS allowlist = `[DASHBOARD_URL, WEB_URL]`.
 - Dependency: `stripe` ^22 in `apps/api`.
-- `apps/api/src/routes/donations.ts` (public, no session; rate limit 10/min/IP): `GET /donations/presets` →
-  `{ enabled, currency: 'usd', presetsCents: number[], minCents, maxCents }`; `POST /donations/checkout`
-  body `{ amountCents: int, currency: 'usd' }` → validates range → creates `Donation` row (PENDING) → Stripe Checkout
-  Session (`mode: 'payment'`, `submit_type: 'donate'`, `managed_payments: { enabled: false }` — Stripe's Managed
-  Payments (merchant-of-record, adds a 3.5% fee and requires product tax codes) is default-on for new accounts and is
-  explicitly disabled per session since donations aren't a merchant-of-record product sale,
-  `line_items[0].price_data = { currency, unit_amount, product_data:
-{ name: 'Entrophy donation' } }`, `success_url: ${WEB_URL}/donate/thanks?session_id={CHECKOUT_SESSION_ID}`,
-  `cancel_url: ${WEB_URL}/donate/cancelled`, `metadata: { kind: 'donation', donationId }`) → stores `stripeSessionId` →
-  `{ url }`. 503 `{ error: { code: 'donations_unavailable' } }` when `STRIPE_SECRET_KEY` unset.
+- **Fails closed without a working CAPTCHA.** Donations are only ever `enabled: true` when both
+  `STRIPE_SECRET_KEY` and a configured `CAPTCHA_PROVIDER` (with its keys) are present. Missing either one —
+  including `STRIPE_SECRET_KEY` set but `CAPTCHA_PROVIDER=none`/misconfigured — makes `GET /donations/presets`
+  report `enabled: false` and `POST /donations/checkout` return 503
+  `{ error: { code: 'donations_unavailable' } }`. The endpoint must never accept a checkout it can't verify a
+  human initiated.
+- `apps/api/src/routes/donations.ts` (public, no session; rate limit 10/min/IP **plus** a global
+  `DONATION_MAX_PER_HOUR` ceiling counted across all callers combined, independent of IP — see below):
+  - `GET /donations/presets` → `{ enabled, currency: 'usd', presetsCents: number[], minCents, maxCents,
+    captchaProvider, captchaSiteKey }`. `captchaProvider`/`captchaSiteKey` are `null` whenever CAPTCHA isn't
+    configured (which also forces `enabled: false`); otherwise they tell the web client which widget to render
+    and its public site key. The CAPTCHA secret never leaves the api process.
+  - `POST /donations/checkout` body `{ amountCents: int, currency: 'usd', captchaToken: string }`:
+    1. Verifies `captchaToken` server-side against the configured provider's siteverify endpoint
+       (`apps/api/src/lib/captcha.ts`, shared with the `roles` plugin's `/verify/:token` completion page —
+       `routes/verify.ts`) **before anything else runs**. A missing, invalid, or expired token is a 400 —
+       no Stripe call and no `Donation` row are created for that attempt.
+    2. Validates `amountCents` is **EXACTLY** one of `presetsCents` (`DONATION_PRESETS_CENTS`) — arbitrary
+       amounts within the min/max range are no longer accepted, only exact preset matches. This is what makes
+       the 2026-08-26 card-testing pattern (~125 attempts at exactly $1.00, which was the old
+       `DONATION_MIN_CENTS` default) impossible: $1.00 is no longer a valid preset once the cheapest one is $5.
+    3. Enforces the global `DONATION_MAX_PER_HOUR` counter (Redis, shared across all api instances/restarts)
+       — once exceeded, further checkouts are rejected regardless of caller IP, closing the gap that per-IP
+       rate limiting alone leaves open against an attacker who rotates IPs.
+    4. Creates the `Donation` row (PENDING) → Stripe Checkout Session (`mode: 'payment'`, `submit_type:
+       'donate'`, `managed_payments: { enabled: false }` — Stripe's Managed Payments (merchant-of-record, adds
+       a 3.5% fee and requires product tax codes) is default-on for new accounts and is explicitly disabled per
+       session since donations aren't a merchant-of-record product sale, `line_items[0].price_data = {
+       currency, unit_amount, product_data: { name: 'Entrophy donation' } }`, `success_url:
+       ${WEB_URL}/donate/thanks?session_id={CHECKOUT_SESSION_ID}`, `cancel_url: ${WEB_URL}/donate/cancelled`,
+       `metadata: { kind: 'donation', donationId }`) → stores `stripeSessionId` → `{ url }`.
+- `apps/api/src/lib/captcha.ts` — shared server-side CAPTCHA verification helper (hcaptcha/turnstile siteverify
+  calls), reused by this route and by `routes/verify.ts`.
 - `apps/api/src/lib/donations.ts` exports `handleStripeDonationEvent(prisma, event)` — for `checkout.session.completed`
   / `checkout.session.expired` / `checkout.session.async_payment_failed` with `metadata.kind === 'donation'`: update the
   `Donation` row (PAID with `amountCents = amount_total`, `paidAt`; EXPIRED; FAILED). Idempotent (status transitions
@@ -700,6 +730,8 @@ options: [{name, description, required, type}], subcommands: [{ name, fullName, 
 - Prisma: `model Donation { id String @id @default(cuid()); stripeSessionId String @unique; stripePaymentIntentId String?;
 amountCents Int; currency String @default("usd"); status DonationStatus @default(PENDING); createdAt; paidAt DateTime?;
 updatedAt }` + `enum DonationStatus { PENDING PAID FAILED EXPIRED }`.
+- The Swagger UI (`/docs`, §10) is disabled in production, so this endpoint's exact request shape isn't
+  published to anyone who looks.
 
 ## 19. `enforcer` plugin
 

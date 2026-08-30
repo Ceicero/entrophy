@@ -98,11 +98,28 @@ API_BASE_URL=https://api.entrophybot.com
 DASHBOARD_URL=https://entrophybot.com
 WEB_URL=https://entrophybot.com
 COOKIE_DOMAIN=.entrophybot.com
-TRUST_PROXY=true
+TRUST_PROXY=1
 PUBLIC_WEBHOOK_BASE_URL=https://api.entrophybot.com
-STRIPE_SECRET_KEY=<optional — see donations>
+STRIPE_SECRET_KEY=<optional — donations also require CAPTCHA_PROVIDER, see below>
 STRIPE_WEBHOOK_SECRET=<optional — see donations>
+DONATION_MAX_PER_HOUR=60
+CAPTCHA_PROVIDER=turnstile
+TURNSTILE_SITE_KEY=<from your Cloudflare Turnstile widget>
+TURNSTILE_SECRET=<from your Cloudflare Turnstile widget>
 ```
+
+> **Donations require CAPTCHA_PROVIDER, and TRUST_PROXY must be `1`.** `POST /donations/checkout` fails
+> closed: without a working `CAPTCHA_PROVIDER` (`turnstile` or `hcaptcha`) and its keys set, donations report
+> `enabled: false` and checkout returns 503 — even with a valid `STRIPE_SECRET_KEY`. This is intentional (see
+> `docs/SECURITY.md`'s 2026-08-26 incident note) and is not a bug to work around. `TRUST_PROXY` must be the
+> exact hop count (`1` on Railway/Render, never a bare `true`) or the donations rate limits key off the wrong
+> IP — see the `TRUST_PROXY` note in `.env.production.example`.
+
+`TRUST_PROXY=true` is no longer valid the way it was before — it now needs an integer hop count. `1` is correct
+for Railway and Render, since both put exactly one reverse proxy in front of `api`. A bare `true` trusts the
+**leftmost** entry in `X-Forwarded-For`, which the client fully controls, so an attacker can put any IP they
+want at the front of that header and get a fresh rate-limit allowance on every request; `false` (or omitting
+it) instead collapses every visitor onto the platform's own proxy IP, so everyone shares one rate-limit bucket.
 
 **`dashboard` only** (still a real Next.js app — see §1's topology note. `NEXT_PUBLIC_*` vars are
 build-time, so set these as Railway variables _and_ trigger a redeploy after any change, since a
@@ -299,7 +316,9 @@ runs everything on one box. Put [Caddy](https://caddyserver.com/) in front for a
    (`entrophybot.com`, `app.entrophybot.com`, `api.entrophybot.com`) at the VPS's IP address (`A`
    records) at your registrar.
 2. Clone the repo onto the VPS, copy `.env.production.example` to `.env`, and fill in every secret
-   (see §6 for the full table). Set `COOKIE_DOMAIN=.entrophybot.com`, `TRUST_PROXY=true`.
+   (see §6 for the full table). Set `COOKIE_DOMAIN=.entrophybot.com` and `TRUST_PROXY=1` (Caddy is the one
+   reverse-proxy hop in front of `api` here too — see the callout in §2.3 for why this must be an exact hop
+   count, not `true`). If you want donations enabled, also set `CAPTCHA_PROVIDER` (see §2.3).
 3. `docker compose up -d --build` — this builds and starts `postgres`, `redis`, runs `migrate` once,
    then starts `bot`, `api`, `dashboard`, `web` (all `restart: unless-stopped`). The compose file
    already wires internal service hostnames (`postgres`, `redis`) for `DATABASE_URL`/`REDIS_URL` — do
@@ -378,7 +397,7 @@ list with comments; every var there is also documented in `docs/ARCHITECTURE.md`
 | `NEXT_PUBLIC_SUPPORT_SERVER_URL`                                                                                                                                                                                                                             | No                       | web                                                | Your support Discord server invite link, if you have one                                                                                                                       |
 | `COOKIE_DOMAIN`                                                                                                                                                                                                                                              | Recommended              | api                                                | `.entrophybot.com`                                                                                                                                                             |
 | `SESSION_COOKIE_SAMESITE`                                                                                                                                                                                                                                    | No (defaults `lax`)      | api                                                | `lax` on custom domains; `none` only if temporarily using platform default subdomains — see §5                                                                                 |
-| `TRUST_PROXY`                                                                                                                                                                                                                                                | Yes in production        | api                                                | `true` (all three cloud paths put the API behind a reverse proxy/load balancer)                                                                                                |
+| `TRUST_PROXY`                                                                                                                                                                                                                                                | Yes in production        | api                                                | `1` — an integer hop count, not a boolean. All three cloud paths put exactly one reverse proxy/load balancer in front of the API. Never `true` (see the §2.3 callout).         |
 | `E2E_TEST_MODE`                                                                                                                                                                                                                                              | Must be unset/`false`    | api                                                | Leave unset. The API also hard-refuses this in production regardless.                                                                                                          |
 | `BOT_OWNER_IDS`                                                                                                                                                                                                                                              | Recommended              | bot                                                | Your (and any co-owner's) Discord user id — right-click your name in Discord with Developer Mode on → Copy User ID                                                             |
 | `DEV_GUILD_ID`                                                                                                                                                                                                                                               | No                       | bot                                                | A test server's id, temporarily, for instant command registration while testing                                                                                                |
@@ -387,7 +406,10 @@ list with comments; every var there is also documented in `docs/ARCHITECTURE.md`
 | `ENABLE_MESSAGE_CONTENT_INTENT`                                                                                                                                                                                                                              | No (default `false`)     | bot                                                | Only after Discord approves the privileged intent for your bot (or while under 100 servers, which doesn't require approval) — enable in the Portal first, then set `true` here |
 | `PUBLIC_WEBHOOK_BASE_URL`                                                                                                                                                                                                                                    | Yes if using webhooks    | api                                                | `https://api.entrophybot.com`                                                                                                                                                  |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`                                                                                                                                                                                                                | Only for donations       | api                                                | Stripe Dashboard → **Developers → API keys**, and **Developers → Webhooks** → add endpoint `https://api.entrophybot.com/webhooks/stripe` → reveal signing secret               |
-| Integration keys (`TWITCH_*`, `YOUTUBE_API_KEY`, `GITHUB_WEBHOOK_SECRET`, `REDDIT_*`, `STEAM_API_KEY`, `GOOGLE_*`, `MICROSOFT_*`, `NOTION_*`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPL_API_KEY`, `OPENWEATHERMAP_API_KEY`, `HCAPTCHA_*`, `TURNSTILE_*`) | No                       | api, bot                                           | Each provider's own developer console. Blank = that feature stays disabled; nothing else is affected.                                                                          |
+| `DONATION_PRESETS_CENTS` / `DONATION_MIN_CENTS` / `DONATION_MAX_CENTS`                                                                                                                                                                                      | No (has defaults)        | api                                                | Defaults `500,1000,2500,5000` / `500` / `50000`. Checkout `amountCents` must match a preset exactly.                                                                           |
+| `DONATION_MAX_PER_HOUR`                                                                                                                                                                                                                                     | No (defaults `60`)       | api                                                | Global ceiling on donation checkouts per hour across all callers combined, independent of IP — a card-testing backstop.                                                        |
+| `CAPTCHA_PROVIDER` (`hcaptcha`/`turnstile`) + that provider's `*_SITE_KEY`/`*_SECRET`                                                                                                                                                                       | **Only for donations**   | api                                                | **Required for donations** — checkout fails closed (503) without it, even with Stripe configured. Also optionally powers the `roles` plugin's CAPTCHA verification mode. Cloudflare Turnstile or hCaptcha's own dashboard. |
+| Other integration keys (`TWITCH_*`, `YOUTUBE_API_KEY`, `GITHUB_WEBHOOK_SECRET`, `REDDIT_*`, `STEAM_API_KEY`, `GOOGLE_*`, `MICROSOFT_*`, `NOTION_*`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPL_API_KEY`, `OPENWEATHERMAP_API_KEY`)                       | No                       | api, bot                                           | Each provider's own developer console. Blank = that feature stays disabled; nothing else is affected.                                                                          |
 
 ## 7. Secret rotation runbook
 
@@ -453,6 +475,9 @@ means checking the health endpoints and logs:
   legacy link instead and assert it redirects rather than 404s.
 - Set up an external uptime check (UptimeRobot, Better Uptime, or similar — any free tier is fine)
   against those four URLs if you want to be notified before a user tells you something's down.
+- `GET https://api.entrophybot.com/docs` (the Swagger UI) is expected to 404 in production — it's registered
+  only when `NODE_ENV !== 'production'`, so the exact request shape of public endpoints like
+  `/donations/checkout` isn't published to anyone who looks. It still works locally/in dev.
 - Watch each platform's built-in resource graphs (CPU/memory) for `bot` and `api` — a slow creep
   toward the memory limit over days usually means a leak worth investigating, not something to
   ignore.

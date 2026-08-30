@@ -195,3 +195,28 @@ makes this Redis flush redundant (but harmless to also run).
   major version, so the table stays the source of truth for what's actually running.
 - After any dependency bump, the full gate still applies before merging: `pnpm lint && pnpm
 typecheck && pnpm test && pnpm build` (this is exactly what CI runs).
+
+## 6. Incident history
+
+**2026-08-26 — donation endpoint abused for card testing.** The public `POST /donations/checkout` endpoint
+received roughly 125 rapid checkout attempts, each for exactly $1.00 — matching the then-default
+`DONATION_MIN_CENTS`. This matches a known "card testing" pattern, where stolen card numbers are probed for
+validity via small charges rather than genuine purchases. Stripe flagged the pattern and suspended the
+account. No donor personal data was exposed — the donations table has never stored card numbers, emails, or
+names (see §1); Stripe Checkout is the only party that ever sees payment details.
+
+Controls added in response (full contract in `docs/ARCHITECTURE.md` §18):
+
+- Donation amounts are locked to a fixed preset list (`DONATION_PRESETS_CENTS`) — an arbitrary amount is
+  rejected outright, not merely range-checked.
+- The default minimum donation rose from $1.00 to $5.00, and $1.00 is no longer a valid preset under any
+  configuration.
+- `POST /donations/checkout` now requires a CAPTCHA token, verified server-side before anything else runs,
+  and the endpoint fails closed (503) whenever CAPTCHA isn't configured — a Stripe key alone is no longer
+  enough to enable donations.
+- A global hourly ceiling (`DONATION_MAX_PER_HOUR`) caps checkout attempts across all callers combined, not
+  just per IP, since card testing typically rotates IPs to dodge per-IP limits.
+- API rate limiting moved to a Redis-backed store shared across instances and restarts, replacing per-process
+  memory.
+- The public Swagger UI (`/docs`) no longer runs in production, so this endpoint's exact request format isn't
+  published to anyone who looks.

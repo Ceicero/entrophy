@@ -18,9 +18,11 @@ export async function fetchDonationPresets(): Promise<DonationPresetsDto> {
     return {
       enabled: false,
       currency: 'usd',
-      presetsCents: [300, 500, 1000, 2500, 5000],
-      minCents: 100,
+      presetsCents: [500, 1000, 2500, 5000],
+      minCents: 500,
       maxCents: 50000,
+      captchaProvider: null,
+      captchaSiteKey: null,
     };
   }
 }

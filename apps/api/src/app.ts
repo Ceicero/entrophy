@@ -22,6 +22,7 @@ import {
   createRedis,
   env,
   isProduction,
+  RateLimiter,
   toPublicError,
 } from '@entrophy/core';
 import { prisma as sharedPrisma, type PrismaClient } from '@entrophy/database';
@@ -102,6 +103,19 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
+  // `TRUST_PROXY=true` (bare boolean, as opposed to a hop-count number) trusts the *leftmost* `X-Forwarded-For`
+  // entry, which the client fully controls — this is exactly what let the 2026-08-26 card-testing abuse defeat
+  // the per-IP rate limit below by rotating a spoofed header value (see the doc comment on `trustProxyFromString`
+  // in packages/core/src/env.ts). Warn loudly rather than refusing to boot, since misconfiguration here is
+  // recoverable without downtime.
+  if (env.NODE_ENV === 'production' && env.TRUST_PROXY === true) {
+    app.log.warn(
+      'TRUST_PROXY=true trusts the leftmost X-Forwarded-For value, which callers control — request.ip is ' +
+        'attacker-controlled and per-IP rate limiting is not effective. Set TRUST_PROXY to the number of proxies ' +
+        'actually in front of this service instead (e.g. TRUST_PROXY=1 behind Railway).',
+    );
+  }
+
   const events = createPlatformEvents();
   const { store: configStore, registry } = createGuildConfigStore(prisma, redis, events);
 
@@ -113,7 +127,9 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   app.decorateRequest('session', null);
 
   await app.register(helmet, {
-    contentSecurityPolicy: false, // this process only ever serves JSON + the swagger UI at /docs
+    // This process only ever serves JSON, plus (outside production — see the swagger/swaggerUi registration
+    // below) the swagger UI at /docs.
+    contentSecurityPolicy: false,
   });
 
   const corsAllowlist = [env.DASHBOARD_URL, env.WEB_URL].filter((url): url is string => Boolean(url));
@@ -130,19 +146,67 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   await app.register(rateLimit, {
     max: 300,
     timeWindow: '1 minute',
-    // per-route overrides (auth routes: 20/min) are set via each route's `config.rateLimit`.
+    // Redis-backed (installed version: @fastify/rate-limit@10.3.0, confirmed via node_modules) so counters are
+    // shared across API instances and survive restarts/deploys — the previous unset `store` option used an
+    // in-process `LocalStore`, which resets on every deploy and isn't shared with sibling instances. That gap is
+    // exactly what let the 2026-08-26 card-testing abuse continue across deploys. The plugin's option for this is
+    // `redis` (an ioredis instance directly, not a `store` constructor) — see its README and
+    // `store/RedisStore.js`, which calls `redis.defineCommand('rateLimit', { numberOfKeys: 1, lua })` once per
+    // instance and then invokes that command per request. Verified against `ioredis-mock` (what `deps.redis` is
+    // in tests, per `test/helpers/build-test-app.ts`): it implements `defineCommand`/Lua scripting well enough to
+    // run this script (only INCR/PEXPIRE/PTTL) correctly, so no in-memory fallback is needed for `NODE_ENV=test`.
+    redis,
+    // per-route overrides (auth routes: 20/min, donations: 10/min/IP) are set via each route's `config.rateLimit`.
+  });
+
+  // Global ceiling on `POST /donations/checkout` across ALL callers combined, regardless of IP — the per-IP limit
+  // above (10/min, set via donations.ts's `config.rateLimit`) does nothing against an attacker who simply rotates
+  // IPs or a spoofed `X-Forwarded-For`, which is exactly how the 2026-08-26 card-testing abuse got through. Reuses
+  // `RateLimiter` from `packages/core/src/ratelimit.ts` (already Redis-backed, already used by the bot) rather
+  // than writing a second counter implementation; a single fixed key means every caller shares the same bucket.
+  // Registered as an `onRequest` hook (cheapest point to reject — before body parsing) directly on the root `app`
+  // instance, same as the session/csrf hooks below, so it runs before `donationsRoutes` is registered.
+  const donationCheckoutLimiter = new RateLimiter(redis);
+  app.addHook('onRequest', async (request, reply) => {
+    if (request.method !== 'POST' || request.url.split('?')[0] !== '/donations/checkout') return;
+
+    const result = await donationCheckoutLimiter.consume(
+      'donations:checkout:global',
+      env.DONATION_MAX_PER_HOUR,
+      60 * 60 * 1000,
+    );
+    if (result.allowed) return;
+
+    // No per-caller identifier on purpose — the entire point of this cap is that it trips regardless of which
+    // IP/caller tipped it over, and never at `info` (the level the per-IP 429 branch in the error handler below
+    // uses) so an attack of this shape stands out in the logs instead of blending into routine rate-limit noise.
+    request.log.warn(
+      { limitPerHour: env.DONATION_MAX_PER_HOUR, resetMs: result.resetMs },
+      'Global donation checkout cap exceeded — possible distributed card-testing attempt',
+    );
+    reply.status(429).send({ error: { code: 'rate_limited', message: 'Rate limit exceeded.' } });
+    // An async hook that sends a reply MUST return it: otherwise Fastify continues the request lifecycle and
+    // still runs the route handler, which would create the Donation row and the Stripe session despite the
+    // caller receiving this 429 — silently defeating the cap this hook exists to enforce.
+    return reply;
   });
 
   await app.register(sensible);
 
-  await app.register(swagger, {
-    openapi: {
-      info: { title: 'Entrophy API', version: '0.1.0' },
-      servers: [{ url: env.API_BASE_URL ?? 'http://localhost:3001' }],
-    },
-    transform: jsonSchemaTransform,
-  });
-  await app.register(swaggerUi, { routePrefix: '/docs' });
+  // Publicly documenting the exact request/response shape of every endpoint (including public, unauthenticated
+  // ones like `/donations/checkout`) is a gift to anyone probing for abuse — keep `/docs` out of production
+  // entirely (404, via the default not-found handler) rather than trying to lock it behind auth. Still available
+  // in development and test.
+  if (env.NODE_ENV !== 'production') {
+    await app.register(swagger, {
+      openapi: {
+        info: { title: 'Entrophy API', version: '0.1.0' },
+        servers: [{ url: env.API_BASE_URL ?? 'http://localhost:3001' }],
+      },
+      transform: jsonSchemaTransform,
+    });
+    await app.register(swaggerUi, { routePrefix: '/docs' });
+  }
 
   // Resolves the session for every request (used by requireAuth/requireGuildAccess/csrfProtection downstream).
   app.addHook('onRequest', async (request) => {

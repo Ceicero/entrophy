@@ -6,11 +6,14 @@ export interface DonationPresetsDto {
   presetsCents: number[];
   minCents: number;
   maxCents: number;
+  captchaProvider: 'hcaptcha' | 'turnstile' | null; // null when not configured
+  captchaSiteKey: string | null; // public site key; null when not configured
 }
 
 export interface DonationCheckoutRequest {
   amountCents: number;
   currency: 'usd';
+  captchaToken: string;
 }
 
 export interface DonationCheckoutResponse {

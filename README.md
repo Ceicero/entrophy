@@ -317,17 +317,21 @@ admin dashboard, monochrome "smoky UI" theme, and its command documentation is g
 real plugin registry so it can never hand-drift from what the bot registers (see
 [Development](#development)).
 
-Donations are handled by Stripe **Checkout** (hosted — card data never touches Entrophy's servers).
-Required env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (from the Stripe Dashboard's webhook
-endpoint config), plus optional `DONATION_PRESETS_CENTS`, `DONATION_MIN_CENTS`,
-`DONATION_MAX_CENTS`. Webhook endpoint to register in Stripe:
+Donations are handled by Stripe **Checkout** (hosted — card data never touches Entrophy's servers), locked to
+a fixed set of preset amounts and gated behind a CAPTCHA — see `docs/ARCHITECTURE.md` §18 for the full
+contract and `docs/SECURITY.md` for why. Required env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (from the
+Stripe Dashboard's webhook endpoint config), **and** `CAPTCHA_PROVIDER` (`hcaptcha` or `turnstile`) with that
+provider's site key + secret. Optional: `DONATION_PRESETS_CENTS`, `DONATION_MIN_CENTS`, `DONATION_MAX_CENTS`,
+`DONATION_MAX_PER_HOUR`. Webhook endpoint to register in Stripe:
 
 ```
 https://api.entrophybot.com/webhooks/stripe
 ```
 
-If `STRIPE_SECRET_KEY` isn't set, the **Donate** page shows a clear "not configured" notice instead
-of a broken checkout — donations are entirely optional infrastructure.
+Donations stay **disabled** — the Donate page shows a "not configured" notice, and `POST
+/donations/checkout` returns 503 — unless both `STRIPE_SECRET_KEY` and a working `CAPTCHA_PROVIDER` are set.
+This fails closed on purpose: donations are entirely optional infrastructure, and the checkout endpoint must
+never accept a request it can't verify a human sent.
 
 The **Support** page (`/support`) is the primary support destination: joining the community Discord
 server is the main call to action, with pointers to the dashboard (configuration) and `/features`

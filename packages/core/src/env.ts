@@ -38,6 +38,32 @@ function boolFromString(defaultValue: boolean) {
     .transform((value) => (value === undefined ? defaultValue : value.trim().toLowerCase() === 'true'));
 }
 
+/**
+ * Builds the zod schema piece for `TRUST_PROXY`. Fastify's `trustProxy` option accepts either a boolean or a
+ * hop-count number, so this parses `'true'`/`'false'` (kept for backward compatibility) as booleans and any
+ * non-negative integer string as a hop count.
+ *
+ * A bare `true` trusts the *leftmost* address in a client-supplied `X-Forwarded-For` header — a value the
+ * client fully controls — which makes per-IP rate limiting (and anything else keyed off `request.ip`) trivially
+ * spoofable by just sending a fake `X-Forwarded-For`. A numeric hop count N instead trusts exactly N proxies,
+ * counting from the *right* of the XFF chain, i.e. the entries appended by proxies you actually control; a
+ * client cannot forge those. Production behind Railway (a single edge proxy in front of the app) should set
+ * `TRUST_PROXY=1`.
+ */
+function trustProxyFromString(defaultValue: boolean) {
+  return z
+    .string()
+    .optional()
+    .transform((value): boolean | number => {
+      if (value === undefined) return defaultValue;
+      const trimmed = value.trim().toLowerCase();
+      if (trimmed === 'true') return true;
+      if (trimmed === 'false') return false;
+      const hops = Number.parseInt(trimmed, 10);
+      return Number.isInteger(hops) && hops >= 0 ? hops : defaultValue;
+    });
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   LOG_LEVEL: z.string().default('info'),
@@ -58,8 +84,13 @@ const envSchema = z.object({
   WEB_URL: z.string().optional(),
   SESSION_COOKIE_SAMESITE: z.enum(['lax', 'none']).default('lax'),
   DONATION_PRESETS_CENTS: z.string().optional(),
-  DONATION_MIN_CENTS: z.coerce.number().int().positive().default(100),
+  // $1.00 (the old default) is also the exact amount card testers probe with — real card-testing abuse hit
+  // `/donations/checkout` on 2026-08-26 at precisely this amount, so the floor was raised well above it.
+  DONATION_MIN_CENTS: z.coerce.number().int().positive().default(500),
   DONATION_MAX_CENTS: z.coerce.number().int().positive().default(50000),
+  // Global ceiling on donation checkouts per hour across ALL callers combined (not per-IP) — a last line of
+  // defense against distributed card-testing abuse. Enforced in `app.ts`.
+  DONATION_MAX_PER_HOUR: z.coerce.number().int().positive().default(60),
   BRAND_LOGO_PATH: z.string().optional(),
 
   BOT_OWNER_IDS: z.string().optional(),
@@ -72,7 +103,7 @@ const envSchema = z.object({
   ENABLE_GUILD_MEMBERS_INTENT: boolFromString(true),
   ENABLE_GUILD_PRESENCES_INTENT: boolFromString(false),
   COOKIE_DOMAIN: z.string().optional(),
-  TRUST_PROXY: boolFromString(false),
+  TRUST_PROXY: trustProxyFromString(false),
   E2E_TEST_MODE: boolFromString(false),
 
   TWITCH_CLIENT_ID: z.string().optional(),

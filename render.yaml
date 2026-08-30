@@ -75,7 +75,10 @@ services:
       - key: SESSION_COOKIE_SAMESITE
         value: lax
       - key: TRUST_PROXY
-        value: 'true'
+        # Integer hop count, not a bare boolean: Render sits exactly one reverse proxy in front of `api`.
+        # A bare 'true' trusts the leftmost (attacker-controlled) X-Forwarded-For entry, letting a caller
+        # spoof a fresh IP per request to dodge rate limits — see infra/DEPLOYMENT.md.
+        value: '1'
       - key: E2E_TEST_MODE
         value: 'false'
       - key: PUBLIC_WEBHOOK_BASE_URL
@@ -83,16 +86,22 @@ services:
       - key: BOT_OWNER_IDS
         sync: false
       # --- optional integrations; leave blank in the Render dashboard to keep a feature disabled ---
+      # Donations also REQUIRE CAPTCHA_PROVIDER + its keys (below) to be set — they fail closed (503) without
+      # it even when STRIPE_SECRET_KEY is set. See docs/ARCHITECTURE.md §18.
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: DONATION_PRESETS_CENTS
-        value: '300,500,1000,2500,5000'
+        # amountCents on checkout must match one of these EXACTLY — arbitrary amounts are rejected.
+        value: '500,1000,2500,5000'
       - key: DONATION_MIN_CENTS
-        value: '100'
+        value: '500'
       - key: DONATION_MAX_CENTS
         value: '50000'
+      - key: DONATION_MAX_PER_HOUR
+        # Global ceiling on donation checkouts per hour, summed across ALL callers regardless of IP.
+        value: '60'
       - key: TWITCH_CLIENT_ID
         sync: false
       - key: TWITCH_CLIENT_SECRET
@@ -140,6 +149,9 @@ services:
       - key: OPENWEATHERMAP_API_KEY
         sync: false
       - key: CAPTCHA_PROVIDER
+        # REQUIRED for donations (see the DONATION_* keys above) — also powers the roles plugin's optional
+        # CAPTCHA verification mode. Set to turnstile or hcaptcha with the matching keys below filled in;
+        # leaving this `none` keeps donations disabled even with Stripe configured.
         value: none
       - key: HCAPTCHA_SITE_KEY
         sync: false

@@ -29,9 +29,9 @@ export default async function DonatePage() {
           <Glass className="p-8 text-center">
             <h2 className="text-lg font-semibold text-grey-7">Donations aren&apos;t set up yet</h2>
             <p className="mt-3 text-sm leading-relaxed text-grey-3">
-              This deployment of Entrophy hasn&apos;t configured Stripe yet, so donations aren&apos;t
-              available right now. Check back later, or reach out through the support server if you&apos;d
-              like to help another way.
+              This deployment of Entrophy hasn&apos;t finished setting up donations (Stripe and human
+              verification are both required), so they aren&apos;t available right now. Check back later, or
+              reach out through the support server if you&apos;d like to help another way.
             </p>
           </Glass>
         )}
