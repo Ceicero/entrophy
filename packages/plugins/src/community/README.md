@@ -42,11 +42,11 @@ default.
 | `/statschannel list`                                                         | Show counters, templates, current rendered value, last refresh                                             | Admin                                     |
 | `/statschannel refresh`                                                      | Refresh every counter now (at most once per 5 minutes)                                                     | Admin                                     |
 | `/statschannel interval <minutes>`                                           | Set the automatic refresh interval (10-1440 minutes)                                                       | Admin                                     |
-| `/birthday set <month> <day>`                                                | Share your birthday in this server (month + day only — never a year)                                       | Everyone (when birthdays are enabled)     |
-| `/birthday remove`                                                           | Delete your birthday from this server                                                                      | Everyone                                  |
+| `/birthday set <month> <day> [user]`                                         | Share your birthday in this server (month + day only — never a year), or set one for another member        | Self: Everyone (or Admin if self-service is off); `user`: Admin |
+| `/birthday remove [user]`                                                    | Delete your birthday from this server, or another member's                                                 | Self: Everyone (or Admin if self-service is off); `user`: Admin |
 | `/birthday view [user]`                                                      | See your birthday, or another member's if the public list is on                                            | Everyone (others: public list or Helper+) |
 | `/birthday upcoming [ephemeral]`                                             | Next 15 upcoming birthdays (ephemeral; staff may post it publicly)                                         | Everyone if public list, else Helper+     |
-| `/birthday config <channel> [hour] [role] [message] [enabled] [public_list]` | Configure birthday announcements                                                                           | Admin+                                    |
+| `/birthday config <channel> [hour] [role] [message] [enabled] [public_list] [allow_self_service]` | Configure birthday announcements                                                      | Admin+                                    |
 | `/birthday config-view`                                                      | Show birthday settings + how many members registered (count only)                                          | Moderator+                                |
 
 ## Config keys (`configSchema`)
@@ -81,6 +81,7 @@ birthdays.message            string        Template; tokens {mention} {user} {se
 birthdays.announceHour       number        Guild-local hour 0-23 to announce, using the core timezone (default: 9)
 birthdays.roleId             string|null   Optional role added for ~24h on the day (default: null)
 birthdays.publicList         boolean       Members may run /birthday upcoming and view each other's (default: true)
+birthdays.allowSelfService   boolean       Members may set/remove their OWN birthday with /birthday set|remove (default: true). Orthogonal to `enabled` — when false, only an admin can set or remove a birthday (their own or another member's); `enabled:false` still blocks everything.
 ```
 
 ### Tags (custom commands / auto-responders)
@@ -169,11 +170,14 @@ show`) works without it; the plugin degrades rather than disables when the inten
 - Stats channels display only aggregate server counts (members, humans, bots, boosts, roles, channels); nothing
   per member is read or stored.
 - **Birthdays store only the month and day** a member chooses to share, per server (`Birthday` row per
-  guild/user), until the member removes it (`/birthday remove`), an admin removes it from the dashboard, or the
-  server's data is deleted (cascade). No year, no age — there is no column for it. The bot never DMs about
-  birthdays; announcements only ping the birthday member. Setting/removing your own birthday is **not** audited
-  (no audit trail of personal data); config changes and admin removals are audited (admin removal records the
-  user id only). Birthdays are included in the guild data export as `{ userId, month, day }`.
+  guild/user), until the member removes it (`/birthday remove`), an admin removes it (`/birthday remove <user>`
+  or the dashboard), or the server's data is deleted (cascade). No year, no age — there is no column for it. The
+  bot never DMs about birthdays; announcements only ping the birthday member. Setting/removing your own birthday
+  is **not** audited (no audit trail of personal data); config changes and admin removals are audited (admin
+  removal records the user id only). An admin setting or removing a birthday **for another member**
+  (`/birthday set|remove <user>`, gated by `allowSelfService`-independent admin checks) is a deliberate exception
+  to that rule and **is** audited (`community.birthday.set` / `community.birthday.remove`) — user id only, never
+  the month/day. Birthdays are included in the guild data export as `{ userId, month, day }`.
 
 ## Background jobs
 

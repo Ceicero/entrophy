@@ -37,6 +37,7 @@ function pickConfig(dto: BirthdayConfigDto): BirthdayConfigDto {
     announceHour: dto.announceHour,
     roleId: dto.roleId,
     publicList: dto.publicList,
+    allowSelfService: dto.allowSelfService,
   };
 }
 
@@ -187,6 +188,21 @@ export function BirthdaysTab({ guildId }: { guildId: string }) {
             <Switch
               checked={draft.publicList}
               onCheckedChange={(v) => set('publicList', v)}
+              disabled={update.isPending}
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4 rounded-md border border-border p-3">
+            <div>
+              <p className="text-sm font-medium">Members can set their own birthday</p>
+              <p className="text-xs text-muted-foreground">
+                Turn this off to let only admins add or change birthdays (with <code>/birthday set @member</code>).
+                Members can still be set up on their behalf.
+              </p>
+            </div>
+            <Switch
+              checked={draft.allowSelfService}
+              onCheckedChange={(v) => set('allowSelfService', v)}
               disabled={update.isPending}
             />
           </div>

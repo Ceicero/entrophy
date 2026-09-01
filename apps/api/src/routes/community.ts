@@ -107,6 +107,7 @@ const birthdayConfigBodySchema = z
     announceHour: z.number().int().min(0).max(23).optional(),
     roleId: snowflakeSchema.nullable().optional(),
     publicList: z.boolean().optional(),
+    allowSelfService: z.boolean().optional(),
   })
   .strict();
 
@@ -582,6 +583,7 @@ export default async function communityRoutes(app: ZodFastifyInstance): Promise<
         announceHour: b.announceHour,
         roleId: b.roleId,
         publicList: b.publicList,
+        allowSelfService: b.allowSelfService,
         count,
         next: upcomingSorted(rows, today, BIRTHDAY_NEXT_LIMIT),
       };

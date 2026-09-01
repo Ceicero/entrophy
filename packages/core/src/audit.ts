@@ -41,6 +41,8 @@ export const AuditAction = {
   CommunityTagDelete: 'community.tag.delete',
   CommunityBirthdayConfigUpdate: 'community.birthday.config.update',
   CommunityBirthdayRemove: 'community.birthday.remove',
+  // An admin setting another member's birthday (self-service sets are never audited — see birthday.ts).
+  CommunityBirthdaySet: 'community.birthday.set',
   DeveloperReportSubmit: 'developer_report.submit',
 } as const;
 

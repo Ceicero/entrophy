@@ -192,6 +192,8 @@ export interface BirthdayConfigDto {
   announceHour: number;
   roleId: string | null;
   publicList: boolean;
+  /** Orthogonal to `enabled`: lets members set/remove their own birthday. When false, only an admin can. */
+  allowSelfService: boolean;
 }
 
 export interface UpcomingBirthdayDto {

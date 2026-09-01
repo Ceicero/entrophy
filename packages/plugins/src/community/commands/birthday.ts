@@ -1,6 +1,7 @@
 import { ChannelType, SlashCommandBuilder } from 'discord.js';
-import { hasStaffLevel } from '@entrophy/core';
+import { AuditAction, hasStaffLevel } from '@entrophy/core';
 import {
+  assertStaffLevel,
   errorEmbed,
   infoEmbed,
   listEmbed,
@@ -60,9 +61,25 @@ const data = new SlashCommandBuilder()
           .setRequired(true)
           .setMinValue(1)
           .setMaxValue(31),
+      )
+      .addUserOption((opt) =>
+        opt
+          .setName('user')
+          .setDescription("Admin only: set another member's birthday instead of your own")
+          .setRequired(false),
       ),
   )
-  .addSubcommand((sub) => sub.setName('remove').setDescription('Remove your birthday from this server.'))
+  .addSubcommand((sub) =>
+    sub
+      .setName('remove')
+      .setDescription('Remove your birthday from this server.')
+      .addUserOption((opt) =>
+        opt
+          .setName('user')
+          .setDescription("Admin only: remove another member's birthday instead of your own")
+          .setRequired(false),
+      ),
+  )
   .addSubcommand((sub) =>
     sub
       .setName('view')
@@ -117,6 +134,12 @@ const data = new SlashCommandBuilder()
           .setName('public_list')
           .setDescription("Let members list upcoming birthdays and view each other's")
           .setRequired(false),
+      )
+      .addBooleanOption((opt) =>
+        opt
+          .setName('allow_self_service')
+          .setDescription('Let members set/remove their own birthday (off = admins only)')
+          .setRequired(false),
       ),
   )
   .addSubcommand((sub) =>
@@ -129,12 +152,27 @@ async function guildTimezone(c: CommandContext): Promise<string> {
 }
 
 async function handleSet(c: CommandContext): Promise<void> {
-  const { interaction, ctx, guildId, t } = c;
+  const { interaction, ctx, guildId, t, staffLevel } = c;
   const config = await c.config<CommunityConfig>();
+  // `enabled:false` blocks everything below — including an admin setting it for someone else — since there's
+  // nowhere to announce it.
   if (!config.birthdays.enabled) {
     await interaction.reply({ embeds: [errorEmbed(t('birthday.disabled'))], ephemeral: true });
     return;
   }
+  const targetUser = interaction.options.getUser('user') ?? interaction.user;
+  const isSelf = targetUser.id === interaction.user.id;
+
+  if (isSelf) {
+    if (!config.birthdays.allowSelfService && !hasStaffLevel(staffLevel, 'admin')) {
+      await interaction.reply({ embeds: [errorEmbed(t('birthday.selfServiceDisabled'))], ephemeral: true });
+      return;
+    }
+  } else {
+    // Admin-on-behalf: cleaner than a manual hasStaffLevel + errorEmbed pair — orthogonal to `allowSelfService`.
+    assertStaffLevel(staffLevel, 'admin', t);
+  }
+
   const parsed = parseBirthday({
     month: interaction.options.getInteger('month', true),
     day: interaction.options.getInteger('day', true),
@@ -146,23 +184,89 @@ async function handleSet(c: CommandContext): Promise<void> {
     });
     return;
   }
-  // Member self-service data: deliberately not audited (no audit trail of personal data).
+
+  if (isSelf) {
+    // Member self-service data: deliberately not audited (no audit trail of personal data).
+    await ctx.prisma.birthday.upsert({
+      where: { guildId_userId: { guildId, userId: targetUser.id } },
+      create: { guildId, userId: targetUser.id, month: parsed.month, day: parsed.day },
+      update: { month: parsed.month, day: parsed.day, lastAnnouncedYear: null },
+    });
+    await interaction.reply({
+      embeds: [successEmbed(t('birthday.set', { date: formatBirthday(parsed) }))],
+      ephemeral: true,
+    });
+    return;
+  }
+
   await ctx.prisma.birthday.upsert({
-    where: { guildId_userId: { guildId, userId: interaction.user.id } },
-    create: { guildId, userId: interaction.user.id, month: parsed.month, day: parsed.day },
+    where: { guildId_userId: { guildId, userId: targetUser.id } },
+    create: { guildId, userId: targetUser.id, month: parsed.month, day: parsed.day },
     update: { month: parsed.month, day: parsed.day, lastAnnouncedYear: null },
   });
+  // Admin-on-behalf writes ARE audited — a deliberate departure from the self-service no-audit rule above.
+  // Privacy: the payload records only that a birthday was set and for whom, never the month/day itself,
+  // matching the dashboard's admin-removal audit (targetId only, never the date).
+  await ctx.audit({
+    guildId,
+    actorId: interaction.user.id,
+    actorType: 'user',
+    action: AuditAction.CommunityBirthdaySet,
+    targetType: 'birthday',
+    targetId: targetUser.id,
+    source: 'bot',
+  });
   await interaction.reply({
-    embeds: [successEmbed(t('birthday.set', { date: formatBirthday(parsed) }))],
+    embeds: [
+      successEmbed(t('birthday.setOther', { user: `<@${targetUser.id}>`, date: formatBirthday(parsed) })),
+    ],
     ephemeral: true,
   });
 }
 
 async function handleRemove(c: CommandContext): Promise<void> {
-  const { interaction, ctx, guildId, t } = c;
-  const result = await ctx.prisma.birthday.deleteMany({ where: { guildId, userId: interaction.user.id } });
+  const { interaction, ctx, guildId, t, staffLevel } = c;
+  const config = await c.config<CommunityConfig>();
+  const targetUser = interaction.options.getUser('user') ?? interaction.user;
+  const isSelf = targetUser.id === interaction.user.id;
+
+  if (isSelf) {
+    if (!config.birthdays.allowSelfService && !hasStaffLevel(staffLevel, 'admin')) {
+      await interaction.reply({ embeds: [errorEmbed(t('birthday.selfServiceDisabled'))], ephemeral: true });
+      return;
+    }
+    // Member self-service data: deliberately not audited (no audit trail of personal data).
+    const result = await ctx.prisma.birthday.deleteMany({ where: { guildId, userId: targetUser.id } });
+    await interaction.reply({
+      embeds: [successEmbed(t(result.count > 0 ? 'birthday.removed' : 'birthday.nothingToRemove'))],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  // Admin-on-behalf: gated so admins can correct a wrong date but a member can't be locked out of clearing
+  // their own; reuses the same audit action the dashboard's admin removal uses.
+  assertStaffLevel(staffLevel, 'admin', t);
+  const result = await ctx.prisma.birthday.deleteMany({ where: { guildId, userId: targetUser.id } });
+  if (result.count > 0) {
+    await ctx.audit({
+      guildId,
+      actorId: interaction.user.id,
+      actorType: 'user',
+      action: AuditAction.CommunityBirthdayRemove,
+      targetType: 'birthday',
+      targetId: targetUser.id,
+      source: 'bot',
+    });
+  }
   await interaction.reply({
-    embeds: [successEmbed(t(result.count > 0 ? 'birthday.removed' : 'birthday.nothingToRemove'))],
+    embeds: [
+      successEmbed(
+        t(result.count > 0 ? 'birthday.removedOther' : 'birthday.nothingToRemoveOther', {
+          user: `<@${targetUser.id}>`,
+        }),
+      ),
+    ],
     ephemeral: true,
   });
 }
@@ -250,6 +354,7 @@ async function handleConfig(c: CommandContext): Promise<void> {
   const message = interaction.options.getString('message');
   const enabled = interaction.options.getBoolean('enabled');
   const publicList = interaction.options.getBoolean('public_list');
+  const allowSelfService = interaction.options.getBoolean('allow_self_service');
 
   const channel = await resolveTextChannel(interaction.guild, channelOption.id);
   if (!channel) {
@@ -303,6 +408,7 @@ async function handleConfig(c: CommandContext): Promise<void> {
     ...(roleOption ? { roleId: roleOption.id } : {}),
     ...(message !== null ? { message } : {}),
     ...(publicList !== null ? { publicList } : {}),
+    ...(allowSelfService !== null ? { allowSelfService } : {}),
   };
   // `setConfig` audits the change automatically (config changes are the only birthday audit trail).
   await ctx.setConfig<CommunityConfig>(
@@ -341,6 +447,7 @@ async function handleConfigView(c: CommandContext): Promise<void> {
     `**${t('birthday.cfgHour')}:** ${String(b.announceHour).padStart(2, '0')}:00 (${timezone})`,
     `**${t('birthday.cfgRole')}:** ${b.roleId ? `<@&${b.roleId}>` : '—'}`,
     `**${t('birthday.cfgPublicList')}:** ${b.publicList ? t('birthday.on') : t('birthday.off')}`,
+    `**${t('birthday.cfgAllowSelfService')}:** ${b.allowSelfService ? t('birthday.on') : t('birthday.off')}`,
     `**${t('birthday.cfgMessage')}:** ${b.message}`,
     `**${t('birthday.cfgCount')}:** ${count}`,
   ];

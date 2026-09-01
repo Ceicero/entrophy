@@ -90,6 +90,9 @@ export const configSchema = z.object({
       roleId: z.string().nullable().default(null),
       /** Let members list upcoming birthdays with /birthday upcoming (and view each other's). */
       publicList: z.boolean().default(true),
+      /** Orthogonal to `enabled`: lets members set/remove their OWN birthday with /birthday set|remove.
+       * When false, only an admin can set or remove a birthday (for themselves or another member). */
+      allowSelfService: z.boolean().default(true),
     })
     .default({}),
 });

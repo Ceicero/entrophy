@@ -164,8 +164,12 @@
     "badMonth": "That month isn't valid — pick 1 (January) to 12 (December).",
     "badDay": "That day doesn't exist in that month.",
     "set": "Your birthday is set to **{date}** in this server. Only the month and day are stored — never a year. If this server's public birthday list is on, other members can see it via /birthday view and /birthday upcoming. Use /birthday remove any time to delete it.",
+    "setOther": "{user}'s birthday is set to **{date}** in this server.",
     "removed": "Your birthday has been removed from this server.",
+    "removedOther": "{user}'s birthday has been removed from this server.",
     "nothingToRemove": "You don't have a birthday set in this server.",
+    "nothingToRemoveOther": "{user} doesn't have a birthday set in this server.",
+    "selfServiceDisabled": "Members can't set or remove their own birthday in this server right now. Ask an admin to do it for you with /birthday set.",
     "private": "Birthdays aren't public in this server.",
     "noneSelf": "You haven't set a birthday here yet — use /birthday set.",
     "noneOther": "{user} hasn't shared a birthday in this server.",
@@ -194,6 +198,7 @@
     "cfgHour": "Announce at",
     "cfgRole": "Birthday role",
     "cfgPublicList": "Public list",
+    "cfgAllowSelfService": "Self-service",
     "cfgMessage": "Message",
     "cfgCount": "Registered birthdays"
   }
