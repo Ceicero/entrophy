@@ -86,10 +86,10 @@ async function requestSpeech(params: { apiKey: string; model: string; text: stri
  * a viewer's message spoken aloud, so it is exactly the sort of thing that must not leak across tenants.
  * Unguessable audio ids are not the control here; the key scope is.
  *
- * Returns `null` — and NEVER throws — whenever synthesis simply isn't available right now: the guild has no
- * usable OpenAI key (no per-guild key, and either the fallback env key is off or the guild's provider isn't
- * `openai` in the first place — an Anthropic-only guild has no corresponding speech endpoint here), or the
- * OpenAI request itself failed. This is the honest "TTS unavailable" path (mirrors the media plugin's
+ * Returns `null` — and NEVER throws — whenever synthesis simply isn't available right now: the guild has not
+ * supplied its OWN OpenAI key (TTS is bring-your-own-key and never falls back to the operator's platform key —
+ * see the call site), the guild's provider isn't `openai` (an Anthropic-only guild has no corresponding speech
+ * endpoint here), or the OpenAI request itself failed. This is the honest "TTS unavailable" path (mirrors the media plugin's
  * `MediaProvider.createStream()` precedent: an unimplemented/unconfigured provider means the feature reports
  * itself unavailable, not an error) — callers (`rewards.ts`'s action dispatch in `manager.ts`) just skip the
  * TTS action when this returns `null`.
@@ -107,11 +107,13 @@ export async function synthesizeTts(
   // config has no key that OpenAI's speech endpoint would accept.
   if (config.provider !== 'openai') return null;
 
-  const resolvedKey = resolveApiKey(config, {
-    OPENAI_API_KEY: ctx.env.OPENAI_API_KEY,
-    ANTHROPIC_API_KEY: ctx.env.ANTHROPIC_API_KEY,
-  });
-  if (!resolvedKey) return null;
+  // Deliberately NO env-key fallback: `{}` is passed where `resolveApiKey` would otherwise read the operator's
+  // `OPENAI_API_KEY`. TTS is bring-your-own-key by design — a guild that wants its channel-point rewards spoken
+  // pays for its own synthesis. `AiConfig.allowEnvKeys` defaults to TRUE, so passing `ctx.env` here would silently
+  // bill every free guild's TTS to the operator the moment they set a platform key for any reason. The
+  // `source === 'guild'` assertion below makes that guarantee explicit rather than implicit in an empty object.
+  const resolvedKey = resolveApiKey(config, {});
+  if (!resolvedKey || resolvedKey.source !== 'guild') return null;
 
   try {
     let result = await requestSpeech({ apiKey: resolvedKey.apiKey, model: PRIMARY_MODEL, text });
