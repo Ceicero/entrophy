@@ -157,8 +157,8 @@ E2E_TEST_MODE=false           # enables /auth/test-login (NEVER in production; a
 TWITCH_CLIENT_ID= TWITCH_CLIENT_SECRET= TWITCH_EVENTSUB_SECRET=
 YOUTUBE_API_KEY=
 GITHUB_WEBHOOK_SECRET=
-STRIPE_SECRET_KEY= STRIPE_WEBHOOK_SECRET=   # donations also require CAPTCHA_PROVIDER below — see §18
-DONATION_PRESETS_CENTS= DONATION_MIN_CENTS= DONATION_MAX_CENTS= DONATION_MAX_PER_HOUR=   # donation tuning, see §18
+STRIPE_SECRET_KEY= STRIPE_WEBHOOK_SECRET=   # guild-facing Stripe integration connector ONLY — not donations, see §18a
+KOFI_URL=   # donations: the Ko-fi page to link out to; unset = donations not offered, see §18
 REDDIT_CLIENT_ID= REDDIT_CLIENT_SECRET= REDDIT_USER_AGENT=
 STEAM_API_KEY=
 GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET=
@@ -659,7 +659,7 @@ options: [{name, description, required, type}], subcommands: [{ name, fullName, 
   `src/content/plugins.ts` (`Record<PluginId, { headline, whyGaming: string[], highlights: string[] }>`) and
   `src/content/site.ts`.
 - Pages: `/`, `/features` (all plugins; anchors per plugin; `/features/[pluginId]` detail with full command table),
-  `/enforcer`, `/donate`, `/donate/thanks`, `/donate/cancelled`, `/support`, `/privacy`, `/terms`, `not-found`.
+  `/enforcer`, `/donate`, `/support`, `/privacy`, `/terms`, `not-found`.
 - Donate page: presets [3, 5, 10, 25, 50] USD (from `GET {API}/donations/presets`, which also returns `enabled`),
   custom amount input ($1–$500, whole dollars or cents), single "Donate" CTA → `POST {API}/donations/checkout`
   `{ amountCents, currency: 'usd' }` → `{ url }` → `window.location.assign(url)`. `enabled=false` → explanatory notice.
@@ -676,62 +676,40 @@ options: [{name, description, required, type}], subcommands: [{ name, fullName, 
   link are now plain same-origin `/dashboard` links, not a cross-domain env-driven URL.)
 - Docker: `infra/docker/Dockerfile.web` (same shape as dashboard, standalone), compose service `web` on 3003.
 
-## 18. Donations API
+## 18. Donations — Ko-fi link-out
 
-Hardened 2026-08-26 after a public card-testing incident against this endpoint — see `docs/SECURITY.md` for
-the incident note. The contract below is the post-hardening one; treat any code that still accepts an
-arbitrary `amountCents` or skips CAPTCHA verification as a regression, not an alternate valid mode.
+Donations moved from Stripe Checkout to a Ko-fi link-out on 2026-08-30 after a public card-testing incident
+forced a Stripe account ban on 2026-08-26. Rather than defend the checkout endpoint against further abuse, the
+decision was to remove it entirely — Entrophy no longer processes payments at all. Ko-fi (a third-party donation
+platform) hosts the payment page and owns all fraud/abuse handling. This removes the entire card-testing attack
+surface instead of just hardening one endpoint.
 
-- Env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (already present), `WEB_URL=http://localhost:3003`,
-  `DONATION_PRESETS_CENTS=500,1000,2500,5000` (optional override), `DONATION_MIN_CENTS=500`,
-  `DONATION_MAX_CENTS=50000`, `DONATION_MAX_PER_HOUR=60`. **Also requires** `CAPTCHA_PROVIDER` set to
-  `hcaptcha` or `turnstile` with that provider's site key + secret (the same env vars the `roles` plugin's
-  optional CAPTCHA verification mode uses — see §4, §7). API CORS allowlist = `[DASHBOARD_URL, WEB_URL]`.
-- Dependency: `stripe` ^22 in `apps/api`.
-- **Fails closed without a working CAPTCHA.** Donations are only ever `enabled: true` when both
-  `STRIPE_SECRET_KEY` and a configured `CAPTCHA_PROVIDER` (with its keys) are present. Missing either one —
-  including `STRIPE_SECRET_KEY` set but `CAPTCHA_PROVIDER=none`/misconfigured — makes `GET /donations/presets`
-  report `enabled: false` and `POST /donations/checkout` return 503
-  `{ error: { code: 'donations_unavailable' } }`. The endpoint must never accept a checkout it can't verify a
-  human initiated.
-- `apps/api/src/routes/donations.ts` (public, no session; rate limit 10/min/IP **plus** a global
-  `DONATION_MAX_PER_HOUR` ceiling counted across all callers combined, independent of IP — see below):
-  - `GET /donations/presets` → `{ enabled, currency: 'usd', presetsCents: number[], minCents, maxCents,
-    captchaProvider, captchaSiteKey }`. `captchaProvider`/`captchaSiteKey` are `null` whenever CAPTCHA isn't
-    configured (which also forces `enabled: false`); otherwise they tell the web client which widget to render
-    and its public site key. The CAPTCHA secret never leaves the api process.
-  - `POST /donations/checkout` body `{ amountCents: int, currency: 'usd', captchaToken: string }`:
-    1. Verifies `captchaToken` server-side against the configured provider's siteverify endpoint
-       (`apps/api/src/lib/captcha.ts`, shared with the `roles` plugin's `/verify/:token` completion page —
-       `routes/verify.ts`) **before anything else runs**. A missing, invalid, or expired token is a 400 —
-       no Stripe call and no `Donation` row are created for that attempt.
-    2. Validates `amountCents` is **EXACTLY** one of `presetsCents` (`DONATION_PRESETS_CENTS`) — arbitrary
-       amounts within the min/max range are no longer accepted, only exact preset matches. This is what makes
-       the 2026-08-26 card-testing pattern (~125 attempts at exactly $1.00, which was the old
-       `DONATION_MIN_CENTS` default) impossible: $1.00 is no longer a valid preset once the cheapest one is $5.
-    3. Enforces the global `DONATION_MAX_PER_HOUR` counter (Redis, shared across all api instances/restarts)
-       — once exceeded, further checkouts are rejected regardless of caller IP, closing the gap that per-IP
-       rate limiting alone leaves open against an attacker who rotates IPs.
-    4. Creates the `Donation` row (PENDING) → Stripe Checkout Session (`mode: 'payment'`, `submit_type:
-       'donate'`, `managed_payments: { enabled: false }` — Stripe's Managed Payments (merchant-of-record, adds
-       a 3.5% fee and requires product tax codes) is default-on for new accounts and is explicitly disabled per
-       session since donations aren't a merchant-of-record product sale, `line_items[0].price_data = {
-       currency, unit_amount, product_data: { name: 'Entrophy donation' } }`, `success_url:
-       ${WEB_URL}/donate/thanks?session_id={CHECKOUT_SESSION_ID}`, `cancel_url: ${WEB_URL}/donate/cancelled`,
-       `metadata: { kind: 'donation', donationId }`) → stores `stripeSessionId` → `{ url }`.
-- `apps/api/src/lib/captcha.ts` — shared server-side CAPTCHA verification helper (hcaptcha/turnstile siteverify
-  calls), reused by this route and by `routes/verify.ts`.
-- `apps/api/src/lib/donations.ts` exports `handleStripeDonationEvent(prisma, event)` — for `checkout.session.completed`
-  / `checkout.session.expired` / `checkout.session.async_payment_failed` with `metadata.kind === 'donation'`: update the
-  `Donation` row (PAID with `amountCents = amount_total`, `paidAt`; EXPIRED; FAILED). Idempotent (status transitions
-  only forward). **Stores no personal data** (no email/name).
-- `routes/webhooks.ts` stripe handler MUST call `handleStripeDonationEvent` first; only non-donation events are
-  enqueued to `integrations.inbound`.
-- Prisma: `model Donation { id String @id @default(cuid()); stripeSessionId String @unique; stripePaymentIntentId String?;
-amountCents Int; currency String @default("usd"); status DonationStatus @default(PENDING); createdAt; paidAt DateTime?;
-updatedAt }` + `enum DonationStatus { PENDING PAID FAILED EXPIRED }`.
-- The Swagger UI (`/docs`, §10) is disabled in production, so this endpoint's exact request shape isn't
-  published to anyone who looks.
+- Env: `KOFI_URL` (optional — full Ko-fi page URL, e.g. `https://ko-fi.com/example`). When unset, the donate page
+  honestly says donations aren't set up on this deployment, the same degradation pattern as other optional features.
+  No Stripe vars are needed for donations anymore (§18a notes the guild-facing Stripe **integration connector**,
+  which is unchanged).
+- `apps/api/src/routes/donations.ts` (public, no session):
+  - `GET /donations/config` → `{ enabled: boolean, kofiUrl: string | null }`. `enabled` is `true` only when
+    `KOFI_URL` is set and points to a valid URL. `kofiUrl` is the configured URL, or `null` if donations are
+    not configured.
+  - No POST route for checkout; no CAPTCHA, no Stripe calls, no payment processing.
+- `apps/api/src/lib/donations.ts` exports nothing (the Stripe event handler is gone; see §18a for why the
+  guild-facing integration connector is unchanged).
+- **Donation database table left in place for now, unused.** Prisma model `Donation` exists but no code writes to
+  it anymore. The table is not dropped so operator data is not destroyed, and future use (e.g. logging who donated
+  at what time without storing personal data) remains possible without a migration.
+- Entrophy handles **no card data, no payment secrets, and no donation webhooks**. Ko-fi handles everything.
+- The `/docs` Swagger UI no longer shows any donation endpoints (no endpoints exist).
+
+### 18a. Stripe integration connector (unchanged)
+
+The guild-facing **Stripe integration connector** — a feature other Discord servers use to receive their own Stripe
+payment alerts in Discord — is **not** related to donations and is **unaffected** by the donation→Ko-fi change.
+It uses `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` to receive `checkout.session.completed` and other webhook
+events from a user-authorized Stripe account and repost them to a Discord channel (via the `integrations` plugin).
+Docs: `packages/plugins/src/integrations/README.md`; threat model: `docs/SECURITY.md` §1. Wherever Stripe is
+mentioned, work out which of the two it refers to — the guild-facing connector (still present, still requires the
+env vars) or the owner's donations (now Ko-fi link-out, no env vars needed).
 
 ## 19. `enforcer` plugin
 

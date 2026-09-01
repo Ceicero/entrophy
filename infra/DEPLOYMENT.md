@@ -100,20 +100,18 @@ WEB_URL=https://entrophybot.com
 COOKIE_DOMAIN=.entrophybot.com
 TRUST_PROXY=1
 PUBLIC_WEBHOOK_BASE_URL=https://api.entrophybot.com
-STRIPE_SECRET_KEY=<optional — donations also require CAPTCHA_PROVIDER, see below>
-STRIPE_WEBHOOK_SECRET=<optional — see donations>
-DONATION_MAX_PER_HOUR=60
+STRIPE_SECRET_KEY=<optional — guild-facing Stripe integration connector only, NOT donations>
+STRIPE_WEBHOOK_SECRET=<optional — see Stripe integration connector>
+KOFI_URL=<optional — full Ko-fi page URL, e.g. https://ko-fi.com/yourname>
 CAPTCHA_PROVIDER=turnstile
 TURNSTILE_SITE_KEY=<from your Cloudflare Turnstile widget>
 TURNSTILE_SECRET=<from your Cloudflare Turnstile widget>
 ```
 
-> **Donations require CAPTCHA_PROVIDER, and TRUST_PROXY must be `1`.** `POST /donations/checkout` fails
-> closed: without a working `CAPTCHA_PROVIDER` (`turnstile` or `hcaptcha`) and its keys set, donations report
-> `enabled: false` and checkout returns 503 — even with a valid `STRIPE_SECRET_KEY`. This is intentional (see
-> `docs/SECURITY.md`'s 2026-08-26 incident note) and is not a bug to work around. `TRUST_PROXY` must be the
-> exact hop count (`1` on Railway/Render, never a bare `true`) or the donations rate limits key off the wrong
-> IP — see the `TRUST_PROXY` note in `.env.production.example`.
+> **TRUST_PROXY must be `1`.** Requests get rate-limited by IP; if this is wrong, the IP detection fails.
+> `TRUST_PROXY` must be the exact hop count (`1` on Railway/Render, never a bare `true`). See the
+> `TRUST_PROXY` note in `.env.production.example`. Donations are now handled by Ko-fi and don't require
+> CAPTCHA setup — see §2.3 below.
 
 `TRUST_PROXY=true` is no longer valid the way it was before — it now needs an integer hop count. `1` is correct
 for Railway and Render, since both put exactly one reverse proxy in front of `api`. A bare `true` trusts the
@@ -318,7 +316,7 @@ runs everything on one box. Put [Caddy](https://caddyserver.com/) in front for a
 2. Clone the repo onto the VPS, copy `.env.production.example` to `.env`, and fill in every secret
    (see §6 for the full table). Set `COOKIE_DOMAIN=.entrophybot.com` and `TRUST_PROXY=1` (Caddy is the one
    reverse-proxy hop in front of `api` here too — see the callout in §2.3 for why this must be an exact hop
-   count, not `true`). If you want donations enabled, also set `CAPTCHA_PROVIDER` (see §2.3).
+   count, not `true`). If you want donations enabled, also set `KOFI_URL` to your Ko-fi page URL (see §2.3).
 3. `docker compose up -d --build` — this builds and starts `postgres`, `redis`, runs `migrate` once,
    then starts `bot`, `api`, `dashboard`, `web` (all `restart: unless-stopped`). The compose file
    already wires internal service hostnames (`postgres`, `redis`) for `DATABASE_URL`/`REDIS_URL` — do
@@ -405,10 +403,9 @@ list with comments; every var there is also documented in `docs/ARCHITECTURE.md`
 | `ENABLE_GUILD_MEMBERS_INTENT`                                                                                                                                                                                                                                | Recommended `true`       | bot                                                | Enabled in Discord Developer Portal → **Bot** → Privileged Gateway Intents → Server Members Intent, then set `true` here to match                                              |
 | `ENABLE_MESSAGE_CONTENT_INTENT`                                                                                                                                                                                                                              | No (default `false`)     | bot                                                | Only after Discord approves the privileged intent for your bot (or while under 100 servers, which doesn't require approval) — enable in the Portal first, then set `true` here |
 | `PUBLIC_WEBHOOK_BASE_URL`                                                                                                                                                                                                                                    | Yes if using webhooks    | api                                                | `https://api.entrophybot.com`                                                                                                                                                  |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`                                                                                                                                                                                                                | Only for donations       | api                                                | Stripe Dashboard → **Developers → API keys**, and **Developers → Webhooks** → add endpoint `https://api.entrophybot.com/webhooks/stripe` → reveal signing secret               |
-| `DONATION_PRESETS_CENTS` / `DONATION_MIN_CENTS` / `DONATION_MAX_CENTS`                                                                                                                                                                                      | No (has defaults)        | api                                                | Defaults `500,1000,2500,5000` / `500` / `50000`. Checkout `amountCents` must match a preset exactly.                                                                           |
-| `DONATION_MAX_PER_HOUR`                                                                                                                                                                                                                                     | No (defaults `60`)       | api                                                | Global ceiling on donation checkouts per hour across all callers combined, independent of IP — a card-testing backstop.                                                        |
-| `CAPTCHA_PROVIDER` (`hcaptcha`/`turnstile`) + that provider's `*_SITE_KEY`/`*_SECRET`                                                                                                                                                                       | **Only for donations**   | api                                                | **Required for donations** — checkout fails closed (503) without it, even with Stripe configured. Also optionally powers the `roles` plugin's CAPTCHA verification mode. Cloudflare Turnstile or hCaptcha's own dashboard. |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`                                                                                                                                                                                                                | No (only for the guild-facing Stripe integration connector) | api                    | Stripe Dashboard → **Developers → API keys**, and **Developers → Webhooks** → add endpoint `https://api.entrophybot.com/webhooks/stripe` → reveal signing secret. **Not used for donations** (those moved to Ko-fi). |
+| `KOFI_URL`                                                                                                                                                                                                                                                      | No (donations are optional)      | api                                                | Full Ko-fi page URL, e.g. `https://ko-fi.com/yourname`. Leave blank to disable the donate page.                                                                              |
+| `CAPTCHA_PROVIDER` (`hcaptcha`/`turnstile`) + that provider's `*_SITE_KEY`/`*_SECRET`                                                                                                                                                                       | No (optional; powers the `roles` plugin's verification mode only) | api                                                | Cloudflare Turnstile or hCaptcha's own dashboard. Donations are now handled by Ko-fi and do not require CAPTCHA here. |
 | Other integration keys (`TWITCH_*`, `YOUTUBE_API_KEY`, `GITHUB_WEBHOOK_SECRET`, `REDDIT_*`, `STEAM_API_KEY`, `GOOGLE_*`, `MICROSOFT_*`, `NOTION_*`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPL_API_KEY`, `OPENWEATHERMAP_API_KEY`)                       | No                       | api, bot                                           | Each provider's own developer console. Blank = that feature stays disabled; nothing else is affected.                                                                          |
 
 ## 7. Secret rotation runbook
@@ -432,9 +429,10 @@ framing is in `docs/SECURITY.md`; this is the mechanical "how."
   `ENCRYPTION_KEY_PREVIOUS` two-step and the re-encryption script (`pnpm --filter @entrophy/database
 reencrypt:secrets`), not just a variable swap, or every already-encrypted OAuth token, webhook
   secret, and stored AI API key becomes unreadable.
-- **Stripe keys**: Stripe Dashboard → roll the secret key; for the webhook signing secret, delete and
-  recreate the webhook endpoint (or use Stripe's built-in secret roll if available) and update
-  `STRIPE_WEBHOOK_SECRET`. Update `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` on `api` and restart.
+- **Stripe keys** (guild-facing integration connector only): Stripe Dashboard → roll the secret key; for the
+  webhook signing secret, delete and recreate the webhook endpoint (or use Stripe's built-in secret roll if available)
+  and update `STRIPE_WEBHOOK_SECRET`. Update `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` on `api` and restart. **Not
+  used for donations** — donations are handled by Ko-fi.
 - **Any integration key** (Twitch/GitHub/Reddit/Steam/Google/Microsoft/Notion/OpenAI/Anthropic/etc.):
   roll it in that provider's console, update the variable on `api` (and `bot` if that integration's
   jobs run there), restart.
@@ -476,8 +474,8 @@ means checking the health endpoints and logs:
 - Set up an external uptime check (UptimeRobot, Better Uptime, or similar — any free tier is fine)
   against those four URLs if you want to be notified before a user tells you something's down.
 - `GET https://api.entrophybot.com/docs` (the Swagger UI) is expected to 404 in production — it's registered
-  only when `NODE_ENV !== 'production'`, so the exact request shape of public endpoints like
-  `/donations/checkout` isn't published to anyone who looks. It still works locally/in dev.
+  only when `NODE_ENV !== 'production'`, so the exact request shapes of public endpoints aren't published to
+  anyone who looks. It still works locally/in dev.
 - Watch each platform's built-in resource graphs (CPU/memory) for `bot` and `api` — a slow creep
   toward the memory limit over days usually means a leak worth investigating, not something to
   ignore.

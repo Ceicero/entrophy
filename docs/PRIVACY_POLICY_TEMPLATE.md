@@ -46,7 +46,7 @@ everything below it — see `docs/ARCHITECTURE.md` §8).
 | Integrations                                             | OAuth access/refresh tokens, **encrypted at rest** (AES-256-GCM), decrypted only in-process to make an API call on your behalf; webhook secrets, also encrypted at rest and shown in plaintext exactly once at creation                                                                                                                                                                                                                          | `OAuthToken` (`accessTokenEnc`, `refreshTokenEnc`), `WebhookEndpoint` (`secretEnc`)                      |
 | AI assistant (disabled by default)                       | If a server admin sets their own API key, it's encrypted at rest the same way; usage counters (not full prompts/responses) for budget tracking. If mention chat is turned on for a channel, @mentioning the bot there sends that message plus up to a configured number of recent messages from the same channel (redacted, same as everything else) to the configured provider for that one reply — nothing beyond the usage counters is stored | `PluginConfig` (`ai` plugin's `apiKeyEnc`, `chat.*`), `AiUsage`                                          |
 | Economy (disabled by default)                            | Virtual-currency balances and transaction history — **no real money involved, ever**; not personal data beyond the Discord user id                                                                                                                                                                                                                                                                                                               | `EconomyAccount`, `EconomyTransaction`                                                                   |
-| Donations                                                | Amount, currency, status, and Stripe's own session/payment identifiers — **never your name, email, or card details**, which stay entirely inside Stripe's hosted Checkout page                                                                                                                                                                                                                                                                   | `Donation` (see §4 below)                                                                                |
+| Donations                                                | None — donations are handled entirely by Ko-fi (a third-party donation platform). Entrophy stores no information about donors, donations, or personal data from donations; Ko-fi's own privacy policy covers their collection.                                                                                                                                                                                                                   | (no table — donations processed externally by Ko-fi)                                                      |
 | Dashboard sign-in                                        | Discord user id, username, avatar, and which servers you manage — just enough to determine what you're allowed to configure; a session cookie and (encrypted) OAuth tokens                                                                                                                                                                                                                                                                       | Redis session hash, `OAuthToken`                                                                         |
 | Every configuration change                               | Actor, timestamp, and a redacted before/after diff, for every setup wizard run, `/config set`, or plugin enable/disable                                                                                                                                                                                                                                                                                                                          | `AuditLog`                                                                                               |
 
@@ -62,11 +62,12 @@ never collected (there are none — auth is Discord OAuth only), and card/paymen
 
 ## 4. Donations
 
-Donations are processed by Stripe through Stripe Checkout. Card details are entered on Stripe's own
-hosted page and never reach [Operator]'s servers. The `Donation` row stores only the amount,
-currency, status (pending/paid/failed/expired), and Stripe's session/payment intent identifiers —
-**no name, email, or address is stored**, because Stripe Checkout doesn't require collecting one for
-this flow and none is requested.
+Donations are handled entirely by Ko-fi, a third-party donation platform. When a visitor clicks the donate link,
+they are taken to the operator's Ko-fi page. Ko-fi processes the payment and collects whatever information their
+service requires. **[Operator]'s servers never receive any information about the donation or the donor** — not a
+name, email, payment details, amount, or any other data. Ko-fi's own privacy policy governs what information they
+collect, retain, and how they use it; [Operator] is not responsible for Ko-fi's data handling. If the operator is
+concerned about donation privacy, they should review Ko-fi's privacy policy before asking their community to use it.
 
 ## 5. Retention defaults and admin controls
 
@@ -102,7 +103,8 @@ Data is shared only with the services required to operate the features actually 
 
 - **Discord** — the platform itself; using the bot at all means Discord processes the underlying
   messages/events per its own policies.
-- **Stripe** — donations only (see §4); no data beyond what §4 describes.
+- **Ko-fi** — donations only (see §4); the operator's Ko-fi page is where donations are processed and
+  the visitor's data (if any is collected) goes directly to Ko-fi, not to [Operator]'s servers.
 - **Optional integrations a server administrator explicitly connects**: Twitch, YouTube, Reddit,
   Steam, GitHub, Google, Microsoft, or Notion (via the `integrations` plugin — only the specific
   provider(s) a server connects, and only the scopes that connection grants); an AI provider (OpenAI

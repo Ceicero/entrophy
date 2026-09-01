@@ -83,14 +83,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_API_URL: z.string().optional(),
   WEB_URL: z.string().optional(),
   SESSION_COOKIE_SAMESITE: z.enum(['lax', 'none']).default('lax'),
-  DONATION_PRESETS_CENTS: z.string().optional(),
-  // $1.00 (the old default) is also the exact amount card testers probe with — real card-testing abuse hit
-  // `/donations/checkout` on 2026-08-26 at precisely this amount, so the floor was raised well above it.
-  DONATION_MIN_CENTS: z.coerce.number().int().positive().default(500),
-  DONATION_MAX_CENTS: z.coerce.number().int().positive().default(50000),
-  // Global ceiling on donation checkouts per hour across ALL callers combined (not per-IP) — a last line of
-  // defense against distributed card-testing abuse. Enforced in `app.ts`.
-  DONATION_MAX_PER_HOUR: z.coerce.number().int().positive().default(60),
+  KOFI_URL: z.string().optional(),
   BRAND_LOGO_PATH: z.string().optional(),
 
   BOT_OWNER_IDS: z.string().optional(),

@@ -15,7 +15,6 @@ import {
   verifyTwitchEventSubSignature,
 } from '@entrophy/core';
 import { Prisma } from '@entrophy/database';
-import { handleStripeDonationEvent } from '../lib/donations';
 
 const endpointParamSchema = z.object({ endpointId: z.string().min(1) });
 
@@ -132,16 +131,11 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
 
     const isNew = await claimEventOnce(app, 'stripe', event.id);
     if (isNew) {
-      // Donation checkout events are handled here directly (ARCHITECTURE.md §18) and never forwarded to the
-      // generic integrations queue — only non-donation Stripe events (role-reward payments, etc.) are.
-      const wasDonationEvent = await handleStripeDonationEvent(app.prisma, event);
-      if (!wasDonationEvent) {
-        await app.queues.integrationsInbound().add('stripe', {
-          provider: 'stripe',
-          eventType: event.type ?? 'unknown',
-          payload: event,
-        });
-      }
+      await app.queues.integrationsInbound().add('stripe', {
+        provider: 'stripe',
+        eventType: event.type ?? 'unknown',
+        payload: event,
+      });
     }
 
     reply.status(202);

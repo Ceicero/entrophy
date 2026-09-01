@@ -247,7 +247,7 @@ Authenticated web dashboard using Discord OAuth:
 - Export/delete server data controls
 - Responsive design and dark mode
 
-### M. PUBLIC WEBSITE & STRIPE DONATIONS
+### M. PUBLIC WEBSITE & DONATIONS
 
 Entrophy ships a public marketing website (separate from the admin dashboard).
 
@@ -261,11 +261,13 @@ Requirements:
   compliance section, donation CTA, footer), **Features & Commands** (every plugin: what it does, _why it's great for
   gaming communities_, and a table of every command/subcommand with description, who can use it and an example),
   **Enforcer** spotlight page (how flag → decision → ledger → appeal works, and the privacy/transparency claims),
-  **Donate** (Stripe), Privacy (template), Terms (template).
-- **Donations**: Stripe-powered donation button with preset amounts and a custom one-time amount. Hosted Stripe Checkout
-  (no card data ever touches Entrophy servers). Clear disclosure: donations fund hosting/development, are one-time,
-  non-refundable, grant no perks or in-game advantages, and are not tax-deductible unless the operator states otherwise.
-  If Stripe is not configured the page says so instead of failing.
+  **Donate** (Ko-fi link-out), Privacy (template), Terms (template).
+- **Donations**: Handled entirely by Ko-fi (a third-party donation platform). The donate page links to the operator's
+  Ko-fi page when configured, or explains that donations are not set up when the Ko-fi URL is missing. Clear disclosure:
+  donations are voluntary, fund hosting/development, are one-time, non-refundable, grant no perks or in-game advantages,
+  and are not tax-deductible unless the operator states otherwise. Entrophy stores no donor information (names, emails,
+  payment details) — Ko-fi's own privacy policy governs what they collect. If Ko-fi is not configured the page says so
+  instead of failing.
 - Command documentation on the website is **generated from the real plugin registry** (never hand-maintained lists) so it
   cannot drift from the bot.
 - Responsive, accessible (WCAG AA contrast within the monochrome palette), dark-by-default (the palette is dark; a light

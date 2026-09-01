@@ -17,7 +17,7 @@ recap in `docs/ARCHITECTURE.md` §15 and the compliance rules in `docs/SPEC.md`.
 | `SESSION_SECRET`                                                                                 | Signs dashboard session cookies — a leak lets an attacker forge a session for any user.                                                                             |
 | Guild/member data (moderation cases, warnings, notes, Enforcer records, tickets, logs)           | Server-scoped moderation and behavioral history; some of it (staff notes, ticket transcripts, Enforcer excerpts) can contain sensitive free text about real people. |
 | Webhook secrets (`WebhookEndpoint.secretEnc`)                                                    | Let an attacker forge inbound webhook deliveries or, for outbound endpoints, read what's being sent.                                                                |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`                                                    | Could forge donation events or (with the secret key) act on the Stripe account.                                                                                     |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` (guild-facing integration connector only)          | Could forge integration events (received by servers configured to monitor Stripe activity) or act on a connected Stripe account. **Not used by the owner's donations** — those moved to Ko-fi on 2026-08-30 (see §3 below). |
 | Third-party integration keys (Twitch, GitHub, Google, Microsoft, Notion, OpenAI/Anthropic, etc.) | Scoped to whatever that provider's key grants — usually read access to public data or a connected account's data.                                                   |
 
 **Who we're defending against:** opportunistic scanners hitting public endpoints, a malicious or
@@ -32,8 +32,9 @@ leaks.
 
 **What we deliberately don't store**, because it can't leak if it isn't there: message content by
 default (see `docs/PRIVACY_POLICY_TEMPLATE.md` for the full breakdown), plaintext secrets of any
-kind, donor names/emails/card details (Stripe Checkout — we only ever see an amount and a session
-id), and passwords (there are none; auth is Discord OAuth only).
+kind, anything at all about donors (donations are a link out to Ko-fi — no payment page, no
+webhook, no amount and no session id ever reaches us), and passwords (there are none; auth is
+Discord OAuth only).
 
 ## 2. Controls
 
@@ -202,21 +203,18 @@ typecheck && pnpm test && pnpm build` (this is exactly what CI runs).
 received roughly 125 rapid checkout attempts, each for exactly $1.00 — matching the then-default
 `DONATION_MIN_CENTS`. This matches a known "card testing" pattern, where stolen card numbers are probed for
 validity via small charges rather than genuine purchases. Stripe flagged the pattern and suspended the
-account. No donor personal data was exposed — the donations table has never stored card numbers, emails, or
-names (see §1); Stripe Checkout is the only party that ever sees payment details.
+account. No donor personal data was exposed — Stripe Checkout is the only party that ever sees payment details.
 
-Controls added in response (full contract in `docs/ARCHITECTURE.md` §18):
+**Resolution (2026-08-30):** Rather than defend the checkout endpoint against ongoing abuse, donations were moved
+entirely to Ko-fi, a third-party donation platform. Entrophy no longer processes payments at all. This removes
+the entire card-testing attack surface instead of just hardening one endpoint. The `POST /donations/checkout`
+endpoint is gone; the `/donations/config` route returns a simple link to Ko-fi when configured. This also
+eliminated the need for the hardening controls below — they were situational defenses against a payment-processing
+role Entrophy no longer plays.
 
-- Donation amounts are locked to a fixed preset list (`DONATION_PRESETS_CENTS`) — an arbitrary amount is
-  rejected outright, not merely range-checked.
-- The default minimum donation rose from $1.00 to $5.00, and $1.00 is no longer a valid preset under any
-  configuration.
-- `POST /donations/checkout` now requires a CAPTCHA token, verified server-side before anything else runs,
-  and the endpoint fails closed (503) whenever CAPTCHA isn't configured — a Stripe key alone is no longer
-  enough to enable donations.
-- A global hourly ceiling (`DONATION_MAX_PER_HOUR`) caps checkout attempts across all callers combined, not
-  just per IP, since card testing typically rotates IPs to dodge per-IP limits.
-- API rate limiting moved to a Redis-backed store shared across instances and restarts, replacing per-process
-  memory.
-- The public Swagger UI (`/docs`) no longer runs in production, so this endpoint's exact request format isn't
-  published to anyone who looks.
+Earlier hardening (archived for reference, no longer in effect):
+
+- Donation amounts were locked to a fixed preset list (`DONATION_PRESETS_CENTS`).
+- `POST /donations/checkout` required a CAPTCHA token verified server-side before anything else ran.
+- A global hourly ceiling capped checkout attempts across all callers combined.
+- API rate limiting moved to a Redis-backed store shared across instances and restarts.

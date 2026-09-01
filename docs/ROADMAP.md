@@ -17,7 +17,7 @@ webhooks + alert connectors + a Twitch chat bot with custom commands/timers), an
 assistant. The dashboard covers every plugin with a settings page, the marketplace enable/disable
 grid, a JSON-schema-driven config drawer, audit log viewer, and privacy controls (export/delete/
 retention). The public website covers the full command reference (generated from the plugin
-manifests, not hand-maintained — see ARCHITECTURE §17), donations via Stripe Checkout, and
+manifests, not hand-maintained — see ARCHITECTURE §17), donations via Ko-fi link-out, and
 privacy/terms pages. CI runs lint, typecheck, 931+ tests, and both app builds on every push; the repo
 stays green and runnable with `npm run dev` (well, `pnpm dev`) at every commit.
 
