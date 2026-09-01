@@ -63,6 +63,15 @@ set` (and the equivalent dashboard action) changes a member's stored XP/level im
   `POST /owner/twitch-bot/connect`. Until that step, the feature honestly reports itself as not configured
   rather than failing silently. No Twitch-side moderation actions (ban/timeout/delete) ship in v1 —
   custom commands and timers only.
+- **Twitch channel-point rewards are live.** Viewers redeeming a custom Twitch channel-point reward triggers
+  one of four actions: play a sound on the streamer's OBS overlay, speak text via TTS (using the guild's own
+  OpenAI key, or unavailable if not configured), post to Twitch chat, or post to a Discord channel. Configured
+  per-channel from `/twitch reward add|remove|list` or the dashboard's "Rewards" tab. Existing linked channels
+  **must re-link to grant `channel:read:redemptions` scope** before the broadcaster's rewards can start working —
+  the reconcile loop reports this plainly rather than silently failing. TTS synthesis is server-side (OBS's
+  embedded browser has no voices), and sound URLs are validated by the existing SSRF guard at write time. Viewer
+  reward-input text is never persisted or logged. The overlay is an HTML page served at a capability-token URL
+  (treat the URL like a password) and can be regenerated without re-linking.
 - **Game-stats leaderboards need a Steam Web API key.** The `gamestats` plugin (`/dbd link|unlink|
   stats|leaderboard|refresh`) lets members opt in with their own Steam account and compares curated
   stats on a per-guild leaderboard — Dead by Daylight is the first (and, for now, only) supported

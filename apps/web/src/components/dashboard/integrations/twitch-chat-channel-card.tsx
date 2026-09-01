@@ -18,6 +18,8 @@ import { useDeleteTwitchChatChannel, useUpdateTwitchChatChannel } from '@/lib/da
 import { ApiClientError } from '@/lib/dashboard/api';
 import { ConfirmDialog } from '../confirm-dialog';
 import { TwitchChatCommandsTable } from './twitch-chat-commands-table';
+import { TwitchChatOverlayPanel } from './twitch-chat-overlay-panel';
+import { TwitchChatRewardsTable } from './twitch-chat-rewards-table';
 import { TwitchChatTimersTable } from './twitch-chat-timers-table';
 
 const STATUS_VARIANT: Record<string, 'success' | 'destructive' | 'secondary' | 'warning'> = {
@@ -135,6 +137,8 @@ export function TwitchChatChannelCard({ guildId, channel }: TwitchChatChannelCar
 
         <TwitchChatCommandsTable guildId={guildId} channelId={channel.id} prefix={channel.commandPrefix} />
         <TwitchChatTimersTable guildId={guildId} channelId={channel.id} />
+        <TwitchChatRewardsTable guildId={guildId} channelId={channel.id} />
+        <TwitchChatOverlayPanel guildId={guildId} channel={channel} />
       </CardContent>
 
       <ConfirmDialog

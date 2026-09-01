@@ -331,8 +331,8 @@ describe('TwitchChatManager reconcile (subscription diffing)', () => {
     expect(FakeWebSocket.instances).toHaveLength(1);
   });
 
-  it('caps subscriptions at 300 channels and warns about the excess', async () => {
-    const rows = Array.from({ length: 305 }, (_, i) =>
+  it('caps subscriptions at 150 channels (each channel now costs up to two of the 300 EventSub subscriptions) and warns about the excess', async () => {
+    const rows = Array.from({ length: 155 }, (_, i) =>
       makeChannelRow({ id: `channel-${i}`, broadcasterUserId: `b-${i}` }),
     );
     const logger = makeLogger();
@@ -343,17 +343,18 @@ describe('TwitchChatManager reconcile (subscription diffing)', () => {
       prismaOverrides: {
         twitchChatChannel: { findMany: async () => rows, update: async () => ({}) },
         twitchChatCommand: { findMany: async () => [] },
+        twitchChatReward: { findMany: async () => [] },
       },
     });
 
     await manager.start(ctx);
     const ws = FakeWebSocket.instances[0];
     ws.emit('session_welcome', { session: { id: 'sess-1', status: 'connected', keepalive_timeout_seconds: 10, reconnect_url: null } });
-    // 300 channels x several sequential `await`s each in the reconcile loop — needs many more microtask ticks
+    // 150 channels x several sequential `await`s each in the reconcile loop — needs many more microtask ticks
     // than the single-channel tests above.
     await flush(5000);
 
-    expect(manager.connectedChannelIds()).toHaveLength(300);
+    expect(manager.connectedChannelIds()).toHaveLength(150);
     expect(logger.warn).toHaveBeenCalled();
   });
 });

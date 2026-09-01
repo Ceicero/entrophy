@@ -7,7 +7,9 @@ import type {
   TwitchChatChannel,
   TwitchChatCommand,
   TwitchChatLevel,
+  TwitchChatReward,
   TwitchChatTimer,
+  TwitchRewardActionKind,
   WebhookDelivery,
   WebhookEndpoint,
 } from '@entrophy/database';
@@ -17,7 +19,9 @@ import type {
   TwitchChatChannelDto,
   TwitchChatCommandDto,
   TwitchChatLevelId,
+  TwitchChatRewardDto,
   TwitchChatTimerDto,
+  TwitchRewardActionKindId,
   WebhookDeliveryDto,
   WebhookEndpointDetailDto,
 } from '@entrophy/types/integrations';
@@ -83,6 +87,7 @@ export function toTwitchChatChannelDto(row: TwitchChatChannel): TwitchChatChanne
     status: CONNECTION_STATUS_MAP[row.status],
     lastError: row.lastError,
     commandPrefix: row.commandPrefix,
+    rewardsEnabled: row.rewardsEnabled,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -107,6 +112,36 @@ export function toTwitchChatTimerDto(row: TwitchChatTimer): TwitchChatTimerDto {
     intervalMinutes: row.intervalMinutes,
     enabled: row.enabled,
     lastFiredAt: row.lastFiredAt ? row.lastFiredAt.toISOString() : null,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Twitch channel-point rewards (channel-points spec v1) — extends the twitch-chat mappers above.
+// ---------------------------------------------------------------------------------------------------------
+
+/** Reverse of `TWITCH_REWARD_ACTION_ENUM_MAP` (routes/twitch-chat.ts) — Prisma enum -> input action id, for reads. */
+export const TWITCH_REWARD_ACTION_MAP: Record<TwitchRewardActionKind, TwitchRewardActionKindId> = {
+  SOUND: 'sound',
+  TTS: 'tts',
+  CHAT: 'chat',
+  DISCORD: 'discord',
+};
+
+export function toTwitchChatRewardDto(row: TwitchChatReward): TwitchChatRewardDto {
+  return {
+    id: row.id,
+    rewardId: row.rewardId,
+    rewardTitle: row.rewardTitle,
+    enabled: row.enabled,
+    action: TWITCH_REWARD_ACTION_MAP[row.action],
+    soundUrl: row.soundUrl,
+    volume: row.volume,
+    ttsTemplate: row.ttsTemplate,
+    chatTemplate: row.chatTemplate,
+    discordChannelId: row.discordChannelId,
+    discordTemplate: row.discordTemplate,
+    cooldownSeconds: row.cooldownSeconds,
     createdAt: row.createdAt.toISOString(),
   };
 }

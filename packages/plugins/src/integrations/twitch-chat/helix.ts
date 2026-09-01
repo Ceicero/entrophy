@@ -1,10 +1,15 @@
 // Twitch chat bot — bot-identity token handling + Helix helpers (SPEC.md §J, docs/ARCHITECTURE.md's
 // twitch-chat runtime contract). All chat reads/sends run on the ONE `TwitchBotIdentity` row's user token
 // (never a broadcaster's) — see this directory's README section in packages/plugins/src/integrations/README.md.
-import type { TwitchBotIdentity } from '@entrophy/database';
+import type { TwitchBotIdentity, TwitchChatChannel } from '@entrophy/database';
 import { decryptSecret, encryptSecret, redisKey } from '@entrophy/core';
 import type { PluginContext } from '../../sdk';
 import type { EngineHelixResult } from './engine';
+import {
+  forceRefreshBroadcasterAccessToken,
+  getBroadcasterAccessToken,
+  type BroadcasterToken,
+} from './broadcaster-token';
 
 const HELIX_BASE = 'https://api.twitch.tv/helix';
 const TOKEN_URL = 'https://id.twitch.tv/oauth2/token';
@@ -32,6 +37,20 @@ interface HelixRefreshResponse {
 
 interface HelixEventSubCreateResponse {
   data: { id: string }[];
+}
+
+interface HelixCustomReward {
+  id: string;
+  title: string;
+}
+
+interface HelixCustomRewardsResponse {
+  data: HelixCustomReward[];
+}
+
+export interface CustomRewardInfo {
+  id: string;
+  title: string;
 }
 
 interface HelixStreamsResponse {
@@ -238,6 +257,25 @@ async function fetchWithReauth(
   return makeRequest(buildHelixHeaders(clientId, refreshed.accessToken));
 }
 
+/** Same one-retry-on-401 shape as `fetchWithReauth`, but for calls authenticated with a channel's BROADCASTER
+ * token (channel-points spec) rather than the bot identity's token — used by `createRewardRedemptionSubscription`
+ * and `listCustomRewards`, which Twitch requires the broadcaster's own `channel:read:redemptions` grant for. */
+async function fetchWithBroadcasterReauth(
+  ctx: PluginContext,
+  clientId: string,
+  channel: TwitchChatChannel,
+  token: BroadcasterToken,
+  makeRequest: (headers: Record<string, string>) => Promise<Response>,
+): Promise<Response> {
+  const res = await makeRequest(buildHelixHeaders(clientId, token.accessToken));
+  if (res.status !== 401) return res;
+
+  const refreshed = await forceRefreshBroadcasterAccessToken(ctx, channel);
+  if (!refreshed) return res;
+
+  return makeRequest(buildHelixHeaders(clientId, refreshed.accessToken));
+}
+
 /** Client-side send throttle state: at most one message per broadcaster per second (module-singleton, matching
  * `TwitchChatManager`'s own singleton lifetime — there is exactly one bot process sending chat). */
 const lastSentAtByBroadcaster = new Map<string, number>();
@@ -333,6 +371,94 @@ export async function createChatSubscription(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return { ok: false, error: message };
+  }
+}
+
+/** Creates the `channel.channel_points_custom_reward_redemption.add` v1 EventSub subscription (websocket
+ * transport) for one channel, using the BROADCASTER's own token (channel-points spec, binding fact 1 — Twitch
+ * requires this exact grant; the bot identity's token cannot create it). Deliberately omits `reward_id` from
+ * the condition — ONE unfiltered subscription per channel, filtered to configured rewards in application code
+ * (rewards.ts), never one-subscription-per-reward (binding fact 3: that would blow the 300 EventSub cap). The
+ * subscription still attaches to the bot's existing EventSub WebSocket session via `sessionId` — Twitch only
+ * requires the creating token share the session's client_id, not the same user. */
+export async function createRewardRedemptionSubscription(
+  ctx: PluginContext,
+  sessionId: string,
+  channel: TwitchChatChannel,
+): Promise<CreateSubscriptionResult> {
+  const token = await getBroadcasterAccessToken(ctx, channel);
+  if (!token) {
+    return {
+      ok: false,
+      error: "Broadcaster token unavailable for channel point redemptions (re-link may be required).",
+    };
+  }
+  const clientId = ctx.env.TWITCH_CLIENT_ID;
+  if (!clientId) return { ok: false, error: 'TWITCH_CLIENT_ID is not configured.' };
+
+  try {
+    const res = await fetchWithBroadcasterReauth(ctx, clientId, channel, token, (headers) =>
+      fetch(`${HELIX_BASE}/eventsub/subscriptions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          type: 'channel.channel_points_custom_reward_redemption.add',
+          version: '1',
+          condition: { broadcaster_user_id: channel.broadcasterUserId },
+          transport: { method: 'websocket', session_id: sessionId },
+        }),
+      }),
+    );
+    if (!res.ok) {
+      let detail = `status ${res.status}`;
+      try {
+        const body = (await res.json()) as { message?: string };
+        if (body.message) detail = body.message;
+      } catch {
+        // Non-JSON error body; the status-only message above is fine.
+      }
+      return { ok: false, status: res.status, error: detail };
+    }
+    const json = (await res.json()) as HelixEventSubCreateResponse;
+    const subscriptionId = json.data[0]?.id;
+    if (!subscriptionId) return { ok: false, error: 'Twitch did not return a subscription id.' };
+    return { ok: true, subscriptionId };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: message };
+  }
+}
+
+/** Lists a channel's custom rewards (id + title only — used by the dashboard's reward picker so admins select
+ * from a dropdown instead of typing titles by hand). Requires the broadcaster token, same as
+ * `createRewardRedemptionSubscription`. Same `{ ok: false }` vs `{ ok: true, value }` distinction as
+ * `getStream`/`getChannelInfo` — a failed lookup is not the same as "this channel has no custom rewards". */
+export async function listCustomRewards(
+  ctx: PluginContext,
+  channel: TwitchChatChannel,
+): Promise<EngineHelixResult<CustomRewardInfo[]>> {
+  const token = await getBroadcasterAccessToken(ctx, channel);
+  if (!token) return { ok: false };
+  const clientId = ctx.env.TWITCH_CLIENT_ID;
+  if (!clientId) return { ok: false };
+
+  try {
+    const res = await fetchWithBroadcasterReauth(ctx, clientId, channel, token, (headers) =>
+      fetch(
+        `${HELIX_BASE}/channel_points/custom_rewards?broadcaster_id=${encodeURIComponent(channel.broadcasterUserId)}`,
+        { headers },
+      ),
+    );
+    if (!res.ok) {
+      ctx.logger.warn({ status: res.status }, 'integrations/twitch-chat: list custom rewards failed');
+      return { ok: false };
+    }
+    const json = (await res.json()) as HelixCustomRewardsResponse;
+    return { ok: true, value: json.data.map((reward) => ({ id: reward.id, title: reward.title })) };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    ctx.logger.warn({ err: message }, 'integrations/twitch-chat: list custom rewards request threw');
+    return { ok: false };
   }
 }
 

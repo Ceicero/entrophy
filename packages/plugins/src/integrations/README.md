@@ -48,6 +48,43 @@ See `docs/ARCHITECTURE.md` §19a for the full runtime contract.
   account, the feature reports itself as not configured (`/twitch status`, the dashboard tab, and this plugin's
   `health()`) instead of failing silently or erroring.
 
+## Twitch channel-point rewards
+
+A viewer redeeming a Twitch channel-point reward can trigger an action in Entrophy. Lives in `twitch-chat/`
+(`rewards.ts`, `tts.ts`, `broadcaster-token.ts`, `manager.ts`) with overlay routes in `apps/api`. Shares the
+same `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` vars and EventSub socket as the chat bot above. See
+`docs/ARCHITECTURE.md` §19b for the full runtime contract.
+
+- **How it works**: a streamer enables rewards on a linked channel and grants `channel:read:redemptions` scope
+  (must re-link — existing channels have only `channel:bot`). When a viewer redeems the reward in chat, Entrophy
+  matches it against configured `TwitchChatReward` rows by reward title or id, applies per-reward cooldowns, and
+  runs the configured action. Four action kinds: SOUND (play an audio URL on the overlay), TTS (speak text via
+  server-side synthesis on the overlay), CHAT (post to Twitch chat), DISCORD (post to a Discord channel). Text
+  templates support `{user}`, `{input}` (viewer's text), and `{reward}` — no other interpolation.
+- **Overlay**: served at `/overlay/:token` (the token is a capability — treat the URL like a password; it can
+  be regenerated without re-linking). An HTML page held open by Server-Sent Events, with a queue of SOUND/TTS
+  actions playing in sequence. Dedupes by action id so reconnects don't replay. Volume is clamped 0-100.
+  Strict CSP (`default-src: none`), no user input, no attack surface — serves "link expired" on bad token.
+- **TTS synthesis**: OBS's embedded browser has no `speechSynthesis` API, so synthesis is server-side via
+  OpenAI's `/v1/audio/speech`. Uses the **guild's own configured OpenAI key** (same key as the `ai` plugin),
+  trying `gpt-4o-mini-tts` then falling back to `tts-1`. Returns `null` (never throws) when: the guild has no
+  OpenAI key, the provider is not OpenAI (e.g. Anthropic), or the request fails. Actions are logged and skipped,
+  reported honestly to admins.
+- **Sound effects**: admin-supplied public HTTPS URLs, validated by the existing SSRF guard at write time. No
+  file upload or blob storage — the platform has no place to store arbitrary audio.
+- **Commands**: `/twitch reward add|remove|list` (staff level admin). Add requires: reward title, action kind,
+  and action-specific fields (soundUrl for SOUND, text template for TTS/CHAT/DISCORD, Discord channel for
+  DISCORD). Dashboard "Rewards" tab has a "List rewards from Twitch" picker to auto-populate reward ids.
+- **What is stored**: the OAuth tokens (broadcaster's, encrypted, same as every other connection), and the
+  reward row (title, id, action, payloads, cooldown). Max 25 rewards per channel.
+- **What is NOT stored**: viewer reward-input text, redeemer display name, or any redemption event detail beyond
+  the reward title and action kind (in logs). Same privacy stance as chat message handling.
+- **Degradation**: without `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET`, or if the broadcaster's token lacks
+  `channel:read:redemptions`, rewards don't function. The channel's `lastError` reports the scope gap plainly.
+  With an invalid soundUrl or Discord channel id, that action is skipped (logged), while others run. With no
+  OpenAI key, TTS actions are skipped; other reward types still work. No silent failures — admins know what's
+  working and what isn't from `/twitch status` or the dashboard.
+
 ## Commands
 
 `/integration connect <provider> [target] [channel] [role] [template]` — OAuth providers reply with a dashboard
@@ -60,6 +97,7 @@ per target).
 `/integration outbound create|list|delete|test` — outbound endpoints.
 `/twitch status|setup|off`, `/twitch command add|remove|list`, `/twitch timer add|remove|list` — the Twitch chat
 bot, above.
+`/twitch reward add|remove|list` — channel-point reward actions, above.
 
 ## Config keys
 

@@ -7,15 +7,19 @@ import type {
   CreateAlertConnectionInput,
   CreateOutboundEndpointInput,
   CreateTwitchChatCommandInput,
+  CreateTwitchChatRewardInput,
   CreateTwitchChatTimerInput,
   IntegrationConnectionDetailDto,
   IntegrationProviderInfoDto,
   TwitchChatChannelDto,
   TwitchChatCommandDto,
+  TwitchChatRewardDto,
   TwitchChatStatusDto,
   TwitchChatTimerDto,
+  TwitchOverlayInfoDto,
   UpdateTwitchChatChannelInput,
   UpdateTwitchChatCommandInput,
+  UpdateTwitchChatRewardInput,
   UpdateTwitchChatTimerInput,
   WebhookDeliveryDto,
   WebhookEndpointDetailDto,
@@ -36,6 +40,10 @@ export const integrationsQueryKeys = {
     ['guilds', guildId, 'integrations', 'twitch-chat', 'channels', channelId, 'commands'] as const,
   twitchChatTimers: (guildId: string, channelId: string) =>
     ['guilds', guildId, 'integrations', 'twitch-chat', 'channels', channelId, 'timers'] as const,
+  twitchChatRewards: (guildId: string, channelId: string) =>
+    ['guilds', guildId, 'integrations', 'twitch-chat', 'channels', channelId, 'rewards'] as const,
+  twitchChatOverlay: (guildId: string, channelId: string) =>
+    ['guilds', guildId, 'integrations', 'twitch-chat', 'channels', channelId, 'overlay'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -431,6 +439,107 @@ export function useDeleteTwitchChatTimer(guildId: string) {
     onSuccess: (_data, { channelId }) => {
       void queryClient.invalidateQueries({
         queryKey: integrationsQueryKeys.twitchChatTimers(guildId, channelId),
+      });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Twitch chat channel-point rewards
+// ---------------------------------------------------------------------------
+
+export function useTwitchChatRewards(guildId: string | undefined, channelId: string | undefined) {
+  return useQuery({
+    queryKey: integrationsQueryKeys.twitchChatRewards(guildId ?? '', channelId ?? ''),
+    queryFn: () =>
+      apiFetch<TwitchChatRewardDto[]>(
+        `/guilds/${guildId}/integrations/twitch-chat/channels/${channelId}/rewards`,
+      ),
+    enabled: Boolean(guildId && channelId),
+  });
+}
+
+export function useCreateTwitchChatReward(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ channelId, input }: { channelId: string; input: CreateTwitchChatRewardInput }) =>
+      apiFetch<TwitchChatRewardDto>(
+        `/guilds/${guildId}/integrations/twitch-chat/channels/${channelId}/rewards`,
+        { method: 'POST', body: input },
+      ),
+    onSuccess: (_data, { channelId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: integrationsQueryKeys.twitchChatRewards(guildId, channelId),
+      });
+    },
+  });
+}
+
+export function useUpdateTwitchChatReward(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      rewardId,
+      patch,
+    }: {
+      rewardId: string;
+      /** Not sent to the API — used only to invalidate the right channel's rewards list. */
+      channelId: string;
+      patch: UpdateTwitchChatRewardInput;
+    }) =>
+      apiFetch<TwitchChatRewardDto>(`/guilds/${guildId}/integrations/twitch-chat/rewards/${rewardId}`, {
+        method: 'PATCH',
+        body: patch,
+      }),
+    onSuccess: (_data, { channelId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: integrationsQueryKeys.twitchChatRewards(guildId, channelId),
+      });
+    },
+  });
+}
+
+export function useDeleteTwitchChatReward(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ rewardId }: { rewardId: string; channelId: string }) =>
+      apiFetch<void>(`/guilds/${guildId}/integrations/twitch-chat/rewards/${rewardId}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: (_data, { channelId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: integrationsQueryKeys.twitchChatRewards(guildId, channelId),
+      });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Twitch chat overlay (rewards alerts)
+// ---------------------------------------------------------------------------
+
+export function useTwitchChatOverlay(guildId: string | undefined, channelId: string | undefined) {
+  return useQuery({
+    queryKey: integrationsQueryKeys.twitchChatOverlay(guildId ?? '', channelId ?? ''),
+    queryFn: () =>
+      apiFetch<TwitchOverlayInfoDto>(
+        `/guilds/${guildId}/integrations/twitch-chat/channels/${channelId}/overlay`,
+      ),
+    enabled: Boolean(guildId && channelId),
+  });
+}
+
+export function useRegenerateTwitchChatOverlay(guildId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ channelId }: { channelId: string }) =>
+      apiFetch<TwitchOverlayInfoDto>(
+        `/guilds/${guildId}/integrations/twitch-chat/channels/${channelId}/overlay/regenerate`,
+        { method: 'POST' },
+      ),
+    onSuccess: (_data, { channelId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: integrationsQueryKeys.twitchChatOverlay(guildId, channelId),
       });
     },
   });

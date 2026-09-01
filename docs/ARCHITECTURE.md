@@ -225,11 +225,11 @@ PUBLIC_WEBHOOK_BASE_URL=      # public https base for inbound webhooks (EventSub
 | `roles`        | `src/roles`        | `/roles panel create\|edit\|delete\|list\|post\|option-add\|option-remove`, `/roles group create\|edit\|delete\|list`, `/roles persist on\|off\|status`, `/welcome set\|embed\|test\|disable`, `/goodbye set\|embed\|test\|disable`, `/verify` (member-facing), `/verification setup\|queue\|approve\|deny`, `/onboarding checklist\|config\|rules-post\|step-add\|step-remove` | disabled                                               |
 | `engagement`   | `src/engagement`   | `/level rank\|leaderboard\|config\|reset\|xp give\|remove\|set\|rewards add\|remove\|list\|sync\|ignore add\|remove`, `/rep give\|check\|leaderboard\|revoke`, `/starboard set channel\|threshold\|emoji\|selfstar\|status`, `/tempvoice setup\|lock\|unlock\|limit\|rename\|claim\|kick\|permit`                                                                               | enabled (leveling on, rep on, starboard needs channel) |
 | `community`    | `src/community`    | `/poll create\|end\|results`, `/giveaway start\|end\|reroll\|list\|cancel`, `/suggest`, `/suggestions setup\|status\|list`, `/announce schedule\|list\|cancel\|preview`, `/remind set\|list\|cancel`, `/event create\|list\|cancel\|rsvps`                                                                                                                                      | enabled                                                |
-| `gamestats`    | `src/gamestats`    | `/dbd link\|unlink\|stats\|leaderboard\|refresh` — Steam-linked leaderboards, Dead by Daylight first (§19b)                                                                                                                   | disabled, **unavailable without `STEAM_API_KEY`**      |
+| `gamestats`    | `src/gamestats`    | `/dbd link\|unlink\|stats\|leaderboard\|refresh` — Steam-linked leaderboards, Dead by Daylight first (§19c)                                                                                                                   | disabled, **unavailable without `STEAM_API_KEY`**      |
 | `economy`      | `src/economy`      | `/economy balance\|daily\|give\|leaderboard\|config`, `/economy admin add\|remove` — virtual currency only, **no real money**                                                                                                                                                                                                                                                   | disabled                                               |
 | `utility`      | `src/utility`      | `/help`, `/utility userinfo\|serverinfo\|avatar\|banner\|roleinfo\|channelinfo\|timestamp\|timezone set\|get\|list\|calculator\|afk\|translate\|weather\|status`, `/embed builder`, context menu "User info"                                                                                                                                                                    | enabled                                                |
 | `media`        | `src/media`        | `/music play\|queue\|skip\|pause\|resume\|volume\|loop\|stop\|shuffle\|nowplaying\|playlist save\|load\|list\|delete` — adapter interface only; unavailable unless `MEDIA_PROVIDER` configured with a compliant provider                                                                                                                                                        | disabled                                               |
-| `integrations` | `src/integrations` | `/integration connect\|disconnect\|status\|list`, `/integration alerts add\|remove\|list`, `/integration webhook create\|list\|delete`, `/integration outbound create\|list\|delete\|test`, `/twitch status\|setup\|off`, `/twitch command add\|remove\|list`, `/twitch timer add\|remove\|list` (chat bot — §19a)                                                                                                                                                                                      | disabled                                               |
+| `integrations` | `src/integrations` | `/integration connect\|disconnect\|status\|list`, `/integration alerts add\|remove\|list`, `/integration webhook create\|list\|delete`, `/integration outbound create\|list\|delete\|test`, `/twitch status\|setup\|off`, `/twitch command add\|remove\|list`, `/twitch timer add\|remove\|list`, `/twitch reward add\|remove\|list` (chat bot + channel-point rewards — §19a–19b) | disabled                                               |
 | `ai`           | `src/ai`           | `/ask`, `/summarize`, `/draft`, `/mod-assist`, `/ai config view\|set-key\|clear-key\|provider\|model\|channels\|budget`                                                                                                                                                                                                                                                         | disabled                                               |
 
 `PluginId` union in `@entrophy/types` = exactly these ids. `packages/plugins/src/index.ts` exports `allPlugins: Plugin[]` in this order and `packages/plugins/src/manifests.ts` exports `allManifests: PluginManifest[]` (import each plugin's `manifest.ts` only — **manifest files must not import discord.js runtime code beyond types/enums** so the API can load them cheaply).
@@ -478,7 +478,7 @@ Helper `definePlugin(p: Plugin): Plugin` (identity, for typing) and `defineManif
 - `prisma/schema.prisma` (postgres). Client singleton in `src/client.ts` (`export const prisma`, `export * from '@prisma/client'` types). `src/index.ts` also exports `writeAudit(prisma, entry)`, `withGuild(guildId)` helpers, and `retention.ts` helpers.
 - Migration: `prisma/migrations/0001_init/migration.sql` + `migration_lock.toml`, generated with `prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script` (no DB needed). Scripts: `generate`, `migrate:dev`, `migrate:deploy`, `migrate:diff`, `seed` (`tsx prisma/seed.ts`), `studio`.
 - Conventions: ids `String @id @default(cuid())` unless a Discord snowflake is natural (`Guild.id`, `UserProfile.id` = discord user id). Every tenant table has `guildId String` + `@@index([guildId])` (+ compound indexes for hot lookups). Timestamps `createdAt @default(now())`, `updatedAt @updatedAt`. Soft delete via `deletedAt DateTime?` on ModerationCase, Ticket, RolePanel, AutomodRule, Suggestion, WebhookEndpoint, IntegrationConnection. FK to `Guild` with `onDelete: Cascade` (guild data deletion = delete Guild row → cascades). Json config columns typed `Json`.
-- Models (minimum): Guild, GuildConfig (1:1; staff role ids, locale, timezone, fastActions, modLogChannelId, dataCollection flags), PluginState, PluginConfig, PluginMigration, UserProfile, ModerationCase (`caseNumber Int` per guild `@@unique([guildId, caseNumber])`, type enum WARN|TIMEOUT|UNTIMEOUT|KICK|BAN|UNBAN|SOFTBAN|PURGE|LOCK|UNLOCK|SLOWMODE|NICK|ROLE_ADD|ROLE_REMOVE|QUARANTINE|NOTE, targetId, moderatorId, reason, evidenceUrls String[], durationMs, expiresAt, expiredAt, dmSent Boolean, metadata Json, source), ModerationWarning, ModerationNote, ModerationAppeal, ModerationEscalationRule (or inside config Json), AutomodRule, AutomodEvent (with reviewStatus enum PENDING|APPROVED|FALSE_POSITIVE), AuditLog, LogEvent (logging plugin searchable store; content fields nullable), Ticket, TicketParticipant, TicketTranscript, TicketPanel, RolePanel, RolePanelOption, RoleGroup, MemberRoleSnapshot (role persistence), VerificationRequest, OnboardingProgress, ScheduledJob, Reminder, ScheduledAnnouncement, Giveaway, GiveawayEntry, Poll, PollOption, PollVote, Suggestion, SuggestionVote, StarboardEntry, TempVoiceChannel, CommunityEvent, EventRsvp, LevelProfile, LevelReward, ReputationEvent, EconomyAccount, EconomyTransaction, AfkStatus, IntegrationConnection, OAuthToken (encrypted fields `accessTokenEnc`, `refreshTokenEnc`, `expiresAt`, `scopes String[]`), WebhookEndpoint (inbound + outbound, `secretEnc`), WebhookDelivery, ProcessedWebhookEvent (idempotency: `@@unique([provider, eventId])`), DataRetentionPolicy, DataRequest (export/delete jobs), AiUsage, GuildAnalyticsDaily, TwitchBotIdentity (singleton — Entrophy's own Twitch chat-bot account), TwitchChatChannel (a guild's linked Twitch channel), TwitchChatCommand, TwitchChatTimer (enum `TwitchChatLevel` EVERYONE|SUBSCRIBER|VIP|MODERATOR|BROADCASTER — see §19a), GameAccountLink, GameStatSnapshot (enum `GameAccountProvider` STEAM only in v1, per-guild opt-in link + latest curated stat snapshot — see §19b).
+- Models (minimum): Guild, GuildConfig (1:1; staff role ids, locale, timezone, fastActions, modLogChannelId, dataCollection flags), PluginState, PluginConfig, PluginMigration, UserProfile, ModerationCase (`caseNumber Int` per guild `@@unique([guildId, caseNumber])`, type enum WARN|TIMEOUT|UNTIMEOUT|KICK|BAN|UNBAN|SOFTBAN|PURGE|LOCK|UNLOCK|SLOWMODE|NICK|ROLE_ADD|ROLE_REMOVE|QUARANTINE|NOTE, targetId, moderatorId, reason, evidenceUrls String[], durationMs, expiresAt, expiredAt, dmSent Boolean, metadata Json, source), ModerationWarning, ModerationNote, ModerationAppeal, ModerationEscalationRule (or inside config Json), AutomodRule, AutomodEvent (with reviewStatus enum PENDING|APPROVED|FALSE_POSITIVE), AuditLog, LogEvent (logging plugin searchable store; content fields nullable), Ticket, TicketParticipant, TicketTranscript, TicketPanel, RolePanel, RolePanelOption, RoleGroup, MemberRoleSnapshot (role persistence), VerificationRequest, OnboardingProgress, ScheduledJob, Reminder, ScheduledAnnouncement, Giveaway, GiveawayEntry, Poll, PollOption, PollVote, Suggestion, SuggestionVote, StarboardEntry, TempVoiceChannel, CommunityEvent, EventRsvp, LevelProfile, LevelReward, ReputationEvent, EconomyAccount, EconomyTransaction, AfkStatus, IntegrationConnection, OAuthToken (encrypted fields `accessTokenEnc`, `refreshTokenEnc`, `expiresAt`, `scopes String[]`), WebhookEndpoint (inbound + outbound, `secretEnc`), WebhookDelivery, ProcessedWebhookEvent (idempotency: `@@unique([provider, eventId])`), DataRetentionPolicy, DataRequest (export/delete jobs), AiUsage, GuildAnalyticsDaily, TwitchBotIdentity (singleton — Entrophy's own Twitch chat-bot account), TwitchChatChannel (a guild's linked Twitch channel, with `overlayTokenEnc` + `rewardsEnabled` for channel-point rewards — §19b), TwitchChatCommand, TwitchChatTimer (enum `TwitchChatLevel` EVERYONE|SUBSCRIBER|VIP|MODERATOR|BROADCASTER — see §19a), TwitchChatReward (channel-point reward → action mapping, enum `TwitchRewardActionKind` SOUND|TTS|CHAT|DISCORD — see §19b), GameAccountLink, GameStatSnapshot (enum `GameAccountProvider` STEAM only in v1, per-guild opt-in link + latest curated stat snapshot — see §19c).
 - Seed (`prisma/seed.ts`): only creates a **demo guild clearly named `Entrophy Demo (seed)`** with id `000000000000000000`, sample plugin states, one sample automod rule in dry-run, sample retention policy. No fake users/messages.
 
 ## 9. Bot host (`apps/bot`)
@@ -898,12 +898,81 @@ No 15th plugin: lives in `packages/plugins/src/integrations/twitch-chat/` (`heli
   the socket and clearing in-memory state) before `redis.quit()`/`prisma.$disconnect()`, mirroring how the
   plugin job workers are closed.
 
-## 19b. `gamestats` plugin — Steam leaderboards
+## 19b. Twitch channel-point rewards (inside the `integrations` plugin)
+
+A channel-point reward (something a Twitch viewer buys with channel points in chat) triggers an action in
+Entrophy: playing a sound on the streamer's OBS overlay, speaking text via TTS, posting to Twitch chat, or
+posting to a Discord channel. Live inside `integrations/twitch-chat/` (`rewards.ts`, `tts.ts`, `manager.ts`,
+`broadcaster-token.ts`) plus API routes and dashboard UI; command `/twitch reward` (§7.1).
+
+- **Identity model**: each enabled `TwitchChatChannel` row carries an optional `rewardsEnabled` boolean (default
+  `false`) and an `overlayTokenEnc` capability-token field. Rewarding starts only when both: the channel has
+  rewards enabled, AND the broadcaster has granted `channel:read:redemptions` scope (a broadcaster's own token,
+  not the bot's, held in the `IntegrationConnection`'s `OAuthToken` row keyed by `TwitchChatChannel.connectionId`).
+  Unlike chat (which re-links with `channel:bot` scope alone), existing channels must **re-link** to grant the
+  new scope — the manager's reconcile checks this and surfaced a plain-language error in `lastError` rather than
+  silently failing.
+- **EventSub subscription model**: one unfiltered `channel.channel_points_custom_reward_redemption.add` v1 subscription
+  per enabled channel (never one per reward, which would exhaust Twitch's 300-subscription limit). Matching of a
+  redemption event to configured `TwitchChatReward` rows happens in application code (`rewards.ts`): by `rewardId`
+  when populated (from the dashboard's "list rewards from Twitch" picker), else by case-insensitive `rewardTitle`.
+  Multiple rows can match the same redemption title (e.g. one row SOUND, one row DISCORD), each with independent
+  cooldown. Disabled rows or rows failing the cooldown gate contribute nothing.
+- **Subscription capacity**: the bot's ONE EventSub WebSocket session supports 300 zero-cost subscriptions. Since
+  each linked channel can now carry **two** subscriptions (chat + rewards), the channel cap dropped from 300 to 150
+  (worst case: every channel has rewards enabled).
+- **Overlay delivery** (SOUND + TTS actions): the redemption arrives in the `bot` process, but the overlay browser
+  connects to the `api` process. The bot publishes the action over Redis (`entrophy:overlay:<channelId>`) and the
+  `api` process subscribes via a **second, dedicated ioredis client in subscriber mode** — a subscriber-mode client
+  cannot run normal Redis commands and the shared client is already in use by BullMQ + rate limiting. This design
+  works with multiple `api` replicas: each replica receives every message and writes only to its own connections.
+- **TTS synthesis**: OBS's embedded browser ships no speech voices, so `window.speechSynthesis` is unavailable. TTS
+  is therefore synthesized server-side using `OpenAI`'s `/v1/audio/speech` endpoint, trying `gpt-4o-mini-tts` first
+  and falling back to `tts-1` if the model is unknown. Synthesis uses the **guild's own configured OpenAI key**
+  (the same key used by the `ai` plugin's `/ask` and others) — there is no platform-wide TTS key and no cost to
+  the operator. A guild with no configured OpenAI key or a non-OpenAI provider (Anthropic) simply gets no TTS;
+  when this happens, the TTS action logs a warning and is skipped silently, reported honestly (not an error).
+  Synthesis never blocks the redemption — any failure leaves other configured actions for the same redemption free
+  to run.
+- **Sound effects**: admin-supplied public HTTPS URLs, validated at write time by the existing SSRF guard
+  (`assertPublicHttpUrl`). No file upload or blob storage — the platform has no place to store arbitrary audio files.
+- **Text templating**: TTS and chat/Discord actions support `{user}` (redeemer's display name), `{input}` (viewer's
+  optional text input for a reward requiring it), and `{reward}` (the reward title) — no other interpolation. TTS
+  caps final text at 200 chars; chat/Discord cap at 300 chars, both **after** templating (so an oversized `{input}`
+  cannot smuggle an over-length string past the limits). Control characters are stripped, whitespace is collapsed,
+  and the text is trimmed before final text is queued.
+- **Privacy contract**: the viewer's redemption input text is **never persisted or logged** — same stance as chat
+  message handling. Only the reward title and action kind appear in logs, never the templated text or the
+  redeemer's name. The overlay URL (`:token`) is a capability token, encrypted at rest, and can be regenerated
+  without changing the channel — treat the URL like a password.
+- **Per-reward cooldown** (`cooldownSeconds`, default 0): independent in-memory cooldown per `(channelId,
+  rewardRowId)` pair, keyed by the reward row's database id (not the Twitch reward id), so a channel with two
+  actions configured for the same reward title can have different cooldowns.
+- **Overlay as browser source**: the overlay is a simple HTML page the `api` serves at `/overlay/:token`, held
+  open by the browser via Server-Sent Events. Every SOUND/TTS action is queued to play in sequence (FIFO); the
+  overlay dedupes by the action's unique `id` field (uuid) so a reconnecting browser does not replay already-played
+  sounds. Volume is clamped 0-100 (default 80). The overlay page has a strict CSP (`default-src: none`, media from
+  `https:` + `self` + data: URIs), contains **no user input or attack surface**, and serves a simple "link expired"
+  page when the token is invalid.
+- **Dashboard / commands**: `/twitch reward add|remove|list` or the dashboard "Rewards" tab on
+  `/dashboard/[guildId]/integrations`'s "Twitch chat" card. Config is per-reward with write validation: `action`
+  kind determines which payload fields are required (soundUrl for SOUND, ttsTemplate for TTS, chatTemplate for
+  CHAT, both discordChannelId + discordTemplate for DISCORD). Dashboard has a "List rewards from Twitch" picker to
+  populate `rewardId`, or rows can be created with only `rewardTitle` to match by name later.
+- **Degrades gracefully**: with `TWITCH_CLIENT_ID`/`TWITCH_CLIENT_SECRET` unset, or before a `TwitchBotIdentity` row
+  exists, the manager's rewarding reconcile passes are skipped and the channel reports `rewardsEnabled: false`. If
+  rewards ARE enabled but the broadcaster's token lacks `channel:read:redemptions`, the channel's `lastError` field
+  reports the scope gap plainly instead of silently failing. TTS synthesis degrades when the guild has no
+  configured OpenAI key — actions are logged and skipped, never errors. A bad `soundUrl` or invalid
+  `discordChannelId` causes that action to be skipped (logged), while other actions for the same redemption run
+  normally.
+
+## 19c. `gamestats` plugin — Steam leaderboards
 
 Plugin id `gamestats` (§7.1) — the platform's 15th plugin, category `community`, `defaultEnabled: false`. Folder
 `packages/plugins/src/gamestats/`. `requiredEnv: ['STEAM_API_KEY']` — unavailable (see `/plugin status`) without it,
 same "declare it, degrade honestly" pattern as `media`'s `MEDIA_PROVIDER` gate. No privileged intents; no per-guild
-`dashboard` entry (config drawer only — there is nothing to configure, every setting is a member's own link).
+`dashboard` entry (config drawer only — every setting is a member's own link and not configurable per guild).
 
 - **Opt-in linking, self-reported and unverified, self-service removal**: `/dbd link account:<text>` accepts a
   pasted SteamID64, profile URL, or vanity name, resolves it (`ISteamUser/ResolveVanityURL/v1` when needed),

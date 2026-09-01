@@ -6,7 +6,7 @@ Web API and renders leaderboards/stat cards. First (only) game: **Dead by Daylig
 Built game-pluggable — the next game is a new descriptor under `games/`, not a new architecture. Disabled by
 default.
 
-Full contract: `docs/ARCHITECTURE.md` §19b. Requirement: `docs/SPEC.md` §P ("Steam public data only," member
+Full contract: `docs/ARCHITECTURE.md` §19c. Requirement: `docs/SPEC.md` §P ("Steam public data only," member
 opt-in + self-removal, data minimization, no console support — all implemented here, see below).
 
 ## Status: implemented
@@ -24,7 +24,7 @@ The only enforcement against misuse is a same-guild duplicate guard: one Steam a
 one member per server at a time (`GameAccountLink`'s `@@unique([guildId, provider, externalId])`). Linking an
 account someone else in the guild already has linked is rejected with a friendly error rather than silently
 overwriting their link. This is a deliberate trade-off, not an oversight — see `docs/SPEC.md` §P and
-`docs/ARCHITECTURE.md` §19b.
+`docs/ARCHITECTURE.md` §19c.
 
 ## Steam-only, honestly labeled
 

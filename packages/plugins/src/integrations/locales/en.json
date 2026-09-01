@@ -57,10 +57,16 @@
       "runtimeReconnecting": "🔴 Reconnecting — {reason}",
       "noChannels": "No Twitch channels linked yet. Run `/twitch setup` to connect one.",
       "channelLine": "{status} **{login}** (prefix `{prefix}`) — {commands} command(s), {timers} timer(s){disabled}",
-      "channelDisabledSuffix": " — disabled"
+      "channelDisabledSuffix": " — disabled",
+      "rewardsLine": "↳ {state}",
+      "rewardsDisabled": "⚪ Channel points off",
+      "rewardsEnabledOverlayReady": "🟢 Channel points on — overlay set up",
+      "rewardsEnabledNoOverlay": "🟡 Channel points on — overlay not set up yet (see `/twitch setup`)",
+      "rewardsRelinkRequired": "🔴 Channel points on but **re-link required** — the broadcaster needs to reconnect this channel from the dashboard to grant permission to read channel-point redemptions"
     },
     "setup": {
       "instructions": "Connect a Twitch channel from the dashboard: **Dashboard → this server → Integrations → \"Twitch chat\" tab → Connect a Twitch channel**.\n{url}",
+      "rewardsInstructions": "\n\nTo run channel-point reward actions (sound/TTS/chat/Discord): **Dashboard → this server → Integrations → \"Twitch chat\" tab → the channel's Rewards section → enable → copy the overlay URL**, then add that URL as a Browser Source in OBS. Configure the rewards themselves with `/twitch reward add`.",
       "botNotConfiguredNote": "\n\nNote: Entrophy's Twitch bot account isn't set up yet — ask the bot owner to finish that first."
     },
     "off": {
@@ -81,7 +87,13 @@
       "commandLimit": "This channel has reached its limit of {max} commands.",
       "timerExists": "A timer named \"{name}\" already exists for this channel.",
       "timerNotFound": "No timer named \"{name}\" was found for this channel.",
-      "timerLimit": "This channel has reached its limit of {max} timers."
+      "timerLimit": "This channel has reached its limit of {max} timers.",
+      "rewardExists": "A reward action for \"{name}\" with that action type already exists for this channel.",
+      "rewardNotFound": "No reward action named \"{name}\" was found for this channel.",
+      "rewardAmbiguous": "\"{name}\" matches more than one reward action (different action types) for this channel — remove it from the dashboard instead.",
+      "rewardLimit": "This channel has reached its limit of {max} reward actions.",
+      "rewardFieldRequired": "`{field}` is required for the \"{action}\" action.",
+      "rewardFieldNotAllowed": "`{field}` doesn't apply to the \"{action}\" action."
     },
     "command": {
       "added": "Added `!{name}` for **{channel}**.",
@@ -100,6 +112,15 @@
       "listTitle": "Timers — {channel}",
       "listEmpty": "No timers yet. Add one with `/twitch timer add`.",
       "listLine": "**{name}** — every {interval}m{disabled}: {message}"
+    },
+    "reward": {
+      "added": "Added a **{action}** reward action for \"{title}\" on **{channel}**.",
+      "removeConfirmTitle": "Remove the reward action for \"{title}\"?",
+      "removeConfirmBody": "This deletes the reward action for \"{title}\" on **{channel}**.",
+      "removed": "Removed the reward action for \"{title}\".",
+      "listTitle": "Channel-point rewards — {channel}",
+      "listEmpty": "No reward actions yet. Add one with `/twitch reward add`.",
+      "listLine": "**{title}** — {action}, {cooldown}s cooldown{disabled}"
     }
   }
 }

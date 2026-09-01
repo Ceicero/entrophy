@@ -23,6 +23,7 @@ import {
   env,
   isProduction,
   RateLimiter,
+  redisKey,
   toPublicError,
 } from '@entrophy/core';
 import { prisma as sharedPrisma, type PrismaClient } from '@entrophy/database';
@@ -30,6 +31,7 @@ import { createGuildConfigStore } from './lib/config-store';
 import { csrfProtection } from './lib/csrf';
 import { describeFastifyClientError, isFastifyRateLimitError } from './lib/fastify-errors';
 import type { ZodFastifyInstance } from './lib/http';
+import { dispatchOverlayMessage } from './lib/overlay-registry';
 import { QueueRegistry, type QueueRegistryLike } from './lib/queues';
 import { getSession, SESSION_COOKIE_NAME } from './lib/session';
 
@@ -55,6 +57,7 @@ import webhooksRoutes from './routes/webhooks';
 import enforcerRoutes from './routes/enforcer';
 import donationsRoutes from './routes/donations';
 import verifyRoutes from './routes/verify';
+import overlayRoutes from './routes/overlay';
 import developerReportsRoutes from './routes/developer-reports';
 import ownerMetricsRoutes from './routes/owner-metrics';
 import twitchBotRoutes from './routes/twitch-bot';
@@ -65,6 +68,14 @@ export interface BuildAppDeps {
   queues?: QueueRegistryLike;
   /** Defaults to `createLogger('api')`. Tests inject a silent logger to avoid pino-pretty's worker-thread transport startup cost. */
   logger?: Logger;
+  /**
+   * Dedicated ioredis client the OBS-overlay `/overlay/*` routes subscribe on (channel-points spec v1,
+   * "Overlay transport"). Defaults to a real `createRedis(env.REDIS_URL)` connection — tests MUST inject a
+   * fake here (an `ioredis-mock` instance, same as `redis`) or every test that calls `buildApp()` opens a
+   * real TCP connection attempt to Redis. See the long comment where this is consumed below for why it must
+   * be a second client rather than reusing `redis`.
+   */
+  overlaySubscriber?: Redis;
 }
 
 /**
@@ -93,6 +104,25 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   const prisma = deps.prisma ?? sharedPrisma;
   const redis = deps.redis ?? createRedis(env.REDIS_URL ?? 'redis://localhost:6379');
   const queues = deps.queues ?? new QueueRegistry(redis);
+
+  // Second, dedicated ioredis client for the channel-point-rewards OBS overlay's bot -> API push
+  // (channel-points spec v1, "Overlay transport"; bot -> API push doesn't exist anywhere else in this repo
+  // today — the 3 BullMQ queues above all flow API -> bot). Once a client issues (P)SUBSCRIBE it enters
+  // Redis's subscriber mode and can no longer run ordinary commands on that connection — so this MUST be
+  // separate from `redis` above, which BullMQ, the rate limiter, and the session store all issue plain
+  // GET/SET/INCR commands on continuously. This design is correct with N API replicas: pub/sub has no
+  // consumer-group semantics, so every replica's subscriber receives every published message, but each
+  // replica only writes into its own local `overlay-registry` connection map (lib/overlay-registry.ts) —
+  // exactly the replica holding a given viewer's long-lived SSE connection is the only one that needs to see
+  // that viewer's message, and that's exactly what happens here.
+  const overlaySubscriber = deps.overlaySubscriber ?? createRedis(env.REDIS_URL ?? 'redis://localhost:6379');
+  const overlayChannelPrefix = `${redisKey('overlay')}:`;
+  await overlaySubscriber.psubscribe(`${overlayChannelPrefix}*`);
+  overlaySubscriber.on('pmessage', (_pattern: string, channel: string, message: string) => {
+    if (!channel.startsWith(overlayChannelPrefix)) return;
+    const channelId = channel.slice(overlayChannelPrefix.length);
+    if (channelId) dispatchOverlayMessage(channelId, message);
+  });
 
   const app = Fastify({
     loggerInstance: deps.logger ?? createLogger('api'),
@@ -339,6 +369,7 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   await app.register(donationsRoutes, { prefix: '/donations' });
   await app.register(webhooksRoutes, { prefix: '/webhooks', bodyLimit: 5 * 1024 * 1024 });
   await app.register(verifyRoutes, { prefix: '/verify' });
+  await app.register(overlayRoutes, { prefix: '/overlay' });
   await app.register(developerReportsRoutes, { prefix: '/owner' });
   await app.register(ownerMetricsRoutes, { prefix: '/owner' });
   await app.register(twitchBotRoutes, { prefix: '/owner' });
@@ -346,6 +377,20 @@ export async function buildApp(deps: BuildAppDeps = {}): Promise<ZodFastifyInsta
   app.addHook('onClose', async () => {
     if (!deps.queues) {
       await (queues as QueueRegistry).closeAll?.();
+    }
+  });
+
+  app.addHook('onClose', async () => {
+    if (deps.overlaySubscriber) return; // caller-owned (tests) — they close it themselves.
+    try {
+      // Explicit PUNSUBSCRIBE before QUIT: harmless on real Redis, and required for `ioredis-mock` (used by
+      // every test that builds this app) whose `disconnect()`/`quit()` don't actually detach the pattern
+      // listener they registered — only `punsubscribe()` does — so skipping this leaks one listener on a
+      // shared, cross-instance EventEmitter per test and eventually trips Node's MaxListenersExceededWarning.
+      await overlaySubscriber.punsubscribe();
+      await overlaySubscriber.quit();
+    } catch {
+      overlaySubscriber.disconnect();
     }
   });
 

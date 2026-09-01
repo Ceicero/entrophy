@@ -1,10 +1,18 @@
-import { PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
-import { Prisma, type TwitchChatChannel, type TwitchChatLevel as PrismaTwitchChatLevel } from '@entrophy/database';
+import { ChannelType, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import {
+  Prisma,
+  type TwitchChatChannel,
+  type TwitchChatLevel as PrismaTwitchChatLevel,
+  type TwitchRewardActionKind as PrismaTwitchRewardActionKind,
+} from '@entrophy/database';
 import {
   TWITCH_CHAT_LEVELS,
   TWITCH_CHAT_RESERVED_COMMAND_NAMES,
+  TWITCH_REWARD_ACTION_KINDS,
   type TwitchChatLevelId,
+  type TwitchRewardActionKindId,
 } from '@entrophy/types/integrations';
+import { SsrfError, assertPublicHttpUrl } from '@entrophy/core';
 import {
   assertStaffLevel,
   brandEmbed,
@@ -16,13 +24,24 @@ import {
   type ComponentHandler,
   type PluginCommand,
   type PluginContext,
+  type TFunction,
 } from '../../sdk';
+// Channel-point rewards (channel-points spec v1) reach into twitch-chat/ for the same two helpers the runtime
+// itself uses: `listCustomRewards` (autocomplete picks from the broadcaster's real Twitch rewards) and
+// `TWITCH_REDEMPTIONS_SCOPE` (so `/twitch status` can explain a missing-scope channel with the same string the
+// manager's reconcile does, never a hand-copied duplicate).
+import { listCustomRewards } from '../twitch-chat/helix';
+import { TWITCH_REDEMPTIONS_SCOPE } from '../twitch-chat/broadcaster-token';
 
 // Per-channel limits + name/response/interval bounds mirror apps/api/src/lib/integrations/twitch-chat-schemas.ts
 // exactly (this command can't import from apps/api — see that file's header comment).
 const TWITCH_CHAT_NAME_PATTERN = /^[a-z0-9_]{1,32}$/;
 const TWITCH_CHAT_MAX_COMMANDS_PER_CHANNEL = 50;
 const TWITCH_CHAT_MAX_TIMERS_PER_CHANNEL = 10;
+// Mirrors apps/api/src/lib/integrations/twitch-chat-schemas.ts's TWITCH_CHAT_MAX_REWARDS_PER_CHANNEL exactly —
+// this package can't import from apps/api (see that file's header comment), same duplication convention as
+// the two caps above.
+const TWITCH_CHAT_MAX_REWARDS_PER_CHANNEL = 25;
 
 const TWITCH_CHAT_LEVEL_LABEL: Record<TwitchChatLevelId, string> = {
   everyone: 'Everyone',
@@ -53,6 +72,34 @@ const TWITCH_CHAT_LEVEL_FROM_ENUM: Record<PrismaTwitchChatLevel, TwitchChatLevel
   VIP: 'vip',
   MODERATOR: 'moderator',
   BROADCASTER: 'broadcaster',
+};
+
+const TWITCH_REWARD_ACTION_LABEL: Record<TwitchRewardActionKindId, string> = {
+  sound: 'Sound effect',
+  tts: 'Text-to-speech',
+  chat: 'Chat message',
+  discord: 'Discord post',
+};
+
+const TWITCH_REWARD_ACTION_CHOICES = TWITCH_REWARD_ACTION_KINDS.map((id) => ({
+  name: TWITCH_REWARD_ACTION_LABEL[id],
+  value: id,
+}));
+
+/** Input action id -> Prisma enum, for writes. */
+const TWITCH_REWARD_ACTION_ENUM_MAP: Record<TwitchRewardActionKindId, PrismaTwitchRewardActionKind> = {
+  sound: 'SOUND',
+  tts: 'TTS',
+  chat: 'CHAT',
+  discord: 'DISCORD',
+};
+
+/** Reverse of the map above, for display. */
+const TWITCH_REWARD_ACTION_FROM_ENUM: Record<PrismaTwitchRewardActionKind, TwitchRewardActionKindId> = {
+  SOUND: 'sound',
+  TTS: 'tts',
+  CHAT: 'chat',
+  DISCORD: 'discord',
 };
 
 /** True for Prisma's unique-constraint-violation error (P2002) — same check as routes/twitch-chat.ts's isUniqueViolation. */
@@ -227,6 +274,110 @@ const data = new SlashCommandBuilder()
               .setAutocomplete(true),
           ),
       ),
+  )
+  .addSubcommandGroup((group) =>
+    group
+      .setName('reward')
+      .setDescription('Manage channel-point reward actions (sound/TTS/chat/Discord).')
+      .addSubcommand((sub) =>
+        sub
+          .setName('add')
+          .setDescription('Add a channel-point reward action.')
+          .addStringOption((opt) =>
+            opt
+              .setName('reward-title')
+              .setDescription("The Twitch custom reward's exact title")
+              .setRequired(true)
+              .setMinLength(1)
+              .setMaxLength(100)
+              .setAutocomplete(true),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('action')
+              .setDescription('What redeeming it does')
+              .setRequired(true)
+              .addChoices(...TWITCH_REWARD_ACTION_CHOICES),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('sound-url')
+              .setDescription('Public https:// URL to play (sound effect action only)')
+              .setRequired(false)
+              .setMaxLength(500),
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName('volume')
+              .setDescription('Playback volume 0-100 (sound effect action only; default 80)')
+              .setRequired(false)
+              .setMinValue(0)
+              .setMaxValue(100),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('text')
+              .setDescription(
+                'Text template — {user}/{input}/{reward} placeholders (TTS/chat/Discord actions only)',
+              )
+              .setRequired(false)
+              .setMinLength(1)
+              .setMaxLength(300),
+          )
+          .addChannelOption((opt) =>
+            opt
+              .setName('discord-channel')
+              .setDescription('Discord channel to post in (Discord action only)')
+              .setRequired(false)
+              .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement),
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName('cooldown')
+              .setDescription('Per-reward cooldown in seconds (default 0)')
+              .setRequired(false)
+              .setMinValue(0)
+              .setMaxValue(3600),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('Twitch channel (only needed if more than one is linked)')
+              .setRequired(false)
+              .setAutocomplete(true),
+          ),
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('remove')
+          .setDescription('Remove a channel-point reward action.')
+          .addStringOption((opt) =>
+            opt
+              .setName('reward-title')
+              .setDescription('Reward title')
+              .setRequired(true)
+              .setAutocomplete(true),
+          )
+          .addStringOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('Twitch channel (only needed if more than one is linked)')
+              .setRequired(false)
+              .setAutocomplete(true),
+          ),
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('list')
+          .setDescription('List channel-point reward actions.')
+          .addStringOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('Twitch channel (only needed if more than one is linked)')
+              .setRequired(false)
+              .setAutocomplete(true),
+          ),
+      ),
   );
 
 type ChannelLookupResult = { ok: true; channel: TwitchChatChannel } | { ok: false; message: string };
@@ -304,6 +455,44 @@ async function deleteTwitchChatTimer(
   nudgeReconcile(ctx);
 }
 
+async function deleteTwitchChatReward(
+  ctx: PluginContext,
+  guildId: string,
+  actorId: string,
+  rewardId: string,
+  rewardTitle: string,
+): Promise<void> {
+  await ctx.prisma.twitchChatReward.delete({ where: { id: rewardId } });
+  await ctx.audit({
+    guildId,
+    actorId,
+    actorType: 'user',
+    action: 'integration.twitch_chat.reward.delete',
+    targetType: 'twitch_chat_reward',
+    targetId: rewardId,
+    before: { rewardTitle },
+    source: 'bot',
+  });
+  nudgeReconcile(ctx);
+}
+
+/** Channel-point rewards line for `/twitch status` (channel-points spec v1): reports off/on, whether the
+ * overlay browser-source URL has been generated, and — the case that must never be silent — a channel with
+ * rewards turned on whose stored broadcaster token lacks `channel:read:redemptions` (never linked with the
+ * scope, or the connection was replaced by a plain chat re-link). `token` is the channel's `OAuthToken` row
+ * (via `connectionId`), or `null` when there is no connection/token at all — treated the same as missing scope. */
+function rewardsStatusLabel(
+  c: Parameters<PluginCommand['execute']>[0],
+  channel: TwitchChatChannel,
+  token: { scopes: string[] } | null,
+): string {
+  if (!channel.rewardsEnabled) return c.t('twitch.status.rewardsDisabled');
+  if (!token?.scopes.includes(TWITCH_REDEMPTIONS_SCOPE)) return c.t('twitch.status.rewardsRelinkRequired');
+  return channel.overlayTokenEnc
+    ? c.t('twitch.status.rewardsEnabledOverlayReady')
+    : c.t('twitch.status.rewardsEnabledNoOverlay');
+}
+
 async function handleStatus(c: Parameters<PluginCommand['execute']>[0]): Promise<void> {
   const [botIdentity, channels] = await Promise.all([
     c.ctx.prisma.twitchBotIdentity.findFirst(),
@@ -316,6 +505,15 @@ async function handleStatus(c: Parameters<PluginCommand['execute']>[0]): Promise
         c.ctx.prisma.twitchChatCommand.count({ where: { channelId: channel.id } }),
         c.ctx.prisma.twitchChatTimer.count({ where: { channelId: channel.id } }),
       ]),
+    ),
+  );
+  // Only fetched for channels with rewards turned on — the common case (rewards off) needs no OAuthToken
+  // lookup at all, and `rewardsStatusLabel` treats a `null` token the same as a missing-scope one.
+  const oauthTokens = await Promise.all(
+    channels.map((channel) =>
+      channel.rewardsEnabled && channel.connectionId
+        ? c.ctx.prisma.oAuthToken.findUnique({ where: { connectionId: channel.connectionId } })
+        : Promise.resolve(null),
     ),
   );
 
@@ -352,6 +550,9 @@ async function handleStatus(c: Parameters<PluginCommand['execute']>[0]): Promise
           disabled: channel.enabled ? '' : c.t('twitch.status.channelDisabledSuffix'),
         }),
       );
+      lines.push(
+        c.t('twitch.status.rewardsLine', { state: rewardsStatusLabel(c, channel, oauthTokens[i] ?? null) }),
+      );
     });
   }
 
@@ -365,6 +566,7 @@ async function handleSetup(c: Parameters<PluginCommand['execute']>[0]): Promise<
 
   const body =
     c.t('twitch.setup.instructions', { url }) +
+    c.t('twitch.setup.rewardsInstructions') +
     (botIdentity ? '' : c.t('twitch.setup.botNotConfiguredNote'));
 
   await c.interaction.reply({ embeds: [brandEmbed().setDescription(body)], ephemeral: true });
@@ -731,6 +933,281 @@ async function handleTimerList(c: Parameters<PluginCommand['execute']>[0]): Prom
   });
 }
 
+interface RewardFieldsInput {
+  soundUrl: string | null;
+  volume: number | null;
+  text: string | null;
+  discordChannelId: string | null;
+}
+
+/** Cross-field validation for `/twitch reward add`, mirroring
+ * apps/api/src/lib/integrations/twitch-chat-schemas.ts's `validateRewardActionFields`: every field required by
+ * the chosen `action` must be present, and every field belonging to a *different* action must be absent. The
+ * API validates three separate template fields (ttsTemplate/chatTemplate/discordTemplate); this command
+ * collapses them into one `text` option (see the builder above), so field names differ, but the
+ * required/disallowed shape is the same rule set. Returns the first violation found, or `null` when valid. */
+function validateRewardFields(action: TwitchRewardActionKindId, input: RewardFieldsInput, t: TFunction): string | null {
+  const label = TWITCH_REWARD_ACTION_LABEL[action];
+
+  const disallowed: [boolean, string][] = [
+    [action !== 'sound' && input.soundUrl !== null, 'sound-url'],
+    [action !== 'sound' && input.volume !== null, 'volume'],
+    [action === 'sound' && input.text !== null, 'text'],
+    [action !== 'discord' && input.discordChannelId !== null, 'discord-channel'],
+  ];
+  for (const [present, field] of disallowed) {
+    if (present) return t('twitch.errors.rewardFieldNotAllowed', { field, action: label });
+  }
+
+  if (action === 'sound' && !input.soundUrl) {
+    return t('twitch.errors.rewardFieldRequired', { field: 'sound-url', action: label });
+  }
+  if ((action === 'tts' || action === 'chat') && !input.text) {
+    return t('twitch.errors.rewardFieldRequired', { field: 'text', action: label });
+  }
+  if (action === 'discord') {
+    if (!input.discordChannelId) return t('twitch.errors.rewardFieldRequired', { field: 'discord-channel', action: label });
+    if (!input.text) return t('twitch.errors.rewardFieldRequired', { field: 'text', action: label });
+  }
+
+  return null;
+}
+
+async function handleRewardAdd(c: Parameters<PluginCommand['execute']>[0]): Promise<void> {
+  const rewardTitle = c.interaction.options.getString('reward-title', true).trim();
+  const actionId = c.interaction.options.getString('action', true) as TwitchRewardActionKindId;
+  const soundUrl = c.interaction.options.getString('sound-url')?.trim() || null;
+  const volume = c.interaction.options.getInteger('volume');
+  const text = c.interaction.options.getString('text')?.trim() || null;
+  const discordChannel = c.interaction.options.getChannel('discord-channel');
+  const cooldownSeconds = c.interaction.options.getInteger('cooldown') ?? 0;
+
+  if (rewardTitle.length === 0) {
+    await c.interaction.reply({ embeds: [errorEmbed(c.t('twitch.errors.emptyResponse'))], ephemeral: true });
+    return;
+  }
+
+  const fieldError = validateRewardFields(
+    actionId,
+    { soundUrl, volume, text, discordChannelId: discordChannel?.id ?? null },
+    c.t,
+  );
+  if (fieldError) {
+    await c.interaction.reply({ embeds: [errorEmbed(fieldError)], ephemeral: true });
+    return;
+  }
+
+  const resolved = await resolveChannel(c);
+  if (!resolved.ok) {
+    await c.interaction.reply({ embeds: [errorEmbed(resolved.message)], ephemeral: true });
+    return;
+  }
+  const { channel } = resolved;
+
+  const action = TWITCH_REWARD_ACTION_ENUM_MAP[actionId];
+
+  const clash = await c.ctx.prisma.twitchChatReward.findFirst({
+    where: { channelId: channel.id, action, rewardTitle: { equals: rewardTitle, mode: 'insensitive' } },
+  });
+  if (clash) {
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('twitch.errors.rewardExists', { name: rewardTitle }))],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const count = await c.ctx.prisma.twitchChatReward.count({ where: { channelId: channel.id } });
+  if (count >= TWITCH_CHAT_MAX_REWARDS_PER_CHANNEL) {
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('twitch.errors.rewardLimit', { max: TWITCH_CHAT_MAX_REWARDS_PER_CHANNEL }))],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  // SOUND only, and only once every earlier (cheap, no-network) check has passed — a live DNS lookup is the
+  // most expensive validation here, same ordering rationale as ai/commands/config.ts's base-url check.
+  if (soundUrl) {
+    try {
+      await assertPublicHttpUrl(soundUrl);
+    } catch (err) {
+      await c.interaction.reply({
+        embeds: [
+          errorEmbed(
+            c.t('errors.invalidUrl', {
+              reason: err instanceof SsrfError ? err.message : 'That URL is not allowed.',
+            }),
+          ),
+        ],
+        ephemeral: true,
+      });
+      return;
+    }
+  }
+
+  // Best-effort: resolve the Twitch reward id for this title so redemption matching (rewards.ts) can key off
+  // the stable id rather than a title that could later be renamed. A failed/unavailable lookup (no broadcaster
+  // token yet, re-link required, Helix error) just leaves `rewardId` null — the runtime already supports
+  // matching redemptions by title alone (channel-points spec v1, binding fact 5's title-fallback) for exactly
+  // this case, so this is never fatal to the add.
+  let rewardId: string | null = null;
+  const twitchRewards = await listCustomRewards(c.ctx, channel);
+  if (twitchRewards.ok) {
+    const match = twitchRewards.value.find((r) => r.title.toLowerCase() === rewardTitle.toLowerCase());
+    if (match) rewardId = match.id;
+  }
+
+  let row;
+  try {
+    row = await c.ctx.prisma.twitchChatReward.create({
+      data: {
+        channelId: channel.id,
+        guildId: c.guildId,
+        rewardId,
+        rewardTitle,
+        action,
+        soundUrl: action === 'SOUND' ? soundUrl : null,
+        volume: action === 'SOUND' ? (volume ?? 80) : 80,
+        ttsTemplate: action === 'TTS' ? text : null,
+        chatTemplate: action === 'CHAT' ? text : null,
+        discordChannelId: action === 'DISCORD' ? (discordChannel?.id ?? null) : null,
+        discordTemplate: action === 'DISCORD' ? text : null,
+        cooldownSeconds,
+        createdBy: c.interaction.user.id,
+      },
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      await c.interaction.reply({
+        embeds: [errorEmbed(c.t('twitch.errors.rewardExists', { name: rewardTitle }))],
+        ephemeral: true,
+      });
+      return;
+    }
+    throw err;
+  }
+
+  await c.ctx.audit({
+    guildId: c.guildId,
+    actorId: c.interaction.user.id,
+    actorType: 'user',
+    action: 'integration.twitch_chat.reward.create',
+    targetType: 'twitch_chat_reward',
+    targetId: row.id,
+    after: { channelId: channel.id, rewardTitle: row.rewardTitle, action },
+    source: 'bot',
+  });
+  nudgeReconcile(c.ctx);
+
+  await c.interaction.reply({
+    embeds: [
+      successEmbed(
+        c.t('twitch.reward.added', {
+          title: rewardTitle,
+          action: TWITCH_REWARD_ACTION_LABEL[actionId],
+          channel: channel.broadcasterLogin,
+        }),
+      ),
+    ],
+    ephemeral: true,
+  });
+}
+
+async function handleRewardRemove(c: Parameters<PluginCommand['execute']>[0]): Promise<void> {
+  const rewardTitle = c.interaction.options.getString('reward-title', true).trim();
+
+  const resolved = await resolveChannel(c);
+  if (!resolved.ok) {
+    await c.interaction.reply({ embeds: [errorEmbed(resolved.message)], ephemeral: true });
+    return;
+  }
+  const { channel } = resolved;
+
+  // Unlike command/timer names, `rewardTitle` isn't lowercase-normalized at write time (real Twitch reward
+  // titles keep their original casing for display) — the unique constraint is `[channelId, rewardTitle,
+  // action]`, so the SAME title can legitimately exist for two different actions. Matching by title alone here
+  // (no `action` option in this subcommand, per spec) can therefore find more than one row; that's reported as
+  // ambiguous rather than guessing which one the caller meant.
+  const matches = await c.ctx.prisma.twitchChatReward.findMany({
+    where: { channelId: channel.id, rewardTitle: { equals: rewardTitle, mode: 'insensitive' } },
+  });
+
+  if (matches.length === 0) {
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('twitch.errors.rewardNotFound', { name: rewardTitle }))],
+      ephemeral: true,
+    });
+    return;
+  }
+  if (matches.length > 1) {
+    await c.interaction.reply({
+      embeds: [errorEmbed(c.t('twitch.errors.rewardAmbiguous', { name: rewardTitle }))],
+      ephemeral: true,
+    });
+    return;
+  }
+  const existing = matches[0]!;
+
+  const host = c.ctx.services.get('host');
+  const guildConfig = host ? await host.getGuildConfig(c.guildId).catch(() => null) : null;
+
+  const result = await requestConfirmation({
+    interaction: c.interaction,
+    ctx: c.ctx,
+    pluginId: 'integrations',
+    action: 'twitch-reward-remove',
+    ownerId: c.interaction.user.id,
+    embed: brandEmbed()
+      .setTitle(c.t('twitch.reward.removeConfirmTitle', { title: existing.rewardTitle }))
+      .setDescription(
+        c.t('twitch.reward.removeConfirmBody', { title: existing.rewardTitle, channel: channel.broadcasterLogin }),
+      ),
+    payload: { rewardId: existing.id, rewardTitle: existing.rewardTitle },
+    fastActions: Boolean(guildConfig?.fastActions),
+  });
+
+  if (result.confirmed) {
+    await deleteTwitchChatReward(c.ctx, c.guildId, c.interaction.user.id, existing.id, existing.rewardTitle);
+    await c.interaction.reply({
+      embeds: [successEmbed(c.t('twitch.reward.removed', { title: existing.rewardTitle }))],
+      ephemeral: true,
+    });
+  }
+}
+
+async function handleRewardList(c: Parameters<PluginCommand['execute']>[0]): Promise<void> {
+  const resolved = await resolveChannel(c);
+  if (!resolved.ok) {
+    await c.interaction.reply({ embeds: [errorEmbed(resolved.message)], ephemeral: true });
+    return;
+  }
+  const { channel } = resolved;
+
+  const rows = await c.ctx.prisma.twitchChatReward.findMany({
+    where: { channelId: channel.id },
+    orderBy: { rewardTitle: 'asc' },
+  });
+  const lines = rows.map((row) =>
+    c.t('twitch.reward.listLine', {
+      title: row.rewardTitle,
+      action: TWITCH_REWARD_ACTION_LABEL[TWITCH_REWARD_ACTION_FROM_ENUM[row.action]],
+      cooldown: row.cooldownSeconds,
+      disabled: row.enabled ? '' : c.t('twitch.status.channelDisabledSuffix'),
+    }),
+  );
+
+  await c.interaction.reply({
+    embeds: [
+      listEmbed(
+        c.t('twitch.reward.listTitle', { channel: channel.broadcasterLogin }),
+        lines.length > 0 ? lines : [c.t('twitch.reward.listEmpty')],
+      ),
+    ],
+    ephemeral: true,
+  });
+}
+
 export const command: PluginCommand = {
   data,
   requirement: {
@@ -760,6 +1237,12 @@ export const command: PluginCommand = {
       if (sub === 'remove') return handleTimerRemove(c);
       if (sub === 'list') return handleTimerList(c);
     }
+
+    if (group === 'reward') {
+      if (sub === 'add') return handleRewardAdd(c);
+      if (sub === 'remove') return handleRewardRemove(c);
+      if (sub === 'list') return handleRewardList(c);
+    }
   },
   async autocomplete(c) {
     const focused = c.interaction.options.getFocused(true);
@@ -779,12 +1262,61 @@ export const command: PluginCommand = {
       return;
     }
 
+    if (focused.name === 'reward-title') {
+      // Never throw out of autocomplete (Discord just shows no suggestions on a failed respond, but an
+      // uncaught rejection here would be a silent 500 in the interaction handler) — every path below ends in
+      // `respond`, and this outer try/catch is the last-resort backstop for anything unexpected in between.
+      try {
+        const query = String(focused.value).toLowerCase();
+        const channels = await c.ctx.prisma.twitchChatChannel.findMany({ where: { guildId: c.guildId } });
+        const requested = c.interaction.options.getString('channel');
+        let channel: TwitchChatChannel | undefined;
+        if (requested) {
+          const normalized = requested.trim().toLowerCase();
+          channel = channels.find((ch) => ch.broadcasterLogin.toLowerCase() === normalized);
+        } else if (channels.length === 1) {
+          channel = channels[0];
+        }
+
+        // Ambiguous (no channel picked yet and more than one is linked) or unresolved — can't know which
+        // broadcaster's rewards to suggest, so offer nothing rather than guessing.
+        if (!channel) {
+          await c.interaction.respond([]);
+          return;
+        }
+
+        const twitchRewards = await listCustomRewards(c.ctx, channel);
+        if (twitchRewards.ok) {
+          const results = twitchRewards.value.filter((r) => r.title.toLowerCase().includes(query)).slice(0, 25);
+          await c.interaction.respond(results.map((r) => ({ name: r.title.slice(0, 100), value: r.title.slice(0, 100) })));
+          return;
+        }
+
+        // No broadcaster token yet (or a Helix error) — fall back to titles already configured in the DB for
+        // this channel, per the channel-points spec's autocomplete requirement.
+        const configured = await c.ctx.prisma.twitchChatReward.findMany({
+          where: { channelId: channel.id },
+          distinct: ['rewardTitle'],
+          orderBy: { createdAt: 'desc' },
+          take: 25,
+        });
+        const results = configured.filter((r) => r.rewardTitle.toLowerCase().includes(query)).slice(0, 25);
+        await c.interaction.respond(
+          results.map((r) => ({ name: r.rewardTitle.slice(0, 100), value: r.rewardTitle.slice(0, 100) })),
+        );
+      } catch (err) {
+        c.ctx.logger.error({ err }, 'integrations/twitch: reward-title autocomplete failed');
+        await c.interaction.respond([]).catch(() => undefined);
+      }
+      return;
+    }
+
     await c.interaction.respond([]);
   },
 };
 
-/** Confirmation-flow button handlers for `/twitch off`, `/twitch command remove`, and `/twitch timer remove`
- * (destructive-action convention, ARCHITECTURE.md §7.7). */
+/** Confirmation-flow button handlers for `/twitch off`, `/twitch command remove`, `/twitch timer remove`, and
+ * `/twitch reward remove` (destructive-action convention, ARCHITECTURE.md §7.7). */
 export const twitchConfirmComponents: ComponentHandler[] = [
   ...registerConfirmHandlers<Record<string, never>>('twitch-off', async (c) => {
     await disableAllTwitchChatChannels(c.ctx, c.guildId, c.interaction.user.id);
@@ -804,4 +1336,14 @@ export const twitchConfirmComponents: ComponentHandler[] = [
       ephemeral: true,
     });
   }),
+  ...registerConfirmHandlers<{ rewardId: string; rewardTitle: string }>(
+    'twitch-reward-remove',
+    async (c, payload) => {
+      await deleteTwitchChatReward(c.ctx, c.guildId, c.interaction.user.id, payload.rewardId, payload.rewardTitle);
+      await c.interaction.followUp({
+        embeds: [successEmbed(c.t('twitch.reward.removed', { title: payload.rewardTitle }))],
+        ephemeral: true,
+      });
+    },
+  ),
 ];

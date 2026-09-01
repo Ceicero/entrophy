@@ -180,6 +180,14 @@ enum TwitchChatLevel {
   BROADCASTER
 }
 
+/// What a channel-point reward redemption triggers (TwitchChatReward.action).
+enum TwitchRewardActionKind {
+  SOUND
+  TTS
+  CHAT
+  DISCORD
+}
+
 enum DataRequestType {
   EXPORT
   DELETE
@@ -305,6 +313,7 @@ model Guild {
   twitchChatChannels     TwitchChatChannel[]
   twitchChatCommands     TwitchChatCommand[]
   twitchChatTimers       TwitchChatTimer[]
+  twitchChatRewards      TwitchChatReward[]
   dataRetentionPolicy    DataRetentionPolicy?
   dataRequests           DataRequest[]
   dataExportBlobs        DataExportBlob[]
@@ -1294,12 +1303,17 @@ model TwitchChatChannel {
   commandPrefix     String                 @default("!")
   connectionId      String?                @unique
   connection        IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+  // Channel-point rewards overlay (SPEC.md §J channel-points extension): the overlay browser-source URL's
+  // capability token, encrypted at rest, and whether reward redemptions are turned on for this channel at all.
+  overlayTokenEnc   String?
+  rewardsEnabled    Boolean                @default(false)
   createdBy         String
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
 
   commands TwitchChatCommand[]
   timers   TwitchChatTimer[]
+  rewards  TwitchChatReward[]
 
   @@unique([guildId, broadcasterUserId])
   @@index([guildId])
@@ -1343,6 +1357,44 @@ model TwitchChatTimer {
 
   @@unique([channelId, name])
   @@index([guildId])
+}
+
+/// Channel-point reward → overlay/chat/Discord action for a linked Twitch chat channel. Config rows key off
+/// `channelId` (never `connectionId`) because re-linking replaces the `IntegrationConnection`/`OAuthToken`
+/// but preserves the `TwitchChatChannel` row (docs/claude-project channel-points spec, binding fact 5).
+model TwitchChatReward {
+  id        String                 @id @default(cuid())
+  channelId String
+  channel   TwitchChatChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  guildId   String
+  guild     Guild                  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  // Twitch custom reward id, when picked from the dashboard's "list rewards from Twitch" dropdown; null means
+  // match redemptions by `rewardTitle` (case-insensitively) instead — e.g. for a reward created after this row.
+  rewardId  String?
+  rewardTitle String
+  enabled   Boolean                @default(true)
+  action    TwitchRewardActionKind
+
+  // SOUND
+  soundUrl String?
+  volume   Int     @default(80)
+  // TTS
+  ttsTemplate String?
+  // CHAT
+  chatTemplate String?
+  // DISCORD
+  discordChannelId String?
+  discordTemplate  String?
+
+  // 0..3600, enforced in memory per reward (see rewards.ts) rather than here.
+  cooldownSeconds Int      @default(0)
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([channelId, rewardTitle, action])
+  @@index([guildId])
+  @@index([channelId])
 }
 
 // ---------------------------------------------------------------------------

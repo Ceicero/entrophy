@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { env, redisKey } from '@entrophy/core';
+import { decryptSecret, env, redisKey } from '@entrophy/core';
 import type { PrismaStubOverrides } from '@entrophy/plugins/sdk/testing';
 import { buildTestApp, loginAs, seedUserGuilds } from './helpers/build-test-app';
 
@@ -131,6 +131,8 @@ function channelDefaults(partial: any) {
     lastConnectedAt: null,
     commandPrefix: '!',
     connectionId: null,
+    overlayTokenEnc: null,
+    rewardsEnabled: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...partial,
@@ -154,6 +156,24 @@ function timerDefaults(partial: any) {
   return {
     enabled: true,
     lastFiredAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...partial,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rewardDefaults(partial: any) {
+  return {
+    rewardId: null,
+    enabled: true,
+    volume: 80,
+    ttsTemplate: null,
+    chatTemplate: null,
+    soundUrl: null,
+    discordChannelId: null,
+    discordTemplate: null,
+    cooldownSeconds: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...partial,
@@ -206,6 +226,8 @@ function twitchChatFixture(guildId: string = GUILD_ID) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const timers = new Map<string, any>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rewards = new Map<string, any>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const connections = new Map<string, any>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const oauthTokens = new Map<string, any>();
@@ -217,12 +239,13 @@ function twitchChatFixture(guildId: string = GUILD_ID) {
     twitchChatChannel: makeModel(channels, 'chan', channelDefaults),
     twitchChatCommand: makeModel(commands, 'cmd', commandDefaults),
     twitchChatTimer: makeModel(timers, 'timer', timerDefaults),
+    twitchChatReward: makeModel(rewards, 'reward', rewardDefaults),
     integrationConnection: makeModel(connections, 'conn', connectionDefaults),
     oAuthToken: makeModel(oauthTokens, 'token', tokenDefaults),
     twitchBotIdentity: makeModel(botIdentities, 'bot', botIdentityDefaults),
   };
 
-  return { channels, commands, timers, connections, oauthTokens, botIdentities, overrides };
+  return { channels, commands, timers, rewards, connections, oauthTokens, botIdentities, overrides };
 }
 
 async function setupAuthedApp(overrides: PrismaStubOverrides, userId: string = USER_ID) {
@@ -987,6 +1010,594 @@ describe('timers CRUD', () => {
         (c) => c.queue === 'bot-actions' && (c.data as { type: string }).type === 'twitchChat.reconcile',
       ),
     ).toHaveLength(2);
+    await app.close();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Channel rewardsEnabled toggle
+// ---------------------------------------------------------------------------
+
+describe('channel PATCH rewardsEnabled', () => {
+  it('toggles rewardsEnabled and nudges reconcile, leaving other fields untouched', async () => {
+    const fixture = twitchChatFixture();
+    fixture.channels.set(
+      'chan1',
+      channelDefaults({
+        id: 'chan1',
+        guildId: GUILD_ID,
+        broadcasterUserId: 's1',
+        broadcasterLogin: 'streamer',
+        createdBy: USER_ID,
+      }),
+    );
+    const { app, cookieHeader, csrfToken, queues, prismaCalls } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { rewardsEnabled: true },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ rewardsEnabled: true, enabled: true, commandPrefix: '!' });
+
+    const patchAudit = prismaCalls.find(
+      (c) => c.model === 'auditLog' && c.method === 'create',
+    ) as unknown as { args: [{ data: { before: unknown; after: unknown } }] };
+    expect(patchAudit.args[0].data.before).toMatchObject({ rewardsEnabled: false });
+    expect(patchAudit.args[0].data.after).toMatchObject({ rewardsEnabled: true });
+
+    expect(
+      queues.calls.some(
+        (c) => c.queue === 'bot-actions' && (c.data as { type: string }).type === 'twitchChat.reconcile',
+      ),
+    ).toBe(true);
+    await app.close();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Rewards CRUD
+// ---------------------------------------------------------------------------
+
+describe('rewards CRUD', () => {
+  function fixtureWithChannel() {
+    const fixture = twitchChatFixture();
+    fixture.channels.set(
+      'chan1',
+      channelDefaults({
+        id: 'chan1',
+        guildId: GUILD_ID,
+        broadcasterUserId: 's1',
+        broadcasterLogin: 'streamer',
+        createdBy: USER_ID,
+      }),
+    );
+    return fixture;
+  }
+
+  it('404s listing/creating rewards under a channel that does not exist', async () => {
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(twitchChatFixture().overrides);
+    const getRes = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/missing/rewards`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(getRes.statusCode).toBe(404);
+
+    const postRes = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/missing/rewards`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { rewardTitle: 'Hydrate', action: 'chat', chatTemplate: 'Drink water, {user}!' },
+    });
+    expect(postRes.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('creates a CHAT reward (201) and lists it', async () => {
+    const fixture = fixtureWithChannel();
+    const { app, cookieHeader, csrfToken, queues } = await setupAuthedApp(fixture.overrides);
+
+    const create = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/rewards`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { rewardTitle: 'Hydrate', action: 'chat', chatTemplate: 'Drink water, {user}!' },
+    });
+    expect(create.statusCode).toBe(201);
+    expect(create.json()).toMatchObject({
+      rewardTitle: 'Hydrate',
+      action: 'chat',
+      chatTemplate: 'Drink water, {user}!',
+      enabled: true,
+      cooldownSeconds: 0,
+    });
+    expect(
+      queues.calls.some(
+        (c) => c.queue === 'bot-actions' && (c.data as { type: string }).type === 'twitchChat.reconcile',
+      ),
+    ).toBe(true);
+
+    const list = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/rewards`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(list.json()).toHaveLength(1);
+    await app.close();
+  });
+
+  it('creates a SOUND reward with a public https URL', async () => {
+    const fixture = fixtureWithChannel();
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    // A public IP literal, not a hostname — `assertPublicHttpUrl` skips DNS resolution entirely for a literal
+    // IP (judges it directly), so this doesn't depend on the test sandbox having real DNS/network access.
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/rewards`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: {
+        rewardTitle: 'Air horn',
+        action: 'sound',
+        soundUrl: 'https://1.1.1.1/airhorn.mp3',
+        volume: 60,
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toMatchObject({
+      action: 'sound',
+      soundUrl: 'https://1.1.1.1/airhorn.mp3',
+      volume: 60,
+    });
+    await app.close();
+  });
+
+  it('rejects a SOUND reward whose URL resolves to a private/internal address (SSRF guard)', async () => {
+    const fixture = fixtureWithChannel();
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/rewards`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { rewardTitle: 'Air horn', action: 'sound', soundUrl: 'https://169.254.169.254/steal' },
+    });
+    expect(res.statusCode).toBe(400);
+    const fixtureAfter = fixture.rewards.size;
+    expect(fixtureAfter).toBe(0);
+    await app.close();
+  });
+
+  it('rejects a plain-http sound URL at the schema layer (400)', async () => {
+    const fixture = fixtureWithChannel();
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/rewards`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { rewardTitle: 'Air horn', action: 'sound', soundUrl: 'http://cdn.example.com/airhorn.mp3' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it.each(['sound', 'tts', 'chat', 'discord'])('rejects a %s reward missing its required field(s) (400)', async (action) => {
+    const fixture = fixtureWithChannel();
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/rewards`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { rewardTitle: 'Test', action },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('rejects a reward whose payload carries fields from a different action (400)', async () => {
+    const fixture = fixtureWithChannel();
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/rewards`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { rewardTitle: 'Hydrate', action: 'chat', chatTemplate: 'hi', soundUrl: 'https://x.example.com/a.mp3' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('rejects creating a 26th reward (cap 25 per channel)', async () => {
+    const fixture = fixtureWithChannel();
+    for (let i = 0; i < 25; i++) {
+      fixture.rewards.set(
+        `reward${i}`,
+        rewardDefaults({
+          id: `reward${i}`,
+          channelId: 'chan1',
+          guildId: GUILD_ID,
+          rewardTitle: `Reward ${i}`,
+          action: 'CHAT',
+          chatTemplate: 'x',
+          createdBy: USER_ID,
+        }),
+      );
+    }
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/rewards`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { rewardTitle: 'One more', action: 'chat', chatTemplate: 'x' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('rejects a duplicate (title, action) pair in the same channel (409)', async () => {
+    const fixture = fixtureWithChannel();
+    fixture.rewards.set(
+      'reward1',
+      rewardDefaults({
+        id: 'reward1',
+        channelId: 'chan1',
+        guildId: GUILD_ID,
+        rewardTitle: 'Hydrate',
+        action: 'CHAT',
+        chatTemplate: 'x',
+        createdBy: USER_ID,
+      }),
+    );
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/rewards`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { rewardTitle: 'Hydrate', action: 'chat', chatTemplate: 'y' },
+    });
+    expect(res.statusCode).toBe(409);
+    await app.close();
+  });
+
+  it('allows the same title under a different action (no clash — unique key includes action)', async () => {
+    const fixture = fixtureWithChannel();
+    fixture.rewards.set(
+      'reward1',
+      rewardDefaults({
+        id: 'reward1',
+        channelId: 'chan1',
+        guildId: GUILD_ID,
+        rewardTitle: 'Hydrate',
+        action: 'CHAT',
+        chatTemplate: 'x',
+        createdBy: USER_ID,
+      }),
+    );
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/rewards`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { rewardTitle: 'Hydrate', action: 'tts', ttsTemplate: 'Drink water' },
+    });
+    expect(res.statusCode).toBe(201);
+    await app.close();
+  });
+
+  it('404s PATCH/DELETE for a reward belonging to a different guild (guild tenancy)', async () => {
+    const fixture = fixtureWithChannel();
+    fixture.rewards.set(
+      'reward1',
+      rewardDefaults({
+        id: 'reward1',
+        channelId: 'chan1',
+        guildId: OTHER_GUILD_ID,
+        rewardTitle: 'Hydrate',
+        action: 'CHAT',
+        chatTemplate: 'x',
+        createdBy: USER_ID,
+      }),
+    );
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/rewards/reward1`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { chatTemplate: 'new' },
+    });
+    expect(patch.statusCode).toBe(404);
+
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/rewards/reward1`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+    });
+    expect(del.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('updates and deletes a reward it owns', async () => {
+    const fixture = fixtureWithChannel();
+    fixture.rewards.set(
+      'reward1',
+      rewardDefaults({
+        id: 'reward1',
+        channelId: 'chan1',
+        guildId: GUILD_ID,
+        rewardTitle: 'Hydrate',
+        action: 'CHAT',
+        chatTemplate: 'x',
+        createdBy: USER_ID,
+      }),
+    );
+    const { app, cookieHeader, csrfToken, queues, prismaCalls } = await setupAuthedApp(fixture.overrides);
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/rewards/reward1`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { chatTemplate: 'updated template', enabled: false },
+    });
+    expect(patch.statusCode).toBe(200);
+    expect(patch.json()).toMatchObject({ chatTemplate: 'updated template', enabled: false });
+
+    const patchAudit = prismaCalls.find(
+      (c) => c.model === 'auditLog' && c.method === 'create',
+    ) as unknown as { args: [{ data: { before: unknown; after: unknown } }] };
+    expect(patchAudit.args[0].data.before).toMatchObject({ enabled: true });
+    expect(patchAudit.args[0].data.after).toMatchObject({ enabled: false });
+
+    expect(
+      queues.calls.some(
+        (c) => c.queue === 'bot-actions' && (c.data as { type: string }).type === 'twitchChat.reconcile',
+      ),
+    ).toBe(true);
+
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/rewards/reward1`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+    });
+    expect(del.statusCode).toBe(204);
+    expect(fixture.rewards.has('reward1')).toBe(false);
+    await app.close();
+  });
+
+  it('rejects switching action to "sound" without also supplying soundUrl in the same PATCH (400)', async () => {
+    const fixture = fixtureWithChannel();
+    fixture.rewards.set(
+      'reward1',
+      rewardDefaults({
+        id: 'reward1',
+        channelId: 'chan1',
+        guildId: GUILD_ID,
+        rewardTitle: 'Hydrate',
+        action: 'CHAT',
+        chatTemplate: 'x',
+        createdBy: USER_ID,
+      }),
+    );
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/rewards/reward1`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { action: 'sound' },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('switching action to "sound" WITH soundUrl clears the old chatTemplate field', async () => {
+    const fixture = fixtureWithChannel();
+    fixture.rewards.set(
+      'reward1',
+      rewardDefaults({
+        id: 'reward1',
+        channelId: 'chan1',
+        guildId: GUILD_ID,
+        rewardTitle: 'Hydrate',
+        action: 'CHAT',
+        chatTemplate: 'old template',
+        createdBy: USER_ID,
+      }),
+    );
+    const { app, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/rewards/reward1`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+      payload: { action: 'sound', soundUrl: 'https://1.1.1.1/a.mp3' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({
+      action: 'sound',
+      soundUrl: 'https://1.1.1.1/a.mp3',
+      chatTemplate: null,
+    });
+    await app.close();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Overlay token
+// ---------------------------------------------------------------------------
+
+describe('overlay token', () => {
+  function fixtureWithChannel() {
+    const fixture = twitchChatFixture();
+    fixture.channels.set(
+      'chan1',
+      channelDefaults({
+        id: 'chan1',
+        guildId: GUILD_ID,
+        broadcasterUserId: 's1',
+        broadcasterLogin: 'streamer',
+        createdBy: USER_ID,
+      }),
+    );
+    return fixture;
+  }
+
+  it('404s for a channel that does not exist', async () => {
+    const { app, cookieHeader } = await setupAuthedApp(twitchChatFixture().overrides);
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/missing/overlay`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+  });
+
+  it('GET reports no token and never auto-generates one', async () => {
+    const fixture = fixtureWithChannel();
+    const { app, cookieHeader } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/overlay`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ url: null, hasToken: false });
+    expect(fixture.channels.get('chan1')?.overlayTokenEnc).toBeNull();
+    await app.close();
+  });
+
+  it('regenerate stores an encrypted token, writes the Redis index, and returns the URL once', async () => {
+    const fixture = fixtureWithChannel();
+    const { app, redis, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/overlay/regenerate`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { url: string; hasToken: boolean };
+    expect(body.hasToken).toBe(true);
+    expect(body.url).toMatch(/\/overlay\/[0-9a-f]{48}$/);
+    const token = body.url.split('/overlay/')[1];
+
+    // Stored encrypted, never plaintext.
+    const stored = fixture.channels.get('chan1')?.overlayTokenEnc as string;
+    expect(stored).toBeDefined();
+    expect(stored).not.toBe(token);
+    expect(decryptSecret(stored)).toBe(token);
+
+    // The durable Redis index the SSE route resolves by, with no TTL.
+    expect(await redis.get(redisKey('overlay', 'token', token))).toBe('chan1');
+    expect(await redis.ttl(redisKey('overlay', 'token', token))).toBe(-1);
+
+    // A subsequent GET reports hasToken but never the URL again.
+    const follow = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/overlay`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(follow.json()).toEqual({ url: null, hasToken: true });
+    await app.close();
+  });
+
+  it('regenerating replaces the old token: old Redis index gone, new one resolves', async () => {
+    const fixture = fixtureWithChannel();
+    const { app, redis, cookieHeader, csrfToken } = await setupAuthedApp(fixture.overrides);
+
+    const first = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/overlay/regenerate`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+    });
+    const firstToken = (first.json() as { url: string }).url.split('/overlay/')[1];
+
+    const second = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/overlay/regenerate`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+    });
+    const secondToken = (second.json() as { url: string }).url.split('/overlay/')[1];
+
+    expect(secondToken).not.toBe(firstToken);
+    expect(await redis.get(redisKey('overlay', 'token', firstToken))).toBeNull();
+    expect(await redis.get(redisKey('overlay', 'token', secondToken))).toBe('chan1');
+    await app.close();
+  });
+
+  it('audits the regeneration without ever writing the token/URL into the audit payload', async () => {
+    const fixture = fixtureWithChannel();
+    const { app, cookieHeader, csrfToken, prismaCalls } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/overlay/regenerate`,
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfToken },
+    });
+    const { url: overlayUrl } = res.json() as { url: string };
+    const token = overlayUrl.split('/overlay/')[1];
+
+    const audit = prismaCalls.find((c) => c.model === 'auditLog' && c.method === 'create') as unknown as {
+      args: [{ data: { action: string; before: unknown; after: unknown } }];
+    };
+    expect(audit.args[0].data.action).toBe('integration.twitch_chat.overlay.regenerate');
+    const serializedAudit = JSON.stringify(audit.args[0].data);
+    expect(serializedAudit).not.toContain(token);
+    expect(serializedAudit).not.toContain(overlayUrl);
+    expect(audit.args[0].data.before).toEqual({ configured: false });
+    expect(audit.args[0].data.after).toEqual({ configured: true });
+    await app.close();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Twitch reward picker (GET .../twitch-rewards)
+// ---------------------------------------------------------------------------
+
+describe('GET .../twitch-rewards (picker)', () => {
+  it('honestly reports itself unavailable rather than inventing cross-process plumbing', async () => {
+    const fixture = twitchChatFixture();
+    fixture.channels.set(
+      'chan1',
+      channelDefaults({
+        id: 'chan1',
+        guildId: GUILD_ID,
+        broadcasterUserId: 's1',
+        broadcasterLogin: 'streamer',
+        createdBy: USER_ID,
+      }),
+    );
+    const { app, cookieHeader } = await setupAuthedApp(fixture.overrides);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/chan1/twitch-rewards`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ available: false, rewards: [] });
+    await app.close();
+  });
+
+  it('404s for a channel that does not exist in this guild', async () => {
+    const { app, cookieHeader } = await setupAuthedApp(twitchChatFixture().overrides);
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations/twitch-chat/channels/missing/twitch-rewards`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(404);
     await app.close();
   });
 });

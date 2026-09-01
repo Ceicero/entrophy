@@ -148,6 +148,8 @@ export interface TwitchChatChannelDto {
   status: 'connected' | 'disconnected' | 'error' | 'pending';
   lastError: string | null;
   commandPrefix: string;
+  /** Whether channel-point reward redemptions are turned on for this channel (channel-points spec v1). */
+  rewardsEnabled: boolean;
   createdAt: string;
 }
 
@@ -185,6 +187,8 @@ export interface UpdateTwitchChatChannelInput {
   enabled?: boolean;
   /** Exactly one printable, non-space, non-`/` character. */
   commandPrefix?: string;
+  /** Turns channel-point reward redemptions on/off for this channel (channel-points spec v1). */
+  rewardsEnabled?: boolean;
 }
 
 export interface CreateTwitchChatCommandInput {
@@ -223,4 +227,76 @@ export interface TwitchBotIdentityDto {
   lastError: string | null;
   scopes: string[];
   connectedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Twitch channel-point rewards — extends the twitch-chat feature above (channel-points spec v1). A viewer
+// redeeming a configured channel-point reward triggers an action: an OBS overlay SOUND/TTS, a TWITCH CHAT
+// message, or a DISCORD post. Runtime lives alongside twitch-chat in
+// packages/plugins/src/integrations/twitch-chat/; API routes extend apps/api/src/routes/twitch-chat.ts.
+// ---------------------------------------------------------------------------
+
+/** What a redeemed reward triggers, matching (lowercased) the `TwitchRewardActionKind` Prisma enum. */
+export const TWITCH_REWARD_ACTION_KINDS = ['sound', 'tts', 'chat', 'discord'] as const;
+
+export type TwitchRewardActionKindId = (typeof TWITCH_REWARD_ACTION_KINDS)[number];
+
+/** One channel-point reward → action row for a linked Twitch chat channel. Only the fields matching `action`
+ * are meaningful (validated at write time — see `createTwitchChatRewardSchema`'s `superRefine`). */
+export interface TwitchChatRewardDto {
+  id: string;
+  /** Twitch custom reward id, when picked from the "list rewards from Twitch" dropdown; null means match
+   * redemptions by `rewardTitle` (case-insensitively) instead. */
+  rewardId: string | null;
+  rewardTitle: string;
+  enabled: boolean;
+  action: TwitchRewardActionKindId;
+  // SOUND
+  soundUrl: string | null;
+  volume: number;
+  // TTS
+  ttsTemplate: string | null;
+  // CHAT
+  chatTemplate: string | null;
+  // DISCORD
+  discordChannelId: string | null;
+  discordTemplate: string | null;
+  /** 0..3600 seconds, enforced in memory per reward. */
+  cooldownSeconds: number;
+  createdAt: string;
+}
+
+export interface CreateTwitchChatRewardInput {
+  rewardId?: string | null;
+  rewardTitle: string;
+  action: TwitchRewardActionKindId;
+  soundUrl?: string | null;
+  volume?: number;
+  ttsTemplate?: string | null;
+  chatTemplate?: string | null;
+  discordChannelId?: string | null;
+  discordTemplate?: string | null;
+  cooldownSeconds?: number;
+}
+
+export interface UpdateTwitchChatRewardInput {
+  rewardId?: string | null;
+  rewardTitle?: string;
+  enabled?: boolean;
+  action?: TwitchRewardActionKindId;
+  soundUrl?: string | null;
+  volume?: number;
+  ttsTemplate?: string | null;
+  chatTemplate?: string | null;
+  discordChannelId?: string | null;
+  discordTemplate?: string | null;
+  cooldownSeconds?: number;
+}
+
+/** `GET /guilds/:guildId/integrations/twitch-chat/channels/:channelId/overlay` (and its regenerate action) —
+ * the OBS browser-source URL. `url` carries the full capability URL (treat it like a password) only right
+ * after it's generated/regenerated; `hasToken` alone is returned on subsequent reads, once a token exists. */
+export interface TwitchOverlayInfoDto {
+  url: string | null;
+  hasToken: boolean;
 }

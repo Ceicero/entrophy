@@ -37,18 +37,26 @@ export interface TestApp {
   prismaCalls: ReturnType<typeof createPrismaStub>['calls'];
   redis: Redis;
   queues: ReturnType<typeof createFakeQueues>;
+  /** The OBS-overlay routes' dedicated pub/sub client (`apps/api/src/app.ts`'s `overlaySubscriber`), faked
+   * here for the same reason `redis` is: without an injected fake, `buildApp()` opens a real ioredis
+   * connection attempt to `REDIS_URL` (unset in tests) on every single test that calls `buildTestApp()`. */
+  overlaySubscriber: Redis;
 }
 
 /** Builds a fully-wired `buildApp()` instance backed entirely by fakes (recording Prisma stub, `ioredis-mock`, fake queues). */
 export async function buildTestApp(prismaOverrides: PrismaStubOverrides = {}): Promise<TestApp> {
   const { prisma, calls: prismaCalls } = createPrismaStub(prismaOverrides);
   const redis = new RedisMock() as unknown as Redis;
+  // A second ioredis-mock instance, constructed the same (default-options) way as `redis` above — ioredis-mock
+  // shares its in-memory data/pub-sub state across every instance built with the same connection options, so
+  // this genuinely receives whatever `redis.publish(...)` sends, exactly like the real second client in app.ts.
+  const overlaySubscriber = new RedisMock() as unknown as Redis;
   const queues = createFakeQueues();
   // A silent logger (no pino-pretty transport, which spins up a worker thread) — real logging behavior is
   // exercised by inspection in `app.ts` itself; tests only care about response bodies/status codes.
-  const app = await buildApp({ prisma, redis, queues, logger: pino({ enabled: false }) });
+  const app = await buildApp({ prisma, redis, queues, overlaySubscriber, logger: pino({ enabled: false }) });
   await app.ready();
-  return { app, prisma, prismaCalls, redis, queues };
+  return { app, prisma, prismaCalls, redis, queues, overlaySubscriber };
 }
 
 export interface LoginAsInput {

@@ -3844,6 +3844,12 @@
                   "description": "Day of the month",
                   "required": true,
                   "type": "Integer"
+                },
+                {
+                  "name": "user",
+                  "description": "Admin only: set another member's birthday instead of your own",
+                  "required": false,
+                  "type": "User"
                 }
               ]
             },
@@ -3851,7 +3857,14 @@
               "name": "remove",
               "fullName": "/birthday remove",
               "description": "Remove your birthday from this server.",
-              "options": []
+              "options": [
+                {
+                  "name": "user",
+                  "description": "Admin only: remove another member's birthday instead of your own",
+                  "required": false,
+                  "type": "User"
+                }
+              ]
             },
             {
               "name": "view",
@@ -3917,6 +3930,12 @@
                 {
                   "name": "public_list",
                   "description": "Let members list upcoming birthdays and view each other's",
+                  "required": false,
+                  "type": "Boolean"
+                },
+                {
+                  "name": "allow_self_service",
+                  "description": "Let members set/remove their own birthday (off = admins only)",
                   "required": false,
                   "type": "Boolean"
                 }
@@ -4973,6 +4992,93 @@
               "name": "list",
               "fullName": "/twitch timer list",
               "description": "List timers.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Twitch channel (only needed if more than one is linked)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "add",
+              "fullName": "/twitch reward add",
+              "description": "Add a channel-point reward action.",
+              "options": [
+                {
+                  "name": "reward-title",
+                  "description": "The Twitch custom reward's exact title",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "action",
+                  "description": "What redeeming it does",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "sound-url",
+                  "description": "Public https:// URL to play (sound effect action only)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "volume",
+                  "description": "Playback volume 0-100 (sound effect action only; default 80)",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "text",
+                  "description": "Text template — {user}/{input}/{reward} placeholders (TTS/chat/Discord actions only)",
+                  "required": false,
+                  "type": "String"
+                },
+                {
+                  "name": "discord-channel",
+                  "description": "Discord channel to post in (Discord action only)",
+                  "required": false,
+                  "type": "Channel"
+                },
+                {
+                  "name": "cooldown",
+                  "description": "Per-reward cooldown in seconds (default 0)",
+                  "required": false,
+                  "type": "Integer"
+                },
+                {
+                  "name": "channel",
+                  "description": "Twitch channel (only needed if more than one is linked)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "remove",
+              "fullName": "/twitch reward remove",
+              "description": "Remove a channel-point reward action.",
+              "options": [
+                {
+                  "name": "reward-title",
+                  "description": "Reward title",
+                  "required": true,
+                  "type": "String"
+                },
+                {
+                  "name": "channel",
+                  "description": "Twitch channel (only needed if more than one is linked)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "list",
+              "fullName": "/twitch reward list",
+              "description": "List channel-point reward actions.",
               "options": [
                 {
                   "name": "channel",
