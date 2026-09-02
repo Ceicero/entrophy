@@ -50,7 +50,10 @@ interface OAuthStatePayload {
  * tokens) land on the attacker's guild (account-linking CSRF).
  *
  * Branches on the state's `kind` (set by whichever `/connect` route created the state):
- * - absent (the original flow): generic per-guild `IntegrationConnection` + `OAuthToken`, unchanged.
+ * - absent (the original flow): generic per-guild `IntegrationConnection` + `OAuthToken`. For Twitch,
+ *   additionally identifies the account via Helix and stores it as `externalAccountId`/`externalAccountName`
+ *   (the login) — see the comment at that branch for why, and why every other provider here doesn't. A
+ *   re-connect of an account already linked to this guild updates that row instead of creating a duplicate.
  * - `'twitch_chat'` (`routes/twitch-chat.ts`'s connect): identifies the broadcaster via Helix, then:
  *     - if this exact broadcaster is already linked from a *different* guild, bails out with an error
  *       redirect and creates nothing (one broadcaster's chat can only be linked into one guild at a time —
@@ -220,17 +223,81 @@ export default async function oauthIntegrationsRoutes(app: ZodFastifyInstance): 
         return;
       }
 
-      // Original generic connect flow — unchanged.
-      const connection = await app.prisma.integrationConnection.create({
-        data: {
-          guildId: payload.guildId!,
-          provider: PROVIDER_ENUM_MAP[provider],
-          status: 'CONNECTED',
-          config: {},
-          connectedBy: payload.userId,
-        },
-      });
+      // Original generic connect flow. Twitch additionally identifies the account via Helix so the dashboard
+      // can show a real handle instead of "Account <id>" (multi-account-integrations spec, section B), and so
+      // `GET .../integrations/live` has a login to resolve at all — a generic Twitch connection is never
+      // watched via the alerts flow (that's what carries `config.target`), so `externalAccountName` is the
+      // only source it has. Google/Microsoft/Reddit/Notion have no identify call on their current scopes;
+      // requesting one would mean broader scopes and storing an email address, which is a scope +
+      // data-minimization decision out of scope for this fix — they keep the `Account <id>` fallback in the UI.
+      let externalAccountId: string | null = null;
+      let externalAccountName: string | null = null;
+      if (provider === 'twitch') {
+        // Non-fatal on purpose, unlike the `twitch_chat` branch above, which genuinely cannot proceed without
+        // the broadcaster id. Here the identity is a nicety — the display name and the live pill — so a Helix
+        // blip must not throw away an OAuth grant the user already completed and make them redo the whole
+        // consent flow. Failing leaves both fields null: the card falls back to `Account <id>` and the live
+        // lookup reports `live: null`, and reconnecting later fills them in.
+        try {
+          const twitchUser = await identifyTwitchUser(token.accessToken);
+          externalAccountId = twitchUser.id;
+          // The login, not the display name: Helix's `GET /streams?user_login=` (and the live-status lookup
+          // built on it, `lib/integrations/live-status.ts`) matches on login, and a display name can differ
+          // from it by more than case — e.g. a non-Latin display name — which would silently break that lookup.
+          externalAccountName = twitchUser.login.toLowerCase();
+        } catch (err) {
+          app.log.warn(
+            { err, guildId: payload.guildId },
+            'integrations: Twitch identify failed during generic connect; linking without an account name',
+          );
+        }
+      }
 
+      // A re-connect of an account already linked to this guild updates that row in place instead of leaving
+      // it next to a second, now-stale-looking one — the multi-account model still allows several *different*
+      // accounts per guild/provider (`ProviderCard` renders a list), just not two rows for the same one.
+      // Scoped to this guild only: unlike the `twitch_chat` kind above, a generic connection has no global
+      // per-broadcaster subscription to collide across guilds, so there is no cross-guild guard to preserve
+      // here (nor to weaken).
+      const existingForAccount = externalAccountId
+        ? await app.prisma.integrationConnection.findFirst({
+            where: {
+              guildId: payload.guildId!,
+              provider: PROVIDER_ENUM_MAP[provider],
+              externalAccountId,
+              deletedAt: null,
+            },
+          })
+        : null;
+
+      const connection = existingForAccount
+        ? await app.prisma.integrationConnection.update({
+            where: { id: existingForAccount.id },
+            data: {
+              status: 'CONNECTED',
+              externalAccountId,
+              externalAccountName,
+              connectedBy: payload.userId,
+              lastError: null,
+            },
+          })
+        : await app.prisma.integrationConnection.create({
+            data: {
+              guildId: payload.guildId!,
+              provider: PROVIDER_ENUM_MAP[provider],
+              status: 'CONNECTED',
+              config: {},
+              externalAccountId,
+              externalAccountName,
+              connectedBy: payload.userId,
+            },
+          });
+
+      // `OAuthToken.connectionId` is unique (one token per connection) — a re-connect must clear the old
+      // token row before creating the new one, exactly like the `twitch_chat` re-link above.
+      if (existingForAccount) {
+        await app.prisma.oAuthToken.deleteMany({ where: { connectionId: connection.id } });
+      }
       await app.prisma.oAuthToken.create({
         data: {
           connectionId: connection.id,
@@ -248,7 +315,7 @@ export default async function oauthIntegrationsRoutes(app: ZodFastifyInstance): 
         action: AuditAction.IntegrationConnect,
         targetType: 'integration_connection',
         targetId: connection.id,
-        after: { provider },
+        after: { provider, externalAccountName },
       });
 
       reply.redirect(`${env.DASHBOARD_URL}/dashboard/${payload.guildId}/integrations?connected=${provider}`);

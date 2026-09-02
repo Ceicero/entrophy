@@ -42,14 +42,19 @@ function integrationConnectionOverrides() {
           if (typeof providerFilter === 'string') list = list.filter((r) => r.provider === providerFilter);
           else if (providerFilter.in) list = list.filter((r) => providerFilter.in.includes(r.provider));
         }
-        // JSON path filter shape used by `chatConnectionIds` in routes/integrations.ts:
-        // `{ path: [...], equals: value }`.
+        // The one JSON path filter shape routes/integrations.ts still uses: `{ path: [...], equals: value }`
+        // (`chatConnectionIds`). Alert-watch rows are NOT filtered in SQL — that check is a *presence* test,
+        // whose Postgres semantics this stub could not faithfully model anyway, so the route partitions those
+        // in JS instead (see `isAlertWatchConnection`). The `not` branch below is kept only so this stub stays
+        // honest about the difference if a future filter needs it.
         if (where.config?.path) {
-          const { path, equals } = where.config as { path: string[]; equals: unknown };
+          const { path } = where.config as { path: string[]; equals?: unknown };
+          const isPresenceCheck = 'not' in where.config;
           list = list.filter((r) => {
             let val: unknown = r.config;
             for (const key of path) val = (val as Record<string, unknown> | undefined)?.[key];
-            return val === equals;
+            if (isPresenceCheck) return val !== undefined;
+            return val === (where.config as { equals?: unknown }).equals;
           });
         }
         if (where.id?.notIn) {
@@ -326,6 +331,74 @@ describe('chat-kind connections are hidden from the generic/alert routes', () =>
     });
     expect(normalRes.statusCode).toBe(200);
     expect(rows.get('conn-normal')?.status).toBe('DISCONNECTED');
+    await app.close();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// Alert-watch rows (`config.channelId` set — see `POST .../integrations/alerts`) must also be hidden from
+// `GET /:guildId/integrations` (defect 1: before this fix, every alert watch also rendered as a "connected
+// account" on the Providers card, with a Disconnect button that used the wrong deletion path and left a
+// zombie row behind — see `genericConnections`'s doc comment in routes/integrations.ts).
+// ---------------------------------------------------------------------------------------------------------
+
+describe('alert-watch rows are hidden from GET /:guildId/integrations (defect 1 regression)', () => {
+  it('excludes an alert-watch row while still returning a generic OAuth row and a webhook-provider row', async () => {
+    const { overrides, rows } = integrationConnectionOverrides();
+    rows.set(
+      'conn-alert',
+      connectionRow({
+        id: 'conn-alert',
+        guildId: GUILD_ID,
+        provider: 'TWITCH',
+        config: { target: 'shroud', channelId: '888888888888888888', roleId: null, template: null },
+      }),
+    );
+    // A generic OAuth-connected Twitch account (the multi-account-integrations "connect" flow) — has none of
+    // an alert watch's fields, must still show up.
+    rows.set(
+      'conn-oauth',
+      connectionRow({ id: 'conn-oauth', guildId: GUILD_ID, provider: 'TWITCH', config: {} }),
+    );
+    // A webhook-established connection (e.g. GitHub) — same `config: {}` shape as the generic OAuth row, must
+    // also still show up.
+    rows.set(
+      'conn-webhook',
+      connectionRow({ id: 'conn-webhook', guildId: GUILD_ID, provider: 'GITHUB', config: {} }),
+    );
+    const { app, cookieHeader } = await setupAuthedApp(overrides);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { id: string }[];
+    expect(body.map((c) => c.id).sort()).toEqual(['conn-oauth', 'conn-webhook']);
+    await app.close();
+  });
+
+  it('returns an empty array, not an error, for a guild with only alert watches', async () => {
+    const { overrides, rows } = integrationConnectionOverrides();
+    rows.set(
+      'conn-alert',
+      connectionRow({
+        id: 'conn-alert',
+        guildId: GUILD_ID,
+        provider: 'TWITCH',
+        config: { target: 'shroud', channelId: '888888888888888888', roleId: null, template: null },
+      }),
+    );
+    const { app, cookieHeader } = await setupAuthedApp(overrides);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/guilds/${GUILD_ID}/integrations`,
+      headers: { cookie: cookieHeader },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual([]);
     await app.close();
   });
 });

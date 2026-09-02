@@ -10,6 +10,7 @@ import type {
   CreateTwitchChatRewardInput,
   CreateTwitchChatTimerInput,
   IntegrationConnectionDetailDto,
+  IntegrationLiveStatusDto,
   IntegrationProviderInfoDto,
   TwitchChatChannelDto,
   TwitchChatCommandDto,
@@ -28,6 +29,7 @@ import { apiFetch, toQueryString } from './api';
 
 export const integrationsQueryKeys = {
   connections: (guildId: string) => ['guilds', guildId, 'integrations', 'connections'] as const,
+  live: (guildId: string) => ['guilds', guildId, 'integrations', 'live'] as const,
   providers: (guildId: string) => ['guilds', guildId, 'integrations', 'providers'] as const,
   alerts: (guildId: string, provider?: string) =>
     ['guilds', guildId, 'integrations', 'alerts', provider ?? 'all'] as const,
@@ -66,6 +68,39 @@ export function useConnections(guildId: string | undefined) {
     queryKey: integrationsQueryKeys.connections(guildId ?? ''),
     queryFn: () => apiFetch<IntegrationConnectionDetailDto[]>(`/guilds/${guildId}/integrations`),
     enabled: Boolean(guildId),
+  });
+}
+
+/** Groups connections by provider id (lowercased), keeping every connection for that provider — not just the
+ * first — in the order the API returned them (`createdAt: desc`). A provider absent from `connections` gets
+ * no entry at all, so callers should fall back to `?? []`. This is the exact spot the multi-account dedupe bug
+ * lived (a `Map` that kept only the first connection per provider via `if (!map.has(...))`); the Providers
+ * grid must show every connection a guild has for a provider (several Twitch broadcasters, several Notion
+ * workspaces, ...), not cap it at one. */
+export function groupConnectionsByProvider(
+  connections: IntegrationConnectionDetailDto[],
+): Map<string, IntegrationConnectionDetailDto[]> {
+  const map = new Map<string, IntegrationConnectionDetailDto[]>();
+  for (const conn of connections) {
+    const key = conn.provider.toLowerCase();
+    const existing = map.get(key);
+    if (existing) existing.push(conn);
+    else map.set(key, [conn]);
+  }
+  return map;
+}
+
+/** "Live now" status per connection (Twitch only today — see `apps/api/src/lib/integrations/live-status.ts`),
+ * for the LIVE pill on `ProviderCard` rows. On-demand, dashboard-driven polling only (`refetchInterval`) —
+ * deliberately not a background job, so an idle dashboard costs zero Twitch quota. React Query only runs this
+ * while some component actually calls the hook (i.e. while this page is mounted), so navigating away stops
+ * the polling on its own. */
+export function useConnectionsLive(guildId: string | undefined) {
+  return useQuery({
+    queryKey: integrationsQueryKeys.live(guildId ?? ''),
+    queryFn: () => apiFetch<IntegrationLiveStatusDto[]>(`/guilds/${guildId}/integrations/live`),
+    enabled: Boolean(guildId),
+    refetchInterval: 60_000,
   });
 }
 

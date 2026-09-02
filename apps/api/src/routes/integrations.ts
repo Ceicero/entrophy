@@ -14,6 +14,7 @@ import {
 import type { WebhookEndpointDto } from '@entrophy/types';
 import type {
   IntegrationConnectionDetailDto,
+  IntegrationLiveStatusDto,
   IntegrationProviderInfoDto,
   WebhookDeliveryDto,
   WebhookEndpointDetailDto,
@@ -25,6 +26,7 @@ import {
   toWebhookDeliveryDto,
   toWebhookEndpointDetailDto,
 } from '../lib/integrations/dto';
+import { fetchTwitchLiveStatuses, twitchLiveStatusContextFrom } from '../lib/integrations/live-status';
 import { requireGuildAccess } from '../lib/guild-access';
 import {
   ALERT_PROVIDER_IDS,
@@ -88,6 +90,51 @@ async function chatConnectionIds(app: ZodFastifyInstance, guildId: string): Prom
   return rows.map((row) => row.id);
 }
 
+/**
+ * True for an alert-watch row — one created by `POST /:guildId/integrations/alerts`, which is the only place
+ * that ever writes a `channelId` (the Discord channel the alert posts to) into `config`. A generic
+ * OAuth/webhook connection's `config` is `{}` and a chat-kind one's is `{ kind: 'chat' }` (see
+ * `isChatKindConnection`), so neither ever collides with this check.
+ *
+ * Deliberately evaluated in JS over rows already fetched, rather than as a Prisma JSON-path `where` filter.
+ * `chatConnectionIds` above can afford a JSON filter because it is a *positive equality* match on a known
+ * value (`kind === 'chat'`), whose Postgres semantics are unambiguous. A *presence* check has no such
+ * safe form: `not: Prisma.DbNull` on a `path` filter hinges on whether Prisma emits "the extracted path is
+ * NULL" or "the config column is NULL", and those differ catastrophically here — the latter matches every
+ * row, which would exclude every connection and render the dashboard's Providers grid permanently empty.
+ * That distinction is not observable in this repo's tests (`apps/api/test` runs against an in-memory Prisma
+ * stub, not Postgres), so a filter relying on it would be unverifiable in CI. Partitioning in JS is provably
+ * correct, needs no Postgres-specific semantics, and costs one query instead of three — these lists are
+ * per-guild and small.
+ */
+function isAlertWatchConnection(config: unknown): boolean {
+  return Boolean(
+    config && typeof config === 'object' && typeof (config as Record<string, unknown>).channelId === 'string',
+  );
+}
+
+/**
+ * Every genuine OAuth/webhook-established connection in `guildId`, newest first — i.e. all non-deleted rows
+ * minus chat-kind rows (`isChatKindConnection`) and alert watches (`isAlertWatchConnection`).
+ *
+ * This is what makes `GET /:guildId/integrations` and `.../integrations/live` match their documented
+ * contract: `useConnections` in `apps/web/src/lib/dashboard/integrations-queries.ts` describes them as
+ * listing OAuth/webhook connections "distinct from the per-target alert watches", which
+ * `GET .../integrations/alerts` lists on its own. Before this filter existed they returned alert watches
+ * too — invisible while the dashboard rendered only the first row per provider, but user-facing once it
+ * started rendering all of them (a Twitch watch showed up as a bogus "connected account" carrying a
+ * Disconnect button that hit the generic disconnect route, which leaves `deletedAt` unset and so stranded
+ * the watch in the Alerts tab). Deliberately not applied to the alerts route itself, which lists exactly
+ * the rows this drops.
+ */
+async function genericConnections(app: ZodFastifyInstance, guildId: string) {
+  const rows = await app.prisma.integrationConnection.findMany({
+    where: { guildId, deletedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.filter((row) => !isChatKindConnection(row.config) && !isAlertWatchConnection(row.config));
+}
+
 const alertCreateSchema = z.object({
   provider: z.enum(ALERT_PROVIDER_IDS as [AlertProviderId, ...AlertProviderId[]]),
   target: z.string().trim().min(1).max(200),
@@ -117,16 +164,50 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
     { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
     async (request): Promise<IntegrationConnectionDetailDto[]> => {
       const guildId = request.guildId!;
-      const excludeIds = await chatConnectionIds(app, guildId);
-      const rows = await app.prisma.integrationConnection.findMany({
-        where: {
-          guildId,
-          deletedAt: null,
-          ...(excludeIds.length ? { id: { notIn: excludeIds } } : {}),
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const rows = await genericConnections(app, guildId);
       return rows.map(toIntegrationConnectionDetailDto);
+    },
+  );
+
+  // -------------------------------------------------------------------------------------------------------
+  // "Live now" indicator (multi-account-integrations spec §C) — Twitch only. Every other provider (including
+  // YouTube — see lib/integrations/live-status.ts's file comment) has no live/offline concept at all, so it
+  // always reports `live: null` rather than a fabricated on/off state (CLAUDE.md "No fake content"). On-demand
+  // only — nothing here runs as a background poll, so an idle dashboard costs zero Twitch quota.
+  // -------------------------------------------------------------------------------------------------------
+
+  app.get(
+    '/:guildId/integrations/live',
+    { schema: { params: guildIdParamSchema }, preHandler: requireGuildAccess() },
+    async (request): Promise<IntegrationLiveStatusDto[]> => {
+      const guildId = request.guildId!;
+      const rows = await genericConnections(app, guildId);
+
+      // Resolve a Twitch login per row from `externalAccountName`, which the OAuth callback stores as the
+      // broadcaster's login (not display name — see routes/oauth-integrations.ts) precisely so this lookup
+      // and Helix's `user_login` agree. `rows` holds only generic connections, so there is no alert-watch
+      // `config.target` to fall back to here. A connection linked before that callback started recording the
+      // login has no name at all — it stays unresolved and reports `live: null` rather than guessing.
+      const loginByConnectionId = new Map<string, string>();
+      for (const row of rows) {
+        if (row.provider !== 'TWITCH' || !row.externalAccountName) continue;
+        loginByConnectionId.set(row.id, row.externalAccountName.toLowerCase());
+      }
+
+      const liveByLogin = await fetchTwitchLiveStatuses(twitchLiveStatusContextFrom(app), [
+        ...loginByConnectionId.values(),
+      ]);
+
+      return rows.map((row) => {
+        const login = loginByConnectionId.get(row.id);
+        const status = login ? (liveByLogin.get(login) ?? null) : null;
+        return {
+          connectionId: row.id,
+          live: status ? status.live : null,
+          title: status?.live ? status.title : null,
+          startedAt: status?.live ? status.startedAt : null,
+        };
+      });
     },
   );
 

@@ -42,8 +42,17 @@ interface HelixEventSubCreateResponse {
   data: { id: string }[];
 }
 
+/** `getTwitchAppToken` only ever touches these three fields of `PluginContext` (env for the client
+ * id/secret, redis to cache the token, logger to warn on failure) — narrowing the parameter to just that
+ * slice, instead of requiring a full `PluginContext`, lets a caller with no discord.js client or bot-side
+ * services (e.g. `apps/api`'s live-status route, ARCHITECTURE.md §10 — its `ZodFastifyInstance.log` is
+ * already a real pino `Logger`, not just Fastify's narrower `FastifyBaseLogger`) reuse the client-credentials
+ * flow without fabricating one. Every existing `PluginContext`-carrying caller already satisfies this
+ * structurally. */
+export type TwitchAppTokenContext = Pick<PluginContext, 'env' | 'redis' | 'logger'>;
+
 /** Fetches (and Redis-caches) a Twitch app access token via the client-credentials grant. */
-export async function getTwitchAppToken(ctx: PluginContext): Promise<string | null> {
+export async function getTwitchAppToken(ctx: TwitchAppTokenContext): Promise<string | null> {
   const clientId = ctx.env.TWITCH_CLIENT_ID;
   const clientSecret = ctx.env.TWITCH_CLIENT_SECRET;
   if (!clientId || !clientSecret) return null;

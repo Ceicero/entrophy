@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useParams } from 'next/navigation';
+import { usePathname, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import {
   Button,
@@ -17,9 +17,11 @@ import {
   TabsTrigger,
   useToast,
 } from '@entrophy/ui';
-import type { AlertProviderId, IntegrationConnectionDetailDto } from '@entrophy/types/integrations';
+import type { AlertProviderId, IntegrationLiveStatusDto } from '@entrophy/types/integrations';
 import {
+  groupConnectionsByProvider,
   useAlertConnections,
+  useConnectionsLive,
   useConnectProvider,
   useConnections,
   useDisconnectConnection,
@@ -39,11 +41,25 @@ import { OutboundWebhooksList } from '@/components/dashboard/integrations/outbou
 import { SecretRevealDialog } from '@/components/dashboard/integrations/secret-reveal-dialog';
 import { TwitchChatTab } from '@/components/dashboard/integrations/twitch-chat-tab';
 
+/** Readable messages for the `?error=` codes `routes/oauth-integrations.ts` redirects back with when an
+ * OAuth callback bails out instead of completing (e.g. the same Twitch broadcaster already linked into a
+ * different guild — a real EventSub constraint, not an arbitrary cap; see that route's doc comment). Falls
+ * back to a generic message for any code not in this table, so a future new error redirect never renders as
+ * a raw, un-mapped code either. */
+const OAUTH_CALLBACK_ERROR_MESSAGES: Record<string, string> = {
+  'twitch-chat-already-linked':
+    "That Twitch channel's chat is already linked to a different Entrophy server — Twitch only allows one server per channel at a time.",
+};
+
 export default function IntegrationsPage() {
   const { guildId } = useParams<{ guildId: string }>();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const providersQuery = useIntegrationProviders(guildId);
   const alertsQuery = useAlertConnections(guildId);
   const connectionsQuery = useConnections(guildId);
+  const liveQuery = useConnectionsLive(guildId);
   const connectProvider = useConnectProvider(guildId);
   const disconnectConnection = useDisconnectConnection(guildId);
   const { toast } = useToast();
@@ -54,6 +70,26 @@ export default function IntegrationsPage() {
   const [revealed, setRevealed] = React.useState<{ title: string; url?: string; secret: string } | null>(
     null,
   );
+  /** The connection currently mid-disconnect, so only that row's button (not every row's) shows "Disconnecting…". */
+  const [disconnectingConnectionId, setDisconnectingConnectionId] = React.useState<string | null>(null);
+
+  // Surfaces the OAuth callback's `?error=...` redirect (e.g. the already-linked-Twitch-broadcaster bounce)
+  // as a readable toast instead of leaving it as a silent, unexplained query string — then strips it from the
+  // URL so refreshing the page doesn't re-show the same toast.
+  React.useEffect(() => {
+    const error = searchParams.get('error');
+    if (!error) return;
+    toast({
+      title: 'Could not connect',
+      description:
+        OAUTH_CALLBACK_ERROR_MESSAGES[error] ??
+        'Something went wrong finishing that connection. Please try again.',
+      variant: 'destructive',
+    });
+    router.replace(pathname);
+    // Deliberately keyed on `searchParams` alone (not `toast`/`router`/`pathname`, which don't change
+    // meaningfully here) — this must fire once per incoming `?error=`, not on every render.
+  }, [searchParams]);
 
   const watchCounts = React.useMemo(() => {
     const counts = new Map<string, number>();
@@ -63,13 +99,16 @@ export default function IntegrationsPage() {
     return counts;
   }, [alertsQuery.data]);
 
-  const connectionByProvider = React.useMemo(() => {
-    const map = new Map<string, IntegrationConnectionDetailDto>();
-    for (const conn of connectionsQuery.data ?? []) {
-      if (!map.has(conn.provider.toLowerCase())) map.set(conn.provider.toLowerCase(), conn);
-    }
+  const connectionsByProvider = React.useMemo(
+    () => groupConnectionsByProvider(connectionsQuery.data ?? []),
+    [connectionsQuery.data],
+  );
+
+  const liveByConnectionId = React.useMemo(() => {
+    const map = new Map<string, IntegrationLiveStatusDto>();
+    for (const status of liveQuery.data ?? []) map.set(status.connectionId, status);
     return map;
-  }, [connectionsQuery.data]);
+  }, [liveQuery.data]);
 
   function handleConnect(providerId: string) {
     connectProvider.mutate(providerId, {
@@ -87,6 +126,7 @@ export default function IntegrationsPage() {
   }
 
   function handleDisconnect(connectionId: string) {
+    setDisconnectingConnectionId(connectionId);
     disconnectConnection.mutate(connectionId, {
       onSuccess: () => toast({ title: 'Disconnected', variant: 'success' }),
       onError: (err) =>
@@ -95,6 +135,7 @@ export default function IntegrationsPage() {
           description: err instanceof ApiClientError ? err.message : 'Please try again.',
           variant: 'destructive',
         }),
+      onSettled: () => setDisconnectingConnectionId(null),
     });
   }
 
@@ -126,14 +167,12 @@ export default function IntegrationsPage() {
                   provider={provider}
                   watchCount={watchCounts.get(provider.id)}
                   onAddWatch={() => setAddAlertProvider(provider.id as AlertProviderId)}
-                  connection={connectionByProvider.get(provider.id)}
+                  connections={connectionsByProvider.get(provider.id)}
+                  liveByConnectionId={liveByConnectionId}
                   onConnect={() => handleConnect(provider.id)}
-                  onDisconnect={() => {
-                    const conn = connectionByProvider.get(provider.id);
-                    if (conn) handleDisconnect(conn.id);
-                  }}
+                  onDisconnect={handleDisconnect}
                   connectPending={connectProvider.isPending}
-                  disconnectPending={disconnectConnection.isPending}
+                  disconnectingConnectionId={disconnectingConnectionId}
                 />
               ))}
             </div>

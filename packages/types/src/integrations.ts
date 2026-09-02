@@ -108,6 +108,21 @@ export interface ConnectOAuthResponseDto {
   url: string;
 }
 
+/** `GET /guilds/:guildId/integrations/live` — one entry per (non-chat-kind) `IntegrationConnection` in the
+ * guild, in the same order as `GET /guilds/:guildId/integrations`. Only Twitch has a real, cheaply-checkable
+ * live/offline concept today (see `apps/api/src/lib/integrations/live-status.ts`); every other provider,
+ * including YouTube, always reports `live: null` here — never a fabricated on/offline state. */
+export interface IntegrationLiveStatusDto {
+  connectionId: string;
+  /** `true`/`false` = a real, just-checked Twitch Helix result. `null` = this provider has no live concept,
+   * this connection has no resolvable target to check, or the lookup failed — callers must never treat `null`
+   * as `false`. */
+  live: boolean | null;
+  /** Populated only when `live === true`. */
+  title: string | null;
+  startedAt: string | null;
+}
+
 /** Platform events an outbound webhook can subscribe to. Single source of truth for this list — the `integrations`
  * plugin (packages/plugins/src/integrations/service.ts), the API's validation schema
  * (apps/api/src/lib/integrations/outbound-events.ts), and the dashboard's create-webhook form all reference this
