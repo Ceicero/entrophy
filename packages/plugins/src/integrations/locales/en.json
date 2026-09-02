@@ -120,7 +120,15 @@
       "removed": "Removed the reward action for \"{title}\".",
       "listTitle": "Channel-point rewards — {channel}",
       "listEmpty": "No reward actions yet. Add one with `/twitch reward add`.",
-      "listLine": "**{title}** — {action}, {cooldown}s cooldown{disabled}"
+      "listLine": "**{title}** — {action}, {cooldown}s cooldown{disabled}",
+      "enabled": "Channel-point rewards are now **on** for **{channel}**.",
+      "enabledRelinkRequired": "Channel-point rewards are now **on** for **{channel}**, but redemptions cannot be read yet — the broadcaster needs to reconnect this channel from the dashboard to grant permission. **Dashboard → this server → Integrations → Twitch chat → Connect a Twitch channel**.",
+      "disabled": "Channel-point rewards are now **off** for **{channel}**.",
+      "overlayTitle": "OBS Browser Source URL",
+      "overlayBody": "**URL:** {url}\n\n**Setup:** Add this as a Browser Source in OBS. ⚠️ This URL is a credential — anyone with it can watch the overlay. Treat it like a password.\n\n**Channel:** {channel}",
+      "overlayResetConfirmTitle": "Regenerate the overlay URL?",
+      "overlayResetConfirmBody": "This creates a new URL and invalidates the previous one. Any OBS source using the old URL will stop working for **{channel}**.",
+      "overlayResetDone": "Overlay URL regenerated for **{channel}**. Get the new URL with `/twitch reward overlay`."
     }
   }
 }

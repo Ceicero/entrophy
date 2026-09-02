@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { env } from '@entrophy/core';
+import * as crypto from '@entrophy/core';
 import { createTestContext } from '../../sdk/testing';
 import type { CommandContext, ServiceRegistry } from '../../sdk';
 import { command as twitchCommand, twitchConfirmComponents } from '../commands/twitch';
@@ -984,8 +985,213 @@ describe('/twitch reward list', () => {
   });
 });
 
+describe('/twitch reward enable', () => {
+  it('enables rewards on the channel, audits, nudges reconcile, and warns when re-link is needed', async () => {
+    const update = vi.fn(async () => undefined);
+    const audit = vi.fn(async () => undefined);
+    const reconcileNow = vi.fn(async () => undefined);
+    const channelWithoutScope = { ...CHANNEL_1, connectionId: 'conn-1' };
+    const { c, replies } = buildContext(
+      { group: 'reward', sub: 'enable' },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [channelWithoutScope], update },
+          oAuthToken: { findUnique: async () => ({ scopes: ['channel:bot'] }) },
+        },
+        overrides: { audit },
+      },
+    );
+    c.ctx.services.register(
+      'twitchChat',
+      { status: () => undefined, reconcileNow, stop: async () => undefined } as never,
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(update).toHaveBeenCalledWith({ where: { id: channelWithoutScope.id }, data: { rewardsEnabled: true } });
+    expect(audit).toHaveBeenCalledTimes(1);
+    expect(reconcileNow).toHaveBeenCalledTimes(1);
+    expect(descriptionOf(replies)).toContain(realT('twitch.reward.enabledRelinkRequired', { channel: channelWithoutScope.broadcasterLogin }));
+  });
+
+  it('enables rewards and confirms when the token has the required scope', async () => {
+    const update = vi.fn(async () => undefined);
+    const channelWithScope = { ...CHANNEL_1, connectionId: 'conn-1' };
+    const { c, replies } = buildContext(
+      { group: 'reward', sub: 'enable' },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [channelWithScope], update },
+          oAuthToken: { findUnique: async () => ({ scopes: ['channel:read:redemptions'] }) },
+        },
+      },
+    );
+    c.ctx.services.register(
+      'twitchChat',
+      { status: () => undefined, reconcileNow: async () => undefined, stop: async () => undefined } as never,
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(descriptionOf(replies)).toContain(realT('twitch.reward.enabled', { channel: channelWithScope.broadcasterLogin }));
+  });
+});
+
+describe('/twitch reward disable', () => {
+  it('disables rewards on the channel, audits, and nudges reconcile', async () => {
+    const update = vi.fn(async () => undefined);
+    const audit = vi.fn(async () => undefined);
+    const reconcileNow = vi.fn(async () => undefined);
+    const { c, replies } = buildContext(
+      { group: 'reward', sub: 'disable' },
+      { prismaOverrides: { twitchChatChannel: { findMany: async () => [CHANNEL_1], update } }, overrides: { audit } },
+    );
+    c.ctx.services.register(
+      'twitchChat',
+      { status: () => undefined, reconcileNow, stop: async () => undefined } as never,
+    );
+
+    await twitchCommand.execute(c);
+
+    expect(update).toHaveBeenCalledWith({ where: { id: CHANNEL_1.id }, data: { rewardsEnabled: false } });
+    expect(audit).toHaveBeenCalledTimes(1);
+    expect(reconcileNow).toHaveBeenCalledTimes(1);
+    expect(descriptionOf(replies)).toContain(realT('twitch.reward.disabled', { channel: CHANNEL_1.broadcasterLogin }));
+  });
+});
+
+describe('/twitch reward overlay', () => {
+  beforeEach(() => {
+    vi.spyOn(crypto, 'encryptSecret').mockImplementation((val) => `enc(${val})`);
+    vi.spyOn(crypto, 'decryptSecret').mockImplementation((val) => val.replace(/^enc\(/, '').replace(/\)$/, ''));
+  });
+
+  it('generates a token on first use, persists encrypted value, writes Redis index, and replies ephemerally with the URL', async () => {
+    const update = vi.fn(async () => undefined);
+    const redisSet = vi.fn(async () => undefined);
+    const channelWithoutToken = { ...CHANNEL_1, overlayTokenEnc: null };
+    const { c, replies } = buildContext(
+      { group: 'reward', sub: 'overlay' },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [channelWithoutToken], update },
+        },
+      },
+    );
+    c.ctx.redis.set = redisSet as never;
+    c.ctx.env.API_BASE_URL = 'https://api.example.com';
+
+    await twitchCommand.execute(c);
+
+    expect(update).toHaveBeenCalledWith({ where: { id: CHANNEL_1.id }, data: { overlayTokenEnc: expect.any(String) } });
+    expect(redisSet).toHaveBeenCalledWith(expect.stringContaining('overlay:token:'), CHANNEL_1.id);
+    expect(replies[0]?.ephemeral).toBe(true);
+    expect(descriptionOf(replies)).toContain('https://api.example.com/overlay/');
+  });
+
+  it('returns the same URL when called twice (does not silently rotate)', async () => {
+    const token = 'existing-token';
+    const encryptedToken = `enc(${token})`;
+    const channelWithToken = { ...CHANNEL_1, overlayTokenEnc: encryptedToken };
+    const { c, replies } = buildContext(
+      { group: 'reward', sub: 'overlay' },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [channelWithToken] },
+        },
+      },
+    );
+    c.ctx.env.API_BASE_URL = 'https://api.example.com';
+
+    await twitchCommand.execute(c);
+
+    expect(replies[0]?.ephemeral).toBe(true);
+    expect(descriptionOf(replies)).toContain(`https://api.example.com/overlay/${token}`);
+  });
+});
+
+describe('/twitch reward overlay-reset', () => {
+  beforeEach(() => {
+    vi.spyOn(crypto, 'encryptSecret').mockImplementation((val) => `enc(${val})`);
+    vi.spyOn(crypto, 'decryptSecret').mockImplementation((val) => val.replace(/^enc\(/, '').replace(/\)$/, ''));
+  });
+
+  it('requires confirmation and warns that the old URL will stop working', async () => {
+    const { c, replies } = buildContext(
+      { group: 'reward', sub: 'overlay-reset' },
+      { prismaOverrides: { twitchChatChannel: { findMany: async () => [CHANNEL_1] } } },
+    );
+    c.ctx.services.register('host', { getGuildConfig: async () => ({ fastActions: false }) } as never);
+
+    await twitchCommand.execute(c);
+
+    expect(replies).toHaveLength(1);
+    expect(replies[0]?.components).toHaveLength(1);
+    const embeds = replies[0]?.embeds;
+    expect(embeds?.[0]?.data.description).toContain(realT('twitch.reward.overlayResetConfirmBody', { channel: CHANNEL_1.broadcasterLogin }));
+  });
+
+  it('regenerates token and removes old Redis index when confirmed with fast actions on', async () => {
+    const update = vi.fn(async () => undefined);
+    const redisDel = vi.fn(async () => undefined);
+    const redisSet = vi.fn(async () => undefined);
+    const audit = vi.fn(async () => undefined);
+    const channelWithToken = { ...CHANNEL_1, overlayTokenEnc: 'enc(oldtoken)' };
+    const { c, replies } = buildContext(
+      { group: 'reward', sub: 'overlay-reset' },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [channelWithToken], update },
+        },
+        overrides: { audit },
+      },
+    );
+    c.ctx.redis.del = redisDel as never;
+    c.ctx.redis.set = redisSet as never;
+    c.ctx.services.register('host', { getGuildConfig: async () => ({ fastActions: true }) } as never);
+
+    await twitchCommand.execute(c);
+
+    expect(update).toHaveBeenCalledWith({ where: { id: CHANNEL_1.id }, data: { overlayTokenEnc: expect.any(String) } });
+    expect(redisSet).toHaveBeenCalledWith(expect.stringContaining('overlay:token:'), CHANNEL_1.id);
+    expect(redisDel).toHaveBeenCalledWith(expect.stringContaining('overlay:token:'));
+    expect(audit).toHaveBeenCalledTimes(1);
+    expect(descriptionOf(replies)).toContain(realT('twitch.reward.overlayResetDone', { channel: CHANNEL_1.broadcasterLogin }));
+  });
+
+  it('never includes the raw token or URL in the audit payload', async () => {
+    const update = vi.fn(async () => undefined);
+    const auditCalls: unknown[] = [];
+    const channelWithToken = { ...CHANNEL_1, overlayTokenEnc: 'enc(oldtoken)' };
+    const { c } = buildContext(
+      { group: 'reward', sub: 'overlay-reset' },
+      {
+        prismaOverrides: {
+          twitchChatChannel: { findMany: async () => [channelWithToken], update },
+        },
+        overrides: {
+          audit: async (entry) => {
+            auditCalls.push(entry);
+          },
+        },
+      },
+    );
+    c.ctx.redis.set = vi.fn(async () => undefined) as never;
+    c.ctx.redis.del = vi.fn(async () => undefined) as never;
+    c.ctx.services.register('host', { getGuildConfig: async () => ({ fastActions: true }) } as never);
+
+    await twitchCommand.execute(c);
+
+    expect(auditCalls).toHaveLength(1);
+    const auditEntry = auditCalls[0] as Record<string, unknown>;
+    const auditStr = JSON.stringify(auditEntry);
+    expect(auditStr).not.toMatch(/overlay\//);
+    expect(auditStr).not.toMatch(/https:\/\//);
+  });
+});
+
 describe('twitchConfirmComponents', () => {
-  it('registers confirm/cancel handlers for off, command-remove, timer-remove, and reward-remove', () => {
+  it('registers confirm/cancel handlers for off, command-remove, timer-remove, reward-remove, and overlay-reset', () => {
     const actions = twitchConfirmComponents.map((h) => h.action).sort();
     expect(actions).toEqual(
       [
@@ -997,6 +1203,8 @@ describe('twitchConfirmComponents', () => {
         'cancel-twitch-timer-remove',
         'confirm-twitch-reward-remove',
         'cancel-twitch-reward-remove',
+        'confirm-twitch-overlay-reset',
+        'cancel-twitch-overlay-reset',
       ].sort(),
     );
   });

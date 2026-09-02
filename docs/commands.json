@@ -5087,6 +5087,58 @@
                   "type": "String"
                 }
               ]
+            },
+            {
+              "name": "enable",
+              "fullName": "/twitch reward enable",
+              "description": "Turn on channel-point rewards for a channel.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Twitch channel (only needed if more than one is linked)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "disable",
+              "fullName": "/twitch reward disable",
+              "description": "Turn off channel-point rewards for a channel.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Twitch channel (only needed if more than one is linked)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "overlay",
+              "fullName": "/twitch reward overlay",
+              "description": "Get the OBS browser-source URL for channel-point alerts.",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Twitch channel (only needed if more than one is linked)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
+            },
+            {
+              "name": "overlay-reset",
+              "fullName": "/twitch reward overlay-reset",
+              "description": "Regenerate the OBS overlay URL (invalidates the previous one).",
+              "options": [
+                {
+                  "name": "channel",
+                  "description": "Twitch channel (only needed if more than one is linked)",
+                  "required": false,
+                  "type": "String"
+                }
+              ]
             }
           ]
         }

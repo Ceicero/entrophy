@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { ChannelType, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import {
   Prisma,
@@ -12,7 +13,7 @@ import {
   type TwitchChatLevelId,
   type TwitchRewardActionKindId,
 } from '@entrophy/types/integrations';
-import { SsrfError, assertPublicHttpUrl } from '@entrophy/core';
+import { SsrfError, assertPublicHttpUrl, decryptSecret, encryptSecret, redisKey } from '@entrophy/core';
 import {
   assertStaffLevel,
   brandEmbed,
@@ -370,6 +371,54 @@ const data = new SlashCommandBuilder()
         sub
           .setName('list')
           .setDescription('List channel-point reward actions.')
+          .addStringOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('Twitch channel (only needed if more than one is linked)')
+              .setRequired(false)
+              .setAutocomplete(true),
+          ),
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('enable')
+          .setDescription('Turn on channel-point rewards for a channel.')
+          .addStringOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('Twitch channel (only needed if more than one is linked)')
+              .setRequired(false)
+              .setAutocomplete(true),
+          ),
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('disable')
+          .setDescription('Turn off channel-point rewards for a channel.')
+          .addStringOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('Twitch channel (only needed if more than one is linked)')
+              .setRequired(false)
+              .setAutocomplete(true),
+          ),
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('overlay')
+          .setDescription('Get the OBS browser-source URL for channel-point alerts.')
+          .addStringOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('Twitch channel (only needed if more than one is linked)')
+              .setRequired(false)
+              .setAutocomplete(true),
+          ),
+      )
+      .addSubcommand((sub) =>
+        sub
+          .setName('overlay-reset')
+          .setDescription('Regenerate the OBS overlay URL (invalidates the previous one).')
           .addStringOption((opt) =>
             opt
               .setName('channel')
@@ -1208,6 +1257,183 @@ async function handleRewardList(c: Parameters<PluginCommand['execute']>[0]): Pro
   });
 }
 
+async function handleRewardEnable(c: Parameters<PluginCommand['execute']>[0]): Promise<void> {
+  const resolved = await resolveChannel(c);
+  if (!resolved.ok) {
+    await c.interaction.reply({ embeds: [errorEmbed(resolved.message)], ephemeral: true });
+    return;
+  }
+  const { channel } = resolved;
+
+  await c.ctx.prisma.twitchChatChannel.update({ where: { id: channel.id }, data: { rewardsEnabled: true } });
+  await c.ctx.audit({
+    guildId: c.guildId,
+    actorId: c.interaction.user.id,
+    actorType: 'user',
+    action: 'integration.twitch_chat.reward.enable',
+    targetType: 'twitch_chat_channel',
+    targetId: channel.id,
+    after: { rewardsEnabled: true },
+    source: 'bot',
+  });
+  nudgeReconcile(c.ctx);
+
+  // Check if the channel's broadcaster token has the required scope
+  const token =
+    channel.connectionId && !channel.connectionId.startsWith('_')
+      ? await c.ctx.prisma.oAuthToken.findUnique({ where: { connectionId: channel.connectionId } })
+      : null;
+
+  const hasScope = token?.scopes.includes(TWITCH_REDEMPTIONS_SCOPE);
+  const message = hasScope
+    ? c.t('twitch.reward.enabled', { channel: channel.broadcasterLogin })
+    : c.t('twitch.reward.enabledRelinkRequired', { channel: channel.broadcasterLogin });
+
+  await c.interaction.reply({
+    embeds: [successEmbed(message)],
+    ephemeral: true,
+  });
+}
+
+async function handleRewardDisable(c: Parameters<PluginCommand['execute']>[0]): Promise<void> {
+  const resolved = await resolveChannel(c);
+  if (!resolved.ok) {
+    await c.interaction.reply({ embeds: [errorEmbed(resolved.message)], ephemeral: true });
+    return;
+  }
+  const { channel } = resolved;
+
+  await c.ctx.prisma.twitchChatChannel.update({ where: { id: channel.id }, data: { rewardsEnabled: false } });
+  await c.ctx.audit({
+    guildId: c.guildId,
+    actorId: c.interaction.user.id,
+    actorType: 'user',
+    action: 'integration.twitch_chat.reward.disable',
+    targetType: 'twitch_chat_channel',
+    targetId: channel.id,
+    after: { rewardsEnabled: false },
+    source: 'bot',
+  });
+  nudgeReconcile(c.ctx);
+
+  await c.interaction.reply({
+    embeds: [successEmbed(c.t('twitch.reward.disabled', { channel: channel.broadcasterLogin }))],
+    ephemeral: true,
+  });
+}
+
+async function handleRewardOverlay(c: Parameters<PluginCommand['execute']>[0]): Promise<void> {
+  const resolved = await resolveChannel(c);
+  if (!resolved.ok) {
+    await c.interaction.reply({ embeds: [errorEmbed(resolved.message)], ephemeral: true });
+    return;
+  }
+  const { channel } = resolved;
+
+  let token: string;
+  let needsAudit = false;
+
+  if (!channel.overlayTokenEnc) {
+    // Generate a new token
+    token = randomBytes(24).toString('hex');
+    await c.ctx.prisma.twitchChatChannel.update({
+      where: { id: channel.id },
+      data: { overlayTokenEnc: encryptSecret(token) },
+    });
+    await c.ctx.redis.set(redisKey('overlay', 'token', token), channel.id);
+    needsAudit = true;
+  } else {
+    // Decrypt the existing token
+    token = decryptSecret(channel.overlayTokenEnc);
+  }
+
+  if (needsAudit) {
+    await c.ctx.audit({
+      guildId: c.guildId,
+      actorId: c.interaction.user.id,
+      actorType: 'user',
+      action: 'integration.twitch_chat.overlay.generate',
+      targetType: 'twitch_chat_channel',
+      targetId: channel.id,
+      after: { configured: true },
+      source: 'bot',
+    });
+  }
+
+  const apiBaseUrl = c.ctx.env.API_BASE_URL ?? '';
+  const url = `${apiBaseUrl}/overlay/${token}`;
+
+  await c.interaction.reply({
+    embeds: [
+      brandEmbed()
+        .setTitle(c.t('twitch.reward.overlayTitle'))
+        .setDescription(c.t('twitch.reward.overlayBody', { url, channel: channel.broadcasterLogin })),
+    ],
+    ephemeral: true,
+  });
+}
+
+async function handleRewardOverlayReset(c: Parameters<PluginCommand['execute']>[0]): Promise<void> {
+  const resolved = await resolveChannel(c);
+  if (!resolved.ok) {
+    await c.interaction.reply({ embeds: [errorEmbed(resolved.message)], ephemeral: true });
+    return;
+  }
+  const { channel } = resolved;
+
+  const host = c.ctx.services.get('host');
+  const guildConfig = host ? await host.getGuildConfig(c.guildId).catch(() => null) : null;
+
+  const result = await requestConfirmation({
+    interaction: c.interaction,
+    ctx: c.ctx,
+    pluginId: 'integrations',
+    action: 'twitch-overlay-reset',
+    ownerId: c.interaction.user.id,
+    embed: brandEmbed()
+      .setTitle(c.t('twitch.reward.overlayResetConfirmTitle'))
+      .setDescription(c.t('twitch.reward.overlayResetConfirmBody', { channel: channel.broadcasterLogin })),
+    payload: { channelId: channel.id },
+    fastActions: Boolean(guildConfig?.fastActions),
+  });
+
+  if (result.confirmed) {
+    // Delete the old token's Redis index if it exists
+    if (channel.overlayTokenEnc) {
+      try {
+        const oldToken = decryptSecret(channel.overlayTokenEnc);
+        await c.ctx.redis.del(redisKey('overlay', 'token', oldToken));
+      } catch {
+        // Ignore decryption failures — orphaned index entries don't affect security
+      }
+    }
+
+    // Generate a new token
+    const token = randomBytes(24).toString('hex');
+    await c.ctx.prisma.twitchChatChannel.update({
+      where: { id: channel.id },
+      data: { overlayTokenEnc: encryptSecret(token) },
+    });
+    await c.ctx.redis.set(redisKey('overlay', 'token', token), channel.id);
+
+    await c.ctx.audit({
+      guildId: c.guildId,
+      actorId: c.interaction.user.id,
+      actorType: 'user',
+      action: 'integration.twitch_chat.overlay.regenerate',
+      targetType: 'twitch_chat_channel',
+      targetId: channel.id,
+      after: { configured: true },
+      source: 'bot',
+    });
+
+    await c.interaction.reply({
+      embeds: [successEmbed(c.t('twitch.reward.overlayResetDone', { channel: channel.broadcasterLogin }))],
+      ephemeral: true,
+    });
+  }
+}
+
 export const command: PluginCommand = {
   data,
   requirement: {
@@ -1242,6 +1468,10 @@ export const command: PluginCommand = {
       if (sub === 'add') return handleRewardAdd(c);
       if (sub === 'remove') return handleRewardRemove(c);
       if (sub === 'list') return handleRewardList(c);
+      if (sub === 'enable') return handleRewardEnable(c);
+      if (sub === 'disable') return handleRewardDisable(c);
+      if (sub === 'overlay') return handleRewardOverlay(c);
+      if (sub === 'overlay-reset') return handleRewardOverlayReset(c);
     }
   },
   async autocomplete(c) {
@@ -1315,8 +1545,8 @@ export const command: PluginCommand = {
   },
 };
 
-/** Confirmation-flow button handlers for `/twitch off`, `/twitch command remove`, `/twitch timer remove`, and
- * `/twitch reward remove` (destructive-action convention, ARCHITECTURE.md §7.7). */
+/** Confirmation-flow button handlers for `/twitch off`, `/twitch command remove`, `/twitch timer remove`,
+ * `/twitch reward remove`, and `/twitch reward overlay-reset` (destructive-action convention, ARCHITECTURE.md §7.7). */
 export const twitchConfirmComponents: ComponentHandler[] = [
   ...registerConfirmHandlers<Record<string, never>>('twitch-off', async (c) => {
     await disableAllTwitchChatChannels(c.ctx, c.guildId, c.interaction.user.id);
@@ -1346,4 +1576,48 @@ export const twitchConfirmComponents: ComponentHandler[] = [
       });
     },
   ),
+  ...registerConfirmHandlers<{ channelId: string }>('twitch-overlay-reset', async (c, payload) => {
+    const channel = await c.ctx.prisma.twitchChatChannel.findUnique({ where: { id: payload.channelId } });
+    if (!channel) {
+      await c.interaction.followUp({
+        embeds: [errorEmbed(c.t('twitch.errors.channelNotFound', { channel: 'unknown' }))],
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Delete the old token's Redis index if it exists
+    if (channel.overlayTokenEnc) {
+      try {
+        const oldToken = decryptSecret(channel.overlayTokenEnc);
+        await c.ctx.redis.del(redisKey('overlay', 'token', oldToken));
+      } catch {
+        // Ignore decryption failures — orphaned index entries don't affect security
+      }
+    }
+
+    // Generate a new token
+    const token = randomBytes(24).toString('hex');
+    await c.ctx.prisma.twitchChatChannel.update({
+      where: { id: payload.channelId },
+      data: { overlayTokenEnc: encryptSecret(token) },
+    });
+    await c.ctx.redis.set(redisKey('overlay', 'token', token), payload.channelId);
+
+    await c.ctx.audit({
+      guildId: c.guildId,
+      actorId: c.interaction.user.id,
+      actorType: 'user',
+      action: 'integration.twitch_chat.overlay.regenerate',
+      targetType: 'twitch_chat_channel',
+      targetId: payload.channelId,
+      after: { configured: true },
+      source: 'bot',
+    });
+
+    await c.interaction.followUp({
+      embeds: [successEmbed(c.t('twitch.reward.overlayResetDone', { channel: channel.broadcasterLogin }))],
+      ephemeral: true,
+    });
+  }),
 ];
