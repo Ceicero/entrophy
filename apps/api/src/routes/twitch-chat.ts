@@ -53,6 +53,13 @@ import {
 } from '../lib/integrations/twitch-chat-schemas';
 import { guildIdParamSchema } from '../lib/schemas';
 
+/** Scopes requested when an admin links (or re-links) a broadcaster's Twitch channel.
+ * `channel:bot` — the bot may read/send in that channel's chat.
+ * `channel:read:redemptions` — required by the `channel.channel_points_custom_reward_redemption.add`
+ * EventSub subscription, which only the BROADCASTER's own token may create. Kept as one constant so the
+ * link and re-link paths can never drift apart and silently strand channel points. */
+const TWITCH_CONNECT_SCOPES = 'channel:bot channel:read:redemptions';
+
 const channelParamSchema = guildIdParamSchema.extend({ channelId: z.string().min(1) });
 const commandParamSchema = guildIdParamSchema.extend({ commandId: z.string().min(1) });
 const timerParamSchema = guildIdParamSchema.extend({ timerId: z.string().min(1) });
@@ -189,7 +196,13 @@ export default async function twitchChatRoutes(app: ZodFastifyInstance): Promise
       );
 
       const redirectUri = `${env.API_BASE_URL ?? ''}/integrations/twitch/callback`;
-      return { url: buildProviderAuthorizeUrl('twitch', state, redirectUri, 'channel:bot') };
+      // Both scopes are requested up front, on every link and re-link. `channel:bot` lets the bot act in chat;
+      // `channel:read:redemptions` is what the channel-point EventSub subscription needs, and ONLY the
+      // broadcaster's own token can carry it (the bot identity's token cannot create that subscription).
+      // Requesting just `channel:bot` here made channel points unreachable in production: the reconcile loop
+      // correctly reported "re-link required", but re-linking asked Twitch for the same narrow scope again, so
+      // the grant could never appear no matter how many times an admin went through the flow.
+      return { url: buildProviderAuthorizeUrl('twitch', state, redirectUri, TWITCH_CONNECT_SCOPES) };
     },
   );
 

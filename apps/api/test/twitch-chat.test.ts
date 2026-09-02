@@ -392,7 +392,7 @@ describe('POST /guilds/:guildId/integrations/twitch-chat/connect', () => {
     await app.close();
   });
 
-  it('returns an authorize URL scoped to channel:bot and stores twitch_chat state in redis', async () => {
+  it('requests BOTH chat and channel-point scopes, and stores twitch_chat state in redis', async () => {
     configureTwitchEnv();
     const { app, redis, cookieHeader, csrfToken } = await setupAuthedApp(twitchChatFixture().overrides);
     const res = await app.inject({
@@ -404,7 +404,12 @@ describe('POST /guilds/:guildId/integrations/twitch-chat/connect', () => {
     const { url } = res.json() as { url: string };
     const parsed = new URL(url);
     expect(parsed.origin + parsed.pathname).toBe('https://id.twitch.tv/oauth2/authorize');
-    expect(parsed.searchParams.get('scope')).toBe('channel:bot');
+    // Both scopes, every time. `channel:read:redemptions` can only ever come from the broadcaster's own
+    // grant, so if this URL omits it, channel points is unreachable and re-linking cannot fix it — the exact
+    // bug this assertion previously encoded by expecting 'channel:bot' alone.
+    const scopes = (parsed.searchParams.get('scope') ?? '').split(' ');
+    expect(scopes).toContain('channel:bot');
+    expect(scopes).toContain('channel:read:redemptions');
     expect(parsed.searchParams.get('client_id')).toBe('test-twitch-client-id');
 
     const state = parsed.searchParams.get('state')!;
