@@ -61,8 +61,8 @@ export function useIntegrationProviders(guildId: string | undefined) {
 }
 
 /** The base connection list (`GET /guilds/:id/integrations`) — every OAuth/webhook-established connection
- * (twitch/google_calendar/microsoft_calendar/notion/reddit/github/stripe/generic_webhook), distinct from the
- * per-target alert watches in `useAlertConnections`. Used to show "already connected" state on provider cards. */
+ * (twitch/google_calendar/microsoft_calendar/instagram/reddit/generic_webhook), distinct from the per-target
+ * alert watches in `useAlertConnections`. Used to show "already connected" state on provider cards. */
 export function useConnections(guildId: string | undefined) {
   return useQuery({
     queryKey: integrationsQueryKeys.connections(guildId ?? ''),
@@ -75,8 +75,8 @@ export function useConnections(guildId: string | undefined) {
  * first — in the order the API returned them (`createdAt: desc`). A provider absent from `connections` gets
  * no entry at all, so callers should fall back to `?? []`. This is the exact spot the multi-account dedupe bug
  * lived (a `Map` that kept only the first connection per provider via `if (!map.has(...))`); the Providers
- * grid must show every connection a guild has for a provider (several Twitch broadcasters, several Notion
- * workspaces, ...), not cap it at one. */
+ * grid must show every connection a guild has for a provider (several Twitch broadcasters, several Reddit
+ * subreddits, ...), not cap it at one. */
 export function groupConnectionsByProvider(
   connections: IntegrationConnectionDetailDto[],
 ): Map<string, IntegrationConnectionDetailDto[]> {
@@ -105,7 +105,7 @@ export function useConnectionsLive(guildId: string | undefined) {
 }
 
 /** Maps a canonical provider id to the id `POST /:provider/connect` expects — that route predates the canonical
- * 10-id set and still uses its own shorthand for the two calendar providers. */
+ * provider-id set and still uses its own shorthand for the two calendar providers. */
 const CONNECT_ROUTE_PROVIDER_ID: Record<string, string> = {
   google_calendar: 'google',
   microsoft_calendar: 'microsoft',
@@ -114,7 +114,7 @@ const CONNECT_ROUTE_PROVIDER_ID: Record<string, string> = {
 export interface ConnectProviderResult {
   /** Present for OAuth providers — redirect the browser here to start the flow. */
   url?: string;
-  /** Present for webhook-establishing providers (github/generic_webhook/stripe). */
+  /** Present for webhook-establishing providers (generic_webhook). */
   webhookUrl?: string | null;
   secret?: string;
 }

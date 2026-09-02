@@ -6,8 +6,8 @@ import { inboundJob } from './jobs/inbound';
 import { outboundJob } from './jobs/outbound';
 import {
   pollGoogleCalendarJob,
+  pollInstagramJob,
   pollMicrosoftCalendarJob,
-  pollNotionJob,
   pollRedditJob,
   pollSteamJob,
   pollTwitchJob,
@@ -41,7 +41,7 @@ export const plugin = definePlugin({
     pollSteamJob,
     pollGoogleCalendarJob,
     pollMicrosoftCalendarJob,
-    pollNotionJob,
+    pollInstagramJob,
     tokenRefreshJob,
     twitchChatTickJob,
   ],

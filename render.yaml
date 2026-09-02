@@ -86,12 +86,8 @@ services:
       - key: BOT_OWNER_IDS
         sync: false
       # --- optional integrations; leave blank in the Render dashboard to keep a feature disabled ---
-      # Donations also REQUIRE CAPTCHA_PROVIDER + its keys (below) to be set — they fail closed (503) without
-      # it even when STRIPE_SECRET_KEY is set. See docs/ARCHITECTURE.md §18.
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false
+      # Donations are a Ko-fi link-out (KOFI_URL, above) — see docs/ARCHITECTURE.md §18. The guild-facing
+      # Stripe integration connector (STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET) was removed 2026-09-02 — §18a.
       - key: DONATION_PRESETS_CENTS
         # amountCents on checkout must match one of these EXACTLY — arbitrary amounts are rejected.
         value: '500,1000,2500,5000'
@@ -128,9 +124,9 @@ services:
         sync: false
       - key: MICROSOFT_CLIENT_SECRET
         sync: false
-      - key: NOTION_CLIENT_ID
+      - key: INSTAGRAM_CLIENT_ID
         sync: false
-      - key: NOTION_CLIENT_SECRET
+      - key: INSTAGRAM_CLIENT_SECRET
         sync: false
       - key: OPENAI_API_KEY
         sync: false
@@ -268,9 +264,9 @@ services:
         sync: false
       - key: MICROSOFT_CLIENT_SECRET
         sync: false
-      - key: NOTION_CLIENT_ID
+      - key: INSTAGRAM_CLIENT_ID
         sync: false
-      - key: NOTION_CLIENT_SECRET
+      - key: INSTAGRAM_CLIENT_SECRET
         sync: false
       - key: OPENAI_API_KEY
         sync: false

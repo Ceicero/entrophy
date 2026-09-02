@@ -17,8 +17,7 @@ recap in `docs/ARCHITECTURE.md` §15 and the compliance rules in `docs/SPEC.md`.
 | `SESSION_SECRET`                                                                                 | Signs dashboard session cookies — a leak lets an attacker forge a session for any user.                                                                             |
 | Guild/member data (moderation cases, warnings, notes, Enforcer records, tickets, logs)           | Server-scoped moderation and behavioral history; some of it (staff notes, ticket transcripts, Enforcer excerpts) can contain sensitive free text about real people. |
 | Webhook secrets (`WebhookEndpoint.secretEnc`)                                                    | Let an attacker forge inbound webhook deliveries or, for outbound endpoints, read what's being sent.                                                                |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` (guild-facing integration connector only)          | Could forge integration events (received by servers configured to monitor Stripe activity) or act on a connected Stripe account. **Not used by the owner's donations** — those moved to Ko-fi on 2026-08-30 (see §3 below). |
-| Third-party integration keys (Twitch, GitHub, Google, Microsoft, Notion, OpenAI/Anthropic, etc.) | Scoped to whatever that provider's key grants — usually read access to public data or a connected account's data.                                                   |
+| Third-party integration keys (Twitch, Google, Microsoft, Instagram, OpenAI/Anthropic, etc.)      | Scoped to whatever that provider's key grants — usually read access to public data or a connected account's data.                                                   |
 
 **Who we're defending against:** opportunistic scanners hitting public endpoints, a malicious or
 compromised guild member trying to escalate privilege or exfiltrate other members' data, a
@@ -53,7 +52,7 @@ Each of these is implemented in code today, not aspirational — file references
   present) must be in the allowlist (`DASHBOARD_URL`, `WEB_URL`). A stolen cookie alone isn't enough
   to make a state-changing request cross-site.
 - **Origin allowlist** — CORS is a strict `[DASHBOARD_URL, WEB_URL]` allowlist, not a wildcard.
-- **Signature verification** — every inbound webhook (Discord interactions, Stripe, GitHub, Twitch
+- **Signature verification** — every inbound webhook (Discord interactions, GitHub, generic, Twitch
   EventSub) is verified with a constant-time HMAC/ed25519 check against the raw request body before
   anything in it is trusted. `packages/core/src/crypto/signatures.ts`.
 - **SSRF guard** — any outbound URL the platform fetches based on user/admin input (webhook targets,
@@ -151,18 +150,12 @@ scripts/reencrypt-secrets.ts --dry-run`) first if you want a preview without wri
    connected OAuth account, every webhook secret, every stored AI API key) as compromised too, and
    have affected users/integrations re-authenticate or roll their own keys.
 
-### 4.3 Compromised Stripe keys / webhook secret
+### 4.3 (retired) Compromised Stripe keys / webhook secret
 
-1. Stripe Dashboard → roll the secret key (**Developers → API keys**). For the webhook signing
-   secret, delete and recreate the webhook endpoint (**Developers → Webhooks** →
-   `https://api.entrophybot.com/webhooks/stripe`) or use Stripe's built-in roll option if your
-   account has it, and copy the new signing secret.
-2. Update `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` on `api` and restart. Signatures on
-   already-verified events aren't affected retroactively; this only matters for events from this
-   point forward.
-3. Check `Donation` rows for anything in `PENDING` status around the suspected exposure window that
-   never resolved — that can indicate someone probed the webhook endpoint (though it will fail
-   signature verification either way, since `verifyStripeSignature` requires the correct secret).
+The guild-facing Stripe integration connector was removed 2026-09-02 (`docs/ARCHITECTURE.md` §18a) —
+`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the `/webhooks/stripe` route no longer exist, so there is
+nothing left to rotate here. Left as a numbered placeholder rather than renumbering §4.4+ out from under any
+existing link to them.
 
 ### 4.4 Dashboard session invalidation
 
@@ -189,9 +182,8 @@ makes this Redis flush redundant (but harmless to also run).
   lockfile on every push and PR — there's no silent drift between what's declared and what's
   installed.
 - Review Dependabot/`npm audit`-style alerts for `apps/*` and `packages/*` regularly, prioritizing
-  anything touching `discord.js`, `fastify`, `@fastify/*`, `prisma`, `stripe`, or `next` (the
-  security-sensitive edges: auth, HTTP handling, DB access, payments, and the framework serving
-  public traffic).
+  anything touching `discord.js`, `fastify`, `@fastify/*`, `prisma`, or `next` (the security-sensitive
+  edges: auth, HTTP handling, DB access, and the framework serving public traffic).
 - Bump the version in `docs/ARCHITECTURE.md` §2's pinned-range table when you deliberately move a
   major version, so the table stays the source of truth for what's actually running.
 - After any dependency bump, the full gate still applies before merging: `pnpm lint && pnpm

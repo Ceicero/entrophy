@@ -77,7 +77,7 @@ have it degrade gracefully instead of breaking — see `docs/PERMISSIONS.md` for
 | **Economy**            | Optional virtual-currency balance/daily/give/leaderboard — no real money, ever.                                          | Disabled             | —                               |
 | **Utility**            | `/help`, user/server info, timestamps, embed builder, AFK, translation, weather, bot health.                             | Enabled              | —                               |
 | **Music & Media**      | Playlist/queue management for a legal, user-authorized audio provider only. Unavailable until one is configured.         | Disabled             | —                               |
-| **Integrations**       | Secure connector framework: Twitch, YouTube, GitHub, Reddit, Steam, Google/Microsoft Calendar, Notion, Stripe, webhooks. | Disabled             | —                               |
+| **Integrations**       | Secure connector framework: Twitch, YouTube, Instagram, Reddit, Steam, Google/Microsoft Calendar, webhooks. | Disabled             | —                               |
 | **AI Assistant**       | Optional `/ask`, `/summarize`, `/draft`, `/mod-assist` — per-server opt-in, cooldowns, token budgets.                    | Disabled             | —                               |
 
 Full command list per plugin: `docs/commands.json` (generated, always current) or the website's
@@ -263,7 +263,6 @@ Canonical production layout on `entrophybot.com`:
 | API                            | `https://api.entrophybot.com`                         | `API_BASE_URL`, `NEXT_PUBLIC_API_URL`, `PUBLIC_WEBHOOK_BASE_URL` |
 | Cookies                        | shared apex domain                                    | `COOKIE_DOMAIN=.entrophybot.com`, `SESSION_COOKIE_SAMESITE=lax`  |
 | Discord OAuth redirect         | `https://api.entrophybot.com/auth/discord/callback`   | `DISCORD_OAUTH_REDIRECT_URI`                                     |
-| Stripe webhook                 | `https://api.entrophybot.com/webhooks/stripe`         | `STRIPE_WEBHOOK_SECRET`                                          |
 | Twitch/GitHub/generic webhooks | `https://api.entrophybot.com/webhooks/...`            | —                                                                |
 
 `.env.production.example` is pre-filled with every one of these values for `entrophybot.com` —

@@ -49,4 +49,4 @@ export const pollMicrosoftCalendarJob = makePollJob(
   'microsoft_calendar',
   '*/15 * * * *',
 );
-export const pollNotionJob = makePollJob('poll-notion', 'notion', '*/10 * * * *');
+export const pollInstagramJob = makePollJob('poll-instagram', 'instagram', '*/15 * * * *');

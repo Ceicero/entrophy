@@ -59,8 +59,11 @@ const webhookCreateSchema = z.object({
   channelId: z.string().nullable().optional(),
 });
 
-function webhookPathFor(provider: IntegrationProviderId, endpointId: string): string {
-  if (provider === 'github') return `/webhooks/github/${endpointId}`;
+// `generic_webhook` is the only remaining `WebhookProviderId` (github/stripe were removed as connectable
+// providers 2026-09-02) — this always resolves to the generic inbound path, but stays a named function/callsite
+// (rather than inlining the template string) so a future webhook-kind provider with its own dedicated inbound
+// path is a one-line change here, not a hunt through `routes/integrations.ts`.
+function webhookPathFor(endpointId: string): string {
   return `/webhooks/generic/${endpointId}`;
 }
 
@@ -245,28 +248,22 @@ export default async function integrationsRoutes(app: ZodFastifyInstance): Promi
           },
         });
 
-        let endpointDto: WebhookEndpointDto | null = null;
-        let secret: string | undefined;
-        let webhookUrl: string | null = null;
-
-        if (provider === 'stripe') {
-          // Stripe is verified globally via STRIPE_WEBHOOK_SECRET at a single shared endpoint — no per-guild secret to hand out.
-          webhookUrl = `${env.API_BASE_URL ?? ''}/webhooks/stripe`;
-        } else {
-          secret = randomBytes(32).toString('hex');
-          const endpointRow = await app.prisma.webhookEndpoint.create({
-            data: {
-              guildId,
-              direction: 'INBOUND',
-              provider,
-              name: `${provider} webhook`,
-              secretEnc: encryptSecret(secret),
-              events: [],
-            },
-          });
-          endpointDto = toWebhookEndpointDto(endpointRow);
-          webhookUrl = `${env.API_BASE_URL ?? ''}${webhookPathFor(provider, endpointRow.id)}`;
-        }
+        // `generic_webhook` is the only webhook-kind provider left (github/stripe were removed as connectable
+        // providers 2026-09-02) — always a fresh per-guild secret + endpoint, unlike Stripe's old single shared
+        // globally-verified endpoint.
+        const secret = randomBytes(32).toString('hex');
+        const endpointRow = await app.prisma.webhookEndpoint.create({
+          data: {
+            guildId,
+            direction: 'INBOUND',
+            provider,
+            name: `${provider} webhook`,
+            secretEnc: encryptSecret(secret),
+            events: [],
+          },
+        });
+        const endpointDto: WebhookEndpointDto = toWebhookEndpointDto(endpointRow);
+        const webhookUrl = `${env.API_BASE_URL ?? ''}${webhookPathFor(endpointRow.id)}`;
 
         await writeDashboardAudit(app.prisma, {
           guildId,

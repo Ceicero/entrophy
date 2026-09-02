@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import type { FastifyRequest } from 'fastify';
-import type Stripe from 'stripe';
 import type { ZodFastifyInstance } from '../lib/http';
 import { z } from 'zod';
 import {
@@ -11,7 +10,6 @@ import {
   env,
   verifyGithubSignature,
   verifyHmacSha256,
-  verifyStripeSignature,
   verifyTwitchEventSubSignature,
 } from '@entrophy/core';
 import { Prisma } from '@entrophy/database';
@@ -103,38 +101,6 @@ export default async function webhooksRoutes(app: ZodFastifyInstance): Promise<v
       await app.prisma.webhookEndpoint.update({
         where: { id: endpointId },
         data: { lastDeliveryAt: new Date(), failureCount: 0 },
-      });
-    }
-
-    reply.status(202);
-    return { ok: true };
-  });
-
-  app.post('/stripe', async (request, reply) => {
-    const raw = rawBodyOf(request);
-    const signatureHeader = request.headers['stripe-signature'];
-    if (typeof signatureHeader !== 'string') {
-      throw new ValidationError('Missing Stripe-Signature header.');
-    }
-    if (!env.STRIPE_WEBHOOK_SECRET) {
-      throw new AppError('stripe_not_configured', 'Stripe is not configured on this server.', {
-        status: 503,
-        expose: true,
-      });
-    }
-    if (!verifyStripeSignature(raw, signatureHeader, env.STRIPE_WEBHOOK_SECRET)) {
-      throw invalidSignature();
-    }
-
-    const event = safeJsonParse(raw) as Stripe.Event & { id?: string; type?: string };
-    if (!event.id) throw new ValidationError('Stripe event is missing an id.');
-
-    const isNew = await claimEventOnce(app, 'stripe', event.id);
-    if (isNew) {
-      await app.queues.integrationsInbound().add('stripe', {
-        provider: 'stripe',
-        eventType: event.type ?? 'unknown',
-        payload: event,
       });
     }
 

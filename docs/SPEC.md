@@ -203,14 +203,17 @@ Secure connector framework for optional integrations:
 
 - Twitch: stream-live alerts using official API/webhooks where available, plus an opt-in chat bot — a dedicated Twitch bot account (owner-authorized once) joins a streamer's chat, per guild, once the streamer links their channel from the dashboard (OAuth `channel:bot`); it runs custom `!commands`/timers and built-ins over the official EventSub WebSocket + Helix Send Chat Message API, with no chat message content ever persisted and no Twitch-side moderation actions (ban/timeout/delete) in v1; plus opt-in per-channel channel-point reward actions (SOUND/TTS/CHAT/DISCORD) requiring broadcaster re-link with `channel:read:redemptions` scope, with TTS synthesis via the guild's own OpenAI key (or unavailable if none), sound URLs SSRF-validated, and viewer reward-input text never persisted
 - YouTube: upload/live alerts through supported APIs
-- GitHub: repository activity via GitHub webhooks
+- Instagram: own-account-only OAuth connect (Instagram API with Instagram Login) posts the connected account's
+  own new media into a channel — never an arbitrary username lookup, which Meta's API no longer supports
+  (Basic Display API shut down Dec 2024)
 - Reddit: approved API integration
 - Steam: publicly available game/server status where permitted
 - Google Calendar or Microsoft 365 Calendar: OAuth-based event notifications
-- Notion: official API integration
-- Stripe: webhook-driven role rewards only after verified payment events; no storage of card data
 - OpenAI/Anthropic-style AI provider interface for opt-in assistance features
 - Generic webhook receiver and outbound webhook notifications
+- GitHub, Notion and Stripe (role-reward) connectors were removed 2026-09-02 (owner decision); their Prisma
+  enum values are retained for historical rows only — see `docs/ARCHITECTURE.md` §18a. Do not re-add them
+  without asking.
 
 Integration security: OAuth tokens encrypted at rest; token refresh support; scope minimization; signed webhook verification; secret rotation documentation; retry queue with exponential backoff; per-guild integration enablement; clear setup page and connection status; no impersonation of users; no access to data outside explicitly approved OAuth scopes.
 

@@ -138,7 +138,7 @@ async function setupAuthedApp(overrides: PrismaStubOverrides) {
 }
 
 describe('GET /guilds/:guildId/integrations/providers', () => {
-  it('returns availability for all 10 providers', async () => {
+  it('returns availability for all 8 providers', async () => {
     const { app, cookieHeader } = await setupAuthedApp(guildOverrides());
     const res = await app.inject({
       method: 'GET',
@@ -147,21 +147,22 @@ describe('GET /guilds/:guildId/integrations/providers', () => {
     });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { id: string; available: boolean }[];
-    expect(body).toHaveLength(10);
+    expect(body).toHaveLength(8);
     expect(body.map((p) => p.id)).toEqual(
       expect.arrayContaining([
         'twitch',
         'youtube',
-        'github',
+        'instagram',
         'reddit',
         'steam',
         'google_calendar',
         'microsoft_calendar',
-        'notion',
-        'stripe',
         'generic_webhook',
       ]),
     );
+    // GitHub, Notion and Stripe were removed as offered providers 2026-09-02 — pin their absence, not just the
+    // count, so a future addition can't silently restore one of them under this same total.
+    expect(body.map((p) => p.id)).not.toEqual(expect.arrayContaining(['github', 'notion', 'stripe']));
     await app.close();
   });
 });

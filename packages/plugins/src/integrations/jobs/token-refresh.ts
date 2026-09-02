@@ -1,11 +1,11 @@
 import type { PluginJob } from '../../sdk';
 import { providerIdFromEnum } from '../providers';
-import { OAUTH_REFRESH_META, refreshOAuthToken } from '../providers/oauth-tokens';
+import { refreshOAuthToken, type OAuthRefreshableProviderId } from '../providers/oauth-tokens';
 
 const WINDOW_MS = 30 * 60 * 1000; // refresh anything expiring within the next 30 minutes
 
-function isRefreshableProvider(id: string | undefined): id is keyof typeof OAUTH_REFRESH_META {
-  return id === 'google_calendar' || id === 'microsoft_calendar' || id === 'notion';
+function isRefreshableProvider(id: string | undefined): id is OAuthRefreshableProviderId {
+  return id === 'google_calendar' || id === 'microsoft_calendar' || id === 'instagram';
 }
 
 /** Every `OAuthToken` row expiring within `WINDOW_MS`, joined to its `IntegrationConnection` for the provider tag. */

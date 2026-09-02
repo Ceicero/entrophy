@@ -143,7 +143,7 @@ export default function IntegrationsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Integrations"
-        description="Connect Twitch, YouTube, GitHub, Reddit, Steam, calendars, Notion, Stripe, and your own webhooks. Every connector is optional and off until you set it up."
+        description="Connect Twitch, YouTube, Instagram, Reddit, Steam, calendars, and your own webhooks. Every connector is optional and off until you set it up."
       />
 
       <Card>

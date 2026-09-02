@@ -156,14 +156,13 @@ E2E_TEST_MODE=false           # enables /auth/test-login (NEVER in production; a
 # Integrations / adapters (all optional; features disable themselves when unset)
 TWITCH_CLIENT_ID= TWITCH_CLIENT_SECRET= TWITCH_EVENTSUB_SECRET=
 YOUTUBE_API_KEY=
-GITHUB_WEBHOOK_SECRET=
-STRIPE_SECRET_KEY= STRIPE_WEBHOOK_SECRET=   # guild-facing Stripe integration connector ONLY — not donations, see §18a
+GITHUB_WEBHOOK_SECRET= # vestigial — the GitHub connector was removed 2026-09-02 (see §18a); no code reads this
 KOFI_URL=   # donations: the Ko-fi page to link out to; unset = donations not offered, see §18
 REDDIT_CLIENT_ID= REDDIT_CLIENT_SECRET= REDDIT_USER_AGENT=
 STEAM_API_KEY=
 GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET=
 MICROSOFT_CLIENT_ID= MICROSOFT_CLIENT_SECRET=
-NOTION_CLIENT_ID= NOTION_CLIENT_SECRET=
+INSTAGRAM_CLIENT_ID= INSTAGRAM_CLIENT_SECRET=   # Instagram API with Instagram Login, own-account connect only
 OPENAI_API_KEY= ANTHROPIC_API_KEY=
 TRANSLATE_PROVIDER=none       # none | deepl | libretranslate
 DEEPL_API_KEY= LIBRETRANSLATE_URL= LIBRETRANSLATE_API_KEY=
@@ -172,7 +171,7 @@ OPENWEATHERMAP_API_KEY=
 CAPTCHA_PROVIDER=none         # none | hcaptcha | turnstile — REQUIRED for donations (see §18), optional for roles plugin verification
 HCAPTCHA_SITE_KEY= HCAPTCHA_SECRET= TURNSTILE_SITE_KEY= TURNSTILE_SECRET=
 MEDIA_PROVIDER=none           # none | <compliant provider id>; media plugin is unavailable when none
-PUBLIC_WEBHOOK_BASE_URL=      # public https base for inbound webhooks (EventSub, GitHub, Stripe)
+PUBLIC_WEBHOOK_BASE_URL=      # public https base for inbound webhooks (EventSub, GitHub, generic)
 ```
 
 `@entrophy/core` exports `env` (a zod-validated object) with **all keys optional except NODE_ENV/LOG_LEVEL**, plus `requireEnv('DISCORD_TOKEN')` helper that throws `ConfigError` with a helpful message. Each app validates the subset it needs at boot.
@@ -522,7 +521,7 @@ Also `apps/bot/src/host/bot-actions.ts`: processes `bot-actions` queue jobs `{ t
   - `routes/ai.ts` — settings + usage
   - `routes/analytics.ts` — `GET /:guildId/analytics?range=7d|30d|90d` (from GuildAnalyticsDaily; only if `GuildConfig.dataCollectionEnabled`)
   - `routes/privacy.ts` — retention policy get/put, `POST /:guildId/data/export` (queues job → downloadable JSON), `POST /:guildId/data/delete` (requires confirmation phrase, queues deletion), `GET /:guildId/data/requests`
-  - `routes/webhooks.ts` (NOT under /guilds): `POST /webhooks/github/:endpointId`, `POST /webhooks/stripe`, `POST /webhooks/twitch`, `POST /webhooks/generic/:endpointId` — raw body, signature verification, idempotency via `ProcessedWebhookEvent`, then enqueue to `integrations.inbound` queue
+  - `routes/webhooks.ts` (NOT under /guilds): `POST /webhooks/github/:endpointId`, `POST /webhooks/twitch`, `POST /webhooks/generic/:endpointId` — raw body, signature verification, idempotency via `ProcessedWebhookEvent`, then enqueue to `integrations.inbound` queue. (`POST /webhooks/stripe` was removed with the Stripe connector, §18a — GitHub's route stays wired but has no provider left to act on deliveries, see §18a.)
   - `routes/oauth-integrations.ts` — `/integrations/:provider/callback`, branching on the OAuth state's `kind`: absent (the original generic per-guild connect flow, unchanged), `twitch_chat` (identifies the broadcaster via Helix, creates the `IntegrationConnection`+`OAuthToken`, upserts `TwitchChatChannel` status PENDING), `twitch_bot` (owner-only — identifies Entrophy's own Twitch account and upserts the singleton `TwitchBotIdentity`, replacing tokens/scopes/expiry on re-auth; returns a small standalone HTML confirmation page instead of a dashboard redirect)
   - `routes/developer-reports.ts` (NOT under `/guilds`, prefix `/owner`, gated on `requireBotOwner`) — ops-console backend for the guild → developer support channel written by the `admin` plugin's `/entrophy report`; intentionally cross-guild data, which is exactly why it is bot-owner-only rather than `requireGuildAccess`: `GET /owner/developer-reports` (cursor-paginated, newest-first, filters `?status=OPEN|HANDLED&kind=BUG|FEEDBACK|QUESTION&guildId=`), `GET /owner/developer-reports/:id`, `PATCH /owner/developer-reports/:id` (`status` and/or `notes`, at least one required — `notes` is internal-only triage text never shown to the reporting guild; flipping to `HANDLED` stamps `handledAt`/`handledBy` from the session, back to `OPEN` clears both)
   - `routes/owner-metrics.ts` (NOT under `/guilds`, prefix `/owner`, gated on `requireBotOwner` like `routes/developer-reports.ts`) — read-only metrics for the local "Entrophy Dev" desktop app: `GET /owner/metrics/overview` (guild presence/growth, member totals + largest guild, developer-report counts, 7d activity), `GET /owner/metrics/guilds` (cursor-paginated, newest-joined first, `?query=&botPresent=`, per-guild plugin/case/ticket/last-activity aggregates), `GET /owner/metrics/errors` (cursor-paginated feed merged from the four models with an error column — `IntegrationConnection.lastError`, `ScheduledJob.lastError`, `WebhookDelivery.error`, `DataRequest.error`, `?source=&guildId=`), `GET /owner/metrics/growth?days=` (daily join/leave counts + running net, zero-filled, clamped 1–365)
@@ -701,15 +700,18 @@ surface instead of just hardening one endpoint.
 - Entrophy handles **no card data, no payment secrets, and no donation webhooks**. Ko-fi handles everything.
 - The `/docs` Swagger UI no longer shows any donation endpoints (no endpoints exist).
 
-### 18a. Stripe integration connector (unchanged)
+### 18a. Stripe integration connector (removed 2026-09-02)
 
-The guild-facing **Stripe integration connector** — a feature other Discord servers use to receive their own Stripe
-payment alerts in Discord — is **not** related to donations and is **unaffected** by the donation→Ko-fi change.
-It uses `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` to receive `checkout.session.completed` and other webhook
-events from a user-authorized Stripe account and repost them to a Discord channel (via the `integrations` plugin).
-Docs: `packages/plugins/src/integrations/README.md`; threat model: `docs/SECURITY.md` §1. Wherever Stripe is
-mentioned, work out which of the two it refers to — the guild-facing connector (still present, still requires the
-env vars) or the owner's donations (now Ko-fi link-out, no env vars needed).
+The guild-facing **Stripe integration connector** — a feature other Discord servers used to receive their own
+Stripe payment alerts in Discord — was never related to donations (it was unaffected by the donation→Ko-fi
+change above). Brandon removed it, along with the GitHub and Notion connectors, on 2026-09-02: their provider
+definitions, dashboard cards, and the `/webhooks/stripe` inbound route are gone; `STRIPE_SECRET_KEY` and
+`STRIPE_WEBHOOK_SECRET` are no longer read anywhere. GitHub's own inbound route (`/webhooks/github/:endpointId`)
+is untouched and still verifies/accepts deliveries — there's just no provider left to act on them, so it safely
+degrades to a no-op (ARCHITECTURE.md's "safely degrade if an optional integration is not configured").
+`GITHUB`/`NOTION`/`STRIPE` remain in the Prisma `IntegrationProvider` enum, unused, purely so historical
+`IntegrationConnection` rows keep reading correctly (schema.prisma) — do not drop them, and do not re-add a
+provider file/registry entry for one without deciding whether its enum value should come back into use.
 
 ## 19. `enforcer` plugin
 

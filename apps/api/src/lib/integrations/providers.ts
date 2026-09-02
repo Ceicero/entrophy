@@ -7,28 +7,35 @@ import {
   type IntegrationProviderKind,
 } from '@entrophy/types/integrations';
 
-export type OAuthProviderId = 'twitch' | 'google' | 'microsoft' | 'notion' | 'reddit';
+// GitHub, Notion and Stripe (the guild-facing connector) were removed as offered providers on 2026-09-02
+// (Brandon's decision) — their Prisma `IntegrationProvider` enum values are retained for historical rows only
+// (schema.prisma), but they are deliberately absent from every id/config list in this file.
+export type OAuthProviderId = 'twitch' | 'google' | 'microsoft' | 'instagram' | 'reddit';
 /** Providers that connect via an inbound webhook endpoint (a secret + URL) rather than OAuth. */
-export type WebhookProviderId = 'github' | 'stripe' | 'generic_webhook';
+export type WebhookProviderId = 'generic_webhook';
 export type IntegrationProviderId = OAuthProviderId | WebhookProviderId;
 
 export const OAUTH_PROVIDER_IDS: readonly OAuthProviderId[] = [
   'twitch',
   'google',
   'microsoft',
-  'notion',
+  'instagram',
   'reddit',
 ];
-export const WEBHOOK_PROVIDER_IDS: readonly WebhookProviderId[] = ['github', 'stripe', 'generic_webhook'];
+export const WEBHOOK_PROVIDER_IDS: readonly WebhookProviderId[] = ['generic_webhook'];
 
 interface EnvKeys {
   clientId:
-    'TWITCH_CLIENT_ID' | 'GOOGLE_CLIENT_ID' | 'MICROSOFT_CLIENT_ID' | 'NOTION_CLIENT_ID' | 'REDDIT_CLIENT_ID';
+    | 'TWITCH_CLIENT_ID'
+    | 'GOOGLE_CLIENT_ID'
+    | 'MICROSOFT_CLIENT_ID'
+    | 'INSTAGRAM_CLIENT_ID'
+    | 'REDDIT_CLIENT_ID';
   clientSecret:
     | 'TWITCH_CLIENT_SECRET'
     | 'GOOGLE_CLIENT_SECRET'
     | 'MICROSOFT_CLIENT_SECRET'
-    | 'NOTION_CLIENT_SECRET'
+    | 'INSTAGRAM_CLIENT_SECRET'
     | 'REDDIT_CLIENT_SECRET';
 }
 
@@ -73,15 +80,16 @@ export const OAUTH_PROVIDERS: Record<OAuthProviderId, OAuthProviderConfig> = {
     envKeys: { clientId: 'MICROSOFT_CLIENT_ID', clientSecret: 'MICROSOFT_CLIENT_SECRET' },
     tokenAuthStyle: 'body',
   },
-  notion: {
-    id: 'notion',
-    label: 'Notion',
-    authorizeUrl: 'https://api.notion.com/v1/oauth/authorize',
-    tokenUrl: 'https://api.notion.com/v1/oauth/token',
-    scope: '',
-    envKeys: { clientId: 'NOTION_CLIENT_ID', clientSecret: 'NOTION_CLIENT_SECRET' },
-    extraAuthorizeParams: { owner: 'user' },
-    tokenAuthStyle: 'basic',
+  instagram: {
+    id: 'instagram',
+    label: 'Instagram',
+    // Instagram API with Instagram Login (the surviving API since the Dec 2024 Basic Display API shutdown) —
+    // own-account-only by design: this authorize screen only ever grants access to the signer's own account.
+    authorizeUrl: 'https://www.instagram.com/oauth/authorize',
+    tokenUrl: 'https://api.instagram.com/oauth/access_token',
+    scope: 'instagram_business_basic',
+    envKeys: { clientId: 'INSTAGRAM_CLIENT_ID', clientSecret: 'INSTAGRAM_CLIENT_SECRET' },
+    tokenAuthStyle: 'body',
   },
   reddit: {
     id: 'reddit',
@@ -100,10 +108,8 @@ export const PROVIDER_ENUM_MAP: Record<IntegrationProviderId, IntegrationProvide
   twitch: 'TWITCH',
   google: 'GOOGLE_CALENDAR',
   microsoft: 'MICROSOFT_CALENDAR',
-  notion: 'NOTION',
+  instagram: 'INSTAGRAM',
   reddit: 'REDDIT',
-  github: 'GITHUB',
-  stripe: 'STRIPE',
   generic_webhook: 'GENERIC_WEBHOOK',
 };
 
@@ -211,12 +217,62 @@ export async function exchangeProviderCode(
     throw new ExternalServiceError(`${cfg.label} token exchange failed (${res.status}).`);
   }
   const json = (await res.json()) as RawTokenResponse;
+
+  if (providerId === 'instagram') {
+    return exchangeInstagramLongLivedToken(json, clientSecret);
+  }
+
   return {
     accessToken: json.access_token,
     refreshToken: json.refresh_token,
     expiresIn: json.expires_in,
     tokenType: json.token_type,
     scopes: normalizeScope(json.scope),
+  };
+}
+
+/** Instagram's token endpoint returns `permissions` where every other provider here returns `scope`. */
+interface RawInstagramCodeExchange extends RawTokenResponse {
+  permissions?: string[] | string;
+}
+
+/**
+ * Second leg of Instagram's two-step OAuth. Its authorization-code grant returns a **short-lived token good for
+ * one hour**, with no `refresh_token` and no `expires_in` at all — which, left as-is, breaks the integration in
+ * two compounding ways: the stored `OAuthToken.expiresAt` is `null`, so `jobs/token-refresh.ts` (which selects
+ * on `expiresAt: { not: null, lt: ... }`) never considers the row again; and `refresh_access_token`
+ * (`ig_refresh_token`, see `refreshInstagramToken` in the plugins package) only accepts *long-lived* tokens, so
+ * even a manual refresh would fail. The connection would poll happily for an hour and then error forever.
+ *
+ * So the short-lived token is immediately traded for the ~60-day long-lived one, which IS refreshable, before
+ * anything is persisted. Done here rather than in the OAuth callback so `routes/oauth-integrations.ts` stays
+ * provider-agnostic and there is exactly one place a token reaches the caller.
+ *
+ * A failure here is fatal on purpose: storing the one-hour token would look like a successful connect and then
+ * silently rot, which is worse than telling the user the connection failed while they are still on the page.
+ */
+async function exchangeInstagramLongLivedToken(
+  shortLived: RawInstagramCodeExchange,
+  clientSecret: string,
+): Promise<ExchangedProviderToken> {
+  const params = new URLSearchParams({
+    grant_type: 'ig_exchange_token',
+    client_secret: clientSecret,
+    access_token: shortLived.access_token,
+  });
+  const res = await fetch(`https://graph.instagram.com/access_token?${params.toString()}`);
+  if (!res.ok) {
+    throw new ExternalServiceError(`Instagram long-lived token exchange failed (${res.status}).`);
+  }
+  const json = (await res.json()) as RawTokenResponse;
+  return {
+    accessToken: json.access_token,
+    // Deliberately none: Instagram issues no refresh token, the long-lived access token re-issues itself.
+    refreshToken: undefined,
+    expiresIn: json.expires_in,
+    tokenType: json.token_type,
+    // The granted permissions come back on the *first* leg, not this one.
+    scopes: normalizeScope(shortLived.permissions ?? shortLived.scope),
   };
 }
 
@@ -256,10 +312,10 @@ export async function identifyTwitchUser(accessToken: string): Promise<TwitchHel
 
 // ---------------------------------------------------------------------------
 // Setup-page provider availability (ARCHITECTURE.md's integrations connector spec: "GET /guilds/:id/integrations
-// returns availability per provider"). This uses the canonical 10-provider-id set from `@entrophy/types/integrations`
+// returns availability per provider"). This uses the canonical provider-id set from `@entrophy/types/integrations`
 // (matching what `/integration connect`/`alerts add` accept and the `IntegrationProvider` Prisma enum, lowercased)
-// rather than this file's own 8-id `IntegrationProviderId` (which only covers the oauth/webhook connect flow above
-// and predates youtube/steam being addressable at all — they connect only via `POST .../integrations/alerts`).
+// rather than this file's own `IntegrationProviderId` (which only covers the oauth/webhook connect flow above and
+// predates youtube/steam being addressable at all — they connect only via `POST .../integrations/alerts`).
 // -----------------------------------------------------------------------------
 
 interface ProviderMeta {
@@ -277,7 +333,12 @@ const PROVIDER_META: Record<CanonicalProviderId, ProviderMeta> = {
     requiredEnv: ['TWITCH_CLIENT_ID', 'TWITCH_CLIENT_SECRET'],
   },
   youtube: { id: 'youtube', name: 'YouTube', kind: 'apikey', requiredEnv: ['YOUTUBE_API_KEY'] },
-  github: { id: 'github', name: 'GitHub', kind: 'webhook', requiredEnv: [] },
+  instagram: {
+    id: 'instagram',
+    name: 'Instagram',
+    kind: 'oauth',
+    requiredEnv: ['INSTAGRAM_CLIENT_ID', 'INSTAGRAM_CLIENT_SECRET'],
+  },
   reddit: {
     id: 'reddit',
     name: 'Reddit',
@@ -297,18 +358,6 @@ const PROVIDER_META: Record<CanonicalProviderId, ProviderMeta> = {
     kind: 'oauth',
     requiredEnv: ['MICROSOFT_CLIENT_ID', 'MICROSOFT_CLIENT_SECRET'],
   },
-  notion: {
-    id: 'notion',
-    name: 'Notion',
-    kind: 'oauth',
-    requiredEnv: ['NOTION_CLIENT_ID', 'NOTION_CLIENT_SECRET'],
-  },
-  stripe: {
-    id: 'stripe',
-    name: 'Stripe',
-    kind: 'webhook',
-    requiredEnv: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'],
-  },
   generic_webhook: { id: 'generic_webhook', name: 'Generic webhook', kind: 'webhook', requiredEnv: [] },
 };
 
@@ -316,18 +365,16 @@ const ALERT_CAPABLE: ReadonlySet<CanonicalProviderId> = new Set(['twitch', 'yout
 export type AlertProviderId = 'twitch' | 'youtube' | 'reddit' | 'steam';
 export const ALERT_PROVIDER_IDS: readonly AlertProviderId[] = ['twitch', 'youtube', 'reddit', 'steam'];
 
-/** Canonical-id (`@entrophy/types/integrations`) -> Prisma `IntegrationProvider` enum, covering all 10 providers
- * (unlike `PROVIDER_ENUM_MAP` above, which only covers the 8 ids the oauth/webhook connect flow uses). */
+/** Canonical-id (`@entrophy/types/integrations`) -> Prisma `IntegrationProvider` enum, covering every provider
+ * (unlike `PROVIDER_ENUM_MAP` above, which only covers the ids the oauth/webhook connect flow uses). */
 export const CANONICAL_PROVIDER_ENUM_MAP: Record<CanonicalProviderId, IntegrationProvider> = {
   twitch: 'TWITCH',
   youtube: 'YOUTUBE',
-  github: 'GITHUB',
+  instagram: 'INSTAGRAM',
   reddit: 'REDDIT',
   steam: 'STEAM',
   google_calendar: 'GOOGLE_CALENDAR',
   microsoft_calendar: 'MICROSOFT_CALENDAR',
-  notion: 'NOTION',
-  stripe: 'STRIPE',
   generic_webhook: 'GENERIC_WEBHOOK',
 };
 

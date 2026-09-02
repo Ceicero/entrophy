@@ -4,14 +4,12 @@ import {
   type IntegrationProviderId,
   type IntegrationProviderInfoDto,
 } from '@entrophy/types/integrations';
-import { githubProvider } from './github';
 import { genericWebhookProvider } from './generic-webhook';
 import { googleCalendarProvider } from './google-calendar';
+import { instagramProvider } from './instagram';
 import { microsoftCalendarProvider } from './microsoft-calendar';
-import { notionProvider } from './notion';
 import { redditProvider } from './reddit';
 import { steamProvider } from './steam';
-import { stripeProvider } from './stripe';
 import { twitchProvider } from './twitch';
 import { youtubeProvider } from './youtube';
 import { isProviderEnvSatisfied, type IntegrationProviderDef } from './types';
@@ -19,13 +17,11 @@ import { isProviderEnvSatisfied, type IntegrationProviderDef } from './types';
 const REGISTRY: Record<IntegrationProviderId, IntegrationProviderDef> = {
   twitch: twitchProvider,
   youtube: youtubeProvider,
-  github: githubProvider,
+  instagram: instagramProvider,
   reddit: redditProvider,
   steam: steamProvider,
   google_calendar: googleCalendarProvider,
   microsoft_calendar: microsoftCalendarProvider,
-  notion: notionProvider,
-  stripe: stripeProvider,
   generic_webhook: genericWebhookProvider,
 };
 
@@ -33,28 +29,26 @@ const REGISTRY: Record<IntegrationProviderId, IntegrationProviderDef> = {
 export const PROVIDER_ENUM_MAP: Record<IntegrationProviderId, PrismaIntegrationProvider> = {
   twitch: 'TWITCH',
   youtube: 'YOUTUBE',
-  github: 'GITHUB',
+  instagram: 'INSTAGRAM',
   reddit: 'REDDIT',
   steam: 'STEAM',
   google_calendar: 'GOOGLE_CALENDAR',
   microsoft_calendar: 'MICROSOFT_CALENDAR',
-  notion: 'NOTION',
-  stripe: 'STRIPE',
   generic_webhook: 'GENERIC_WEBHOOK',
 };
 
-// OPENAI/ANTHROPIC are the `ai` plugin's own connector kinds (SPEC.md §K) — the `IntegrationProvider` Prisma
-// enum is shared, but this plugin never creates or reads connections of those two values, hence `Partial`.
+// OPENAI/ANTHROPIC are the `ai` plugin's own connector kinds (SPEC.md §K); GITHUB/NOTION/STRIPE are retained
+// Prisma enum values for historical rows only, no longer offered as connectable providers (schema.prisma) — the
+// `IntegrationProvider` Prisma enum is shared, but this plugin never creates or reads connections of any of
+// those five values, hence `Partial`.
 const ENUM_TO_PROVIDER_ID: Partial<Record<PrismaIntegrationProvider, IntegrationProviderId>> = {
   TWITCH: 'twitch',
   YOUTUBE: 'youtube',
-  GITHUB: 'github',
+  INSTAGRAM: 'instagram',
   REDDIT: 'reddit',
   STEAM: 'steam',
   GOOGLE_CALENDAR: 'google_calendar',
   MICROSOFT_CALENDAR: 'microsoft_calendar',
-  NOTION: 'notion',
-  STRIPE: 'stripe',
   GENERIC_WEBHOOK: 'generic_webhook',
 };
 

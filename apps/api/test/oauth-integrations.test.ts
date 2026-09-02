@@ -295,3 +295,95 @@ describe('exchangeProviderCode — scope normalization', () => {
     expect(token.scopes).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------
+// Instagram's two-leg OAuth. Its authorization-code grant hands back a token good for ONE HOUR, with no
+// `refresh_token` and no `expires_in`. Persisting that as-is looks like a successful connect and then rots:
+// `expiresAt` lands as null, so `jobs/token-refresh.ts` (selecting on `expiresAt: { not: null, ... }`) never
+// revisits the row, and `ig_refresh_token` only accepts long-lived tokens anyway. These pin the second leg.
+// ---------------------------------------------------------------------------------------------------------
+
+describe('exchangeProviderCode — Instagram long-lived token exchange', () => {
+  const ORIGINAL_ID = env.INSTAGRAM_CLIENT_ID;
+  const ORIGINAL_SECRET = env.INSTAGRAM_CLIENT_SECRET;
+
+  afterEach(() => {
+    env.INSTAGRAM_CLIENT_ID = ORIGINAL_ID;
+    env.INSTAGRAM_CLIENT_SECRET = ORIGINAL_SECRET;
+    vi.unstubAllGlobals();
+  });
+
+  /** Leg 1 = api.instagram.com/oauth/access_token (short-lived), leg 2 = graph.instagram.com/access_token. */
+  function stubBothLegs(secondLeg: unknown) {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.includes('graph.instagram.com/access_token')) {
+        return new Response(JSON.stringify(secondLeg), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(
+        // Instagram's real short-lived shape: `permissions`, not `scope`, and no expiry or refresh token.
+        JSON.stringify({ access_token: 'IG-SHORT-LIVED', user_id: 178414, permissions: ['instagram_business_basic'] }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  function configure() {
+    env.INSTAGRAM_CLIENT_ID = 'test-instagram-client-id';
+    env.INSTAGRAM_CLIENT_SECRET = 'test-instagram-client-secret';
+  }
+
+  it('trades the one-hour token for the ~60-day one and returns that, never the short-lived token', async () => {
+    configure();
+    const fetchMock = stubBothLegs({
+      access_token: 'IG-LONG-LIVED',
+      token_type: 'bearer',
+      expires_in: 5183944, // ~60 days
+    });
+
+    const token = await exchangeProviderCode(
+      'instagram',
+      'code-ig',
+      'https://api.example.com/integrations/instagram/callback',
+    );
+
+    expect(token.accessToken).toBe('IG-LONG-LIVED');
+    expect(token.accessToken).not.toBe('IG-SHORT-LIVED');
+    // The whole point: a real expiry, so `jobs/token-refresh.ts` will actually revisit this row.
+    expect(token.expiresIn).toBe(5183944);
+    // Instagram issues no refresh token — the long-lived access token re-issues itself.
+    expect(token.refreshToken).toBeUndefined();
+    // `permissions` from leg 1 survives, since leg 2 doesn't echo it back.
+    expect(token.scopes).toEqual(['instagram_business_basic']);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const secondLegUrl = String(fetchMock.mock.calls[1]![0]);
+    expect(secondLegUrl).toContain('grant_type=ig_exchange_token');
+    expect(secondLegUrl).toContain('access_token=IG-SHORT-LIVED');
+  });
+
+  it('fails the connect outright when the long-lived exchange fails, rather than storing the 1-hour token', async () => {
+    configure();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string | URL | Request) => {
+        if (String(input).includes('graph.instagram.com/access_token')) {
+          return new Response('{"error":{"message":"bad"}}', { status: 400 });
+        }
+        return new Response(JSON.stringify({ access_token: 'IG-SHORT-LIVED', permissions: [] }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }),
+    );
+
+    await expect(
+      exchangeProviderCode('instagram', 'code-ig', 'https://api.example.com/integrations/instagram/callback'),
+    ).rejects.toThrow(/Instagram long-lived token exchange failed/);
+  });
+});

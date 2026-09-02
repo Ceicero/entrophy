@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatTwitchStreamEmbed } from '../formatters/twitch';
 import { formatYoutubeUploadEmbed } from '../formatters/youtube';
-import { formatGithubEventEmbed } from '../formatters/github';
 import { formatRedditPostEmbed, isRedditPostNsfw } from '../formatters/reddit';
 import { formatSteamNewsEmbed } from '../formatters/steam';
 
@@ -42,42 +41,6 @@ describe('formatYoutubeUploadEmbed', () => {
     expect(embed.url).toBe('https://www.youtube.com/watch?v=abc123');
     expect(embed.title).toBe('New video');
     expect(embed.description).toContain('MyChannel');
-  });
-});
-
-describe('formatGithubEventEmbed', () => {
-  it('formats a push event with commits', () => {
-    const embed = formatGithubEventEmbed('push', {
-      ref: 'refs/heads/main',
-      repository: { full_name: 'acme/repo', html_url: 'https://github.com/acme/repo' },
-      compare: 'https://github.com/acme/repo/compare/a...b',
-      commits: [{ id: 'abcdef1234567', message: 'fix bug\nmore detail', url: '#', author: { name: 'dev' } }],
-    });
-    expect(embed).not.toBeNull();
-    expect(embed?.title).toContain('main');
-    expect(embed?.description).toContain('fix bug');
-  });
-
-  it('returns null for a push event with no commits', () => {
-    expect(formatGithubEventEmbed('push', { ref: 'refs/heads/main', commits: [] })).toBeNull();
-  });
-
-  it('formats a merged pull_request', () => {
-    const embed = formatGithubEventEmbed('pull_request', {
-      action: 'closed',
-      repository: { full_name: 'acme/repo' },
-      pull_request: { number: 42, title: 'Add feature', html_url: '#', user: { login: 'dev' }, merged: true },
-    });
-    expect(embed?.title).toContain('merged');
-    expect(embed?.title).toContain('#42');
-  });
-
-  it('returns null for an unsupported event type', () => {
-    expect(formatGithubEventEmbed('deployment', {})).toBeNull();
-  });
-
-  it('returns null for a non-published release action', () => {
-    expect(formatGithubEventEmbed('release', { action: 'edited', release: { tag_name: 'v1' } })).toBeNull();
   });
 });
 

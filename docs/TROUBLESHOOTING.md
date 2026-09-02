@@ -10,7 +10,7 @@ error text and which of `bot` / `api` / `dashboard` / `web` printed it.
 - ["Missing Permissions" errors / commands fail on specific users](#missing-permissions-errors--commands-fail-on-specific-users)
 - [Dashboard login loop (keeps sending you back to the login page)](#dashboard-login-loop-keeps-sending-you-back-to-the-login-page)
 - [403 Forbidden when opening a server in the dashboard](#403-forbidden-when-opening-a-server-in-the-dashboard)
-- [Webhooks (Stripe / GitHub / Twitch) aren't arriving](#webhooks-stripe--github--twitch-arent-arriving)
+- [Webhooks (GitHub / Twitch) aren't arriving](#webhooks-github--twitch-arent-arriving)
 - [Prisma migration errors](#prisma-migration-errors)
 - [Redis connection errors](#redis-connection-errors)
 - [Windows-specific notes](#windows-specific-notes)
@@ -157,27 +157,26 @@ Discord _commands_, not dashboard access.
 
 ---
 
-## Webhooks (Stripe / GitHub / Twitch) aren't arriving
+## Webhooks (GitHub / Twitch) aren't arriving
+
+The guild-facing Stripe integration connector (and its `/webhooks/stripe` endpoint) was removed
+2026-09-02 — see `docs/ARCHITECTURE.md` §18a. This section now covers the two remaining inbound
+webhook sources.
 
 1. **The API must be reachable from the public internet** at the URL you configured with the
-   provider — `localhost` is never reachable from Stripe/GitHub/Twitch's servers. For local testing,
-   use the provider's own CLI/tunnel tool (e.g. `stripe listen --forward-to
-localhost:3001/webhooks/stripe`) instead of trying to receive real webhooks locally. In
-   production, this is `https://api.yourdomain.com/webhooks/...` (`PUBLIC_WEBHOOK_BASE_URL` /
-   `API_BASE_URL`).
+   provider — `localhost` is never reachable from GitHub/Twitch's servers. In production, this is
+   `https://api.yourdomain.com/webhooks/...` (`PUBLIC_WEBHOOK_BASE_URL` / `API_BASE_URL`).
 2. **Signing secrets must match.** Each provider signs its webhook payloads, and Entrophy verifies
    the signature before doing anything with the request — a wrong or missing secret means every
    delivery is silently rejected as unverified (check the api process's logs; it logs a rejection,
    never the payload itself). Re-copy the secret from the provider's webhook settings into the
-   matching `.env` variable (`STRIPE_WEBHOOK_SECRET`, `GITHUB_WEBHOOK_SECRET`,
-   `TWITCH_EVENTSUB_SECRET`) exactly — regenerating the endpoint on the provider's side usually
-   issues a new secret.
-3. **Check the provider's own delivery log** (Stripe Dashboard → Developers → Webhooks → your
-   endpoint → recent deliveries; GitHub → repo Settings → Webhooks → Recent Deliveries) — it shows
-   the HTTP status Entrophy's API returned, which narrows this down fast: a `401`/`400` is almost
-   always the signature/secret problem above; a connection failure/timeout means the URL isn't
-   reachable at all (step 1); a `5xx` means the API errored after verifying the signature — check
-   the api logs for that request.
+   matching `.env` variable (`GITHUB_WEBHOOK_SECRET`, `TWITCH_EVENTSUB_SECRET`) exactly —
+   regenerating the endpoint on the provider's side usually issues a new secret.
+3. **Check the provider's own delivery log** (GitHub → repo Settings → Webhooks → Recent
+   Deliveries) — it shows the HTTP status Entrophy's API returned, which narrows this down fast: a
+   `401`/`400` is almost always the signature/secret problem above; a connection failure/timeout
+   means the URL isn't reachable at all (step 1); a `5xx` means the API errored after verifying the
+   signature — check the api logs for that request.
 
 ---
 

@@ -29,7 +29,7 @@ const ALERT_PROVIDER_CHOICES = ALERT_PROVIDER_IDS.map((id) => ({ name: id, value
 
 const data = new SlashCommandBuilder()
   .setName('integration')
-  .setDescription('Connect external services: stream alerts, GitHub, webhooks, and more.')
+  .setDescription('Connect external services: stream alerts, Instagram, webhooks, and more.')
   .setDMPermission(false)
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
   .addSubcommand((sub) =>

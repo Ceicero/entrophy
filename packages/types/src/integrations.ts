@@ -3,17 +3,18 @@
 // added without touching the shared index.ts barrel (owned by the wiring stage).
 import type { IntegrationConnectionDto, WebhookEndpointDto } from './api';
 
-/** Every connector the `integrations` plugin knows about, matching (lowercased) `IntegrationProvider` Prisma enum values. */
+/** Every connector the `integrations` plugin knows about, matching (lowercased) `IntegrationProvider` Prisma enum
+ * values. GitHub, Notion and Stripe (the guild-facing connector) were removed as offered providers on
+ * 2026-09-02 — their Prisma enum values are retained for historical rows only (see schema.prisma), but they are
+ * deliberately absent here, so no code can newly connect one. */
 export const INTEGRATION_PROVIDER_IDS = [
   'twitch',
   'youtube',
-  'github',
+  'instagram',
   'reddit',
   'steam',
   'google_calendar',
   'microsoft_calendar',
-  'notion',
-  'stripe',
   'generic_webhook',
 ] as const;
 

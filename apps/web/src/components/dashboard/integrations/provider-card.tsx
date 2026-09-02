@@ -14,7 +14,7 @@ export interface ProviderCardProps {
   onAddWatch?: () => void;
   /** Every (non-chat-kind) connection for this provider, in the order `useConnections` returned them
    * (`createdAt: desc`) — unlimited, not just the first one. A guild can have any number of connections per
-   * provider (several Twitch broadcasters, several Notion workspaces, ...), so this is always an array, never
+   * provider (several Twitch broadcasters, several Reddit subreddits, ...), so this is always an array, never
    * a single optional connection. */
   connections?: IntegrationConnectionDetailDto[];
   /** Per-connection "live now" status (Twitch only today — see `apps/api/src/lib/integrations/live-status.ts`).

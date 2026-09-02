@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { encryptSecret, env } from '@entrophy/core';
+import { encryptSecret } from '@entrophy/core';
 import { buildTestApp } from './helpers/build-test-app';
 
 const GITHUB_SECRET = 'github-endpoint-secret';
@@ -8,12 +8,6 @@ const GENERIC_SECRET = 'generic-endpoint-secret';
 
 function githubSignature(secret: string, body: string): string {
   return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
-}
-
-function stripeSignature(secret: string, body: string, timestamp: number): string {
-  const signedPayload = `${timestamp}.${body}`;
-  const v1 = createHmac('sha256', secret).update(signedPayload).digest('hex');
-  return `t=${timestamp},v1=${v1}`;
 }
 
 function genericSignature(secret: string, body: string): string {
@@ -84,41 +78,19 @@ describe('webhook signature verification', () => {
     await app.close();
   });
 
-  it('accepts a validly-signed Stripe event and enqueues it', async () => {
-    const { app, queues } = await buildTestApp();
-    const body = JSON.stringify({ id: 'evt_123', type: 'checkout.session.completed' });
-    const now = Math.floor(Date.now() / 1000);
-
-    const res = await app.inject({
-      method: 'POST',
-      url: '/webhooks/stripe',
-      headers: {
-        'content-type': 'application/json',
-        'stripe-signature': stripeSignature(env.STRIPE_WEBHOOK_SECRET!, body, now),
-      },
-      payload: body,
-    });
-
-    expect(res.statusCode).toBe(202);
-    expect(queues.calls).toHaveLength(1);
-    expect(queues.calls[0]).toMatchObject({ queue: 'integrations.inbound', name: 'stripe' });
-
-    await app.close();
-  });
-
-  it('rejects a Stripe event with an invalid signature', async () => {
-    const { app, queues } = await buildTestApp();
-    const body = JSON.stringify({ id: 'evt_456', type: 'checkout.session.completed' });
-
+  it('returns 404 for the removed Stripe webhook endpoint', async () => {
+    // The guild-facing Stripe integration connector was removed 2026-09-02 (Brandon's decision) along with its
+    // dedicated `/webhooks/stripe` route — this pins that it's genuinely gone (a 404, not a 401/500) rather than
+    // silently regressing back into existence on some future refactor.
+    const { app } = await buildTestApp();
     const res = await app.inject({
       method: 'POST',
       url: '/webhooks/stripe',
       headers: { 'content-type': 'application/json', 'stripe-signature': 't=1,v1=deadbeef' },
-      payload: body,
+      payload: JSON.stringify({ id: 'evt_1', type: 'checkout.session.completed' }),
     });
 
-    expect(res.statusCode).toBe(401);
-    expect(queues.calls).toHaveLength(0);
+    expect(res.statusCode).toBe(404);
 
     await app.close();
   });

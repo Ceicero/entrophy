@@ -4,7 +4,7 @@
     "unknownProvider": "Unknown provider \"{provider}\".",
     "needsTarget": "Give both `target` and `channel` to connect **{provider}** here, or run `/integration alerts add` afterwards to add watch targets.",
     "created": "Connected **{provider}** — watching `{target}`, alerting in <#{channelId}>.",
-    "webhookGuidance": "**{provider}** connects via a webhook. Use `/integration webhook create` (GitHub / generic) — Stripe just needs `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` set and role rewards configured from the dashboard.",
+    "webhookGuidance": "**{provider}** connects via a webhook. Use `/integration webhook create` to set up an inbound endpoint and get its URL/secret.",
     "unavailable": "**{provider}** isn't fully configured on this server yet: missing {missingEnv}. The connection was still created and will start working once that's set."
   },
   "disconnect": {

@@ -4583,7 +4583,7 @@
     {
       "id": "integrations",
       "name": "Integrations",
-      "description": "Secure connector framework for optional external services: Twitch, YouTube, GitHub, Reddit, Steam, Google/Microsoft Calendar, Notion, Stripe, and generic webhooks.",
+      "description": "Secure connector framework for optional external services: Twitch, YouTube, Instagram, Reddit, Steam, Google/Microsoft Calendar, and generic webhooks.",
       "category": "integrations",
       "defaultEnabled": false,
       "privilegedIntents": [],
@@ -4592,7 +4592,7 @@
           "name": "integration",
           "fullName": "/integration",
           "type": "slash",
-          "description": "Connect external services: stream alerts, GitHub, webhooks, and more.",
+          "description": "Connect external services: stream alerts, Instagram, webhooks, and more.",
           "staffLevel": "admin",
           "discordPermissions": [
             "ManageGuild"

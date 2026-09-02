@@ -181,14 +181,13 @@ _No Discord permissions declared — every command replies over the interaction 
 
 ### Integrations (`integrations`)
 
-_Secure connector framework for optional external services: Twitch, YouTube, GitHub, Reddit, Steam, Google/Microsoft Calendar, Notion, Stripe, and generic webhooks._ (disabled by default, integrations)
+_Secure connector framework for optional external services: Twitch, YouTube, Instagram, Reddit, Steam, Google/Microsoft Calendar, and generic webhooks._ (disabled by default, integrations)
 
 | Permission | Feature | Required? | Fallback if missing |
 |---|---|---|---|
 | View Channel | posting alerts / inbound webhook events | Required | Alerts silently fail to post in that channel; connection health shows an error. |
 | Send Messages | posting alerts / inbound webhook events | Required | Alerts silently fail to post in that channel; connection health shows an error. |
-| Embed Links | alert embeds (Twitch/YouTube/GitHub/Reddit/Steam/Calendar/Notion) | Optional | Alerts post as plain text instead of a rich embed. |
-| Manage Roles | role mention on alert / Stripe role rewards | Optional | The configured role is skipped (not mentioned, or not granted/revoked). |
+| Embed Links | alert embeds (Twitch/YouTube/Instagram/Reddit/Steam/Calendar) | Optional | Alerts post as plain text instead of a rich embed. |
 
 
 ### AI Assistant (`ai`)

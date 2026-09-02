@@ -150,15 +150,15 @@ export const pluginCopy: Record<PluginId, PluginCopy> = {
     ],
   },
   integrations: {
-    headline: 'Stream-live pings, GitHub activity, and webhook alerts, connected on your terms.',
+    headline: 'Stream-live pings, your own Instagram posts, and webhook alerts, connected on your terms.',
     whyGaming: [
       'A Twitch or YouTube "going live" alert turns a scrim VOD or a member\'s stream into an automatic, on-brand server announcement.',
-      "GitHub webhooks let a community's dev or modding team pipe commits and releases straight into a dedicated channel.",
+      "Connect the server's own Instagram account and new posts show up in a channel automatically — no one has to remember to cross-post.",
       'Generic inbound/outbound webhooks connect a tournament bracket tool, a Google Form, or an internal ops system without custom code.',
       'Every OAuth token is encrypted at rest and scoped to the minimum the feature needs — connect and disconnect anytime from the dashboard.',
       'Disabled by default; each connector only activates once a server explicitly connects it.',
     ],
-    highlights: ['Disabled by default', 'Encrypted tokens', 'Twitch/YouTube/GitHub', 'Generic webhooks'],
+    highlights: ['Disabled by default', 'Encrypted tokens', 'Twitch/YouTube/Instagram', 'Generic webhooks'],
   },
   ai: {
     headline: 'An optional AI helper for summaries and drafting — never a moderator.',

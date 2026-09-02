@@ -144,6 +144,10 @@ enum TagTriggerMode {
   STARTS_WITH
 }
 
+// GITHUB, NOTION and STRIPE (the guild-facing connector, not donations) were removed as offered/connectable
+// providers on 2026-09-02 (Brandon's decision) — kept here, unused, only so historical `IntegrationConnection`
+// rows with these values keep reading correctly. Never re-add a provider file/registry entry for them without
+// also deciding whether these enum values should come back into use. See docs/ARCHITECTURE.md §18a.
 enum IntegrationProvider {
   TWITCH
   YOUTUBE
@@ -157,6 +161,7 @@ enum IntegrationProvider {
   OPENAI
   ANTHROPIC
   GENERIC_WEBHOOK
+  INSTAGRAM
 }
 
 enum ConnectionStatus {
