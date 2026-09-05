@@ -134,7 +134,7 @@ const data = new SlashCommandBuilder()
   .addSubcommandGroup((group) =>
     group
       .setName('webhook')
-      .setDescription('Manage inbound webhook endpoints (GitHub, generic).')
+      .setDescription('Manage inbound webhook endpoints.')
       .addSubcommand((sub) =>
         sub
           .setName('create')
@@ -145,7 +145,11 @@ const data = new SlashCommandBuilder()
               .setName('provider')
               .setDescription('Provider')
               .setRequired(false)
-              .addChoices({ name: 'generic', value: 'generic' }, { name: 'github', value: 'github' }),
+              // `github` was dropped as a connectable provider (2026-09-02): its receiver at
+              // `/webhooks/github/:endpointId` is retained for endpoints created before the removal, but
+              // `getProvider('github')` no longer resolves, so new endpoints would silently drop every
+              // delivery. Offering it here would hand users a dead URL.
+              .addChoices({ name: 'generic', value: 'generic' }),
           )
           .addChannelOption((opt) =>
             opt
@@ -484,7 +488,9 @@ async function handleWebhookCreate(c: Parameters<PluginCommand['execute']>[0]): 
   });
 
   const base = c.ctx.env.PUBLIC_WEBHOOK_BASE_URL ?? c.ctx.env.API_BASE_URL ?? '';
-  const path = provider === 'github' ? `/webhooks/github/${endpoint.id}` : `/webhooks/generic/${endpoint.id}`;
+  // `generic` is the only provider this subcommand can create (see the `provider` option above), so the
+  // endpoint always lives under the generic receiver.
+  const path = `/webhooks/generic/${endpoint.id}`;
   await c.interaction.reply({
     embeds: [brandEmbed().setDescription(c.t('webhook.created', { url: `${base}${path}`, secret }))],
     ephemeral: true,

@@ -120,8 +120,8 @@ Not started; real ideas for after v1, not commitments with a date attached:
   licensed streaming API, not scraping) that fills in `createStream()` so `/music play` produces real
   audio in a voice channel, once a specific compliant provider is chosen and its licensing terms
   reviewed.
-- **More integrations** — additional providers beyond the current Twitch/YouTube/GitHub/Stripe/
-  Reddit/Steam/Google/Microsoft/Notion set, as real demand shows up for specific ones.
+- **More integrations** — additional providers beyond the current Twitch/YouTube/Instagram/
+  Reddit/Steam/Google/Microsoft set, as real demand shows up for specific ones.
 - **Per-guild custom commands** — letting server admins define their own simple slash or text
   commands (canned responses, small automations) without needing a new plugin shipped for every
   request.
