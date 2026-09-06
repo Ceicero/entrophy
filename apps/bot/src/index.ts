@@ -73,13 +73,22 @@ async function main(): Promise<void> {
   client.once('ready', (readyClient) => {
     logger.info({ guilds: readyClient.guilds.cache.size, tag: readyClient.user.tag }, 'bot ready');
 
-    // Warn if message content intent is disabled and prefix commands are unavailable
-    if (!intentsEnabled.messageContent) {
-      logger.warn(
-        'ENABLE_MESSAGE_CONTENT_INTENT is false; prefix commands (+help, +mod ban, etc.) are disabled. ' +
-          'Set ENABLE_MESSAGE_CONTENT_INTENT=true to enable them.',
-      );
-    }
+    // Always report the prefix layer's resolved state, working or not. A `+` command that silently does
+    // nothing is indistinguishable from a bot that never saw the message, so this one line is what turns
+    // "it isn't working" into an answerable question: it says whether the listener is attached, what prefix
+    // it is listening for, and whether the gateway actually negotiated the MessageContent intent.
+    logger.info(
+      {
+        prefix: env.COMMAND_PREFIX,
+        messageContentEnvFlag: intentsEnabled.messageContent,
+        messageContentIntentRequested: intents.includes(GatewayIntentBits.MessageContent),
+        guildMessagesIntentRequested: intents.includes(GatewayIntentBits.GuildMessages),
+        listenerAttached: intentsEnabled.messageContent,
+      },
+      intentsEnabled.messageContent
+        ? 'prefix commands enabled'
+        : 'prefix commands DISABLED (ENABLE_MESSAGE_CONTENT_INTENT is false)',
+    );
 
     // Optional self-registration of slash commands at boot (REGISTER_COMMANDS_ON_BOOT=global|guild), so hosted
     // deployments never need a local `commands:register` run. Failures are logged, never fatal.
