@@ -12,9 +12,14 @@ process.env.NODE_ENV = 'production';
 
 let buildTestApp: typeof import('./helpers/build-test-app').buildTestApp;
 
+// Per-hook override of the 60s `hookTimeout` in `vitest.config.ts`. This is a *cold* dynamic import of the
+// whole app graph (`src/app` + every route + swagger), so unlike the static imports in sibling files it pays
+// the full transform cost inside the hook — and it does so while the other 30-odd test files are transforming
+// in parallel, which pushed it past 60s on a loaded machine (the file passes in ~14s when run alone). Widened
+// here rather than globally so a genuine hang in any other hook still fails at 60s.
 beforeAll(async () => {
   ({ buildTestApp } = await import('./helpers/build-test-app'));
-});
+}, 180_000);
 
 // Publicly documenting the exact request/response shape of every endpoint (including public, unauthenticated
 // ones like `/donations/checkout`) is a gift to anyone probing for abuse — `app.ts` never registers

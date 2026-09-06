@@ -227,7 +227,7 @@ export default async function oauthIntegrationsRoutes(app: ZodFastifyInstance): 
       // can show a real handle instead of "Account <id>" (multi-account-integrations spec, section B), and so
       // `GET .../integrations/live` has a login to resolve at all — a generic Twitch connection is never
       // watched via the alerts flow (that's what carries `config.target`), so `externalAccountName` is the
-      // only source it has. Google/Microsoft/Reddit/Notion have no identify call on their current scopes;
+      // only source it has. Google/Microsoft/Reddit have no identify call on their current scopes;
       // requesting one would mean broader scopes and storing an email address, which is a scope +
       // data-minimization decision out of scope for this fix — they keep the `Account <id>` fallback in the UI.
       let externalAccountId: string | null = null;

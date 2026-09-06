@@ -100,8 +100,6 @@ WEB_URL=https://entrophybot.com
 COOKIE_DOMAIN=.entrophybot.com
 TRUST_PROXY=1
 PUBLIC_WEBHOOK_BASE_URL=https://api.entrophybot.com
-STRIPE_SECRET_KEY=<optional — guild-facing Stripe integration connector only, NOT donations>
-STRIPE_WEBHOOK_SECRET=<optional — see Stripe integration connector>
 KOFI_URL=<optional — full Ko-fi page URL, e.g. https://ko-fi.com/yourname>
 CAPTCHA_PROVIDER=turnstile
 TURNSTILE_SITE_KEY=<from your Cloudflare Turnstile widget>
@@ -153,7 +151,7 @@ ENABLE_GUILD_MEMBERS_INTENT=true
 ENABLE_MESSAGE_CONTENT_INTENT=false
 ```
 
-Add any optional integration keys (Twitch, YouTube, Stripe, AI providers, etc. — full table in
+Add any optional integration keys (Twitch, YouTube, Reddit, AI providers, etc. — full table in
 §6 below) to `api` (and `bot` where noted) only as you turn those features on. Everything not set
 simply stays disabled — nothing breaks.
 
@@ -281,7 +279,7 @@ file. This repo ships `render.yaml` at the root — Render reads it automaticall
    traffic to serve publicly), `entrophy-postgres` (managed Postgres), `entrophy-redis` (Render Key
    Value, Render's managed Redis-compatible store).
 3. Render prompts you for every variable marked `sync: false` in the blueprint (the secrets — Discord
-   token/client secret, `ENCRYPTION_KEY`, `SESSION_SECRET`, Stripe keys, etc.) — fill them in on that
+   token/client secret, `ENCRYPTION_KEY`, `SESSION_SECRET`, any integration keys, etc.) — fill them in on that
    screen. Variables wired with `fromDatabase`/`fromService` (Postgres/Redis connection strings, and
    cross-service URLs) are filled in automatically and need no action.
 4. Click **Apply**. Render builds and deploys all five resources.
@@ -403,7 +401,6 @@ list with comments; every var there is also documented in `docs/ARCHITECTURE.md`
 | `ENABLE_GUILD_MEMBERS_INTENT`                                                                                                                                                                                                                                | Recommended `true`       | bot                                                | Enabled in Discord Developer Portal → **Bot** → Privileged Gateway Intents → Server Members Intent, then set `true` here to match                                              |
 | `ENABLE_MESSAGE_CONTENT_INTENT`                                                                                                                                                                                                                              | No (default `false`)     | bot                                                | Only after Discord approves the privileged intent for your bot (or while under 100 servers, which doesn't require approval) — enable in the Portal first, then set `true` here |
 | `PUBLIC_WEBHOOK_BASE_URL`                                                                                                                                                                                                                                    | Yes if using webhooks    | api                                                | `https://api.entrophybot.com`                                                                                                                                                  |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`                                                                                                                                                                                                                | No (only for the guild-facing Stripe integration connector) | api                    | Stripe Dashboard → **Developers → API keys**, and **Developers → Webhooks** → add endpoint `https://api.entrophybot.com/webhooks/stripe` → reveal signing secret. **Not used for donations** (those moved to Ko-fi). |
 | `KOFI_URL`                                                                                                                                                                                                                                                      | No (donations are optional)      | api                                                | Full Ko-fi page URL, e.g. `https://ko-fi.com/yourname`. Leave blank to disable the donate page.                                                                              |
 | `CAPTCHA_PROVIDER` (`hcaptcha`/`turnstile`) + that provider's `*_SITE_KEY`/`*_SECRET`                                                                                                                                                                       | No (optional; powers the `roles` plugin's verification mode only) | api                                                | Cloudflare Turnstile or hCaptcha's own dashboard. Donations are now handled by Ko-fi and do not require CAPTCHA here. |
 | Other integration keys (`TWITCH_*`, `YOUTUBE_API_KEY`, `GITHUB_WEBHOOK_SECRET`, `REDDIT_*`, `STEAM_API_KEY`, `GOOGLE_*`, `MICROSOFT_*`, `NOTION_*`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `DEEPL_API_KEY`, `OPENWEATHERMAP_API_KEY`)                       | No                       | api, bot                                           | Each provider's own developer console. Blank = that feature stays disabled; nothing else is affected.                                                                          |
@@ -429,11 +426,7 @@ framing is in `docs/SECURITY.md`; this is the mechanical "how."
   `ENCRYPTION_KEY_PREVIOUS` two-step and the re-encryption script (`pnpm --filter @entrophy/database
 reencrypt:secrets`), not just a variable swap, or every already-encrypted OAuth token, webhook
   secret, and stored AI API key becomes unreadable.
-- **Stripe keys** (guild-facing integration connector only): Stripe Dashboard → roll the secret key; for the
-  webhook signing secret, delete and recreate the webhook endpoint (or use Stripe's built-in secret roll if available)
-  and update `STRIPE_WEBHOOK_SECRET`. Update `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` on `api` and restart. **Not
-  used for donations** — donations are handled by Ko-fi.
-- **Any integration key** (Twitch/GitHub/Reddit/Steam/Google/Microsoft/Notion/OpenAI/Anthropic/etc.):
+- **Any integration key** (Twitch/YouTube/Reddit/Steam/Google/Microsoft/OpenAI/Anthropic/etc.):
   roll it in that provider's console, update the variable on `api` (and `bot` if that integration's
   jobs run there), restart.
 - **Dashboard session invalidation** (force everyone out without rotating `SESSION_SECRET` — e.g. you

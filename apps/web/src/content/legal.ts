@@ -36,7 +36,7 @@ export function privacyPolicy(operator: string, contactEmail: string): LegalSect
     {
       title: '4. Donations',
       paragraphs: [
-        `Donations are processed by Stripe through Stripe Checkout — card details are entered on Stripe's own hosted page and never reach ${operator}'s servers. We store only the donation amount, currency, status, and Stripe's session/payment identifiers — never your name, email, or card information.`,
+        `Donations are handled entirely by Ko-fi. Clicking the donate link takes you to ${operator}'s Ko-fi page, where Ko-fi processes the payment and collects whatever information their service requires. ${operator}'s servers never receive any information about the donation or the donor — not a name, email, payment details, amount, or any other data. Ko-fi's own privacy policy governs what they collect and how they use it.`,
       ],
     },
     {
@@ -54,7 +54,7 @@ export function privacyPolicy(operator: string, contactEmail: string): LegalSect
     {
       title: '7. Third parties',
       paragraphs: [
-        `${operator} shares data only with the services required to operate the features you use — Discord (the platform itself), Stripe (donations only), and any optional integration a server administrator explicitly connects (for example Twitch, GitHub, an AI provider for the AI assistant plugin, or a translation/weather provider for the utility plugin). No data is sold.`,
+        `${operator} shares data only with the services required to operate the features you use — Discord (the platform itself), Ko-fi (donations only, and only what you send Ko-fi directly), and any optional integration a server administrator explicitly connects (for example Twitch, YouTube, Instagram, an AI provider for the AI assistant plugin, or a translation/weather provider for the utility plugin). No data is sold.`,
       ],
     },
     {

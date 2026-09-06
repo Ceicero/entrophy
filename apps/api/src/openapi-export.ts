@@ -18,8 +18,13 @@ const fakeQueues: QueueRegistryLike = {
 async function main(): Promise<void> {
   const { prisma } = createPrismaStub();
   const redis = new RedisMock() as unknown as Redis;
+  // Second, dedicated ioredis-mock for the OBS-overlay routes' pub/sub subscriber. Without it, buildApp()
+  // tries to connect to a real Redis at app.ts line ~117 and blocks forever if one is unavailable
+  // (ARCHITECTURE.md §10, app.ts `overlaySubscriber` dependency comment). Must be disconnected explicitly here
+  // because app.close() skips it for caller-owned (test-injected) instances (app.ts line 351).
+  const overlaySubscriber = new RedisMock() as unknown as Redis;
 
-  const app = await buildApp({ prisma, redis, queues: fakeQueues });
+  const app = await buildApp({ prisma, redis, queues: fakeQueues, overlaySubscriber });
   await app.ready();
 
   const spec = app.swagger();
@@ -33,6 +38,8 @@ async function main(): Promise<void> {
   // eslint-disable-next-line no-console -- CLI script output
   console.log(`Wrote ${outPath}`);
   await app.close();
+  // Explicit disconnect of the caller-owned overlaySubscriber, bypassing the app.close() skip (line 351).
+  overlaySubscriber.disconnect();
 }
 
 main().catch((err) => {

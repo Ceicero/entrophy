@@ -105,8 +105,8 @@ Data is shared only with the services required to operate the features actually 
   messages/events per its own policies.
 - **Ko-fi** — donations only (see §4); the operator's Ko-fi page is where donations are processed and
   the visitor's data (if any is collected) goes directly to Ko-fi, not to [Operator]'s servers.
-- **Optional integrations a server administrator explicitly connects**: Twitch, YouTube, Reddit,
-  Steam, GitHub, Google, Microsoft, or Notion (via the `integrations` plugin — only the specific
+- **Optional integrations a server administrator explicitly connects**: Twitch, YouTube, Instagram,
+  Reddit, Steam, Google, or Microsoft (via the `integrations` plugin — only the specific
   provider(s) a server connects, and only the scopes that connection grants); an AI provider (OpenAI
   or Anthropic) if the `ai` plugin is enabled and configured with a key; a translation provider
   (DeepL or LibreTranslate) or weather provider (OpenWeatherMap, or Open-Meteo which needs no key at
@@ -141,5 +141,5 @@ If you add a plugin, change what a plugin stores, or connect a new integration, 
 
 Both currently describe the same categories: bot-side per-feature storage with message content off
 by default, dashboard OAuth sign-in data, donations with no personal data collected, retention +
-admin export/delete controls, the same third-party list (Discord, Stripe, optional integrations
+admin export/delete controls, the same third-party list (Discord, Ko-fi, optional integrations
 including AI/translate/weather providers), and the Discord-inherited 13+ age floor.

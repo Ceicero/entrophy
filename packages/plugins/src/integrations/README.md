@@ -13,14 +13,17 @@ degrades independently when its env vars are unset — the plugin itself never b
   - **Steam** — app news alerts every 30 minutes.
 - **Calendar reminders** — Google Calendar / Microsoft 365 Calendar, OAuth-authorized from the dashboard, polling
   upcoming events every 15 minutes.
-- **Notion** — new database page alerts, OAuth-authorized, polling every 10 minutes.
-- **GitHub** — inbound webhook (`WebhookEndpoint`, no OAuth) formatting `push`/`pull_request`/`issues`/`release`/
-  `star`/`workflow_run` into embeds, with optional `repo:`/`branch:` filters.
-- **Stripe** — inbound webhook events (`checkout.session.completed`, `invoice.paid`, `customer.subscription.deleted`)
-  mapped to Discord role grants/revokes by price id. Never sees or stores card data.
+- **Instagram** — new-post alerts for the OAuth-authorized account's own media only (Meta removed
+  arbitrary-username lookup with the Basic Display API in Dec 2024), polling `graph.instagram.com/me/media`
+  every 15 minutes, skipping the entire back catalogue on the first poll via a `lastSeenTimestamp` watermark.
 - **Generic webhook** — inbound (templated Discord message from any JSON payload) and **outbound** (POST a signed
   JSON payload to any HTTPS URL on selected platform events: `moderation.caseCreated`, `ticket.opened`,
   `ticket.closed`, `member.verified`, `level.up`, `automod.triggered`, `enforcer.decided`).
+- **GitHub** — removed 2026-09-02; retained only as a legacy no-op. New inbound endpoints are always issued a
+  `/webhooks/generic/…` URL (`webhookPathFor`, `routes/integrations.ts`), so a working GitHub webhook URL can no
+  longer be handed out. The `/webhooks/github/:endpointId` route still verifies signatures and returns 202 so
+  pre-existing endpoints don't start erroring, but there is no longer a `github` provider to handle the result —
+  `jobs/inbound.ts` logs "inbound event for a provider with no handleInbound" and drops it.
 
 ## Twitch chat bot
 
