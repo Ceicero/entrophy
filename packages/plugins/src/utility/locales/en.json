@@ -1,8 +1,8 @@
 {
   "help": {
     "title": "Help",
-    "intro": "Pick a plugin below to see its commands. This menu only responds to you and expires after a couple of minutes.",
-    "noPlugins": "No plugins are currently enabled in this server."
+    "intro": "Pick a plugin below to see its commands.",
+    "noPlugins": "No plugins are currently enabled in this server. Ask an admin to enable at least one."
   },
   "embed": {
     "title": "Embed builder",

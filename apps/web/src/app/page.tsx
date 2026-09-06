@@ -26,7 +26,8 @@ export default function HomePage() {
             <Logo imageSize={64} withWordmark={false} />
           </div>
           <Badge tone="outline" className="mb-6">
-            {plugins.length} modular plugins · {commandCount}+ commands · never Administrator
+            Prefix: {siteCopy.prefix.symbol} · {plugins.length} modular plugins · {commandCount}+ commands ·
+            never Administrator
           </Badge>
           <h1 className="text-4xl font-semibold tracking-tight text-grey-7 sm:text-6xl">
             {siteCopy.heroTitle}
@@ -46,6 +47,12 @@ export default function HomePage() {
               Open dashboard
             </ButtonLink>
           </div>
+
+          {/* Start here: +help */}
+          <Glass className="mt-12 inline-block p-6 sm:p-8">
+            <p className="font-mono text-2xl font-semibold text-grey-7 sm:text-3xl">+help</p>
+            <p className="mt-3 text-sm leading-relaxed text-grey-3">Type it in any channel. Every command also works as a / slash command.</p>
+          </Glass>
         </div>
       </Section>
 
@@ -65,6 +72,22 @@ export default function HomePage() {
           <ButtonLink href="/features" variant="ghost">
             See the full command reference →
           </ButtonLink>
+        </div>
+      </Section>
+
+      {/* Prefix and getting started */}
+      <Section
+        eyebrow={siteCopy.prefix.eyebrow}
+        title={siteCopy.prefix.title}
+        subtitle={siteCopy.prefix.body}
+      >
+        <div className="space-y-2">
+          {siteCopy.prefix.examples.map((example) => (
+            <Glass key={example.command} className="p-4 sm:p-6">
+              <p className="font-mono text-sm font-semibold text-grey-7 sm:text-base">{example.command}</p>
+              <p className="mt-1 text-xs text-grey-4 sm:text-sm">{example.label}</p>
+            </Glass>
+          ))}
         </div>
       </Section>
 

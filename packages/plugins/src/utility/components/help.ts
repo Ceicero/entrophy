@@ -1,7 +1,7 @@
 import type { StringSelectMenuInteraction } from 'discord.js';
 import type { PluginId } from '@entrophy/types';
 import { getCommandCatalog } from '../command-catalog';
-import { infoEmbed, listEmbed, type ComponentContext, type ComponentHandler } from '../../sdk';
+import { infoEmbed, listEmbed, type ComponentContext, type ComponentHandler, COMMAND_PREFIX_DISPLAY } from '../../sdk';
 
 const helpSelectHandler: ComponentHandler = {
   action: 'help-select',
@@ -25,7 +25,16 @@ const helpSelectHandler: ComponentHandler = {
 
     const lines =
       entries.length > 0
-        ? entries.map((entry) => `\`${entry.fullName}\` — ${entry.description}`)
+        ? entries.map((entry) => {
+            // Context menu commands (no leading slash) should show as right-click options
+            if (!entry.fullName.startsWith('/')) {
+              return `\`Right-click → ${entry.fullName}\` — ${entry.description}`;
+            }
+            // Slash commands should show both prefix and slash forms
+            const slashName = entry.fullName.slice(1); // Remove the leading /
+            const prefixForm = `${COMMAND_PREFIX_DISPLAY}${slashName}`;
+            return `\`${prefixForm}\` · \`${entry.fullName}\` — ${entry.description}`;
+          })
         : ['_No commands are registered for this plugin yet._'];
 
     if (catalog.degraded) {

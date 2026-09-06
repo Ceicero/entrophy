@@ -23,6 +23,11 @@ export default function FeaturesPage() {
         title="Every plugin, every command, generated from the real registry"
         subtitle="This page can never drift from what the bot actually does — it's built directly from the same plugin registry the bot registers commands from."
       >
+        <Glass className="mb-8 p-6">
+          <p className="text-sm leading-relaxed text-grey-3">
+            Every command below can be run in two ways: type <span className="font-mono font-semibold text-grey-7">+name</span> in any channel (like <span className="font-mono">+mod ban</span>) or use the <span className="font-mono">/name</span> slash-command menu. Type <span className="font-mono font-semibold text-grey-7">+help</span> in Discord to see all commands right now.
+          </p>
+        </Glass>
         <PluginSwitcher plugins={plugins} hrefFor={(id) => `#${id}`} ariaLabel="Jump to plugin" />
       </Section>
 

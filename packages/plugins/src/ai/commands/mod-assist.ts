@@ -11,7 +11,7 @@ const RECENT_REASONS_SHOWN = 5;
 const data = new SlashCommandBuilder()
   .setName('mod-assist')
   .setDescription(
-    'Ask the AI assistant to suggest options for a moderation case (staff only — never acts on its own).',
+    'Ask the AI assistant to suggest moderation case options (staff only, never acts alone).',
   )
   .setDMPermission(false)
   .addIntegerOption((opt) =>

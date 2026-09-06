@@ -7,6 +7,7 @@ error text and which of `bot` / `api` / `dashboard` / `web` printed it.
 
 - [The bot won't start](#the-bot-wont-start)
 - [Slash commands aren't showing up in Discord](#slash-commands-arent-showing-up-in-discord)
+- [`+` prefix commands do nothing](#-prefix-commands-do-nothing)
 - ["Missing Permissions" errors / commands fail on specific users](#missing-permissions-errors--commands-fail-on-specific-users)
 - [Dashboard login loop (keeps sending you back to the login page)](#dashboard-login-loop-keeps-sending-you-back-to-the-login-page)
 - [403 Forbidden when opening a server in the dashboard](#403-forbidden-when-opening-a-server-in-the-dashboard)
@@ -82,6 +83,29 @@ bot does not register anything.
 4. If commands changed (renamed, added, removed) and old ones still show up or new ones don't, re-run
    `pnpm --filter @entrophy/bot register` — Discord doesn't diff automatically; you have to push the
    update.
+
+---
+
+## `+` prefix commands do nothing
+
+The `+` prefix command layer (e.g. `+help`, `+mod ban @user spam`) silently fails when:
+
+**1. Message Content Intent is not enabled**
+→ The `+help` command is typed, but nothing happens — no error, no reply. The bot sees the message but Discord has blanked out its content because the Message Content privileged intent is not enabled. Fix:
+   1. Discord Developer Portal → your application → **Bot** tab → **Privileged Gateway Intents** → toggle **ON** for **Message Content Intent**.
+   2. Your deployment's `.env` or environment variables → set `ENABLE_MESSAGE_CONTENT_INTENT=true`.
+   3. Both must be in place. Reboot the bot after either change. Slash commands will still work fine regardless (they don't require this intent).
+
+**2. `ENABLE_MESSAGE_CONTENT_INTENT` is not `true` in the deployment**
+→ Same effect as above. Check your Railway / Render variables or your local `.env` and set `ENABLE_MESSAGE_CONTENT_INTENT=true`, then restart the bot.
+
+**3. The bot lacks permission in that channel**
+→ Check the channel's permissions for the bot's role: it needs **View Channel** and **Send Messages**. Re-invite the bot using the invite link in the README (which grants the full least-privilege permission set), or manually grant those two permissions in Server Settings → Roles → the bot's role → permissions.
+
+**4. The plugin owning that command is disabled for the server**
+→ Type `/plugin status` (slash form — that always works) to see which plugins are enabled. Use `/plugin enable <plugin-id>` to turn on the plugin the command belongs to. The `+` form won't work until the plugin is enabled, and neither will the `/` form.
+
+**Slash commands keep working regardless.** If `+help` fails but `/help` still works, the problem is one of the above — most likely the Message Content Intent.
 
 ---
 

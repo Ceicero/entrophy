@@ -127,20 +127,26 @@ Secret**. Keep them private — anyone with the bot token can control your bot.
 - If `/health` (or any slash command) doesn't show up at all, you still need to **invite the bot**
   and **register its commands** — see the next section.
 
-## 6. Inviting the bot to a server and registering commands
+## 6. Inviting the bot to a server and testing commands
 
 1. Build your invite link by filling in your Application ID from step 2:
    ```
    https://discord.com/oauth2/authorize?client_id=YOUR_APPLICATION_ID&scope=bot%20applications.commands&permissions=1504198388950
    ```
    Open it in a browser, pick a server you manage, and click **Authorize**.
-2. Commands need to be registered once (and again any time commands change). If you have a
+2. After the bot joins, **immediately try typing `+help` in any channel**. That lists every command.
+   Unlike slash commands, `+` works the moment the bot joins — there is nothing to register first.
+   If `+help` does nothing at all, the Message Content intent isn't on yet: switch it on in the
+   Discord Developer Portal (**Bot** → **Privileged Gateway Intents** → **Message Content Intent**)
+   and set `ENABLE_MESSAGE_CONTENT_INTENT=true` in your environment, then restart the bot. Every
+   command also works as a slash command (`/help`) once step 3 is done.
+3. Commands need to be registered once (and again any time commands change). If you have a
    developer available, they run:
    ```
    pnpm --filter @entrophy/bot register --global
    ```
    Global registration can take **up to an hour** to show up in Discord — that's normal, not
-   broken.
+   broken. After you register, try `/help` as well to confirm the slash form is working.
 
 ## 7. How to update Entrophy later
 

@@ -3,15 +3,36 @@ import {
   SlashCommandBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
+  type EmbedBuilder,
 } from 'discord.js';
-import { buildCustomId, infoEmbed, type PluginCommand } from '../../sdk';
+import {
+  brandEmbed,
+  buildCustomId,
+  COMMAND_PREFIX_DISPLAY,
+  HELP_COMMAND_DISPLAY,
+  type PluginCommand,
+} from '../../sdk';
 
 const data = new SlashCommandBuilder()
   .setName('help')
-  .setDescription('List every plugin and its commands.')
+  .setDescription('Every Entrophy command. Tip: just type +help in chat.')
   .setDMPermission(false);
 
 const MAX_SELECT_OPTIONS = 25;
+
+/**
+ * The prefix pitch, repeated at the top of every `/help` branch. This embed is the bot's front door, so a member
+ * who runs help once should come away knowing both ways to call every command — which is why it stays in the
+ * description even on the degraded paths where the plugin catalog itself is unavailable.
+ */
+const PREFIX_LEAD =
+  `**Type \`${HELP_COMMAND_DISPLAY}\` in any channel.** Every Entrophy command works two ways — as a ` +
+  `\`${COMMAND_PREFIX_DISPLAY}\` message command or as a \`/\` slash command. Same command, same permissions.`;
+
+/** Brand-styled help embed (colour, footer and timestamp from `brandEmbed`) that always leads with the prefix. */
+function helpEmbed(title: string): EmbedBuilder {
+  return brandEmbed().setTitle(title).setDescription(PREFIX_LEAD);
+}
 
 export const command: PluginCommand = {
   data,
@@ -21,12 +42,11 @@ export const command: PluginCommand = {
     if (!host) {
       await c.interaction.reply({
         embeds: [
-          infoEmbed(
-            c.t('help.title'),
-            'The plugin catalog is not available right now. Try again in a moment.',
-          ),
+          helpEmbed(c.t('help.title')).addFields({
+            name: 'Status',
+            value: 'The plugin catalog is not available right now. Try again in a moment.',
+          }),
         ],
-        ephemeral: true,
       });
       return;
     }
@@ -51,8 +71,7 @@ export const command: PluginCommand = {
 
     if (options.length === 0) {
       await c.interaction.reply({
-        embeds: [infoEmbed(c.t('help.title'), c.t('help.noPlugins'))],
-        ephemeral: true,
+        embeds: [helpEmbed(c.t('help.title')).addFields({ name: 'Status', value: c.t('help.noPlugins') })],
       });
       return;
     }
@@ -64,10 +83,22 @@ export const command: PluginCommand = {
 
     const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
 
-    await c.interaction.reply({
-      embeds: [infoEmbed(c.t('help.title'), c.t('help.intro'))],
-      components: [row],
-      ephemeral: true,
-    });
+    const embed = helpEmbed(c.t('help.title'))
+      .addFields({
+        name: 'Try it',
+        value: [
+          `\`${HELP_COMMAND_DISPLAY}\` — this menu`,
+          `\`${COMMAND_PREFIX_DISPLAY}mod ban @user spam\` — ban someone, with a reason`,
+          `\`/mod ban\` — the exact same command, as a slash command`,
+        ].join('\n'),
+      })
+      .addFields({
+        name: 'Getting started',
+        value:
+          `${c.t('help.intro')}\n\n` +
+          '[entrophybot.com](https://entrophybot.com) · [Open the dashboard](https://entrophybot.com/dashboard)',
+      });
+
+    await c.interaction.reply({ embeds: [embed], components: [row] });
   },
 };

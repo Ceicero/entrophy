@@ -24,6 +24,7 @@ import { inviteUrl } from '@/lib/site';
 const SITE_LINKS = [
   { href: '/features', label: 'Commands' },
   { href: '/enforcer', label: 'Enforcer' },
+  { href: '/staff-roles', label: 'Staff roles' },
   { href: '/donate', label: 'Donate' },
   { href: '/support', label: 'Support' },
 ];

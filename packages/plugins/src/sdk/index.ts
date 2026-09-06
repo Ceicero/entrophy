@@ -11,3 +11,4 @@ export * from './pagination';
 export * from './guards';
 export * from './discord-utils';
 export * from './locales';
+export * from './help-hint';

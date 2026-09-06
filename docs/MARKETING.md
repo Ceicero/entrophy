@@ -102,10 +102,13 @@ as non-existent until someone finds a working link — don't spend time on it ba
 
 ## PART 2 — Listing copy, ready to paste
 
-Facts used below (all verified against the live site on 2026-08-20, nothing invented): tagline
-**"Discord moderation you can trust,"** **14 modular plugins,** **274+ commands**, invite never
-requests Administrator, support server `https://discord.gg/5fpRPFMUKu`, site `https://entrophybot.com`,
-dashboard `https://app.entrophybot.com`. Invite link uses the production client ID from the repo's own
+Facts used below (all verified against the repo on 2026-09-06, nothing invented): tagline
+**"Discord moderation you can trust,"** **command prefix `+`, entry point `+help`**, **15 modular
+plugins,** **297 invocable commands** (51 top-level, of which 47 are slash commands and 4 are
+right-click context-menu commands; 284 of the 297 are subcommands), invite never requests
+Administrator, support server `https://discord.gg/5fpRPFMUKu`, site `https://entrophybot.com`,
+dashboard `https://entrophybot.com/dashboard`. Counts are read from `docs/commands.json` — recount
+there before reusing them, never estimate. Invite link uses the production client ID from the repo's own
 Railway config plus the least-privilege permission integer documented in `docs/PERMISSIONS.md`:
 
 ```
@@ -119,11 +122,28 @@ that one is non-expiring before using it in listings).
 No user counts, uptime stats, or review quotes are used anywhere below, because none exist yet — per
 the honesty requirement, that's stated outright in the long descriptions rather than glossed over.
 
+### 2.0 — Discord App Directory / Developer Portal app description
+
+The Discord Developer Portal's **General Information** tab has a 400-character **Description** field and the App Directory has a longer long-form description. Both must open with `+help`.
+
+**Developer Portal Description** (400-character limit; this copy is 153 characters). Kept deliberately
+short — this is a bot *profile*, read at a glance next to the avatar, not a listing page. It only has to
+do two things: name the entry point, and point at the site for everything else.
+```
+Type +help to get started. Moderation, automod, tickets, roles and leveling — all opt-in, never Administrator. Full command list: https://entrophybot.com
+```
+
+**App Directory long description** (reuse the top.gg long description from Part 2.1 verbatim).
+
+---
+
 ### 2.1 — top.gg
 
-**Short description** (140-char limit — this is exactly 140 characters):
+**Prefix field**: `+`
+
+**Short description** (140-char limit — this copy is 126 characters):
 ```
-Modular, compliance-first Discord bot. 14 plugins, 274+ commands. The Enforcer plugin makes every mod decision public and auditable.
+All-in-one moderation & community bot. Type +help to start — every command also works as a slash command. Never Administrator.
 ```
 
 **Tags** (up to 12; verify against top.gg's live autocomplete list, as the exact controlled vocabulary
@@ -133,49 +153,41 @@ wasn't published in their docs — these are reasonable, descriptive picks): `Mo
 **Long description** (Markdown):
 
 ```markdown
+## Getting started
+
+Type **`+help`** in any channel to see all available commands. Every command also works as a slash command (`/`), so use whichever form you prefer. For example: `+mod ban @user spam` or `/mod ban @user spam` — both work identically.
+
 ## Moderation you don't have to take on trust
 
-Entrophy is a new, modular, compliance-first Discord bot. It's small right now — no big server count,
-no long track record, just a working product we're putting in front of real communities for the first
-time. Here's what makes it different.
+Entrophy is a modular, compliance-first Discord bot for community and gaming servers. It's brand new — no big server count, just a working product in front of real communities for the first time. Here's what makes it different.
 
 ### The Admin Enforcer
 
-Most moderation bots ask you to trust that whoever's on duty made the right call. Entrophy's **Enforcer**
-plugin instead turns policy violations into a paper trail: an admin writes plain-language policies, the
-bot flags matches (or staff flag something by hand) into a private review queue, a moderator picks an
-action, and the bot carries it out and messages the user directly — no DMs, no confrontations. Every
-flag and every decision gets written to a read-only, append-only ledger channel in your own server, and
-members can appeal. It's moderation that stays consistent no matter who's on shift, with a record nobody
-has to take on faith.
+Most moderation bots ask you to trust that whoever's on duty made the right call. Entrophy's **Enforcer** plugin instead turns policy violations into a paper trail: an admin writes plain-language policies, the bot flags matches (or staff flag something by hand) into a private review queue, a moderator picks an action, and the bot carries it out and messages the user directly — no DMs, no confrontations. Every flag and every decision gets written to a read-only, append-only ledger channel in your own server, and members can appeal. It's moderation that stays consistent no matter who's on shift, with a record nobody has to take on faith.
 
-### 14 plugins, 274+ commands, all opt-in per server
+### 15 plugins, 297 commands, all opt-in per server
 
-Admin · Moderation · Automod · Enforcer · Logging · Tickets · Roles & Onboarding · Engagement (XP,
-leveling, temp voice, starboard) · Community (polls, giveaways, suggestions, scheduled announcements) ·
-Economy (virtual-only, no real money) · Utility · Music & Media · Integrations (Twitch/YouTube go-live,
-GitHub, Reddit, Steam, webhooks) · AI Assistant (mention-based chat, configurable persona). Every plugin
-can be switched on or off per server.
+Admin · Moderation · Automod · Enforcer · Logging · Tickets · Roles & Onboarding · Engagement (XP, leveling, temp voice, starboard) · Community (polls, giveaways, suggestions, scheduled announcements) · Gamestats (Steam leaderboards) · Economy (virtual-only, no real money) · Utility · Media · Integrations (Twitch/YouTube go-live, Reddit, Steam, Instagram, Google/Microsoft calendars, webhooks) · AI Assistant (mention-based chat, configurable persona). Every plugin can be switched on or off per server.
 
 ### Least-privilege by default
 
-Entrophy **never asks for Administrator.** Every command requests only the specific permission it
-needs, and message-content-dependent features stay off until an admin explicitly turns them on.
+Entrophy **never asks for Administrator.** Every command requests only the specific permission it needs, and message-content-dependent features stay off until an admin explicitly turns them on.
 
 ### Get started
 
-- Invite: use the button on this page, or `https://entrophybot.com`
+- Type `+help` in Discord to see all commands (also works as `/help`)
+- Invite: `https://entrophybot.com` or use the button on this page
 - Dashboard: `https://app.entrophybot.com`
-- Support & questions: join our server — `https://discord.gg/5fpRPFMUKu`
+- Support: `https://discord.gg/5fpRPFMUKu`
 
-We're brand new here. If you try Entrophy and something's broken, missing, or confusing, the support
-server is the fastest way to reach us directly.
+We're brand new here. If you try Entrophy and something's broken, missing, or confusing, the support server is the fastest way to reach us directly.
 ```
 
 **Invite URL to submit**: the client-ID link above.
 **Support URL to submit**: `https://discord.gg/5fpRPFMUKu` (confirm non-expiring first).
 
 ---
+
 
 ### 2.2 — discordlist.gg
 
@@ -184,14 +196,16 @@ to be safe on an unfamiliar form:
 
 **Short description:**
 ```
-Modular Discord moderation bot. The Enforcer plugin makes every mod action public and appealable.
+Type +help to start. Modular bot: moderation, automod, Enforcer (public ledger), logging, tickets, roles, and more. Never Administrator.
 ```
 
 **Tags**: `Moderation`, `Auto Moderation`, `Logging`, `Server Management`, `Utility`, `Role Management`
 
+**Prefix field** (if discordlist.gg supports it): `+`
+
 **Long description**: reuse the top.gg long description verbatim (Part 2.1) — discordlist.gg's bot
 pages render Markdown-style long-form text similarly to top.gg's, based on other listings observed
-there.
+there. It includes the "Getting started: type `+help`" call-out at the top.
 
 **Invite / Support**: same links as above.
 
@@ -201,17 +215,17 @@ there.
 
 **Short description** (no published limit — kept under 150 characters to be safe):
 ```
-Compliance-first, modular Discord bot: moderation, automod, tickets, logging, roles, leveling — and Enforcer, which makes mod decisions public and auditable.
+Type +help to start. Modular bot: moderation, automod, Enforcer (audit ledger), tickets, roles, leveling, integrations, AI, and more.
 ```
 
 **Tags**: `Moderation`, `Utility`, `Logging`, `Role Management`, `Leveling`, `Web Dashboard`
 
+**Prefix field** (if botlist.me has it): `+`
+
 **Long description**: reuse the top.gg long description (Part 2.1); botlist.me's add form explicitly
 supports Markdown and HTML, so no reformatting needed.
 
-**Before submitting, confirm live**: Entrophy has at least 5 non-generic commands exposed (it has far
-more than 5 — 274+ — so this is not a real constraint) and that `/help` works as the obvious entry
-point, per their published rule.
+**Before submitting, confirm live**: Entrophy has far more than the required 5 non-generic commands exposed (297 total), and `+help` and `/help` both work as the obvious entry point, per their published rule.
 
 ---
 
@@ -461,10 +475,13 @@ carries it out and messages the user itself — no DMs, no back-and-forth. Every
 gets written to a read-only ledger channel in the server itself, and there's a built-in appeal command.
 Nothing is hidden from the members after the fact.
 
-Beyond that it's a fairly standard modular "all-in-one" bot — 14 independently-toggleable plugins,
-automod, tickets, logging, leveling, integrations, an optional AI assistant — but I wanted the headline
-feature to be the trust mechanism, not another feature checklist, since that's the most saturated
-category on Discord.
+Beyond that it's a fairly standard modular "all-in-one" bot — 15 independently-toggleable plugins
+covering moderation, automod, logging, tickets, roles/onboarding, leveling, community tools, integrations, 
+an optional AI assistant, and more — but I wanted the headline feature to be the trust mechanism, not 
+another feature checklist, since that's the most saturated category on Discord.
+
+Every command works both as a slash command (`/`) and as a message command with the `+` prefix — try 
+`+help` to see what's available, or use `/help` if you prefer.
 
 It's brand new. No real user base yet, no track record — I'm posting here specifically to get honest
 first reactions before I put real effort into growing it.
@@ -472,8 +489,8 @@ first reactions before I put real effort into growing it.
 Site: https://entrophybot.com
 Dashboard (if you want to see the config UI without inviting anything): https://app.entrophybot.com
 
-Happy to answer anything about the architecture, the moderation-audit design, or why I went with an
-append-only ledger instead of just better logging.
+Happy to answer anything about the architecture, the moderation-audit design, the prefix-command layer, 
+or why I went with an append-only ledger instead of just better logging.
 ```
 
 *(Deliberately no invite link in the body — SideProject's culture rewards "look what I built" over
@@ -517,9 +534,12 @@ just flagging what's worth checking for regardless of which bot you land on.)
 Hi all — introducing my project, Entrophy. Online-only (no physical location — it's a Discord bot with
 a web dashboard, not a local business).
 
-What it is: a modular Discord bot for community/gaming servers — 14 independently-toggleable plugins
-(moderation, automod, logging, tickets, roles/onboarding, leveling, community tools, virtual-only
-economy, utility, integrations, an optional AI assistant).
+What it is: a modular Discord bot for community/gaming servers — 15 independently-toggleable plugins
+covering moderation, automod, logging, tickets, roles/onboarding, leveling, community tools, virtual-only
+economy, utility, integrations, an optional AI assistant, and more.
+
+Entry point: type `+help` in Discord to see all commands (or `/help` if you prefer slash commands — 
+every command works both ways).
 
 What I think is actually distinctive: the Enforcer plugin turns moderation into an audit trail instead
 of something members just have to trust — flagged messages and moderator decisions get written to a
@@ -537,14 +557,15 @@ Dashboard: https://app.entrophybot.com
 
 **Title** (per the sub's required `[System, Stage]` tag format):
 ```
-[Discord, Beta] Entrophy — modular moderation bot with a public, appealable mod-action ledger
+[Discord, Beta] Entrophy — modular bot with +help entry point and public, appealable mod-ledger
 ```
 
 **Body:**
 ```
-Product: Entrophy, a modular Discord bot — invite it and toggle on whichever of its 14 plugins your
+Product: Entrophy, a modular Discord bot — invite it and toggle on whichever of its 15 plugins your
 server needs (moderation, automod, logging, tickets, roles, leveling, community tools, utility,
-integrations, optional AI assistant).
+integrations, optional AI assistant, and more). Every command works as both a slash command and a 
+message command with the `+` prefix — try `+help` to explore.
 
 What I want tested/feedback on specifically: the Enforcer plugin. It writes every flagged message and
 every moderator decision to a read-only, append-only ledger channel in your own server, plus a built-in
@@ -569,8 +590,9 @@ follow it exactly:
 **The product**: Entrophy (https://entrophybot.com) — a modular Discord moderation bot. Its headline
 feature, the Enforcer, writes every flagged message and moderator decision to a read-only, append-only
 ledger channel in the server itself, with a built-in appeal command, instead of leaving moderation as
-something members just have to trust. 14 total plugins, all opt-in per server. Never requests
-Administrator.
+something members just have to trust. Entry point: type `+help` in Discord to see all commands (or 
+`/help` if you prefer slash commands — both work). 15 total plugins, all opt-in per server. Never 
+requests Administrator.
 
 **The market**: Discord has an enormous, crowded field of general-purpose "all-in-one" bots
 (moderation + leveling + tickets + economy, etc.). Competition is real and well-funded incumbents exist.
@@ -600,8 +622,8 @@ it — that's what I'm here for.
 Entrophy — a modular Discord moderation bot. Most interested in feedback on one thing: instead of
 logging admin actions to a private mod channel, it writes every flagged message and mod decision to a
 read-only, append-only ledger channel that regular members can read, plus a built-in appeal command.
-14 opt-in plugins total (automod, tickets, roles, leveling, integrations, etc.), never requests
-Administrator.
+15 opt-in plugins total (moderation, automod, tickets, roles, leveling, integrations, AI, etc.), 
+never requests Administrator. Type +help in Discord to explore all commands (also works as slash commands).
 
 Brand new, no real user base yet — genuinely trying to find out if the audit-log idea is actually
 useful or just adds friction.

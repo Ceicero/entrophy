@@ -95,6 +95,18 @@ const envSchema = z.object({
   ENABLE_MESSAGE_CONTENT_INTENT: boolFromString(false),
   ENABLE_GUILD_MEMBERS_INTENT: boolFromString(true),
   ENABLE_GUILD_PRESENCES_INTENT: boolFromString(false),
+  COMMAND_PREFIX: z
+    .string()
+    .optional()
+    .transform((value) => {
+      if (!value) return '+';
+      const trimmed = value.trim();
+      if (!trimmed) return '+';
+      if (trimmed.length > 3) return '+';
+      // Reject alphanumeric/whitespace to avoid matching ordinary chat
+      if (/[a-zA-Z0-9\s]/.test(trimmed)) return '+';
+      return trimmed;
+    }),
   COOKIE_DOMAIN: z.string().optional(),
   TRUST_PROXY: trustProxyFromString(false),
   E2E_TEST_MODE: boolFromString(false),

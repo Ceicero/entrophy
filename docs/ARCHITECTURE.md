@@ -488,6 +488,7 @@ src/client.ts         createClient(intents) with partials [Channel, Message, Rea
 src/host/context.ts   builds PluginContext per plugin (child logger, queue factory, config store bindings)
 src/host/loader.ts    loads plugins: availability by env/intents; registers events (with guild gating + enablement check + try/catch → events.emit('plugin.error')), components, jobs (BullMQ Worker per queue), onLoad, migrations
 src/host/router.ts    interactionCreate: slash → command lookup → guildOnly/availability/enabled/requirement/cooldown → execute; autocomplete; components by customId prefix; modals; unified error handling + t()
+src/host/prefix/       message-command prefix layer — transforms `+commandname args` into slash-command interactions
 src/host/permissions.ts   resolveStaffLevel wrapper using GuildConfig; requirement checks; bot permission checks
 src/host/health.ts    tiny http server GET /health → { status, uptime, guilds, ws ping, plugins: {id: health} }
 src/register.ts       `pnpm --filter @entrophy/bot register [--global|--guild <id>|--clear]` — REST PUT applicationCommands (DEV_GUILD_ID default when set)
@@ -495,6 +496,37 @@ src/workers.ts        BullMQ Worker bootstrap for all plugin jobs + shared queue
 ```
 
 Also `apps/bot/src/host/bot-actions.ts`: processes `bot-actions` queue jobs `{ type: 'roles.postPanel' | 'welcome.test' | 'tickets.postPanel' | 'moderation.exportCases' | ... , guildId, payload }` by dispatching to `ctx.services`.
+
+### 9.1 Message-command prefix layer
+
+The prefix command parser (folder `src/host/prefix/`) allows every slash command to also run as a message command
+with a configurable prefix, default `+`. For example: `/mod ban @user spam` can also be `+mod ban @user spam`.
+
+- **Entry point**: `src/host/prefix/index.ts` — messageCreate event handler that detects prefix (default `+`, set by `COMMAND_PREFIX` env),
+  parses the message text into a command name and arguments string, then builds a "synthetic" `ChatInputCommandInteraction`
+  object and passes it to the existing `routeInteraction` pipeline (the same one used for slash commands).
+- **Parser contract**: Creates a fake interaction with `isChatInputCommand() = true`, `commandName`, and parsed
+  argument strings (command group + subcommand + options, space-delimited). The message author becomes the interaction user;
+  the channel becomes the interaction channel; the guild becomes the interaction guild.
+- **Reuse of existing checks**: Because the parser feeds into `routeInteraction`, permission checks, staff-level verification,
+  cooldowns, rate limits, and all requirement validations run identically for `+` commands and slash commands — there is
+  no duplicated logic. The same `CommandRequirement` applies to both forms.
+- **Hard dependency on Message Content intent**: The parser must read `message.content`, which Discord blanks when the
+  Message Content privileged intent is not enabled in the Developer Portal **and** `ENABLE_MESSAGE_CONTENT_INTENT=true`
+  in the bot's environment. Without the intent, every message appears as an empty string and prefix parsing silently
+  no-ops. This is the **only** blocking requirement: the prefix feature does not degrade gracefully if the intent is missing — it simply does nothing.
+- **Silent no-op for unknown commands**: When a user types `+foo bar baz` and no command named `foo` exists, the parser
+  emits no error and posts no reply. This is deliberate: many Discord bots share the `+` prefix, and broadcasting an error
+  for every unknown prefix in a shared-prefix server (e.g., "I don't know what `+foo` means") creates noise. Only known
+  commands reply.
+- **Limitations**: (1) Commands that open a modal cannot run via `+`; the user is told to use the slash form instead.
+  `showModal()` responds to a real Discord interaction token, and a chat message has none — there is no message-based
+  equivalent, so the adapter throws an exposed error that the router renders as a normal "use `/name` for this one"
+  reply. (2) Autocomplete is slash-only — there is no text-based equivalent for the `+` form. (3) Ephemeral
+  replies become public replies over the message-command form (Discord limitation: there is no ephemeral concept for message
+  replies, only slash-command interactions).
+- **Configuration**: `COMMAND_PREFIX` is a single value for all guilds (not per-guild). It must be 1–3 non-alphanumeric
+  characters (e.g. `+`, `!`, `$`, `>>`, `--`); the validation is enforced at bot startup via `env` schema.
 
 ## 10. API (`apps/api`)
 
@@ -718,7 +750,10 @@ provider file/registry entry for one without deciding whether its enum value sho
 - Plugin id `enforcer` (add to `PluginId` / `PLUGIN_IDS` in `@entrophy/types`, to `allPlugins` after `automod`, and to
   the §7.1 table). Folder `packages/plugins/src/enforcer`. Category `moderation`. `defaultEnabled: false`.
   `privilegedIntents: ['MessageContent']` (automatic flagging only; manual flags via context menu work without it —
-  message context-menu interactions include the resolved message content regardless of intent).
+  message context-menu interactions include the resolved message content regardless of intent). Note: Message Content
+  intent is a bot-wide requirement, needed by the Enforcer's automatic flagging, the prefix command layer (§9.1),
+  automod rule evaluation, and message logging; it must be enabled in the Discord Developer Portal **and** in
+  the bot's `ENABLE_MESSAGE_CONTENT_INTENT=true` env var, or all four features silently no-op (see §15).
   Permissions: ViewChannel, SendMessages, EmbedLinks, ReadMessageHistory (context), ManageChannels (create/lock the
   ledger + queue channels), ManageRoles (mute role), ModerateMembers/KickMembers/BanMembers (executed via the moderation
   service; listed for the audit).
@@ -1020,9 +1055,8 @@ Production runs on a cloud host, not a home machine. Deliverables and rules:
   without HTTPS-looking `API_BASE_URL`), and `COOKIE_DOMAIN` for the custom-domain case. CSRF remains protected by the
   `X-CSRF-Token` header + Origin allowlist (`DASHBOARD_URL`, `WEB_URL`). Document both setups with the recommended
   option = custom domain (`api.example.com`, `app.example.com`, `example.com`, `COOKIE_DOMAIN=.example.com`).
-- Public URLs needed by features: `API_BASE_URL` (OAuth redirect `${API_BASE_URL}/auth/discord/callback`, Stripe
-  webhook `${API_BASE_URL}/webhooks/stripe`, Twitch EventSub/GitHub `${PUBLIC_WEBHOOK_BASE_URL}` = API base),
-  `DASHBOARD_URL`, `WEB_URL`.
+- Public URLs needed by features: `API_BASE_URL` (OAuth redirect `${API_BASE_URL}/auth/discord/callback`,
+  Twitch EventSub/generic webhooks `${PUBLIC_WEBHOOK_BASE_URL}` = API base), `DASHBOARD_URL`, `WEB_URL`.
 - Operations docs (`infra/DEPLOYMENT.md`, cloud-first): first deploy checklist, env var table with where each value
   comes from, running migrations, registering commands, rotating secrets, viewing logs, backups (managed Postgres
   snapshots), updating (push to main → auto-deploy), rollback (redeploy previous build), and rough monthly cost
@@ -1040,8 +1074,7 @@ ship `.env.production.example` pre-filled with them, secrets blank):
 | API                                         | `https://api.entrophybot.com`                                                                              | `API_BASE_URL=https://api.entrophybot.com`, `NEXT_PUBLIC_API_URL`, `PUBLIC_WEBHOOK_BASE_URL` |
 | Cookies                                     | shared apex                                                                                                | `COOKIE_DOMAIN=.entrophybot.com`, `SESSION_COOKIE_SAMESITE=lax` (default; `none` not needed) |
 | Discord OAuth redirect                      | `https://api.entrophybot.com/auth/discord/callback`                                                        | `DISCORD_OAUTH_REDIRECT_URI`                                                                 |
-| Stripe webhook                              | `https://api.entrophybot.com/webhooks/stripe`                                                              | `STRIPE_WEBHOOK_SECRET` from that endpoint                                                   |
-| Twitch EventSub / GitHub / generic webhooks | `https://api.entrophybot.com/webhooks/...`                                                                 | —                                                                                            |
+| Twitch EventSub / generic webhooks          | `https://api.entrophybot.com/webhooks/...`                                                                 | —                                                                                            |
 | Brand links                                 | `BRAND.siteUrl = 'https://entrophybot.com'`, embed icon `https://entrophybot.com/brand/entrophy-skull.png` | `WEB_URL`                                                                                    |
 | Contact in policy templates                 | `entrophybot@gmail.com` (confirmed 2026-08-24, monitored), operator name "Entrophy"                        | —                                                                                            |
 

@@ -19,7 +19,7 @@ import type {
   APIApplicationCommandOption,
 } from 'discord-api-types/v10';
 import { INVITE_PERMISSIONS_BITFIELD } from '@entrophy/core';
-import { allPlugins } from '../src/index';
+import { allPlugins, withHelpHint } from '../src/index';
 import type { PluginCommand } from '../src/sdk';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -143,11 +143,17 @@ function exportCommand(command: PluginCommand): ExportedCommand {
     ? command.requirement.discordPermissions.flatMap((p) => permissionNames(p))
     : undefined;
 
+  // Apply help hint to top-level CHAT_INPUT commands only (type undefined or 1)
+  let description = 'description' in json ? (json.description ?? '') : '';
+  if ((json.type === undefined || json.type === 1) && description) {
+    description = withHelpHint(description);
+  }
+
   return {
     name: rootName,
     fullName: `/${rootName}`,
     type,
-    description: 'description' in json ? (json.description ?? '') : '',
+    description,
     staffLevel: command.requirement?.staffLevel,
     discordPermissions: discordPermissions && discordPermissions.length > 0 ? discordPermissions : undefined,
     options: options.map(toExportedOption),

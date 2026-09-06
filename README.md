@@ -55,6 +55,10 @@ unless a feature explicitly needs it and an admin turns it on, a virtual-only ec
 money involved, and a full audit trail of every config change — runs through every plugin in the
 platform, not just Enforcer. Compliance isn't a checkbox here; it's the product's moat.
 
+## Using the bot: the + prefix
+
+Every Entrophy command works two ways: type it in chat with a `+` prefix (e.g. `+help`, `+mod ban @user spam`) or use the `/` slash-command menu. The `+` prefix is there because a busy server's slash menu is crowded with other bots — with `+`, you type faster and the command reference is always one `+help` away. Start with **`+help`** to see every command. Both forms work identically; use whichever feels natural.
+
 ## Feature overview
 
 15 plugins, each independently enabled or disabled per Discord server. "Privileged intents" are

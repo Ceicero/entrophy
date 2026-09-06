@@ -1,5 +1,6 @@
 // Discord gateway bot process bootstrap (ARCHITECTURE.md §9).
 import type { Client } from 'discord.js';
+import { GatewayIntentBits } from 'discord.js';
 import { createLogger, createRedis, loadEnv, listFromCsv, requireEnv, env } from '@entrophy/core';
 import { ensureGuild, markGuildLeft, prisma } from '@entrophy/database';
 import { allPlugins, PluginRegistry, type PrivilegedIntentsEnabled } from '@entrophy/plugins';
@@ -11,6 +12,7 @@ import { startHealthServer } from './host/health';
 import { loadPlugins } from './host/loader';
 import { describeTarget, registerCommands, type RegisterTarget } from './host/register-commands';
 import { routeInteraction } from './host/router';
+import { handleMessageCommand } from './host/prefix';
 import { startWorkers } from './workers';
 
 const DEFAULT_HEALTH_PORT = 3002;
@@ -31,7 +33,11 @@ async function main(): Promise<void> {
     guildMembers: env.ENABLE_GUILD_MEMBERS_INTENT,
     guildPresences: env.ENABLE_GUILD_PRESENCES_INTENT,
   };
-  const intents = registry.requiredIntents(intentsEnabled);
+  let intents = registry.requiredIntents(intentsEnabled);
+  // If message content intent is enabled, ensure GuildMessages intent is present (needed for message events)
+  if (intentsEnabled.messageContent && !intents.includes(GatewayIntentBits.GuildMessages)) {
+    intents = [...intents, GatewayIntentBits.GuildMessages];
+  }
   // `PluginContext.client`/`loadPlugins` are typed as `Client<true>` (logged-in) per the SDK contract, but we
   // build/wire everything before calling `client.login()` below (standard discord.js bootstrap ordering — the
   // client is only actually used once `ready` fires, by which point it genuinely is `<true>`).
@@ -55,8 +61,25 @@ async function main(): Promise<void> {
     });
   });
 
+  // Prefix-command message listener (only when message content intent is enabled)
+  if (intentsEnabled.messageContent) {
+    client.on('messageCreate', (message) => {
+      void handleMessageCommand(message, host, logger, env.COMMAND_PREFIX as string).catch((err: unknown) => {
+        logger.error({ err }, 'unhandled error while handling a prefix message command');
+      });
+    });
+  }
+
   client.once('ready', (readyClient) => {
     logger.info({ guilds: readyClient.guilds.cache.size, tag: readyClient.user.tag }, 'bot ready');
+
+    // Warn if message content intent is disabled and prefix commands are unavailable
+    if (!intentsEnabled.messageContent) {
+      logger.warn(
+        'ENABLE_MESSAGE_CONTENT_INTENT is false; prefix commands (+help, +mod ban, etc.) are disabled. ' +
+          'Set ENABLE_MESSAGE_CONTENT_INTENT=true to enable them.',
+      );
+    }
 
     // Optional self-registration of slash commands at boot (REGISTER_COMMANDS_ON_BOOT=global|guild), so hosted
     // deployments never need a local `commands:register` run. Failures are logged, never fatal.
@@ -167,7 +190,32 @@ async function main(): Promise<void> {
     logger,
   });
 
-  await client.login(env.DISCORD_TOKEN);
+  // Discord refuses the gateway handshake (close code 4014) when the process asks for a privileged intent the
+  // application has not been granted in the Developer Portal. That surfaces as an opaque "Used disallowed
+  // intents" crash, and since ENABLE_MESSAGE_CONTENT_INTENT defaults to true (the `+` prefix layer needs it —
+  // ARCHITECTURE.md §9.1), the likeliest cause by far is the portal toggle simply never being switched on.
+  // Rethrow with the actual fix instead. Retrying without the intent is not possible here: intents are fixed at
+  // Client construction, and every plugin's event listeners are already bound to this client.
+  try {
+    await client.login(env.DISCORD_TOKEN);
+  } catch (err) {
+    const text = err instanceof Error ? err.message : String(err);
+    if (/disallowed intents/i.test(text) || /\b4014\b/.test(text)) {
+      logger.fatal(
+        {
+          err,
+          messageContent: intentsEnabled.messageContent,
+          guildMembers: intentsEnabled.guildMembers,
+          guildPresences: intentsEnabled.guildPresences,
+        },
+        'Discord rejected login: this bot requested a privileged intent it has not been granted. Enable the ' +
+          'matching toggles under Discord Developer Portal → Applications → (this app) → Bot → Privileged ' +
+          'Gateway Intents, or set the corresponding ENABLE_*_INTENT variable to false. Message Content is ' +
+          'required for +prefix commands, automod, Enforcer auto-flagging and message logging.',
+      );
+    }
+    throw err;
+  }
 
   let shuttingDown = false;
   async function shutdown(signal: string): Promise<void> {

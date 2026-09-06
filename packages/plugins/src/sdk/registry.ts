@@ -2,6 +2,7 @@ import { GatewayIntentBits } from 'discord.js';
 import type { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v10';
 import type { PluginId } from '@entrophy/types';
 import type { Plugin, PluginManifest, PrivilegedIntent } from './types';
+import { withHelpHint } from './help-hint';
 
 export interface PrivilegedIntentsEnabled {
   messageContent: boolean;
@@ -116,7 +117,14 @@ export class PluginRegistry {
   /** Serializes every command from every plugin into the shape Discord's bulk command REST endpoint expects. */
   commandsJson(): RESTPostAPIApplicationCommandsJSONBody[] {
     return this.orderedPlugins.flatMap((plugin) =>
-      plugin.commands.map((command) => command.data.toJSON() as RESTPostAPIApplicationCommandsJSONBody),
+      plugin.commands.map((command) => {
+        const json = command.data.toJSON() as RESTPostAPIApplicationCommandsJSONBody;
+        // Apply help hint to top-level CHAT_INPUT commands only (type undefined or 1)
+        if ((json.type === undefined || json.type === 1) && 'description' in json) {
+          return { ...json, description: withHelpHint(json.description as string) };
+        }
+        return json;
+      }),
     );
   }
 

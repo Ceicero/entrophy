@@ -12,7 +12,7 @@
           "name": "setup",
           "fullName": "/setup",
           "type": "slash",
-          "description": "Guided server setup and setup status.",
+          "description": "Guided server setup and setup status. • +help",
           "staffLevel": "admin",
           "options": [],
           "subcommands": [
@@ -34,7 +34,7 @@
           "name": "config",
           "fullName": "/config",
           "type": "slash",
-          "description": "View or change server configuration.",
+          "description": "View or change server configuration. • +help",
           "staffLevel": "admin",
           "options": [],
           "subcommands": [
@@ -82,7 +82,7 @@
           "name": "plugin",
           "fullName": "/plugin",
           "type": "slash",
-          "description": "Manage plugins.",
+          "description": "Manage plugins. • +help",
           "staffLevel": "admin",
           "options": [],
           "subcommands": [
@@ -137,7 +137,7 @@
           "name": "permissions",
           "fullName": "/permissions",
           "type": "slash",
-          "description": "Audit bot permissions and configuration health.",
+          "description": "Audit bot permissions and configuration health. • +help",
           "staffLevel": "admin",
           "options": [],
           "subcommands": [
@@ -153,7 +153,7 @@
           "name": "health",
           "fullName": "/health",
           "type": "slash",
-          "description": "Show the bot's health and per-plugin status.",
+          "description": "Show the bot's health and per-plugin status. • +help",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": []
@@ -162,7 +162,7 @@
           "name": "entrophy",
           "fullName": "/entrophy",
           "type": "slash",
-          "description": "Bot-level tools for talking to the Entrophy developer.",
+          "description": "Bot-level tools for talking to the Entrophy developer. • +help",
           "staffLevel": "admin",
           "options": [],
           "subcommands": [
@@ -195,7 +195,7 @@
           "name": "mod",
           "fullName": "/mod",
           "type": "slash",
-          "description": "Moderation actions: warnings, timeouts, kicks, bans, cases, and more.",
+          "description": "Moderation actions: warnings, timeouts, kicks, bans, cases, and more. • +help",
           "staffLevel": "helper",
           "options": [],
           "subcommands": [
@@ -639,7 +639,7 @@
           "name": "appeal",
           "fullName": "/appeal",
           "type": "slash",
-          "description": "Appeal a moderation case taken against you.",
+          "description": "Appeal a moderation case taken against you. • +help",
           "staffLevel": "member",
           "options": [
             {
@@ -686,7 +686,7 @@
           "name": "automod",
           "fullName": "/automod",
           "type": "slash",
-          "description": "Automated moderation rules: spam, filters, raid detection, and the review queue.",
+          "description": "Automated moderation rules: spam, filters, raid detection, and the review queue. • +help",
           "staffLevel": "helper",
           "options": [],
           "subcommands": [
@@ -959,7 +959,7 @@
           "name": "enforcer",
           "fullName": "/enforcer",
           "type": "slash",
-          "description": "Policy-driven, hands-off moderation: flag, decide, and keep an immutable ledger.",
+          "description": "Policy-driven, hands-off moderation: flag, decide, and keep an immutable ledger. • +help",
           "options": [],
           "subcommands": [
             {
@@ -1390,7 +1390,7 @@
           "name": "logs",
           "fullName": "/logs",
           "type": "slash",
-          "description": "Configure and search Entrophy's event logging.",
+          "description": "Configure and search Entrophy's event logging. • +help",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": [
@@ -1533,7 +1533,7 @@
           "name": "ticket",
           "fullName": "/ticket",
           "type": "slash",
-          "description": "Open, manage, and configure support tickets.",
+          "description": "Open, manage, and configure support tickets. • +help",
           "options": [],
           "subcommands": [
             {
@@ -1738,7 +1738,7 @@
           "name": "roles",
           "fullName": "/roles",
           "type": "slash",
-          "description": "Self-assignable role panels, groups, role persistence, and auto-roles.",
+          "description": "Self-assignable role panels, groups, role persistence, and auto-roles. • +help",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": [
@@ -2109,7 +2109,7 @@
           "name": "welcome",
           "fullName": "/welcome",
           "type": "slash",
-          "description": "Configure the message sent when a member joins.",
+          "description": "Configure the message sent when a member joins. • +help",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": [
@@ -2169,7 +2169,7 @@
           "name": "goodbye",
           "fullName": "/goodbye",
           "type": "slash",
-          "description": "Configure the message sent when a member leaves.",
+          "description": "Configure the message sent when a member leaves. • +help",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": [
@@ -2229,7 +2229,7 @@
           "name": "verify",
           "fullName": "/verify",
           "type": "slash",
-          "description": "Verify yourself to get access to the rest of the server.",
+          "description": "Verify yourself to get access to the rest of the server. • +help",
           "options": [],
           "subcommands": []
         },
@@ -2237,7 +2237,7 @@
           "name": "verification",
           "fullName": "/verification",
           "type": "slash",
-          "description": "Configure and manage member verification.",
+          "description": "Configure and manage member verification. • +help",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": [
@@ -2364,7 +2364,7 @@
           "name": "onboarding",
           "fullName": "/onboarding",
           "type": "slash",
-          "description": "Rules acknowledgement and the member onboarding checklist.",
+          "description": "Rules acknowledgement and the member onboarding checklist. • +help",
           "options": [],
           "subcommands": [
             {
@@ -2455,7 +2455,7 @@
           "name": "level",
           "fullName": "/level",
           "type": "slash",
-          "description": "Leveling: rank, leaderboard, XP, and level-role rewards.",
+          "description": "Leveling: rank, leaderboard, XP, and level-role rewards. • +help",
           "options": [],
           "subcommands": [
             {
@@ -2673,7 +2673,7 @@
           "name": "rep",
           "fullName": "/rep",
           "type": "slash",
-          "description": "Reputation: thank members whose help you appreciated.",
+          "description": "Reputation: thank members whose help you appreciated. • +help",
           "options": [],
           "subcommands": [
             {
@@ -2745,7 +2745,7 @@
           "name": "starboard",
           "fullName": "/starboard",
           "type": "slash",
-          "description": "Starboard settings.",
+          "description": "Starboard settings. • +help",
           "staffLevel": "admin",
           "options": [],
           "subcommands": [
@@ -2813,7 +2813,7 @@
           "name": "tempvoice",
           "fullName": "/tempvoice",
           "type": "slash",
-          "description": "Temporary voice channels.",
+          "description": "Temporary voice channels. • +help",
           "options": [],
           "subcommands": [
             {
@@ -2929,7 +2929,7 @@
           "name": "poll",
           "fullName": "/poll",
           "type": "slash",
-          "description": "Run a poll.",
+          "description": "Run a poll. • +help",
           "options": [],
           "subcommands": [
             {
@@ -3055,7 +3055,7 @@
           "name": "giveaway",
           "fullName": "/giveaway",
           "type": "slash",
-          "description": "Run giveaways.",
+          "description": "Run giveaways. • +help",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": [
@@ -3165,7 +3165,7 @@
           "name": "suggest",
           "fullName": "/suggest",
           "type": "slash",
-          "description": "Submit a suggestion for staff to review.",
+          "description": "Submit a suggestion for staff to review. • +help",
           "options": [
             {
               "name": "text",
@@ -3180,7 +3180,7 @@
           "name": "suggestions",
           "fullName": "/suggestions",
           "type": "slash",
-          "description": "Manage the suggestion box.",
+          "description": "Manage the suggestion box. • +help",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": [
@@ -3241,7 +3241,7 @@
           "name": "announce",
           "fullName": "/announce",
           "type": "slash",
-          "description": "Schedule announcements.",
+          "description": "Schedule announcements. • +help",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": [
@@ -3308,7 +3308,7 @@
           "name": "remind",
           "fullName": "/remind",
           "type": "slash",
-          "description": "Set reminders.",
+          "description": "Set reminders. • +help",
           "options": [],
           "subcommands": [
             {
@@ -3367,7 +3367,7 @@
           "name": "event",
           "fullName": "/event",
           "type": "slash",
-          "description": "Community events with RSVP.",
+          "description": "Community events with RSVP. • +help",
           "staffLevel": "helper",
           "options": [],
           "subcommands": [
@@ -3452,7 +3452,7 @@
           "name": "tag",
           "fullName": "/tag",
           "type": "slash",
-          "description": "Custom commands: show, list, and manage tags.",
+          "description": "Custom commands: show, list, and manage tags. • +help",
           "options": [],
           "subcommands": [
             {
@@ -3581,7 +3581,7 @@
           "name": "sticky",
           "fullName": "/sticky",
           "type": "slash",
-          "description": "Keep a staff message pinned to the bottom of a channel.",
+          "description": "Keep a staff message pinned to the bottom of a channel. • +help",
           "staffLevel": "moderator",
           "options": [],
           "subcommands": [
@@ -3635,7 +3635,7 @@
           "name": "channelauto",
           "fullName": "/channelauto",
           "type": "slash",
-          "description": "Channel automations: auto-publish announcements and one-thread-per-post channels.",
+          "description": "Channel automations: auto-publish announcements and one-thread-per-post channels. • +help",
           "staffLevel": "admin",
           "options": [],
           "subcommands": [
@@ -3733,7 +3733,7 @@
           "name": "statschannel",
           "fullName": "/statschannel",
           "type": "slash",
-          "description": "Server-stats counter channels (member/bot/boost counts in the channel list).",
+          "description": "Server-stats counter channels (member/bot/boost counts in the channel list). • +help",
           "staffLevel": "admin",
           "options": [],
           "subcommands": [
@@ -3825,7 +3825,7 @@
           "name": "birthday",
           "fullName": "/birthday",
           "type": "slash",
-          "description": "Share your birthday (month + day only) and see upcoming ones.",
+          "description": "Share your birthday (month + day only) and see upcoming ones. • +help",
           "options": [],
           "subcommands": [
             {
@@ -3963,7 +3963,7 @@
           "name": "dbd",
           "fullName": "/dbd",
           "type": "slash",
-          "description": "Dead by Daylight stats: link your Steam account, stat cards, and leaderboards.",
+          "description": "Dead by Daylight stats: link your Steam account, stat cards, and leaderboards. • +help",
           "options": [],
           "subcommands": [
             {
@@ -4033,7 +4033,7 @@
           "name": "economy",
           "fullName": "/economy",
           "type": "slash",
-          "description": "Virtual currency — no real-money value, no purchases, no cash-out.",
+          "description": "Virtual currency — no real-money value, no purchases, no cash-out. • +help",
           "options": [],
           "subcommands": [
             {
@@ -4189,7 +4189,7 @@
           "name": "help",
           "fullName": "/help",
           "type": "slash",
-          "description": "List every plugin and its commands.",
+          "description": "Every Entrophy command. Tip: just type +help in chat.",
           "options": [],
           "subcommands": []
         },
@@ -4197,7 +4197,7 @@
           "name": "utility",
           "fullName": "/utility",
           "type": "slash",
-          "description": "General-purpose utility commands.",
+          "description": "General-purpose utility commands. • +help",
           "options": [],
           "subcommands": [
             {
@@ -4411,7 +4411,7 @@
           "name": "embed",
           "fullName": "/embed",
           "type": "slash",
-          "description": "Build a rich embed and preview it before sending.",
+          "description": "Build a rich embed and preview it before sending. • +help",
           "discordPermissions": [
             "ManageMessages"
           ],
@@ -4447,7 +4447,7 @@
           "name": "music",
           "fullName": "/music",
           "type": "slash",
-          "description": "Manage the music queue.",
+          "description": "Manage the music queue. • +help",
           "options": [],
           "subcommands": [
             {
@@ -4592,7 +4592,7 @@
           "name": "integration",
           "fullName": "/integration",
           "type": "slash",
-          "description": "Connect external services: stream alerts, Instagram, webhooks, and more.",
+          "description": "Connect external services: stream alerts, Instagram, webhooks, and more. • +help",
           "staffLevel": "admin",
           "discordPermissions": [
             "ManageGuild"
@@ -4844,7 +4844,7 @@
           "name": "twitch",
           "fullName": "/twitch",
           "type": "slash",
-          "description": "Manage Entrophy joining this server's Twitch chat.",
+          "description": "Manage Entrophy joining this server's Twitch chat. • +help",
           "staffLevel": "admin",
           "discordPermissions": [
             "ManageGuild"
@@ -5158,7 +5158,7 @@
           "name": "ask",
           "fullName": "/ask",
           "type": "slash",
-          "description": "Ask the AI assistant a question.",
+          "description": "Ask the AI assistant a question. • +help",
           "options": [
             {
               "name": "question",
@@ -5179,7 +5179,7 @@
           "name": "summarize",
           "fullName": "/summarize",
           "type": "slash",
-          "description": "Summarize recent messages in a channel using the AI assistant.",
+          "description": "Summarize recent messages in a channel using the AI assistant. • +help",
           "options": [
             {
               "name": "count",
@@ -5200,7 +5200,7 @@
           "name": "draft",
           "fullName": "/draft",
           "type": "slash",
-          "description": "Draft a piece of server text with the AI assistant (staff only).",
+          "description": "Draft a piece of server text with the AI assistant (staff only). • +help",
           "staffLevel": "helper",
           "options": [
             {
@@ -5222,7 +5222,7 @@
           "name": "mod-assist",
           "fullName": "/mod-assist",
           "type": "slash",
-          "description": "Ask the AI assistant to suggest options for a moderation case (staff only — never acts on its own).",
+          "description": "Ask the AI assistant to suggest moderation case options (staff only, never acts alone). • +help",
           "staffLevel": "moderator",
           "options": [
             {
@@ -5250,7 +5250,7 @@
           "name": "ai",
           "fullName": "/ai",
           "type": "slash",
-          "description": "Configure the AI assistant for this server.",
+          "description": "Configure the AI assistant for this server. • +help",
           "staffLevel": "admin",
           "options": [],
           "subcommands": [
