@@ -213,11 +213,19 @@ export function createMessageCommandInteraction(params: {
     options: optionsImpl as unknown as ChatInputCommandInteraction['options'],
 
     // Reply/followUp methods
+    //
+    // These SHALLOW-copy the payload on purpose. A deep clone (structuredClone) strips the prototypes off
+    // discord.js builders, so an EmbedBuilder/ActionRowBuilder arrives as a plain `{ data: ... }` object,
+    // `.toJSON()` is never called on it, and Discord rejects the request:
+    //   components[0][TAG_FIELD_MISSING]: Field "type" is required
+    //   embeds[0].description[BASE_TYPE_REQUIRED]: This field is required
+    // A shallow copy is all that is needed here — we only add/remove top-level keys — and it keeps every
+    // builder instance intact by reference.
     reply: async (payload: unknown) => {
       // Strip ephemeral flag and MessageFlags.Ephemeral (both 1 << 6 = 64)
       // because message commands always reply publicly
       const opts = typeof payload === 'object' && payload !== null
-        ? structuredClone(payload as Record<string, unknown>)
+        ? { ...(payload as Record<string, unknown>) }
         : {};
       if (typeof opts === 'object' && opts !== null) {
         if ('ephemeral' in opts) delete opts.ephemeral;
@@ -258,7 +266,7 @@ export function createMessageCommandInteraction(params: {
       // Deferred case: send as the reply now
       if ((fakeInteraction as any).deferred) {
         const opts = typeof payload === 'object' && payload !== null
-          ? structuredClone(payload as Record<string, unknown>)
+          ? { ...(payload as Record<string, unknown>) }
           : {};
         repliedMessage = await message.reply({
           ...opts,
@@ -273,7 +281,7 @@ export function createMessageCommandInteraction(params: {
     followUp: async (payload: unknown) => {
       // Strip ephemeral
       const opts = typeof payload === 'object' && payload !== null
-        ? structuredClone(payload as Record<string, unknown>)
+        ? { ...(payload as Record<string, unknown>) }
         : {};
       if (typeof opts === 'object' && opts !== null) {
         if ('ephemeral' in opts) delete opts.ephemeral;
