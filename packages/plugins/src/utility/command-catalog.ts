@@ -12,6 +12,7 @@
 import { ApplicationCommandType, type ApplicationCommandOptionData, type Client } from 'discord.js';
 import type { PluginId } from '@entrophy/types';
 import { allManifests } from '../manifests';
+import { HELP_HINT_SUFFIX } from '../sdk/help-hint';
 import { OTHER_GROUP, resolvePluginForCommand } from './help-map';
 
 export interface CatalogEntry {
@@ -38,6 +39,16 @@ interface FetchedOption {
   options?: readonly FetchedOption[];
 }
 
+/**
+ * Removes the registration-time `+help` hint from a description before it is listed inside `/help` itself.
+ * `registry.commandsJson()` appends the hint to every top-level command so it shows in Discord's command
+ * picker, and this catalog reads those live descriptions back — so without this, every top-level row in the
+ * help menu would end with a redundant "• +help" while its subcommands did not.
+ */
+function stripHelpHint(description: string): string {
+  return description.endsWith(HELP_HINT_SUFFIX) ? description.slice(0, -HELP_HINT_SUFFIX.length) : description;
+}
+
 function flatten(
   name: string,
   description: string,
@@ -50,7 +61,7 @@ function flatten(
   );
 
   if (subOptions.length === 0) {
-    return [{ fullName, description }];
+    return [{ fullName, description: stripHelpHint(description) }];
   }
 
   const entries: CatalogEntry[] = [];
@@ -58,7 +69,10 @@ function flatten(
     if (opt.type === 2 /* SubcommandGroup */) {
       entries.push(...flatten(opt.name, opt.description ?? description, opt.options, `${fullName} `));
     } else {
-      entries.push({ fullName: `${fullName} ${opt.name}`, description: opt.description ?? description });
+      entries.push({
+        fullName: `${fullName} ${opt.name}`,
+        description: stripHelpHint(opt.description ?? description),
+      });
     }
   }
   return entries;
