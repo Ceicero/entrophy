@@ -33,7 +33,9 @@
     "privilegedIntentsField": "Privileged intents",
     "noMissingPermissions": "✅ No missing bot permissions for enabled plugins.",
     "hierarchyOk": "✅ My highest role outranks every configured staff role.",
-    "intentsOk": "✅ Every privileged intent needed by an enabled plugin is enabled."
+    "hierarchyWarning": "⚠️ My highest role is at or below <@&{roleId}> — I may not be able to moderate members with that role.",
+    "intentsOk": "✅ Every privileged intent needed by an enabled plugin is enabled.",
+    "intentWarning": "⚠️ **{plugin}** needs the {intent} privileged intent, which isn't enabled — related features are degraded."
   },
   "health": {
     "title": "Bot health",

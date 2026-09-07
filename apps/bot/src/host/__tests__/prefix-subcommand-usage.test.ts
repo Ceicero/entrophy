@@ -56,3 +56,31 @@ describe('a command needing a subcommand explains itself instead of throwing', (
     expect(result.ok).toBe(true);
   });
 });
+
+describe('a command with exactly one subcommand selects it automatically', () => {
+  // Regression: the "needs a subcommand" guard broke +permissions, +entrophy and +embed, which each have a
+  // single subcommand and had been working. There is nothing to choose, so choosing is the bot's job.
+  const permissions = { options: [{ type: 1, name: 'audit', description: 'Audit permissions.' }] };
+
+  it('runs without the user naming the only subcommand', () => {
+    const result = resolvePrefixOptions(permissions, [], message, 'permissions');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.resolved.subcommand).toBe('audit');
+  });
+
+  it('still works when the user does name it', () => {
+    const result = resolvePrefixOptions(permissions, ['audit'], message, 'permissions');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.resolved.subcommand).toBe('audit');
+  });
+
+  it('does not auto-select when there is more than one choice', () => {
+    const result = resolvePrefixOptions(levelCommand, [], message, 'level');
+
+    expect(result.ok).toBe(false);
+  });
+});

@@ -177,7 +177,7 @@ Entrophy **never asks for Administrator.** Every command requests only the speci
 
 - Type `+help` in Discord to see all commands (also works as `/help`)
 - Invite: `https://entrophybot.com` or use the button on this page
-- Dashboard: `https://app.entrophybot.com`
+- Dashboard: `https://entrophybot.com/dashboard`
 - Support: `https://discord.gg/5fpRPFMUKu`
 
 We're brand new here. If you try Entrophy and something's broken, missing, or confusing, the support server is the fastest way to reach us directly.
@@ -487,7 +487,7 @@ It's brand new. No real user base yet, no track record — I'm posting here spec
 first reactions before I put real effort into growing it.
 
 Site: https://entrophybot.com
-Dashboard (if you want to see the config UI without inviting anything): https://app.entrophybot.com
+Dashboard (if you want to see the config UI without inviting anything): https://entrophybot.com/dashboard
 
 Happy to answer anything about the architecture, the moderation-audit design, the prefix-command layer, 
 or why I went with an append-only ledger instead of just better logging.
@@ -550,7 +550,7 @@ Where it's at: brand new, shipped and live, no meaningful user base yet. Not her
 don't have — mostly interested in feedback and in connecting with other people building in this space.
 
 Site: https://entrophybot.com
-Dashboard: https://app.entrophybot.com
+Dashboard: https://entrophybot.com/dashboard
 ```
 
 ### 4.4 — r/alphaandbetausers (POST)
@@ -576,7 +576,7 @@ It's live and working, not a landing page — invite link and dashboard both bel
 it yet, so this is genuinely early feedback I'm after.
 
 Invite: https://entrophybot.com
-Dashboard: https://app.entrophybot.com
+Dashboard: https://entrophybot.com/dashboard
 
 Happy to return the favor and test something of yours in exchange — drop a link.
 ```
@@ -603,7 +603,7 @@ differentiator inside an otherwise saturated space, not that the space itself is
 channel at best. Few, if any, write an append-only, member-readable ledger with a built-in appeal
 command as a first-class feature rather than an afterthought.
 
-**Stage**: shipped and live — real bot, real dashboard (https://app.entrophybot.com), zero meaningful
+**Stage**: shipped and live — real bot, real dashboard (https://entrophybot.com/dashboard), zero meaningful
 server count so far. Not raising money; this is self-funded and small right now.
 
 **Customer conversion strategy**: honestly the weakest part right now — this document (bot-list
@@ -628,7 +628,7 @@ never requests Administrator. Type +help in Discord to explore all commands (als
 Brand new, no real user base yet — genuinely trying to find out if the audit-log idea is actually
 useful or just adds friction.
 
-Site: https://entrophybot.com | Dashboard: https://app.entrophybot.com
+Site: https://entrophybot.com | Dashboard: https://entrophybot.com/dashboard
 ```
 
 **r/startups — "Monthly Share Your Startup" thread only:**

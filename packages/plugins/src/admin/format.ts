@@ -1,6 +1,7 @@
 import { PermissionsBitField, type Guild } from 'discord.js';
 import { describePermission, missingPermissions } from '@entrophy/core';
 import type { PluginManifest } from '../sdk';
+import type { PluginId } from '@entrophy/types';
 
 /**
  * For every loaded plugin's declared `manifest.permissions`, checks the bot's guild-level permissions and
@@ -24,6 +25,66 @@ export function describeMissingBotPermissions(guild: Guild, manifests: PluginMan
       warnings.push(
         `**${manifest.name}** — missing **${describePermission(bit)}**${optionalNote} for ${doc.feature}. ${doc.fallback}`,
       );
+    }
+  }
+
+  return warnings;
+}
+
+/**
+ * Checks if the bot's role hierarchy allows it to moderate members with the given staff roles.
+ * Returns an empty array if hierarchy is OK, or an array of warning lines for each staff role
+ * that outranks the bot. Pure function (no state access).
+ */
+export function describeRoleHierarchyWarnings(
+  guild: Guild,
+  staffRoleIds: string[],
+  t: (key: string, vars?: Record<string, string>) => string,
+): string[] {
+  const botMember = guild.members.me;
+  if (!botMember) {
+    return [];
+  }
+
+  const warnings: string[] = [];
+  for (const roleId of staffRoleIds) {
+    if (roleOutranksBot(guild, roleId)) {
+      warnings.push(t('permissions.hierarchyWarning', { roleId }));
+    }
+  }
+
+  return warnings;
+}
+
+/**
+ * Checks if enabled plugins declare privileged intents that are not enabled in the bot.
+ * Returns an empty array if all needed intents are enabled, or an array of warning lines
+ * for each missing intent. Pure function (no state access).
+ */
+export function describeIntentWarnings(
+  manifests: PluginManifest[],
+  enabledPluginIds: PluginId[],
+  intentsEnabled: Record<string, boolean>,
+  t: (key: string, vars?: Record<string, string>) => string,
+): string[] {
+  const enabledSet = new Set(enabledPluginIds);
+  const warnings: string[] = [];
+
+  for (const manifest of manifests) {
+    if (!manifest.privilegedIntents || manifest.privilegedIntents.length === 0) continue;
+    // Only check enabled plugins; always-enabled plugins are in the enabled set by definition
+    if (!enabledSet.has(manifest.id) && !manifest.alwaysEnabled) continue;
+
+    for (const intent of manifest.privilegedIntents) {
+      const key =
+        intent === 'MessageContent'
+          ? 'messageContent'
+          : intent === 'GuildMembers'
+            ? 'guildMembers'
+            : 'guildPresences';
+      if (!intentsEnabled[key]) {
+        warnings.push(t('permissions.intentWarning', { plugin: manifest.name, intent }));
+      }
     }
   }
 

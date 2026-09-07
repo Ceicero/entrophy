@@ -1,6 +1,8 @@
 import { PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder } from 'discord.js';
 import { describePermission } from '@entrophy/core';
+import type { PluginId } from '@entrophy/types';
 import { assertStaffLevel, brandEmbed, type PluginCommand } from '../../sdk';
+import { describeIntentWarnings, describeRoleHierarchyWarnings } from '../format';
 
 const data = new SlashCommandBuilder()
   .setName('permissions')
@@ -40,42 +42,23 @@ export const command: PluginCommand = {
     }
     if (permissionLines.length === 0) permissionLines.push(c.t('permissions.noMissingPermissions'));
 
-    const hierarchyLines: string[] = [];
-    if (botMember) {
-      const staffRoleIds = [
-        ...new Set([...guildConfig.adminRoleIds, ...guildConfig.modRoleIds, ...guildConfig.helperRoleIds]),
-      ];
-      for (const roleId of staffRoleIds) {
-        const role = guild.roles.cache.get(roleId);
-        if (role && role.position >= botMember.roles.highest.position) {
-          hierarchyLines.push(
-            `⚠️ My highest role is at or below <@&${roleId}> — I may not be able to moderate members with that role.`,
-          );
-        }
-      }
-    }
-    if (hierarchyLines.length === 0) hierarchyLines.push(c.t('permissions.hierarchyOk'));
-
-    const intentLines: string[] = [];
+    // Get list of enabled plugins for intent checks
+    const enabledPluginIds: PluginId[] = [];
     for (const manifest of manifests) {
-      if (!manifest.privilegedIntents || manifest.privilegedIntents.length === 0) continue;
       const enabled = manifest.alwaysEnabled ? true : await host.isPluginEnabled(c.guildId, manifest.id);
-      if (!enabled) continue;
-      for (const intent of manifest.privilegedIntents) {
-        const key =
-          intent === 'MessageContent'
-            ? 'messageContent'
-            : intent === 'GuildMembers'
-              ? 'guildMembers'
-              : 'guildPresences';
-        if (!c.ctx.intentsEnabled[key]) {
-          intentLines.push(
-            `⚠️ **${manifest.name}** needs the ${intent} privileged intent, which isn't enabled — related features are degraded.`,
-          );
-        }
-      }
+      if (enabled) enabledPluginIds.push(manifest.id);
     }
-    if (intentLines.length === 0) intentLines.push(c.t('permissions.intentsOk'));
+
+    // Extract role hierarchy warnings using pure function
+    const staffRoleIds = [
+      ...new Set([...guildConfig.adminRoleIds, ...guildConfig.modRoleIds, ...guildConfig.helperRoleIds]),
+    ];
+    const hierarchyWarnings = describeRoleHierarchyWarnings(guild, staffRoleIds, c.t);
+    const hierarchyLines = hierarchyWarnings.length > 0 ? hierarchyWarnings : [c.t('permissions.hierarchyOk')];
+
+    // Extract intent warnings using pure function
+    const intentWarnings = describeIntentWarnings(manifests, enabledPluginIds, c.ctx.intentsEnabled, c.t);
+    const intentLines = intentWarnings.length > 0 ? intentWarnings : [c.t('permissions.intentsOk')];
 
     const embed = brandEmbed()
       .setTitle(c.t('permissions.auditTitle'))

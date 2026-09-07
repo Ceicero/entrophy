@@ -3,7 +3,7 @@ import { discordTimestamp } from '@entrophy/core';
 import type { PluginId } from '@entrophy/types';
 import { assertStaffLevel, listEmbed, type PluginCommand } from '../../sdk';
 import { createWizardSession, renderWizardStep, WizardSessionStore } from '../wizard';
-import { deriveSetupState, describeMissingBotPermissions, type SetupState } from '../format';
+import { deriveSetupState, describeMissingBotPermissions, describeRoleHierarchyWarnings, describeIntentWarnings, type SetupState } from '../format';
 
 const MISSING_LABELS = { modRoles: 'moderator/admin roles', modLogChannel: 'mod-log channel' } as const;
 
@@ -64,10 +64,15 @@ export const command: PluginCommand = {
     // sub === 'status'
     const config = await host.getGuildConfig(c.guildId);
     const manifests = host.listManifests();
+    const guild = c.interaction.guild;
 
     let enabledCount = 0;
+    const enabledPluginIds: PluginId[] = [];
     for (const manifest of manifests) {
-      if (await host.isPluginEnabled(c.guildId, manifest.id)) enabledCount += 1;
+      if (await host.isPluginEnabled(c.guildId, manifest.id)) {
+        enabledCount += 1;
+        enabledPluginIds.push(manifest.id);
+      }
     }
 
     const lines: string[] = [
@@ -82,11 +87,27 @@ export const command: PluginCommand = {
       `Plugins enabled: **${enabledCount}** / ${manifests.length}`,
     ];
 
-    const permissionWarnings = describeMissingBotPermissions(c.interaction.guild, manifests);
-    if (permissionWarnings.length > 0) {
-      lines.push('', '⚠️ **Permission warnings**', ...permissionWarnings.map((warning) => `• ${warning}`));
+    // Collect all three types of warnings
+    const permissionWarnings = describeMissingBotPermissions(guild, manifests);
+    const staffRoleIds = [
+      ...new Set([...config.adminRoleIds, ...config.modRoleIds, ...config.helperRoleIds]),
+    ];
+    const hierarchyWarnings = describeRoleHierarchyWarnings(guild, staffRoleIds, c.t);
+    const intentWarnings = describeIntentWarnings(manifests, enabledPluginIds, c.ctx.intentsEnabled, c.t);
+
+    if (hierarchyWarnings.length > 0 || permissionWarnings.length > 0 || intentWarnings.length > 0) {
+      lines.push('', '⚠️ **Permission warnings**');
+      if (hierarchyWarnings.length > 0) {
+        lines.push('**Role hierarchy:**', ...hierarchyWarnings.map((warning) => `• ${warning}`));
+      }
+      if (permissionWarnings.length > 0) {
+        lines.push('**Bot permissions:**', ...permissionWarnings.map((warning) => `• ${warning}`));
+      }
+      if (intentWarnings.length > 0) {
+        lines.push('**Privileged intents:**', ...intentWarnings.map((warning) => `• ${warning}`));
+      }
     } else {
-      lines.push('', '✅ No missing bot permissions detected for enabled plugins.');
+      lines.push('', '✅ No issues detected in bot permissions, role hierarchy, or privileged intents.');
     }
 
     await c.interaction.reply({ embeds: [listEmbed(c.t('setup.statusTitle'), lines)], ephemeral: true });

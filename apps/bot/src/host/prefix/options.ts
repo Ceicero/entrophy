@@ -79,7 +79,15 @@ export function resolvePrefixOptions(
   // "something went wrong" — useless to someone who simply typed `+level` and needs to be told what comes next.
   // Covers both the missing case (`+level`) and an unrecognised one (`+level bogus`).
   const pendingSubcommands = leafOptions.filter((opt) => opt.type === 1 || opt.type === 2);
-  if (pendingSubcommands.length > 0) {
+
+  // When a command offers exactly one subcommand there is nothing to choose, so pick it rather than demanding
+  // it. `/permissions` is really `/permissions audit`; over the prefix, `+permissions` should just run. Discord
+  // forces the choice in the slash picker, but a message command has no picker to force it.
+  if (pendingSubcommands.length === 1 && pendingSubcommands[0].type === 1) {
+    const only = pendingSubcommands[0];
+    subcommand = only.name;
+    leafOptions = only.options ?? [];
+  } else if (pendingSubcommands.length > 0) {
     const path = [commandName, subcommandGroup, subcommand].filter(Boolean).join(' ');
     const names = pendingSubcommands.map((opt) => opt.name);
     const attempted = remainingTokens[0];

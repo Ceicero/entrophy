@@ -15,6 +15,7 @@ import {
   renderWizardStep,
   type WizardSession,
 } from '../wizard';
+import { describeRoleHierarchyWarnings, describeIntentWarnings } from '../format';
 
 async function loadOwnedSession(
   c: ComponentContext,
@@ -252,20 +253,41 @@ const finishHandler: ComponentHandler = {
       source: 'bot',
     });
 
-    const summary = successEmbed(
-      [
-        `**${c.t('setup.complete')}**`,
-        `Locale: **${updated.locale}** · Timezone: **${updated.timezone}**`,
-        `Admin roles: ${session.data.adminRoleIds.length > 0 ? session.data.adminRoleIds.map((id) => `<@&${id}>`).join(', ') : '_None_'}`,
-        `Moderator roles: ${session.data.modRoleIds.length > 0 ? session.data.modRoleIds.map((id) => `<@&${id}>`).join(', ') : '_None_'}`,
-        `Helper roles: ${session.data.helperRoleIds.length > 0 ? session.data.helperRoleIds.map((id) => `<@&${id}>`).join(', ') : '_None_'}`,
-        `Mod-log channel: ${updated.modLogChannelId ? `<#${updated.modLogChannelId}>` : '_Not set_'}`,
-        `Staff channel: ${updated.staffChannelId ? `<#${updated.staffChannelId}>` : '_Not set_'}`,
-        `Enabled plugins: ${session.data.enabledPluginIds.length > 0 ? session.data.enabledPluginIds.join(', ') : '_None_'}`,
-        '',
-        'Use `/setup status`, `/config view`, or `/plugin list` anytime to review this.',
-      ].join('\n'),
-    );
+    // Check for permission/hierarchy/intent warnings
+    const guild = c.interaction.guild;
+    const manifests = host.listManifests();
+    const staffRoleIds = [
+      ...new Set([...updated.adminRoleIds, ...updated.modRoleIds, ...updated.helperRoleIds]),
+    ];
+    const hierarchyWarnings = describeRoleHierarchyWarnings(guild, staffRoleIds, c.t);
+    const intentWarnings = describeIntentWarnings(manifests, session.data.enabledPluginIds, c.ctx.intentsEnabled, c.t);
+
+    const summaryLines: string[] = [
+      `**${c.t('setup.complete')}**`,
+      `Locale: **${updated.locale}** · Timezone: **${updated.timezone}**`,
+      `Admin roles: ${session.data.adminRoleIds.length > 0 ? session.data.adminRoleIds.map((id) => `<@&${id}>`).join(', ') : '_None_'}`,
+      `Moderator roles: ${session.data.modRoleIds.length > 0 ? session.data.modRoleIds.map((id) => `<@&${id}>`).join(', ') : '_None_'}`,
+      `Helper roles: ${session.data.helperRoleIds.length > 0 ? session.data.helperRoleIds.map((id) => `<@&${id}>`).join(', ') : '_None_'}`,
+      `Mod-log channel: ${updated.modLogChannelId ? `<#${updated.modLogChannelId}>` : '_Not set_'}`,
+      `Staff channel: ${updated.staffChannelId ? `<#${updated.staffChannelId}>` : '_Not set_'}`,
+      `Enabled plugins: ${session.data.enabledPluginIds.length > 0 ? session.data.enabledPluginIds.join(', ') : '_None_'}`,
+      '',
+    ];
+
+    // Add permission/hierarchy/intent audit results
+    if (hierarchyWarnings.length > 0 || intentWarnings.length > 0) {
+      summaryLines.push('⚠️ **Permission warnings**');
+      hierarchyWarnings.forEach((warning) => summaryLines.push(`• ${warning}`));
+      intentWarnings.forEach((warning) => summaryLines.push(`• ${warning}`));
+      summaryLines.push('', 'You can fix these anytime — see `/permissions audit` for details.');
+    } else {
+      summaryLines.push('✅ **All permission checks passed**');
+      summaryLines.push('Your bot is ready to moderate. You can review this anytime with `/setup status`.');
+    }
+
+    summaryLines.push('', 'Use `/setup status`, `/config view`, or `/plugin list` anytime to review your configuration.');
+
+    const summary = successEmbed(summaryLines.join('\n'));
 
     await (
       c.interaction as unknown as {
