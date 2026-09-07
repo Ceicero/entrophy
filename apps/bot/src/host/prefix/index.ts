@@ -8,6 +8,16 @@ import { parsePrefixMessage, isBarePrefix } from './parse';
 import { resolvePrefixOptions } from './options';
 import { createMessageCommandInteraction } from './message-command-interaction';
 
+/**
+ * Bounded startup sampling. The prefix router is deliberately silent on input it does not own, which makes a
+ * non-working `+` indistinguishable from a message the bot never received. Logging the first few messages the
+ * listener actually sees — with their content length — separates those two cases: no lines at all means
+ * messageCreate never fires, while `contentLength: 0` means the gateway is delivering messages with the content
+ * stripped (the MessageContent intent is not really in effect).
+ */
+let sampledMessages = 0;
+const SAMPLE_LIMIT = 5;
+
 // Rate limiter for bare prefix (DEFECT 6: once per 60 seconds per channel)
 const barePrefix60sRateLimits = new Map<string, number>();
 
@@ -79,22 +89,55 @@ export async function handleMessageCommand(
     return;
   }
 
+  const looksLikeCommand = message.content.startsWith(prefix);
+
+  if (sampledMessages < SAMPLE_LIMIT) {
+    sampledMessages += 1;
+    logger.info(
+      {
+        contentLength: message.content.length,
+        looksLikeCommand,
+        prefix,
+        guildId: message.guildId,
+        channelId: message.channelId,
+      },
+      'prefix: sampling an incoming message',
+    );
+  }
+
+  /**
+   * Records why a prefix-looking message was dropped. Only fires for messages that actually start with the
+   * prefix, so ordinary chat never reaches the log. Users still see nothing — this changes logging only.
+   */
+  const bail = (reason: string, extra: Record<string, unknown> = {}): void => {
+    if (!looksLikeCommand) return;
+    logger.info(
+      { reason, guildId: message.guildId, channelId: message.channelId, ...extra },
+      'prefix: dropped a message that started with the prefix',
+    );
+  };
+
   // Check bot permissions early
   const botMember = message.guild.members.me;
   if (!botMember) {
+    bail('bot member not cached');
     return;
   }
 
   // Bot must be able to view the channel and send messages
   const channel = message.channel;
   if (!channel || !('guild' in channel)) {
+    bail('channel is not a guild channel');
     return;
   }
 
   const canView = botMember.permissionsIn(channel).has('ViewChannel');
   const canSend = botMember.permissionsIn(channel).has('SendMessages');
   if (!canView || !canSend) {
-    // Can't reply, so bail silently
+    // Genuinely cannot reply here, so the user still sees nothing — but say so in the log, because this is
+    // the one failure mode that looks exactly like "the bot ignored me" while slash commands keep working
+    // (an interaction reply goes back through Discord's webhook and does not need SendMessages).
+    bail('missing channel permissions', { canView, canSend });
     return;
   }
 
@@ -163,6 +206,7 @@ export async function handleMessageCommand(
   // Parse the message
   const parsed = parsePrefixMessage(message.content, prefix);
   if (!parsed) {
+    bail('did not parse as a prefix command');
     return;
   }
 
@@ -170,6 +214,7 @@ export async function handleMessageCommand(
   const entry = host.commands.get(parsed.name);
   if (!entry) {
     // Unknown command: don't reply (other bots may use this prefix too)
+    bail('no such command', { name: parsed.name });
     return;
   }
 
