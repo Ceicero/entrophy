@@ -74,6 +74,24 @@ export function resolvePrefixOptions(
     }
   }
 
+  // If this level still offers subcommands, one of them must be chosen. Reaching the option binder without a
+  // subcommand means `getSubcommand(true)` will throw inside the handler and the router will render a generic
+  // "something went wrong" — useless to someone who simply typed `+level` and needs to be told what comes next.
+  // Covers both the missing case (`+level`) and an unrecognised one (`+level bogus`).
+  const pendingSubcommands = leafOptions.filter((opt) => opt.type === 1 || opt.type === 2);
+  if (pendingSubcommands.length > 0) {
+    const path = [commandName, subcommandGroup, subcommand].filter(Boolean).join(' ');
+    const names = pendingSubcommands.map((opt) => opt.name);
+    const attempted = remainingTokens[0];
+    return {
+      ok: false,
+      usage: `${path} <${names.join(' | ')}>`,
+      error: attempted
+        ? `\`${attempted}\` is not a valid option for \`${path}\`. Try one of: ${names.join(', ')}.`
+        : `\`${path}\` needs one of: ${names.join(', ')}.`,
+    };
+  }
+
   // Now resolve remaining tokens against leaf options (the actual command options)
   const values = new Map<string, ResolvedValue>();
   const namedArgs = new Map<string, string>();
