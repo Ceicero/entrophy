@@ -25,7 +25,6 @@ mounted for the whole app) serve both halves — see their doc comments for how 
 | `/features/[pluginId]`                | Same content, one plugin per page (statically generated from `src/data/commands.json`)                                                         |
 | `/enforcer`                           | Admin Enforcer spotlight: workflow diagram, a mock ledger entry, privacy/transparency notes, FAQ                                               |
 | `/donate`                             | Ko-fi link-out: external donation page when enabled, "not set up" notice when disabled                                                         |
-| `/donate/thanks`, `/donate/cancelled` | Orphaned leftovers of the removed Stripe checkout flow — still routable, but nothing links to them (Ko-fi is an external link-out with no return) |
 | `/privacy`, `/terms`                  | Template legal pages, clearly labelled as templates for the operator to review                                                                 |
 | `/dashboard/**`                       | The per-guild config dashboard (session-gated) — see `docs/ARCHITECTURE.md` §11 for the full route list          |
 | `not-found`                           | 404 page                                                                                                                                       |
