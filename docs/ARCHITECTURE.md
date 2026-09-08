@@ -168,7 +168,7 @@ TRANSLATE_PROVIDER=none       # none | deepl | libretranslate
 DEEPL_API_KEY= LIBRETRANSLATE_URL= LIBRETRANSLATE_API_KEY=
 WEATHER_PROVIDER=none         # none | openweathermap | open-meteo (open-meteo needs no key)
 OPENWEATHERMAP_API_KEY=
-CAPTCHA_PROVIDER=none         # none | hcaptcha | turnstile — REQUIRED for donations (see §18), optional for roles plugin verification
+CAPTCHA_PROVIDER=none         # none | hcaptcha | turnstile — optional for roles plugin verification
 HCAPTCHA_SITE_KEY= HCAPTCHA_SECRET= TURNSTILE_SITE_KEY= TURNSTILE_SECRET=
 MEDIA_PROVIDER=none           # none | <compliant provider id>; media plugin is unavailable when none
 PUBLIC_WEBHOOK_BASE_URL=      # public https base for inbound webhooks (EventSub, GitHub, generic)
@@ -530,7 +530,7 @@ with a configurable prefix, default `+`. For example: `/mod ban @user spam` can 
 
 ## 10. API (`apps/api`)
 
-- Fastify 5 + `fastify-type-provider-zod` (`serializerCompiler`, `validatorCompiler`, `jsonSchemaTransform` for swagger). Swagger UI at `/docs`, JSON at `/docs/json` — **registered only when `NODE_ENV !== 'production'`**; disabled in production so the exact request shape of public endpoints like `/donations/checkout` isn't handed to anyone who looks (see §18, `docs/SECURITY.md`). Script `openapi:export` writes `docs/openapi.json` from a dev/test run.
+- Fastify 5 + `fastify-type-provider-zod` (`serializerCompiler`, `validatorCompiler`, `jsonSchemaTransform` for swagger). Swagger UI at `/docs`, JSON at `/docs/json` — **registered only when `NODE_ENV !== 'production'`**; disabled in production so the exact request shape of public endpoints like `/auth/discord/login` isn't handed to anyone who looks (see `docs/SECURITY.md`). Script `openapi:export` writes `docs/openapi.json` from a dev/test run.
 - Plugins: helmet, cors (`origin: [env.DASHBOARD_URL]`, `credentials: true`), cookie (signed with SESSION_SECRET), rate-limit (global 300/min per IP, auth routes 20/min; Redis-backed store, shared across api instances and survives restarts — not per-process memory), sensible.
 - Session: `sid` cookie (httpOnly, sameSite `lax`, secure in prod, `domain: COOKIE_DOMAIN?`), 32-byte random id, Redis hash `entrophy:session:<sid>` TTL 7d: `{ userId, username, avatar, accessTokenEnc, refreshTokenEnc, expiresAt, csrfToken }`. `request.session` decorator. Logout deletes.
 - CSRF: mutating routes require header `X-CSRF-Token` equal to session csrf token (returned by `GET /auth/me`) **and** `Origin`/`Referer` (when present) must be in the allowlist. Dashboard api client sends the header.
@@ -543,7 +543,7 @@ with a configurable prefix, default `+`. For example: `/mod ban @user spam` can 
   - `routes/moderation.ts` — cases list/get/update reason/export.csv, warnings, notes, appeals
   - `routes/automod.ts` — rules CRUD, events (review queue) list/resolve, dry-run toggle
   - `routes/enforcer.ts` — settings get/put, policies CRUD + test, records list/get/decide/export.csv, queue (pending flags) — see §19
-  - `routes/donations.ts` (NOT under `/guilds`) — `GET /donations/presets`, `POST /donations/checkout` — see §18
+  - `routes/donations.ts` (NOT under `/guilds`) — `GET /donations/config` — see §18
   - `routes/logging.ts` — settings get/put, `GET /:guildId/logs?kind&q&cursor`, export.csv
   - `routes/tickets.ts` — settings, panels CRUD, queue list, ticket get/close/assign, transcript download
   - `routes/roles.ts` — panels CRUD + `POST .../post` (enqueue bot-action), welcome/goodbye config, verification queue approve/deny
@@ -691,9 +691,9 @@ options: [{name, description, required, type}], subcommands: [{ name, fullName, 
   `src/content/site.ts`.
 - Pages: `/`, `/features` (all plugins; anchors per plugin; `/features/[pluginId]` detail with full command table),
   `/enforcer`, `/donate`, `/support`, `/privacy`, `/terms`, `not-found`.
-- Donate page: presets [3, 5, 10, 25, 50] USD (from `GET {API}/donations/presets`, which also returns `enabled`),
-  custom amount input ($1–$500, whole dollars or cents), single "Donate" CTA → `POST {API}/donations/checkout`
-  `{ amountCents, currency: 'usd' }` → `{ url }` → `window.location.assign(url)`. `enabled=false` → explanatory notice.
+- Donate page: reads `GET {API}/donations/config` at request time (never cached; `dynamic = 'force-dynamic'`).
+  When `enabled` is true, renders an external link to the Ko-fi page (`kofiUrl`); when false, shows an
+  honest "donations aren't set up on this deployment" notice.
 - Support page (`/support`): the primary support destination — leads with joining the Discord server
   (`supportServerUrl()`; renders a "not linked yet" notice instead of a CTA when unset, same degrade-to-nothing
   contract as the footer), then points to the dashboard (config) and `/features` (command reference). No invented

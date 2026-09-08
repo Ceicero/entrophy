@@ -24,8 +24,8 @@ mounted for the whole app) serve both halves — see their doc comments for how 
 | `/features`                           | Every plugin: headline, why gaming communities love it, full command table — all anchored on one page                                          |
 | `/features/[pluginId]`                | Same content, one plugin per page (statically generated from `src/data/commands.json`)                                                         |
 | `/enforcer`                           | Admin Enforcer spotlight: workflow diagram, a mock ledger entry, privacy/transparency notes, FAQ                                               |
-| `/donate`                             | Stripe-powered donation page: presets + custom amount → hosted Stripe Checkout                                                                 |
-| `/donate/thanks`, `/donate/cancelled` | Post-checkout landing pages (generic; never call Stripe from the client)                                                                       |
+| `/donate`                             | Ko-fi link-out: external donation page when enabled, "not set up" notice when disabled                                                         |
+| `/donate/thanks`, `/donate/cancelled` | Orphaned leftovers of the removed Stripe checkout flow — still routable, but nothing links to them (Ko-fi is an external link-out with no return) |
 | `/privacy`, `/terms`                  | Template legal pages, clearly labelled as templates for the operator to review                                                                 |
 | `/dashboard/**`                       | The per-guild config dashboard (session-gated) — see `docs/ARCHITECTURE.md` §11 for the full route list          |
 | `not-found`                           | 404 page                                                                                                                                       |
@@ -43,16 +43,16 @@ logo from `assets/brand/` into `public/brand/`, `src/data/brand.json`, and `src/
 never fails the build — if the source asset is missing; every consumer degrades to a text wordmark or plain
 Open Graph text instead).
 
-For the donate page to show real presets/checkout, run `@entrophy/api` locally (`pnpm --filter @entrophy/api dev`)
-with `STRIPE_SECRET_KEY` and `WEB_URL` set — otherwise `/donate` correctly shows the "not configured" state.
+For the donate page to show the Ko-fi link-out, run `@entrophy/api` locally (`pnpm --filter @entrophy/api dev`)
+with `KOFI_URL` set — otherwise `/donate` correctly shows the "not configured" state.
 
 ## Environment
 
 See the root `.env.example` for the full list. This app reads, all via `NEXT_PUBLIC_*` (inlined at build time into
 both server and client bundles):
 
-- `NEXT_PUBLIC_API_URL` — base URL of `@entrophy/api`, used for `GET /donations/presets` and
-  `POST /donations/checkout`, and by every dashboard page's `apiFetch`/React Query hooks.
+- `NEXT_PUBLIC_API_URL` — base URL of `@entrophy/api`, used for `GET /donations/config` and by every
+  dashboard page's `apiFetch`/React Query hooks.
 - `NEXT_PUBLIC_DISCORD_CLIENT_ID` — builds the "Add to Discord" OAuth URL. When unset, the CTA falls back to
   "Explore features" instead of linking to a broken authorize URL.
 - `NEXT_PUBLIC_INVITE_PERMISSIONS` — invite permission bitfield (integer string). Defaults to the value baked

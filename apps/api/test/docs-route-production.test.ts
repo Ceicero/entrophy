@@ -22,7 +22,7 @@ beforeAll(async () => {
 }, 180_000);
 
 // Publicly documenting the exact request/response shape of every endpoint (including public, unauthenticated
-// ones like `/donations/checkout`) is a gift to anyone probing for abuse — `app.ts` never registers
+// ones like `/auth/discord/login`) is a gift to anyone probing for abuse — `app.ts` never registers
 // `@fastify/swagger`/`@fastify/swagger-ui` when `NODE_ENV=production`, so `/docs` falls through to the app's
 // normal 404 handler instead of existing at all.
 describe('GET /docs (Swagger UI) in production', () => {

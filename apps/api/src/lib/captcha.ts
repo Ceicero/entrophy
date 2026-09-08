@@ -1,6 +1,6 @@
-// Shared CAPTCHA provider resolution + server-side verification. Used by `/verify/:token` (the roles plugin's
-// CAPTCHA verification mode) and by `/donations/checkout` (which requires a passing CAPTCHA before it will
-// create a Donation row or call Stripe — see routes/donations.ts).
+// Shared CAPTCHA provider resolution + server-side verification. Sole consumer is `/verify/:token` (the roles
+// plugin's CAPTCHA verification mode). Donations no longer use CAPTCHA — the Stripe checkout endpoint that
+// required one was removed when donations became a Ko-fi link-out (see docs/ARCHITECTURE.md §18).
 import { env } from '@entrophy/core';
 
 export interface ProviderConfig {
