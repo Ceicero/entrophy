@@ -50,8 +50,17 @@ export function describePermission(flag: bigint): string {
   return PERMISSION_NAMES.get(flag) ?? `Unknown Permission (${flag.toString()})`;
 }
 
-/** Returns the human-readable names of every permission in `required` that is missing from `have`. */
+/**
+ * Returns the human-readable names of every permission in `required` that is missing from `have`.
+ *
+ * Administrator short-circuits to "nothing missing", because Discord grants every permission to anyone who
+ * holds it — a plain `have & flag` bitwise test does not know that, since the other bits are simply absent
+ * from the bitfield. Without this, a bot with Administrator is told it lacks permissions it can actually
+ * exercise: the audit prints warnings that contradict the bot's own member info, and, worse,
+ * `assertBotPermissions` refuses to run commands that would have succeeded.
+ */
 export function missingPermissions(have: bigint, required: bigint[]): string[] {
+  if ((have & PermissionFlagsBits.Administrator) === PermissionFlagsBits.Administrator) return [];
   return required.filter((flag) => (have & flag) !== flag).map((flag) => describePermission(flag));
 }
 
