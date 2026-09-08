@@ -35,7 +35,8 @@
     "hierarchyOk": "✅ My highest role outranks every configured staff role.",
     "hierarchyWarning": "⚠️ My highest role is at or below <@&{roleId}> — I may not be able to moderate members with that role.",
     "intentsOk": "✅ Every privileged intent needed by an enabled plugin is enabled.",
-    "intentWarning": "⚠️ **{plugin}** needs the {intent} privileged intent, which isn't enabled — related features are degraded."
+    "intentWarning": "⚠️ **{plugin}** needs the {intent} privileged intent, which isn't enabled — related features are degraded.",
+    "administratorGranted": "⚠️ I have been granted **Administrator**, which is more than I need. Entrophy is designed to run on a least-privilege permission set — consider removing Administrator and re-inviting me with the documented invite link instead."
   },
   "health": {
     "title": "Bot health",

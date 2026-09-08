@@ -1,5 +1,5 @@
 import { PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder } from 'discord.js';
-import { describePermission } from '@entrophy/core';
+import { describePermission, missingPermissions } from '@entrophy/core';
 import type { PluginId } from '@entrophy/types';
 import { assertStaffLevel, brandEmbed, type PluginCommand } from '../../sdk';
 import { describeIntentWarnings, describeRoleHierarchyWarnings } from '../format';
@@ -33,12 +33,18 @@ export const command: PluginCommand = {
       if (!enabled) continue;
       for (const doc of manifest.permissions) {
         const bit = PermissionsBitField.resolve(doc.permission);
-        if ((have & bit) === bit) continue;
+        // Via the shared helper rather than a bare `have & bit`, so Administrator is honoured: it implicitly
+        // grants everything, but the individual bits are absent from the bitfield, so a raw test reports
+        // permissions as missing that the bot can actually exercise.
+        if (missingPermissions(have, [bit]).length === 0) continue;
         const requirement = doc.optional ? 'optional' : 'required';
         permissionLines.push(
           `❌ **${manifest.name}** — missing **${describePermission(bit)}** (${requirement}) for ${doc.feature}. ${doc.fallback}`,
         );
       }
+    }
+    if (botMember?.permissions.has(PermissionFlagsBits.Administrator)) {
+      permissionLines.push(c.t('permissions.administratorGranted'));
     }
     if (permissionLines.length === 0) permissionLines.push(c.t('permissions.noMissingPermissions'));
 
